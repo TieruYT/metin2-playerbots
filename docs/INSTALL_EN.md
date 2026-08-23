@@ -1,0 +1,113 @@
+# 🛠️ Installation & Setup Guide
+
+[Polski (INSTALL.md)](INSTALL.md) | **English**
+
+Step-by-step setup and configuration guide for the local Metin2 server with the Playerbots AI system.
+
+---
+
+## 📋 System Requirements
+
+| Requirement | Specification |
+|---|---|
+| **Operating System** | Windows 10/11 (with Docker Desktop + WSL2) or Linux (Ubuntu / Debian with Docker) |
+| **CPU Architecture** | x86-64 (Intel / AMD). Game core compiles as a 32-bit x86 ELF. |
+| **RAM** | Minimum 8 GB (16 GB+ recommended for 350+ bots) |
+| **Disk Space** | ~25–40 GB for containers, databases, and build contexts |
+| **Game Client** | Any standard client compatible with r40250 server files (e.g. classic `Metin2Client` v1.0.28249.1) |
+
+---
+
+## 🚀 Installation
+
+### 1. Windows 10 / 11 (Recommended)
+
+1. Install **Docker Desktop** and enable the **WSL2 backend**.
+2. Start Docker Desktop and wait until the status indicates **Engine running**.
+3. Clone the repository and execute the PowerShell installer:
+
+```powershell
+git clone https://github.com/TieruYT/metin2-playerbots.git
+Set-Location .\metin2-playerbots
+& .\installer\install.ps1
+```
+
+The installer will automatically:
+- Set up the Docker Compose stack.
+- Build the game core image with integrated Playerbots support.
+- Bind all services safely to `127.0.0.1` (local loopback).
+
+---
+
+### 2. Linux (Ubuntu / Debian)
+
+```sh
+git clone https://github.com/TieruYT/metin2-playerbots.git
+cd metin2-playerbots
+sudo sh ./installer/install.sh --local
+```
+
+The `--local` flag ensures services are strictly bound to `127.0.0.1` without opening public firewall ports.
+
+---
+
+## ⚙️ Configuration (.env)
+
+Core settings are configured in `linux-port/docker/.env`.
+
+Key parameters:
+```ini
+# Number of bots spawned automatically on server startup
+PLAYERBOT_AUTOSPAWN_COUNT=350
+
+# Login Authentication port
+M2_AUTH_PORT=11000
+
+# Channel 1 Game core port range
+M2_GAME_PORT_RANGE=13000-13002
+
+# Web Admin Panel port
+M2_PANEL_PUBLIC_PORT=7788
+
+# Max character level
+M2_MAX_LEVEL=120
+```
+
+After modifying `.env`, restart the game container:
+```powershell
+Set-Location .\linux-port\docker
+docker compose up -d --force-recreate game
+```
+
+---
+
+## 🎮 Connecting Your Game Client
+
+1. Open `serverinfo.py` or your launcher configuration and set the IP address to `127.0.0.1`.
+2. Auth port: `11000`.
+3. Channel ports: `13000`, `13001`, `13002`.
+4. Launch `Metin2Distribute.exe`.
+5. Create a character and start playing alongside autonomous bots in Joan (Chunjo)!
+
+---
+
+## 🔄 Daily Operation & Commands
+
+Run these commands inside `linux-port/docker/`:
+
+```powershell
+# Start server containers in background
+docker compose up -d
+
+# Check container status
+docker compose ps
+
+# Follow live server logs
+docker compose logs -f game
+
+# Safe shutdown (preserves all character and database state)
+docker compose stop
+```
+
+> [!WARNING]
+> Never run `docker compose down -v` unless you intentionally wish to erase all character data and databases!
