@@ -15,6 +15,9 @@ This project extends the classic r40250 server files with a native, server-side 
 
 This is an active research and hobby prototype. The current testing focuses primarily on the M1 ecosystem (Joan / Chunjo), transit to M2, and the Monkey Dungeon. The main priority is believable, organic behavior for hundreds of independent characters, rather than scripting every single in-game quest.
 
+> [!NOTE]
+> **Supported Kingdom:** The current version of the project has been implemented and tested exclusively for the **Chunjo Kingdom (Yellows / Map 21 – Joan)**, including the dedicated 2D NavGrid collision matrix, Metin spawn clusters, and 32 regional hunting hubs. The other kingdoms (**Shinsoo / Reds – Map 1 Yongan** and **Jinno / Blues – Map 41 Pyungmoo**) have not yet been implemented and are planned for future roadmap phases.
+
 | Component | Status | Notes |
 |---|---|---|
 | Bot Core & Character Persistence | Operational | Authentic PC entities; saves Level, EXP, Yang, Equipment, Inventory items, and Quest flags into standard MariaDB tables. |
@@ -219,6 +222,20 @@ Features provided by the web panel:
 - **Character Inspector**: View real-time inventory slots, equipped gear, status attributes, and skill points.
 - **Leaderboards**: Top Level, Yang, Equipment, Horse levels, Biologist progress, and monster kill counts.
 - **Server Controls**: Adjust EXP, Drop, and Yang multipliers on the fly, manage GM rights, and execute bot commands.
+
+---
+
+## In-Game Commands (GM Commands)
+
+Playerbots can also be managed directly from the in-game chat interface (requires GM / Administrator permissions):
+
+| Command | Permission | Description | Example Usage |
+|---|---|---|---|
+| `/bot_spawn <player_id> <empire: 1-3>` | GM | Spawns a specific bot by Player ID into the designated empire (`1` = Shinsoo, `2` = Chunjo, `3` = Jinno). | `/bot_spawn 4 2` |
+| `/bot_despawn <player_id>` | GM | Disconnects and despawns a specific bot from the world. | `/bot_despawn 4` |
+| `/bot_spawn_many <start_id> <count: 1-500> <empire: 1-3>` | GM | Spawns a batch of bots starting from `start_id` up to `count` into the designated empire. | `/bot_spawn_many 4 350 2` |
+| `/bot_despawn_many <start_id> <count: 1-500>` | GM | Despawns a batch of bots starting from `start_id`. | `/bot_despawn_many 4 350` |
+| `/bot_rank` | All Players | Displays the current level leaderboard and coordinates of active bots in the chat window. | `/bot_rank` |
 
 ---
 

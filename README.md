@@ -13,6 +13,9 @@ Projekt rozwija klasyczne pliki serwerowe r40250 o serwerowy system **Playerbots
 
 To działający prototyp badawczo-hobbystyczny, a nie gotowa dystrybucja produkcyjna. Obecnie testowany jest przede wszystkim ekosystem M1, przejścia do M2 i łatwy Loch Małp. Priorytetem jest wiarygodne zachowanie wielu niezależnych postaci, nie automatyzacja każdego questa z gry.
 
+> [!NOTE]
+> **Obsługiwane Królestwo:** Obecna wersja projektu była wdrażana i testowana wyłącznie dla **Królestwa Chunjo (Żółci / Mapa 21 – Joan)**, w tym dedykowana siatka kolizji NavGrid 2D oraz rozkład 32 hubów expienia i łowców Metinów. Pozostałe królestwa (**Shinsoo / Czerwoni – Mapa 1 Yongan** oraz **Jinno / Niebiescy – Mapa 41 Pyungmoo**) nie zostały jeszcze wdrożone i są zaplanowane w kolejnych etapach rozwoju.
+
 | Obszar | Stan | Uwagi |
 |---|---|---|
 | Rdzeń botów i trwałość postaci | działający | Postacie PC, zapis poziomu, EXP, Yang, ekwipunku, przedmiotów i flag postępu w standardowej bazie gry. |
@@ -281,6 +284,18 @@ Pozostałe istotne ustawienia:
 | `M2_UPDATE_CHECK` | Ustaw `0`, jeżeli środowisko ma pozostać całkowicie offline. |
 
 Pełny, komentowany zestaw opcji znajduje się w `linux-port/docker/.env.example`.
+
+## Komendy w grze (GM Commands)
+
+Postaciami botów można zarządzać również bezpośrednio z poziomu czatu w grze (wymagane uprawnienia GM / Administratora):
+
+| Komenda | Uprawnienia | Opis | Przykład użycia |
+|---|---|---|---|
+| `/bot_spawn <player_id> <empire: 1-3>` | GM | Ręczne zespawnowanie konkretnego bota o danym ID gracza do wybranego królestwa (`1` = Shinsoo, `2` = Chunjo, `3` = Jinno). | `/bot_spawn 4 2` |
+| `/bot_despawn <player_id>` | GM | Ręczne odłączenie / usunięcie bota ze świata gry. | `/bot_despawn 4` |
+| `/bot_spawn_many <start_id> <count: 1-500> <empire: 1-3>` | GM | Masowe zespawnowanie grupy botów z zadanego zakresu ID do wybranego królestwa. | `/bot_spawn_many 4 350 2` |
+| `/bot_despawn_many <start_id> <count: 1-500>` | GM | Masowe wylogowanie grupy botów z zadanego zakresu ID. | `/bot_despawn_many 4 350` |
+| `/bot_rank` | Wszyscy gracze | Wyświetla na czacie aktualny ranking poziomów i pozycje aktywnych botów. | `/bot_rank` |
 
 ## Kompilacja i wdrażanie zmian
 
