@@ -1,5 +1,7 @@
 # Metin2 Playerbots
 
+**Polski** | [English (README_EN.md)](README_EN.md)
+
 Lokalny, hobbystyczny świat Metin2, w którym autonomiczne postacie graczy naprawdę grają na serwerze: zdobywają doświadczenie, walczą solo i w grupach, zbierają łup, rozwijają ekwipunek, odwiedzają NPC i zapisują swój postęp w tej samej bazie co zwykły gracz.
 
 Projekt rozwija klasyczne pliki serwerowe r40250 o serwerowy system **Playerbots**. Bot nie jest atrapą potwora ani zewnętrznym programem klikającym w klienta. Jest postacią typu PC sterowaną przez AI wewnątrz game core, dlatego pozostali gracze widzą jego ruch, walkę, wyposażenie i rozwój przez zwykły protokół gry.
@@ -136,12 +138,6 @@ MariaDB przechowuje konta, postacie, przedmioty i postęp. Wolumen `game-var` pr
 
 ## Instalacja
 
-Adres docelowego prywatnego repozytorium jest celowo pozostawiony jako placeholder:
-
-```text
-REPOSITORY_URL
-```
-
 ### Windows 10/11 — zalecana konfiguracja lokalna
 
 1. Zainstaluj Docker Desktop i włącz backend WSL2.
@@ -150,7 +146,7 @@ REPOSITORY_URL
 4. Sklonuj repozytorium i uruchom lokalny instalator:
 
 ```powershell
-git clone REPOSITORY_URL metin2-playerbots
+git clone https://github.com/TieruYT/metin2-playerbots.git metin2-playerbots
 Set-Location .\metin2-playerbots
 & .\installer\install.ps1
 ```
@@ -169,7 +165,7 @@ $env:M2_SRC_REFERENCE_DIR = 'D:\Metin2\40250-reference'
 ### Linux — lokalnie/offline
 
 ```sh
-git clone REPOSITORY_URL metin2-playerbots
+git clone https://github.com/TieruYT/metin2-playerbots.git metin2-playerbots
 cd metin2-playerbots
 sudo sh ./installer/install.sh --local
 ```
