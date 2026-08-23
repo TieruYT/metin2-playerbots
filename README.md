@@ -73,11 +73,11 @@ Zarządzanie botami bezpośrednio z poziomu czatu w grze (dla konta GM / Adminis
 ## 🗺️ Roadmapa rozwoju
 
 - [x] **Faza 1**: Pełne animacje wszystkich klas, łucznicy z pociskami, siatka 2D NavGrid (A*), ulepszanie u Kowala i 32 huby expienia w Chunjo.
-- [ ] **Faza 2**: Prywatne tobołki/sklepy botów w miastach, handel między botami i dynamiczna wycena przedmiotów.
-- [ ] **Faza 3**: Przejścia między mapami (M2, Dolina Orków, Pustynia) oraz wyprawy na **Wieżę Demonów (DT)**.
-- [ ] **Faza 4**: Czytanie Ksiąg Umiejętności (KU) i Kamieni Duchowych (KD), zaawansowane buildy skilli.
-- [ ] **Faza 5**: Misje Biologa (od zębów orka wzwyż) oraz pełny cykl rozwoju konia (zwykły, bojowy, militarny).
-- [ ] **Faza 6**: Aktywności poboczne: łowienie ryb, kilof i wydobywanie rud z żył alchemii.
+- [ ] **Faza 2**: Przejścia między mapami (M2, Dolina Orków, Pustynia) oraz wyprawy na **Wieżę Demonów (DT)**.
+- [ ] **Faza 3**: Czytanie Ksiąg Umiejętności (KU) i Kamieni Duchowych (KD), zaawansowane buildy skilli.
+- [ ] **Faza 4**: Misje Biologa (od zębów orka wzwyż) oraz pełny cykl rozwoju konia (zwykły, bojowy, militarny).
+- [ ] **Faza 5**: Aktywności poboczne: łowienie ryb, kilof i wydobywanie rud z żył alchemii.
+- [ ] **Faza 6**: Prywatne tobołki/sklepy botów w miastach, handel między botami i dynamiczna wycena przedmiotów.
 
 ---
 

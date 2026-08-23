@@ -73,11 +73,11 @@ Manage bots directly via in-game chat (requires GM / Administrator permissions):
 ## 🗺️ Roadmap
 
 - [x] **Phase 1**: Full combat animations for all classes, Archer projectiles, 2D NavGrid (A*), Blacksmith refinement cycle, and 32 regional hubs in Chunjo.
-- [ ] **Phase 2**: Private offline player shops in town centers, inter-bot trading, and dynamic market pricing.
-- [ ] **Phase 3**: Multi-map zone traversal (M2, Orc Valley, Desert) and full **Demon Tower (DT)** runs.
-- [ ] **Phase 4**: Reading Skill Books (KU) and Soul Stones (KD), advanced skill priority trees.
-- [ ] **Phase 5**: Biologist quest progression and complete horse training cycle (Beginner, Combat, Military).
-- [ ] **Phase 6**: Non-combat life skills: Fishing minigame, mining ore veins, and alchemy crafting.
+- [ ] **Phase 2**: Multi-map zone traversal (M2, Orc Valley, Desert) and full **Demon Tower (DT)** runs.
+- [ ] **Phase 3**: Reading Skill Books (KU) and Soul Stones (KD), advanced skill priority trees.
+- [ ] **Phase 4**: Biologist quest progression and complete horse training cycle (Beginner, Combat, Military).
+- [ ] **Phase 5**: Non-combat life skills: Fishing minigame, mining ore veins, and alchemy crafting.
+- [ ] **Phase 6**: Private offline player shops in town centers, inter-bot trading, and dynamic market pricing.
 
 ---
 
