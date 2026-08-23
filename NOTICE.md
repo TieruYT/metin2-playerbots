@@ -20,7 +20,9 @@ Everything in this repository that was written for this project:
 | `linux-port/fetch-sources.sh`, `linux-port/patches/make-patch.sh` | the scripts that acquire and regenerate it |
 | `linux-port/*.md` | the Linux porting write-ups |
 | `linux-port/docker/` | the Docker packaging |
+| `linux-port/overlays/playerbot/` | the server-side Playerbot manager, integration patches and reproducible bot seed tooling |
 | `linux-port/client/serverinfo.py` | the client configuration template |
+| `tools/fast-game-build/` | the optional incremental game-core build workflow |
 | all `.md` documentation | |
 
 Use it, change it, sell it, fold it into something else. Keep the copyright

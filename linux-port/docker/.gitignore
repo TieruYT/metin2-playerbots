@@ -6,6 +6,8 @@ client-builder/pack/pack.sh
 panel/app/
 panel/schema/
 mariadb/initdb.d/dumps/
+# Staged from the tracked Playerbot overlay by prepare-context.sh.
+mariadb/playerbot/playerbots_seed.sql
 # The staged copy of files/web_admin.quest. The authoritative one is in files/.
 game/quest/*
 !game/quest/README
@@ -17,3 +19,25 @@ client-archive/*
 
 # Your passwords.
 .env
+
+# One-off diagnostics and population experiments from a local development
+# world.  The reproducible implementation lives in ../overlays/playerbot;
+# these variants contain machine-specific paths or assumptions about live IDs.
+add_tieru_goodies.sql
+apply_requested_armor_normalization.sh
+bootstrap-playerbots.sql
+check_db.py
+check_tieru.sh
+diagnose_archers_and_gear.sh
+diagnose_requested_bots.sh
+generate_450_bots.py
+patch_cmd.py
+populate_*_bots.sql
+*populate_450_bots.sql
+query_bots.sh
+run_populate*.sh
+run_tieru*.sh
+sync_sources.sh
+update_tieru.sql
+update_webclient.sh
+verify_playerbot_v5.sh

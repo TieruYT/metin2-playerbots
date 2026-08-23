@@ -753,6 +753,8 @@ context_is_complete() {
     [ -d "$_d/game/src/server" ]    || return 1
     [ -f "$_d/panel/app/admin_panel.py" ] || return 1
     [ -d "$_d/mariadb/initdb.d/dumps" ]   || return 1
+    [ -s "$_d/mariadb/playerbot/apply.sh" ] || return 1
+    [ -s "$_d/mariadb/playerbot/playerbots_seed.sql" ] || return 1
     return 0
 }
 
@@ -761,7 +763,8 @@ explain_incomplete_context() {
 
       $1
 
-  is not complete: the game source or the database dumps are missing from it.
+  is not complete: the game source, database dumps, or Playerbot seed are
+  missing from it.
 
   That is exactly what a bare checkout of the repository looks like. The
   repository contains the Linux port and nothing else -- the game itself is
@@ -1895,6 +1898,7 @@ start_stack() {
     say ""
 
     if [ "$DRY_RUN" = "1" ]; then
+        [ "$FRESH_INSTALL" = "1" ] || info "[dry-run] stop game and panel before the Playerbot migration"
         info "[dry-run] cd $INSTALL_DIR && docker compose up -d --build"
         return 0
     fi
@@ -1919,7 +1923,17 @@ start_stack() {
         fi
     done
 
+    # `depends_on' orders newly started containers; it cannot pause an old game
+    # that is already running during an update. Stop both DB consumers first so
+    # the one-shot additive seed is always the only writer in its PID range.
+    if [ "$FRESH_INSTALL" != "1" ]; then
+        info "Stopping game and panel while the Playerbot seed is checked."
+        dc stop game panel || die "The running game or panel could not be stopped.
+  The Playerbot seed was not started; fix the Docker error above and retry."
+    fi
+
     if ! dc up -d --build; then
+        dc logs --no-color --tail=80 playerbot-migrate 2>/dev/null || true
         say ""
         die "The server did not build or did not start. The output above says
   why. The usual causes, most common first:

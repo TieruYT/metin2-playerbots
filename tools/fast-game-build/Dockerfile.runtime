@@ -1,0 +1,5 @@
+ARG RUNTIME_BASE=metin2/game-runtime-base:incremental
+FROM ${RUNTIME_BASE}
+
+COPY game /opt/metin2/share/bin/game
+RUN chmod 0755 /opt/metin2/share/bin/game

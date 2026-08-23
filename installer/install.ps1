@@ -808,7 +808,11 @@ function Test-ContextComplete {
     (Test-Path -LiteralPath (Join-Path $Dir 'docker-compose.yml')) -and
     (Test-Path -LiteralPath (Join-Path $Dir 'game\src\server')) -and
     (Test-Path -LiteralPath (Join-Path $Dir 'panel\app\admin_panel.py')) -and
-    (Test-Path -LiteralPath (Join-Path $Dir 'mariadb\initdb.d\dumps'))
+    (Test-Path -LiteralPath (Join-Path $Dir 'mariadb\initdb.d\dumps')) -and
+    (Test-Path -LiteralPath (Join-Path $Dir 'mariadb\playerbot\apply.sh') -PathType Leaf) -and
+    ((Get-Item -LiteralPath (Join-Path $Dir 'mariadb\playerbot\apply.sh')).Length -gt 0) -and
+    (Test-Path -LiteralPath (Join-Path $Dir 'mariadb\playerbot\playerbots_seed.sql') -PathType Leaf) -and
+    ((Get-Item -LiteralPath (Join-Path $Dir 'mariadb\playerbot\playerbots_seed.sql')).Length -gt 0)
 }
 
 function Stop-IncompleteContext {
@@ -818,7 +822,8 @@ The Docker build context in
 
     $Dir
 
-is not complete: the game source or the database dumps are missing from it.
+is not complete: the game source, database dumps, or Playerbot seed are missing
+from it.
 
 That is exactly what a bare checkout of the project looks like. The project
 contains the Linux port and nothing else -- the game itself is not ours to
@@ -1808,6 +1813,9 @@ function Start-Stack {
     }
 
     if ($script:DryRun) {
+        if (-not $script:FreshInstall) {
+            Write-Info '[dry-run] stop game and panel before the Playerbot migration'
+        }
         Write-Info "[dry-run] docker compose up -d --build in $($script:InstallDir)"
         return
     }
@@ -1846,8 +1854,21 @@ Either use that one, or remove it first:
         }
     }
 
+    # Compose dependency ordering only applies while containers are started.
+    # Pause existing DB consumers so an update cannot migrate underneath them.
+    if (-not $script:FreshInstall) {
+        Write-Info 'Stopping game and panel while the Playerbot seed is checked.'
+        if ((Invoke-Compose @('stop', 'game', 'panel')) -ne 0) {
+            Stop-Friendly @"
+The running game or panel could not be stopped. The Playerbot seed was not
+started; fix the Docker error above and retry.
+"@
+        }
+    }
+
     $code = Invoke-Compose @('up', '-d', '--build')
     if ($code -ne 0) {
+        Invoke-Compose @('logs', '--no-color', '--tail', '80', 'playerbot-migrate') | Out-Null
         Stop-Friendly @"
 The server did not build or did not start. The output above says why. The
 usual causes, most common first:

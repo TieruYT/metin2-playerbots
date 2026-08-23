@@ -32,6 +32,8 @@
 #  It also PATCHES the staged tree, in the only window where that works -- after
 #  it is staged and before the image is built from it:
 #
+#      ../overlays/playerbot/           the Playerbot core integration, manager
+#                                      sources and economy adjustment
 #      ../../files/fixes/apply.sh      defects in the shipped files, for every
 #                                      server, no switch
 #      ../../files/custom/apply.sh     the Custom Experience, when
@@ -55,6 +57,13 @@ PANEL_SRC="${PANEL_SRC:-$HERE/../../files}"
 # version as "unknown" -- which is the honest answer, but a useless one, so this
 # is staged rather than left to chance.
 REPO_ROOT="${REPO_ROOT:-$(cd "$HERE/../.." && pwd)}"
+PLAYERBOT_OVERLAY="$REPO_ROOT/linux-port/overlays/playerbot"
+PLAYERBOT_SRC="$PLAYERBOT_OVERLAY/src/game/src"
+PLAYERBOT_CORE_PATCH="$PLAYERBOT_OVERLAY/patches/0001-core-integration.patch"
+PLAYERBOT_ECONOMY_PATCH="$PLAYERBOT_OVERLAY/patches/0002-economy-yang-x5.patch"
+PLAYERBOT_SEED_GENERATOR="$PLAYERBOT_OVERLAY/tools/generate_seed.py"
+PLAYERBOT_SEED="$PLAYERBOT_OVERLAY/sql/playerbots_seed.sql"
+PLAYERBOT_MIGRATOR="$HERE/mariadb/playerbot/apply.sh"
 
 while [ $# -gt 0 ]; do
   case "$1" in
@@ -78,6 +87,22 @@ for p in "$PORT_SRC/server" "$PORT_SRC/extern" "$RUNTIME_SRC/share" "$DUMP_SRC" 
   [ -e "$p" ] || die "$p not found (use --m2port to point at the porting tree)"
 done
 [ -f "$PANEL_SRC/admin_panel.py" ] || die "$PANEL_SRC/admin_panel.py not found (use --panel)"
+command -v patch >/dev/null 2>&1 || die "GNU patch is needed to apply the Playerbot source overlay"
+command -v git >/dev/null 2>&1 || die "git is needed to fingerprint the Playerbot source overlay"
+command -v python3 >/dev/null 2>&1 || die "python3 is needed to verify the deterministic Playerbot seed"
+for p in \
+  "$PLAYERBOT_SRC/playerbot_manager.cpp" \
+  "$PLAYERBOT_SRC/playerbot_manager.h" \
+  "$PLAYERBOT_CORE_PATCH" \
+  "$PLAYERBOT_ECONOMY_PATCH" \
+  "$PLAYERBOT_SEED_GENERATOR" \
+  "$PLAYERBOT_SEED" \
+  "$PLAYERBOT_MIGRATOR"
+do
+  [ -s "$p" ] || die "Playerbot overlay input is missing or empty: $p"
+done
+python3 "$PLAYERBOT_SEED_GENERATOR" --check --output "$PLAYERBOT_SEED" \
+  || die "Playerbot SQL snapshot is stale; regenerate it with $PLAYERBOT_SEED_GENERATOR"
 
 GAME_CTX="$HERE/game/src"
 rm -rf "$GAME_CTX"
@@ -119,6 +144,53 @@ rm -rf "$GAME_CTX/server"/*/src/OBJDIR "$GAME_CTX/server"/*/src/.obj \
        "$GAME_CTX/server"/*/OBJDIR "$GAME_CTX/server"/*/.obj
 info "$(du -sh "$GAME_CTX/server" | cut -f1)"
 
+# The porting cache is deliberately pristine. Playerbot is a small, tracked
+# overlay applied only to the disposable build context, so a clean clone can
+# reproduce it without committing the complete generated source tree. The core
+# patch uses zero-context hunks so it never rewrites the legacy CP949 comments;
+# the dry-run and post-apply checks make application errors fatal.
+say "Playerbot server overlay"
+if ! (cd "$GAME_CTX/server" && \
+      patch --batch --forward --fuzz=0 -p1 --dry-run < "$PLAYERBOT_CORE_PATCH"); then
+  die "the Playerbot core integration patch does not apply cleanly to the staged port source"
+fi
+if ! (cd "$GAME_CTX/server" && \
+      patch --batch --forward --fuzz=0 -p1 --dry-run < "$PLAYERBOT_ECONOMY_PATCH"); then
+  die "the Playerbot economy patch does not apply cleanly to the staged port source"
+fi
+(cd "$GAME_CTX/server" && \
+  patch --batch --forward --fuzz=0 -p1 < "$PLAYERBOT_CORE_PATCH" && \
+  patch --batch --forward --fuzz=0 -p1 < "$PLAYERBOT_ECONOMY_PATCH") \
+  || die "the Playerbot source overlay could not be applied"
+
+cp -a "$PLAYERBOT_SRC/playerbot_manager.cpp" "$GAME_CTX/server/game/src/playerbot_manager.cpp"
+cp -a "$PLAYERBOT_SRC/playerbot_manager.h" "$GAME_CTX/server/game/src/playerbot_manager.h"
+chmod 0644 "$GAME_CTX/server/game/src/playerbot_manager.cpp" \
+           "$GAME_CTX/server/game/src/playerbot_manager.h"
+
+grep -q 'CPPFILE += playerbot_manager.cpp' "$GAME_CTX/server/game/src/Makefile" \
+  || die "Playerbot overlay validation failed: game Makefile has no manager source"
+grep -q 'HEADER_GD_BOT_PLAYER_LOAD' "$GAME_CTX/server/common/tables.h" \
+  || die "Playerbot overlay validation failed: DB protocol header is missing"
+grep -q 'CPlayerBotManager::instance().OnPlayerLoaded' "$GAME_CTX/server/game/src/input_db.cpp" \
+  || die "Playerbot overlay validation failed: player-load hook is missing"
+grep -q 'iGold \*= 5;' "$GAME_CTX/server/game/src/char_battle.cpp" \
+  || die "Playerbot overlay validation failed: economy adjustment is missing"
+cmp -s "$PLAYERBOT_SRC/playerbot_manager.cpp" "$GAME_CTX/server/game/src/playerbot_manager.cpp" \
+  || die "Playerbot overlay validation failed: manager source copy differs"
+cmp -s "$PLAYERBOT_SRC/playerbot_manager.h" "$GAME_CTX/server/game/src/playerbot_manager.h" \
+  || die "Playerbot overlay validation failed: manager header copy differs"
+
+{
+  printf 'core_patch=%s\n' "$(git hash-object "$PLAYERBOT_CORE_PATCH")"
+  printf 'economy_patch=%s\n' "$(git hash-object "$PLAYERBOT_ECONOMY_PATCH")"
+  printf 'manager_cpp=%s\n' "$(git hash-object "$PLAYERBOT_SRC/playerbot_manager.cpp")"
+  printf 'manager_h=%s\n' "$(git hash-object "$PLAYERBOT_SRC/playerbot_manager.h")"
+  printf 'seed_generator=%s\n' "$(git hash-object "$PLAYERBOT_SEED_GENERATOR")"
+  printf 'seed_sql=%s\n' "$(git hash-object "$PLAYERBOT_SEED")"
+} > "$GAME_CTX/.playerbot-overlay"
+info "core integration, manager sources and 5x Yang economy adjustment staged"
+
 # The regression that must be present. Checked here as well as in the
 # Dockerfile so that a bad context is caught before a 10-minute build.
 grep -q 'return fdwatch_sndbuf_left(fd);' "$GAME_CTX/server/libthecore/src/fdwatch.c" \
@@ -155,12 +227,23 @@ for d in account common player log hotbackup; do
   info "$d.sql  $(du -h "$DUMP_SRC/$d.sql" | cut -f1)"
 done
 
+# The generated copy lives beside Compose so installed stacks do not depend on
+# repository-relative paths. Its authoritative, reproducible snapshot remains
+# in overlays/playerbot/sql and is checked by generate_seed.py --check.
+mkdir -p "$HERE/mariadb/playerbot"
+cp -a "$PLAYERBOT_SEED" "$HERE/mariadb/playerbot/playerbots_seed.sql"
+chmod 0644 "$HERE/mariadb/playerbot/playerbots_seed.sql"
+cmp -s "$PLAYERBOT_SEED" "$HERE/mariadb/playerbot/playerbots_seed.sql" \
+  || die "Playerbot seed staging failed: copied SQL differs from the tracked snapshot"
+info "playerbots_seed.sql  $(du -h "$PLAYERBOT_SEED" | cut -f1)"
+
 # The MariaDB image's entrypoint runs an executable *.sh from initdb.d, but
 # merely *sources* a non-executable one -- which leaks this script's `set -e'
 # into the entrypoint's own shell. A checkout that lost the mode bit (a zip
 # round-trip, a Windows working copy) would take the second path silently, so
 # the bit is asserted here rather than assumed.
 chmod +x "$HERE/mariadb/initdb.d/"*.sh 2>/dev/null || true
+chmod +x "$PLAYERBOT_MIGRATOR" 2>/dev/null || true
 
 # Likewise for the scripts that go into the images. The Dockerfiles chmod them
 # as well; this keeps `bash prepare-context.sh && docker compose up' honest on

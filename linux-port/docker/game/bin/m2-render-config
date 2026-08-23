@@ -96,8 +96,13 @@ P2P_ALLOW_LINE="P2P_ALLOW_IP: 127.0.0.1 ${CONTAINER_IP}"
 # it look like a protocol bug rather than a load problem.  The shipped 3-core
 # split (~320/300/240 MB resident) is the tested layout.
 # -----------------------------------------------------------------------------
-MAPS_first="1 4 5 6 3 23 43 112 107 67 68 72 208 302 304"
-MAPS_game1="21 24 25 26 108 61 63 69 70 73 216 217 303"
+# Keep the complete Chunjo progression path (M1 -> M2 -> easy Monkey Dungeon)
+# on one core. Server-side playerbots have no real client process that could
+# reconnect after a cross-core HEADER_GC_WARP, so splitting map 23 from maps 21
+# and 25 would strand them at the portal. The total map count per core stays
+# balanced (14/14/13).
+MAPS_first="1 4 5 6 3 43 112 107 67 68 72 208 302 304"
+MAPS_game1="21 23 24 25 26 108 61 63 69 70 73 216 217 303"
 MAPS_game2="41 44 45 46 109 62 64 65 66 71 104 301 351"
 
 # -----------------------------------------------------------------------------

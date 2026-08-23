@@ -1,0 +1,462 @@
+diff --git a/common/tables.h b/common/tables.h
+index 6f7adac..fabbd45 100644
+--- a/common/tables.h
++++ b/common/tables.h
+@@ -157,0 +158 @@ enum
++	HEADER_GD_BOT_PLAYER_LOAD	= 141,
+@@ -721,0 +723,6 @@ typedef struct SPlayerLoadPacket
++typedef struct SBotPlayerLoadPacket
++{
++	DWORD	player_id;
++	BYTE	empire;
++} TBotPlayerLoadPacket;
++
+diff --git a/db/src/ClientManager.cpp b/db/src/ClientManager.cpp
+index ba89ed7..e82219c 100644
+--- a/db/src/ClientManager.cpp
++++ b/db/src/ClientManager.cpp
+@@ -2350,0 +2351,11 @@ void CClientManager::ProcessPackets(CPeer * peer)
++			case HEADER_GD_BOT_PLAYER_LOAD:
++				{
++					TBotPlayerLoadPacket * pBot = (TBotPlayerLoadPacket *) data;
++					TPlayerLoadPacket packet;
++					packet.account_id = 0;
++					packet.player_id = pBot->player_id;
++					packet.account_index = 0;
++					QUERY_PLAYER_LOAD(peer, dwHandle, &packet, true);
++				}
++				break;
++
+diff --git a/db/src/ClientManager.h b/db/src/ClientManager.h
+index a6d1a0e..e2324f6 100644
+--- a/db/src/ClientManager.h
++++ b/db/src/ClientManager.h
+@@ -63,0 +64 @@ class CClientManager : public CNetBase, public singleton<CClientManager>
++		bool is_bot;
+@@ -70,0 +72 @@ class CClientManager : public CNetBase, public singleton<CClientManager>
++			is_bot = false;
+@@ -73 +75 @@ class CClientManager : public CNetBase, public singleton<CClientManager>
+-		ClientHandleInfo(DWORD argHandle, DWORD dwPID, DWORD accountId)
++		ClientHandleInfo(DWORD argHandle, DWORD dwPID, DWORD accountId, bool argIsBot = false)
+@@ -79,0 +82 @@ class CClientManager : public CNetBase, public singleton<CClientManager>
++			is_bot = argIsBot;
+@@ -242 +245 @@ class CClientManager : public CNetBase, public singleton<CClientManager>
+-	void		QUERY_PLAYER_LOAD(CPeer * peer, DWORD dwHandle, TPlayerLoadPacket*);
++	void		QUERY_PLAYER_LOAD(CPeer * peer, DWORD dwHandle, TPlayerLoadPacket*, bool bIsBot = false);
+diff --git a/db/src/ClientManagerPlayer.cpp b/db/src/ClientManagerPlayer.cpp
+index a49d12e..baf2edd 100644
+--- a/db/src/ClientManagerPlayer.cpp
++++ b/db/src/ClientManagerPlayer.cpp
+@@ -208 +208 @@ void CClientManager::PutPlayerCache(TPlayerTable * pNew)
+-void CClientManager::QUERY_PLAYER_LOAD(CPeer * peer, DWORD dwHandle, TPlayerLoadPacket * packet)
++void CClientManager::QUERY_PLAYER_LOAD(CPeer * peer, DWORD dwHandle, TPlayerLoadPacket * packet, bool bIsBot)
+@@ -218 +218 @@ void CClientManager::QUERY_PLAYER_LOAD(CPeer * peer, DWORD dwHandle, TPlayerLoad
+-	if (pLoginData)
++	if (!bIsBot && pLoginData)
+@@ -235,3 +235,2 @@ void CClientManager::QUERY_PLAYER_LOAD(CPeer * peer, DWORD dwHandle, TPlayerLoad
+-		CLoginData * pkLD = GetLoginDataByAID(packet->account_id);
+-
+-		if (!pkLD || pkLD->IsPlay())
++		CLoginData * pkLD = NULL;
++		if (!bIsBot)
+@@ -239,3 +238,7 @@ void CClientManager::QUERY_PLAYER_LOAD(CPeer * peer, DWORD dwHandle, TPlayerLoad
+-			sys_log(0, "PLAYER_LOAD_ERROR: LoginData %p IsPlay %d", pkLD, pkLD ? pkLD->IsPlay() : 0);
+-			peer->EncodeHeader(HEADER_DG_PLAYER_LOAD_FAILED, dwHandle, 0); 
+-			return;
++			pkLD = GetLoginDataByAID(packet->account_id);
++			if (!pkLD || pkLD->IsPlay())
++			{
++				sys_log(0, "PLAYER_LOAD_ERROR: LoginData %p IsPlay %d", pkLD, pkLD ? pkLD->IsPlay() : 0);
++				peer->EncodeHeader(HEADER_DG_PLAYER_LOAD_FAILED, dwHandle, 0);
++				return;
++			}
+@@ -246,3 +249,8 @@ void CClientManager::QUERY_PLAYER_LOAD(CPeer * peer, DWORD dwHandle, TPlayerLoad
+-		pkLD->SetPlay(true);
+-		SendLoginToBilling(pkLD, true);
+-		thecore_memcpy(pTab->aiPremiumTimes, pkLD->GetPremiumPtr(), sizeof(pTab->aiPremiumTimes));
++		if (bIsBot)
++			memset(pTab->aiPremiumTimes, 0, sizeof(pTab->aiPremiumTimes));
++		else
++		{
++			pkLD->SetPlay(true);
++			SendLoginToBilling(pkLD, true);
++			thecore_memcpy(pTab->aiPremiumTimes, pkLD->GetPremiumPtr(), sizeof(pTab->aiPremiumTimes));
++		}
+@@ -253 +261 @@ void CClientManager::QUERY_PLAYER_LOAD(CPeer * peer, DWORD dwHandle, TPlayerLoad
+-		if (packet->player_id != pkLD->GetLastPlayerID())
++		if (!bIsBot && packet->player_id != pkLD->GetLastPlayerID())
+@@ -310 +318 @@ void CClientManager::QUERY_PLAYER_LOAD(CPeer * peer, DWORD dwHandle, TPlayerLoad
+-			CDBManager::instance().ReturnQuery(szQuery, QID_QUEST, peer->GetHandle(), new ClientHandleInfo(dwHandle,0,packet->account_id));
++			CDBManager::instance().ReturnQuery(szQuery, QID_QUEST, peer->GetHandle(), new ClientHandleInfo(dwHandle, pTab->id, packet->account_id, bIsBot));
+@@ -339 +347 @@ void CClientManager::QUERY_PLAYER_LOAD(CPeer * peer, DWORD dwHandle, TPlayerLoad
+-					new ClientHandleInfo(dwHandle, pTab->id));
++					new ClientHandleInfo(dwHandle, pTab->id, packet->account_id, bIsBot));
+@@ -373,2 +381 @@ void CClientManager::QUERY_PLAYER_LOAD(CPeer * peer, DWORD dwHandle, TPlayerLoad
+-		ClientHandleInfo * pkInfo = new ClientHandleInfo(dwHandle, packet->player_id);
+-		pkInfo->account_id = packet->account_id;
++		ClientHandleInfo * pkInfo = new ClientHandleInfo(dwHandle, packet->player_id, packet->account_id, bIsBot);
+@@ -384 +391 @@ void CClientManager::QUERY_PLAYER_LOAD(CPeer * peer, DWORD dwHandle, TPlayerLoad
+-		CDBManager::instance().ReturnQuery(queryStr, QID_ITEM, peer->GetHandle(), new ClientHandleInfo(dwHandle, packet->player_id));
++		CDBManager::instance().ReturnQuery(queryStr, QID_ITEM, peer->GetHandle(), new ClientHandleInfo(dwHandle, packet->player_id, 0, bIsBot));
+@@ -392 +399 @@ void CClientManager::QUERY_PLAYER_LOAD(CPeer * peer, DWORD dwHandle, TPlayerLoad
+-		CDBManager::instance().ReturnQuery(queryStr, QID_QUEST, peer->GetHandle(), new ClientHandleInfo(dwHandle, packet->player_id,packet->account_id));
++		CDBManager::instance().ReturnQuery(queryStr, QID_QUEST, peer->GetHandle(), new ClientHandleInfo(dwHandle, packet->player_id, packet->account_id, bIsBot));
+@@ -400 +407 @@ void CClientManager::QUERY_PLAYER_LOAD(CPeer * peer, DWORD dwHandle, TPlayerLoad
+-		CDBManager::instance().ReturnQuery(queryStr, QID_AFFECT, peer->GetHandle(), new ClientHandleInfo(dwHandle, packet->player_id));
++		CDBManager::instance().ReturnQuery(queryStr, QID_AFFECT, peer->GetHandle(), new ClientHandleInfo(dwHandle, packet->player_id, 0, bIsBot));
+@@ -596,2 +603 @@ void CClientManager::RESULT_COMPOSITE_PLAYER(CPeer * peer, SQLMsg * pMsg, DWORD
+-				ClientHandleInfo*  temp1 = info.get();
+-				if (temp1 == NULL)
++				if (info->is_bot)
+@@ -600 +606 @@ void CClientManager::RESULT_COMPOSITE_PLAYER(CPeer * peer, SQLMsg * pMsg, DWORD
+-				CLoginData* pLoginData1 = GetLoginDataByAID(temp1->account_id);	//				
++				CLoginData* pLoginData1 = GetLoginDataByAID(info->account_id);
+@@ -602,3 +608 @@ void CClientManager::RESULT_COMPOSITE_PLAYER(CPeer * peer, SQLMsg * pMsg, DWORD
+-				if( pLoginData1->GetAccountRef().login == NULL)
+-					break;
+-				if( pLoginData1 == NULL )
++				if (!pLoginData1 || !pLoginData1->GetAccountRef().login[0])
+@@ -660,0 +665,8 @@ void CClientManager::RESULT_PLAYER_LOAD(CPeer * peer, MYSQL_RES * pRes, ClientHa
++	if (pkInfo->is_bot)
++	{
++		memset(tab.aiPremiumTimes, 0, sizeof(tab.aiPremiumTimes));
++		peer->EncodeHeader(HEADER_DG_PLAYER_LOAD_SUCCESS, pkInfo->dwHandle, sizeof(TPlayerTable));
++		peer->Encode(&tab, sizeof(TPlayerTable));
++		return;
++	}
++
+diff --git a/game/src/cmd_gm.cpp b/game/src/cmd_gm.cpp
+index 7c2569f..4ada727 100644
+--- a/game/src/cmd_gm.cpp
++++ b/game/src/cmd_gm.cpp
+@@ -38,0 +39 @@
++#include "playerbot_manager.h"
+@@ -84,0 +86,154 @@ void Command_ApplyAffect(LPCHARACTER ch, const char* argument, const char* affec
++ACMD(do_playerbot_spawn)
++{
++	char arg1[256], arg2[256];
++	two_arguments(argument, arg1, sizeof(arg1), arg2, sizeof(arg2));
++
++	if (!*arg1 || !*arg2)
++	{
++		ch->ChatPacket(CHAT_TYPE_INFO, "Usage: bot_spawn <player_id> <empire: 1-3>");
++		return;
++	}
++
++	DWORD dwPlayerID = 0;
++	int iEmpire = 0;
++	str_to_number(dwPlayerID, arg1);
++	str_to_number(iEmpire, arg2);
++
++	if (dwPlayerID == 0 || iEmpire <= 0 || iEmpire >= EMPIRE_MAX_NUM)
++	{
++		ch->ChatPacket(CHAT_TYPE_INFO, "Invalid player id or empire (use 1, 2 or 3).");
++		return;
++	}
++
++	if (!CPlayerBotManager::instance().Spawn(dwPlayerID, static_cast<BYTE>(iEmpire)))
++	{
++		ch->ChatPacket(CHAT_TYPE_INFO, "Cannot spawn playerbot %u (already active or invalid).", dwPlayerID);
++		return;
++	}
++
++	ch->ChatPacket(CHAT_TYPE_INFO, "Playerbot %u load requested. Active/pending: %u",
++			dwPlayerID, static_cast<unsigned int>(CPlayerBotManager::instance().GetCount()));
++}
++
++ACMD(do_playerbot_despawn)
++{
++	char arg1[256];
++	one_argument(argument, arg1, sizeof(arg1));
++
++	if (!*arg1)
++	{
++		ch->ChatPacket(CHAT_TYPE_INFO, "Usage: bot_despawn <player_id>");
++		return;
++	}
++
++	DWORD dwPlayerID = 0;
++	str_to_number(dwPlayerID, arg1);
++
++	if (!CPlayerBotManager::instance().Despawn(dwPlayerID))
++	{
++		ch->ChatPacket(CHAT_TYPE_INFO, "Playerbot %u is not active.", dwPlayerID);
++		return;
++	}
++
++	ch->ChatPacket(CHAT_TYPE_INFO, "Playerbot %u despawned. Active/pending: %u",
++			dwPlayerID, static_cast<unsigned int>(CPlayerBotManager::instance().GetCount()));
++}
++
++ACMD(do_playerbot_spawn_many)
++{
++	char arg1[256], arg2[256], arg3[256];
++	one_argument(two_arguments(argument, arg1, sizeof(arg1), arg2, sizeof(arg2)), arg3, sizeof(arg3));
++
++	DWORD dwFirstPlayerID = 0;
++	int iCount = 0;
++	int iEmpire = 0;
++	str_to_number(dwFirstPlayerID, arg1);
++	str_to_number(iCount, arg2);
++	str_to_number(iEmpire, arg3);
++
++	if (dwFirstPlayerID == 0 || iCount <= 0 || iCount > 500 || iEmpire <= 0 || iEmpire >= EMPIRE_MAX_NUM)
++	{
++		ch->ChatPacket(CHAT_TYPE_INFO, "Usage: bot_spawn_many <first_player_id> <count: 1-500> <empire: 1-3>");
++		return;
++	}
++
++	int iStarted = 0;
++	for (int i = 0; i < iCount; ++i)
++		if (CPlayerBotManager::instance().Spawn(dwFirstPlayerID + i, static_cast<BYTE>(iEmpire)))
++			++iStarted;
++
++	ch->ChatPacket(CHAT_TYPE_INFO, "Playerbot range %u-%u: requested %d, started %d, active/pending %u.",
++			dwFirstPlayerID, dwFirstPlayerID + iCount - 1, iCount, iStarted,
++			static_cast<unsigned int>(CPlayerBotManager::instance().GetCount()));
++}
++
++ACMD(do_playerbot_despawn_many)
++{
++	char arg1[256], arg2[256];
++	two_arguments(argument, arg1, sizeof(arg1), arg2, sizeof(arg2));
++
++	DWORD dwFirstPlayerID = 0;
++	int iCount = 0;
++	str_to_number(dwFirstPlayerID, arg1);
++	str_to_number(iCount, arg2);
++
++	if (dwFirstPlayerID == 0 || iCount <= 0 || iCount > 500)
++	{
++		ch->ChatPacket(CHAT_TYPE_INFO, "Usage: bot_despawn_many <first_player_id> <count: 1-500>");
++		return;
++	}
++
++	int iStopped = 0;
++	for (int i = 0; i < iCount; ++i)
++		if (CPlayerBotManager::instance().Despawn(dwFirstPlayerID + i))
++			++iStopped;
++
++	ch->ChatPacket(CHAT_TYPE_INFO, "Playerbot range %u-%u: requested %d, stopped %d, active/pending %u.",
++			dwFirstPlayerID, dwFirstPlayerID + iCount - 1, iCount, iStopped,
++			static_cast<unsigned int>(CPlayerBotManager::instance().GetCount()));
++}
++
++ACMD(do_playerbot_rank)
++{
++	struct TBotRankEntry
++	{
++		DWORD pid;
++		std::string name;
++		BYTE level;
++		long x;
++		long y;
++		bool inPT;
++
++		bool operator < (const TBotRankEntry& other) const
++		{
++			return level > other.level;
++		}
++	};
++
++	std::vector<TBotRankEntry> ranks;
++	for (DWORD pid = 4; pid <= 500; ++pid)
++	{
++		LPCHARACTER bot = CHARACTER_MANAGER::instance().FindByPID(pid);
++		if (bot && CPlayerBotManager::instance().IsManaged(pid))
++		{
++			TBotRankEntry e;
++			e.pid = pid;
++			e.name = bot->GetName();
++			e.level = bot->GetLevel();
++			e.x = bot->GetX();
++			e.y = bot->GetY();
++			e.inPT = (bot->GetParty() != NULL);
++			ranks.push_back(e);
++		}
++	}
++
++	std::sort(ranks.begin(), ranks.end());
++
++	ch->ChatPacket(CHAT_TYPE_INFO, "=== TOP 10 ACTIVE PLAYERBOTS (Total Active: %u) ===", static_cast<unsigned int>(ranks.size()));
++	for (size_t i = 0; i < std::min((size_t)10, ranks.size()); ++i)
++	{
++		ch->ChatPacket(CHAT_TYPE_INFO, "#%u %s (Lv %u) - Pos: (%ld, %ld) %s",
++				static_cast<unsigned int>(i + 1), ranks[i].name.c_str(), ranks[i].level, ranks[i].x, ranks[i].y, ranks[i].inPT ? "[PT]" : "[Solo]");
++	}
++}
++
+diff --git a/game/src/cmd.cpp b/game/src/cmd.cpp
+index 3eef280..8ea7e9a 100644
+--- a/game/src/cmd.cpp
++++ b/game/src/cmd.cpp
+@@ -277,0 +278,5 @@ ACMD (do_clear_affect);
++ACMD (do_playerbot_spawn);
++ACMD (do_playerbot_despawn);
++ACMD (do_playerbot_spawn_many);
++ACMD (do_playerbot_despawn_many);
++ACMD (do_playerbot_rank);
+@@ -297,0 +303,5 @@ struct command_info cmd_info[] =
++	{ "bot_spawn",	do_playerbot_spawn,	0,			POS_DEAD,	GM_IMPLEMENTOR	},
++	{ "bot_despawn",	do_playerbot_despawn,	0,			POS_DEAD,	GM_IMPLEMENTOR	},
++	{ "bot_spawn_many", do_playerbot_spawn_many, 0,		POS_DEAD,	GM_IMPLEMENTOR	},
++	{ "bot_despawn_many", do_playerbot_despawn_many, 0,		POS_DEAD,	GM_IMPLEMENTOR	},
++	{ "bot_rank",	do_playerbot_rank,	0,			POS_DEAD,	GM_PLAYER	},
+diff --git a/game/src/desc_manager.cpp b/game/src/desc_manager.cpp
+index 1cb1c00..3faaf7b 100644
+--- a/game/src/desc_manager.cpp
++++ b/game/src/desc_manager.cpp
+@@ -15,0 +16 @@
++#include "playerbot_manager.h"
+@@ -227,0 +229,18 @@ LPDESC DESC_MANAGER::AcceptP2PDesc(LPFDWATCH fdw, socket_t bind_fd)
++LPDESC DESC_MANAGER::CreateBotDesc(BYTE bEmpire)
++{
++	LPDESC newd = M2_NEW DESC;
++
++	if (!newd->SetupBot(++m_iHandleCount, bEmpire))
++	{
++		M2_DELETE(newd);
++		return NULL;
++	}
++
++	m_map_handle.insert(DESC_HANDLE_MAP::value_type(newd->GetHandle(), newd));
++	m_set_pkDesc.insert(newd);
++
++	sys_log(0, "SYSTEM: new playerbot descriptor handle=%u empire=%u",
++			newd->GetHandle(), bEmpire);
++	return newd;
++}
++
+@@ -241,0 +261,3 @@ void DESC_MANAGER::DestroyDesc(LPDESC d, bool bEraseFromSet)
++	const bool bIsBot = d->IsBot();
++	CPlayerBotManager::instance().OnDescriptorDestroyed(d);
++
+@@ -257 +279,3 @@ void DESC_MANAGER::DestroyDesc(LPDESC d, bool bEraseFromSet)
+-	--m_iSocketsConnected;
++
++	if (!bIsBot)
++		--m_iSocketsConnected;
+diff --git a/game/src/desc_manager.h b/game/src/desc_manager.h
+index ef5c834..8505e41 100644
+--- a/game/src/desc_manager.h
++++ b/game/src/desc_manager.h
+@@ -32,0 +33 @@ class DESC_MANAGER : public singleton<DESC_MANAGER>
++		LPDESC			CreateBotDesc(BYTE bEmpire);
+diff --git a/game/src/desc.cpp b/game/src/desc.cpp
+index 0479290..2b74aff 100644
+--- a/game/src/desc.cpp
++++ b/game/src/desc.cpp
+@@ -37,0 +38 @@ void DESC::Initialize()
++	m_bBot = false;
+@@ -280,0 +282,15 @@ bool DESC::Setup(LPFDWATCH _fdw, socket_t _fd, const struct sockaddr_in & c_rSoc
++bool DESC::SetupBot(DWORD _handle, BYTE bEmpire)
++{
++	m_bBot = true;
++	m_dwHandle = _handle;
++	m_stHost = "playerbot";
++	m_accountTable.bEmpire = bEmpire;
++
++	m_SockAddr.sin_family = AF_INET;
++	m_SockAddr.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
++	m_SockAddr.sin_port = 0;
++
++	SetPhase(PHASE_LOGIN);
++	return true;
++}
++
+@@ -421,0 +438,3 @@ void DESC::BufferedPacket(const void * c_pvData, int iSize)
++	if (m_bBot)
++		return;
++
+@@ -432,0 +452,3 @@ void DESC::Packet(const void * c_pvData, int iSize)
++	if (m_bBot)
++		return;
++
+@@ -533,0 +556,3 @@ void DESC::LargePacket(const void * c_pvData, int iSize)
++	if (m_bBot)
++		return;
++
+diff --git a/game/src/desc.h b/game/src/desc.h
+index ca0bb5c..7b8deab 100644
+--- a/game/src/desc.h
++++ b/game/src/desc.h
+@@ -81,0 +82 @@ class DESC
++		bool			SetupBot(DWORD _handle, BYTE bEmpire);
+@@ -83,0 +85 @@ class DESC
++		bool			IsBot() const		{ return m_bBot; }
+@@ -261,0 +264 @@ class DESC
++		bool			m_bBot;
+diff --git a/game/src/input_db.cpp b/game/src/input_db.cpp
+index 237f41d..316ecf2 100644
+--- a/game/src/input_db.cpp
++++ b/game/src/input_db.cpp
+@@ -30,0 +31,3 @@
++#include "playerbot_manager.h"
++
++#include <cstdlib>
+@@ -494 +497,2 @@ void CInputDB::PlayerLoad(LPDESC d, const char * data)
+-	ch->QuerySafeboxSize();
++	if (!d->IsBot())
++		ch->QuerySafeboxSize();
+@@ -507,0 +512,3 @@ void CInputDB::PlayerLoad(LPDESC d, const char * data)
++	if (d->IsBot())
++		CPlayerBotManager::instance().OnPlayerLoaded(d);
++
+@@ -1355,0 +1363,22 @@ void CInputDB::MapLocations(const char * c_pData)
++
++	// MapLocations is the first point at which map 21 is known to this core.
++	// Spawn the initial descriptors here; OnPlayerLoaded then starts the regular
++	// manager update event.  Keeping this in Update() creates a startup deadlock,
++	// because there is no update event before the first bot has been loaded.
++	if (map_allow_find(21) && CPlayerBotManager::instance().GetCount() == 0)
++	{
++		int autoSpawnCount = 350;
++		const char* configuredCount = std::getenv("PLAYERBOT_AUTOSPAWN_COUNT");
++		if (configuredCount && *configuredCount)
++			autoSpawnCount = std::atoi(configuredCount);
++		if (autoSpawnCount < 0)
++			autoSpawnCount = 0;
++		else if (autoSpawnCount > 350)
++			autoSpawnCount = 350;
++
++		for (DWORD pid = 4; pid < 4 + (DWORD)autoSpawnCount; ++pid)
++			CPlayerBotManager::instance().Spawn(pid, 2);
++
++		sys_log(0, "PLAYERBOT: autospawned %d bots in Chunjo on startup", autoSpawnCount);
++	}
++
+@@ -2219 +2248,3 @@ int CInputDB::Analyze(LPDESC d, BYTE bHeader, const char * c_pData)
+-		//sys_log(0, "PLAYER_LOAD_FAILED");
++		if (DESC_MANAGER::instance().FindByHandle(m_dwHandle) &&
++				DESC_MANAGER::instance().FindByHandle(m_dwHandle)->IsBot())
++			CPlayerBotManager::instance().OnLoadFailed(m_dwHandle);
+@@ -2736 +2767 @@ void CInputDB::RespondChannelStatus(LPDESC desc, const char* pcData)
+-}
+\ No newline at end of file
++}
+diff --git a/game/src/input_login.cpp b/game/src/input_login.cpp
+index 9adbe24..c4ac530 100644
+--- a/game/src/input_login.cpp
++++ b/game/src/input_login.cpp
+@@ -607 +607,2 @@ void CInputLogin::Entergame(LPDESC d, const char * data)
+-	ch->StartCheckSpeedHackEvent();
++	if (!d->IsBot())
++		ch->StartCheckSpeedHackEvent();
+@@ -646 +647 @@ void CInputLogin::Entergame(LPDESC d, const char * data)
+-	if (LC_IsEurope())
++	if (!d->IsBot() && LC_IsEurope())
+diff --git a/game/src/input.h b/game/src/input.h
+index 0372a8e..8adfb56 100644
+--- a/game/src/input.h
++++ b/game/src/input.h
+@@ -75,0 +76,2 @@ class CInputLogin : public CInputProcessor
++		void		Entergame(LPDESC d, const char * data);
++
+@@ -87 +88,0 @@ class CInputLogin : public CInputProcessor
+-		void		Entergame(LPDESC d, const char * data);
+diff --git a/game/src/Makefile b/game/src/Makefile
+index 4c34463..ea4df53 100644
+--- a/game/src/Makefile
++++ b/game/src/Makefile
+@@ -155,0 +156 @@ CPPFILE = BattleArena.cpp FSM.cpp MarkConvert.cpp MarkImage.cpp MarkManager.cpp
++CPPFILE += playerbot_manager.cpp

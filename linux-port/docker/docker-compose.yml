@@ -82,6 +82,46 @@ services:
     networks: [backend]
 
   # ---------------------------------------------------------------------------
+  # One-shot, additive Playerbot seed. It runs on both first install and update,
+  # but the SQL never rewrites an existing bot's progress. Any foreign PID/name
+  # mapping fails here, before a game core is allowed to start.
+  # ---------------------------------------------------------------------------
+  playerbot-migrate:
+    image: mariadb:10.11
+    container_name: metin2-playerbot-migrate
+    restart: "no"
+
+    depends_on:
+      mariadb:
+        condition: service_healthy
+
+    environment:
+      M2_DB_HOST: mariadb
+      M2_DB_PORT: "3306"
+      M2_DB_USER: "${M2_DB_USER:-metin2}"
+      M2_DB_PASSWORD: "${M2_DB_PASSWORD:?set M2_DB_PASSWORD in .env}"
+      # 0 preserves an older/non-canonical cohort without changing it. CI and
+      # deliberate migrations can choose 1 to fail the stack on any collision.
+      PLAYERBOT_SEED_STRICT: "${PLAYERBOT_SEED_STRICT:-0}"
+
+    entrypoint: ["/bin/sh", "/opt/playerbot/apply.sh"]
+
+    volumes:
+      - ./mariadb/playerbot:/opt/playerbot:ro
+
+    read_only: true
+    tmpfs:
+      - /tmp
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+
+    # No ports and no expose: only the migrator makes an outbound connection
+    # to MariaDB on the private Compose network.
+    networks: [backend]
+
+  # ---------------------------------------------------------------------------
   # The game cores.
   # ---------------------------------------------------------------------------
   game:
@@ -108,6 +148,8 @@ services:
     depends_on:
       mariadb:
         condition: service_healthy
+      playerbot-migrate:
+        condition: service_completed_successfully
 
     environment:
       M2_DB_HOST: mariadb
@@ -129,14 +171,18 @@ services:
       M2_ADMINPAGE_PASSWORD: "${M2_ADMINPAGE_PASSWORD:-}"
       M2_CORE_DUMPS: "${M2_CORE_DUMPS:-0}"
 
+      # Single authoritative startup switch (implemented by the bot manager).
+      # Keep the existing 350-bot world by default; lower this in .env for tests.
+      PLAYERBOT_AUTOSPAWN_COUNT: "${PLAYERBOT_AUTOSPAWN_COUNT:-350}"
+
       TZ: "${M2_TZ:-UTC}"
 
     ports:
       # auth -- the login server. Every client contacts this first.
-      - "${M2_AUTH_PORT:-11000}:11000/tcp"
+      - "${M2_HOST_BIND_ADDRESS:-0.0.0.0}:${M2_AUTH_PORT:-11000}:11000/tcp"
       # The channel cores. A range because channel N occupies 13000+10*(N-1)
       # through +2; raise it when you raise M2_CHANNELS (see .env.example).
-      - "${M2_GAME_PORT_RANGE:-13000-13002}:${M2_GAME_PORT_RANGE:-13000-13002}/tcp"
+      - "${M2_HOST_BIND_ADDRESS:-0.0.0.0}:${M2_GAME_PORT_RANGE:-13000-13002}:${M2_GAME_PORT_RANGE:-13000-13002}/tcp"
       #
       # NOT published, and must never be:
       #   12000, 14000-14002   p2p between cores
@@ -185,6 +231,8 @@ services:
     depends_on:
       mariadb:
         condition: service_healthy
+      playerbot-migrate:
+        condition: service_completed_successfully
 
     environment:
       M2_DB_HOST: mariadb
@@ -316,7 +364,7 @@ services:
       TZ: "${M2_TZ:-UTC}"
 
     ports:
-      - "${M2_PANEL_PUBLIC_PORT:-7788}:7788/tcp"
+      - "${M2_HOST_BIND_ADDRESS:-0.0.0.0}:${M2_PANEL_PUBLIC_PORT:-7788}:7788/tcp"
 
     volumes:
       # m2panel.conf: the admin password hash, per-install salt and Flask
@@ -327,6 +375,8 @@ services:
       # per-IP download quota). client.zip is ~1.2 GB and is uploaded by the
       # operator, not shipped in the image.
       - panel-data:/usr/local/m2panel
+      # Read-only access to server logs for live bot inspection
+      - game-var:/opt/metin2/var:ro
       # The other end of the rate spool. Same volume, same path as in the game
       # container, so a request written here is the file read over there.
       - rates-spool:/opt/m2spool
@@ -508,12 +558,15 @@ services:
       # nothing on a real server, and Docker answers a missing bind source by
       # creating an empty DIRECTORY, so the fetcher would start with a directory
       # where its script should be. The installer copies both files in.
-      - ./fetch-web-client.sh:/opt/fetch-web-client.sh:ro
-      - ./artifacts.json:/opt/artifacts.json:ro
+      # In a source checkout these live above docker/. The Windows installer
+      # flattens them into its generated stack, but this development stack does
+      # not, so mount the canonical repository copies directly.
+      - ../fetch-web-client.sh:/opt/fetch-web-client.sh:ro
+      - ../../artifacts.json:/opt/artifacts.json:ro
       # Downloads survive a failed run, so a cut connection resumes instead of
       # starting the 1.75 GB again. Shared with client-builder on purpose --
       # both are "large archives fetched once".
-      - client-cache:/var/cache/m2client
+      - client-cache:/var/cache/m2webclient
 
     command: ["sh", "/opt/fetch-web-client.sh", "install", "--target", "/out/browser"]
 

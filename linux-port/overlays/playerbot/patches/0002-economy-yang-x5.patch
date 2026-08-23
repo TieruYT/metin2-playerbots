@@ -1,0 +1,10 @@
+diff --git a/game/src/char_battle.cpp b/game/src/char_battle.cpp
+index 9d9cfe0..869600f 100644
+--- a/game/src/char_battle.cpp
++++ b/game/src/char_battle.cpp
+@@ -688,4 +688,5 @@ void CHARACTER::RewardGold(LPCHARACTER pkAttacker)
+ 		iGold = iGold * CHARACTER_MANAGER::instance().GetMobGoldAmountRate(pkAttacker) / 100;
+ 		iGold *= iGoldMultipler;
++		iGold *= 5; // 5x Yang Drop Multiplier for bot economy & blacksmith upgrades
+ 
+ 		int iSplitCount;

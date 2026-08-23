@@ -17,6 +17,139 @@ from flask.sessions import SecureCookieSessionInterface
 from markupsafe import escape, Markup
 import pymysql
 
+# The game stores quest states as numeric indices. 557528158 is the engine's
+# stable index for the generated ``__complete`` state (the same value is used
+# by every compiled quest). Keeping the canonical mission order here lets the
+# panel describe the exact same progression that playerbot_manager.cpp runs.
+BIOLOGIST_COMPLETE_STATE = 557528158
+BIOLOGIST_MISSIONS = (
+    ("make_herb_lv4", 4, "Kwiat Brzoskwini", 5),
+    ("make_herb_lv7", 7, "Pokrzywa", 5),
+    ("make_herb_lv10", 10, "Kwiat Kaki", 5),
+    ("make_herb_lv15", 15, "Korzeń Gango", 5),
+    ("make_herb_lv20", 20, "Bez", 10),
+    ("make_herb_lv25", 25, "Grzyb Tue", 10),
+)
+
+# The official ``special.levelup_quest`` choices for the M1/M2 stage.  The
+# game server writes progress to quest ``levelup``; the panel only interprets
+# those canonical flags and never maintains a second counter.
+HUNTING_MISSIONS = {
+    2: ((171, "Hungry Stray Dog", 10), (172, "Hungry Wolf", 5)),
+    3: ((171, "Hungry Stray Dog", 20), (172, "Hungry Wolf", 10)),
+    4: ((172, "Hungry Wolf", 15), (173, "Hungry Alpha Wolf", 5)),
+    5: ((173, "Hungry Alpha Wolf", 10), (174, "Hungry Blue Wolf", 10)),
+    6: ((174, "Hungry Blue Wolf", 20), (178, "Hungry Wild Boar", 10)),
+    7: ((178, "Hungry Wild Boar", 10), (175, "Hungry Alpha Blue Wolf", 5)),
+    8: ((178, "Hungry Wild Boar", 20), (175, "Hungry Alpha Blue Wolf", 10)),
+    9: ((175, "Hungry Alpha Blue Wolf", 15), (179, "Hungry Red Boar", 5)),
+    10: ((175, "Hungry Alpha Blue Wolf", 20), (179, "Hungry Red Boar", 10)),
+    11: ((179, "Hungry Red Boar", 10), (180, "Hungry Bear", 5)),
+    12: ((180, "Hungry Bear", 15), (176, "Hungry Grey Wolf", 10)),
+    13: ((176, "Hungry Grey Wolf", 20), (181, "Hungry Grizzly", 5)),
+    14: ((181, "Hungry Grizzly", 15), (177, "Hungry Alpha Grey Wolf", 5)),
+    15: ((181, "Hungry Grizzly", 20), (177, "Hungry Alpha Grey Wolf", 10)),
+    16: ((177, "Hungry Alpha Grey Wolf", 15), (184, "Hungry Tiger", 5)),
+    17: ((177, "Hungry Alpha Grey Wolf", 20), (184, "Hungry Tiger", 10)),
+    18: ((184, "Hungry Tiger", 10), (182, "Hungry Black Bear", 10)),
+    19: ((182, "Hungry Black Bear", 20), (183, "Hungry Brown Bear", 10)),
+    20: ((183, "Hungry Brown Bear", 20), (352, "Craven White Oath Archer", 15)),
+    21: ((352, "Craven White Oath Archer", 20), (185, "Hungry White Tiger", 10)),
+    22: ((185, "Hungry White Tiger", 25), (354, "Craven White Oath Commander", 10)),
+    23: ((354, "Craven White Oath Commander", 20), (451, "Evil Black Storm Soldier", 40)),
+    24: ((451, "Evil Black Storm Soldier", 60), (402, "Black Wind Maniac", 80)),
+    25: ((551, "Strong Savage Infantry", 80), (454, "Evil Black Storm Joh-Hwan", 20)),
+}
+
+def hunting_progress_label(current, selection, remain, complete):
+    current, selection = int(current or 0), 2 if int(selection or 1) == 2 else 1
+    remain, complete = max(0, int(remain or 0)), max(0, int(complete or 0))
+    mission = HUNTING_MISSIONS.get(current)
+    if mission:
+        _vnum, mob_name, required = mission[selection - 1]
+        done = max(0, required - remain)
+        return "Lv %d • %s: %d/%d" % (current, mob_name, done, required)
+    if complete:
+        return "Ukończone do Lv %d" % complete
+    return "Jeszcze nierozpoczęte"
+
+# Party membership is intentionally restricted by the game core to this
+# deterministic ten-percent cohort.  Runtime parties are not persisted in the
+# database, so the live map exposes eligibility consistently with the server
+# instead of the old, purely decorative ``pid % 3`` estimate.
+BOT_PARTY_MODULO = 10
+BOT_PARTY_REMAINDER = 3
+
+
+def bot_in_party_cohort(pid):
+    return int(pid or 0) % BOT_PARTY_MODULO == BOT_PARTY_REMAINDER
+
+
+SKILL_GROUP_NAMES = {
+    (0, 1): "BODY", (0, 2): "MENTAL",
+    (1, 1): "Sztylety", (1, 2): "Łucznik",
+    (2, 1): "Magia Broni", (2, 2): "Czarna Magia",
+    (3, 1): "Smok", (3, 2): "Leczenie",
+}
+
+PLAYER_SKILLS = {
+    (0, 1): ((1, "Trzystronne Cięcie"), (2, "Wir Miecza"),
+             (3, "Berserk"), (4, "Aura Miecza"), (5, "Szarża")),
+    (0, 2): ((16, "Duchowe Uderzenie"), (17, "Tąpnięcie"),
+             (18, "Uderzenie Miecza"), (19, "Silne Ciało"), (20, "Walnięcie")),
+    (1, 1): ((31, "Zasadzka"), (32, "Szybki Atak"),
+             (33, "Wirujący Sztylet"), (34, "Krycie się"), (35, "Trująca Chmura")),
+    (1, 2): ((46, "Powtarzalny Strzał"), (47, "Deszcz Strzał"),
+             (48, "Ognista Strzała"), (49, "Bezszelestny Chód"), (50, "Trująca Strzała")),
+    (2, 1): ((61, "Uderzenie Palcem"), (62, "Smoczy Wir"),
+             (63, "Czarowane Ostrze"), (64, "Strach"),
+             (65, "Czarowana Zbroja"), (66, "Rozproszenie Magii")),
+    (2, 2): ((76, "Mroczne Uderzenie"), (77, "Ogniste Uderzenie"),
+             (78, "Ognisty Duch"), (79, "Mroczna Ochrona"),
+             (80, "Duchowy Cios"), (81, "Mroczna Sfera")),
+    (3, 1): ((91, "Latający Talizman"), (92, "Strzelający Smok"),
+             (93, "Smoczy Skowyt"), (94, "Błogosławieństwo"),
+             (95, "Odbicie"), (96, "Pomoc Smoka")),
+    (3, 2): ((106, "Błyskawiczny Rzut"), (107, "Przywołanie Błyskawicy"),
+             (108, "Burzowy Szpon"), (109, "Leczenie"),
+             (110, "Zwinność"), (111, "Zwiększenie Ataku")),
+}
+
+
+def skill_rank_label(master_type, level):
+    master_type, level = int(master_type or 0), int(level or 0)
+    if master_type >= 3 or level >= 40:
+        return "P"
+    if master_type == 2 or level >= 30:
+        return "G%d" % max(1, level - 29)
+    if master_type == 1 or level >= 20:
+        return "M%d" % max(1, level - 19)
+    return str(level)
+
+
+def parse_player_skills(raw, job, skill_group):
+    """Decode r40250's packed TPlayerSkill[255] (master, level, next-read)."""
+    if isinstance(raw, memoryview):
+        raw = raw.tobytes()
+    elif isinstance(raw, str):
+        raw = raw.encode("latin-1", "ignore")
+    raw = raw or b""
+    base_job = int(job or 0) % 4
+    group = int(skill_group or 0)
+    result = []
+    for vnum, name in PLAYER_SKILLS.get((base_job, group), ()):
+        offset = vnum * 6
+        master_type = raw[offset] if offset < len(raw) else 0
+        level = raw[offset + 1] if offset + 1 < len(raw) else 0
+        result.append({
+            "vnum": vnum,
+            "name": name,
+            "level": level,
+            "master_type": master_type,
+            "rank": skill_rank_label(master_type, level),
+        })
+    return result
+
 # ---- where everything lives -------------------------------------------------
 # The panel was written for a FreeBSD box where install.sh puts its files in
 # /usr/local/m2panel and its config in /usr/local/etc. Those are still the
@@ -2134,7 +2267,7 @@ def csrf_protect():
     # takes no authority at all: it is unauthenticated, it changes nothing a
     # user owns, and the worst a forged request achieves is one junk file, of
     # which the rate limit permits six per address per hour.
-    if request.endpoint == "crash_report":
+    if request.endpoint in ("crash_report", "api_admin_warp_me"):
         return
     sent = request.form.get("_csrf", "")
     real = session.get("_csrf", "")
@@ -2722,7 +2855,7 @@ pre.cmd{padding:12px;border:1px solid var(--line);background:#131007;color:#cdc5
 {# The title is the way home, as it is on every other site. Worth having even
    where a logout link exists: from a player page it is one click instead of
    two, and on a local install it is the only route back. #}
-<div class="top"><h1 title="{{t('about_goal')}}"><a href="{{url_for('login')}}"><img src="/favicon.ico" alt="">{{brand}}</a></h1>
+<div class="top"><h1 title="{{t('about_goal')}}"><a href="{{url_for('login')}}"><img src="/favicon.ico" alt="">{{brand}}</a> <a href="{{url_for('live_map')}}" style="font-size:14px;margin-left:14px;color:#e9b64b;text-decoration:none;font-weight:700;padding:3px 10px;background:rgba(233,182,75,0.12);border:1px solid rgba(233,182,75,0.3);border-radius:6px">🗺️ Live Map</a></h1>
 <div>
 <span style="font-size:13px" title="{{t('tip_lang')}}">
 {% for code, name in langs.items() %}<a href="{{url_for('setlang', code=code)}}" title="{{name}}" style="margin:0 3px;{{'font-weight:700;text-decoration:underline' if code==curlang else 'opacity:.7'}}">{{code|upper}}</a>{% endfor %}
@@ -3374,6 +3507,1212 @@ function m2rates(e,d,y){
 
 # every state apply_rates.sh can leave behind has a sentence of its own
 RATE_STATES = ("running", "ok", "unsupported", "failed", "no_restart")
+
+
+TPL_LIVE_MAP = BASE.replace("__BODY__", """
+<div style="max-width:1240px;margin:0 auto">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:10px">
+    <div>
+      <h2 style="margin:0;color:var(--gold2);display:flex;align-items:center;gap:10px;font-size:22px">
+        🗺️ Live World Map — Chunjo (Joan, m1)
+        <span class="badge" style="font-size:12px;background:rgba(46,204,113,0.15);color:#2ecc71;border:1px solid #2ecc71;padding:3px 8px">
+          <span class="dot on"></span> LIVE (1.5s)
+        </span>
+      </h2>
+      <p class="muted" style="margin:4px 0 0;font-size:13px">Interaktywny podgląd pozycji botów w czasie rzeczywistym</p>
+    </div>
+    <div style="display:flex;gap:8px">
+      <a href="{{url_for('dash')}}" class="btn">← Panel Graczy</a>
+      {% if browser_ready %}<a href="{{play_url}}" target="_blank" class="btn" style="background:#27ae60">🎮 Graj w Przeglądarce</a>{% endif %}
+    </div>
+  </div>
+
+  <!-- Controls Toolbar -->
+  <div class="card" style="margin-bottom:14px;padding:12px 16px">
+    <div style="display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px">
+      <!-- Checkboxes -->
+      <div style="display:flex;flex-wrap:wrap;align-items:center;gap:18px">
+        <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-weight:600;font-size:13px">
+          <input type="checkbox" id="toggleBots" checked onchange="renderMap()"> 🤖 Pokaż boty
+        </label>
+        <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-weight:600;font-size:13px">
+          <input type="checkbox" id="toggleLabels" checked onchange="renderMap()"> 🏷️ Nicki i Poziomy
+        </label>
+        <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-weight:600;font-size:13px">
+          <input type="checkbox" id="togglePT" onchange="renderMap()"> 👥 Tylko w grupie (PT)
+        </label>
+      </div>
+
+      <!-- Level Filter -->
+      <div style="display:flex;align-items:center;gap:6px">
+        <span class="muted" style="font-size:13px">Poziom:</span>
+        <div style="display:flex;gap:4px" id="lvlFilterGroup">
+          <button type="button" class="btn lvl-btn active" style="padding:4px 8px;font-size:12px" onclick="setLevelFilter('all', this)">Wszystkie</button>
+          <button type="button" class="btn lvl-btn" style="padding:4px 8px;font-size:12px" onclick="setLevelFilter('1-5', this)">1-5</button>
+          <button type="button" class="btn lvl-btn" style="padding:4px 8px;font-size:12px" onclick="setLevelFilter('6-10', this)">6-10</button>
+          <button type="button" class="btn lvl-btn" style="padding:4px 8px;font-size:12px" onclick="setLevelFilter('11-15', this)">11-15</button>
+          <button type="button" class="btn lvl-btn" style="padding:4px 8px;font-size:12px" onclick="setLevelFilter('16+', this)">16+</button>
+        </div>
+      </div>
+
+      <!-- Search Box -->
+      <div>
+        <input type="text" id="searchInput" placeholder="🔍 Szukaj bota (np. botarek)..." 
+               style="padding:6px 12px;font-size:13px;border-radius:6px;background:#15120a;border:1px solid #3d3522;color:#fff;width:200px"
+               oninput="renderMap()">
+      </div>
+    </div>
+  </div>
+
+  <!-- Map and Sidebar Layout -->
+  <div style="display:grid;grid-template-columns:1fr 340px;gap:16px;align-items:start">
+    
+    <!-- Map Container -->
+    <div class="card" style="padding:8px;position:relative;background:#0a0805;border:2px solid #3d3522;border-radius:10px">
+      <div id="mapViewport" style="position:relative;width:100%;height:680px;background:#0e0c08 radial-gradient(circle at center, #18130a 0%, #070604 100%);border-radius:6px;overflow:hidden;box-shadow:inset 0 0 30px rgba(0,0,0,0.95);border:1px solid #2e2617">
+        <!-- Markers layer -->
+        <div id="markersLayer" style="position:absolute;inset:0"></div>
+        <!-- Tooltip -->
+        <div id="mapTooltip" style="display:none;position:absolute;z-index:200;background:rgba(18,15,10,0.96);border:1px solid var(--gold);padding:10px 14px;border-radius:8px;box-shadow:0 8px 24px rgba(0,0,0,0.85);pointer-events:none;min-width:200px;font-size:12px;color:#fff;backdrop-filter:blur(6px)">
+        </div>
+      </div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-top:8px;padding:0 6px;font-size:12px;color:var(--muted)">
+        <div style="display:flex;gap:12px;align-items:center">
+          <span><b style="color:#2ecc71">●</b> Solo Bot</span>
+          <span><b style="color:#a855f7">●</b> W grupie (PT)</span>
+          <span><b style="color:#eab308">●</b> Walka z Metinem</span>
+        </div>
+        <div id="visibleCountBadge" style="font-weight:700;color:var(--gold2)">Ładowanie...</div>
+      </div>
+    </div>
+
+    <!-- Sidebar Stats & Leaderboard -->
+    <div style="display:flex;flex-direction:column;gap:14px">
+      <div class="card" style="padding:14px">
+        <h4 style="margin:0 0 10px;color:var(--gold2)">📊 Statystyki Świata</h4>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;text-align:center">
+          <div style="background:#17130c;padding:8px;border-radius:6px;border:1px solid #2e2617">
+            <div style="font-size:22px;font-weight:700;color:var(--gold)" id="statTotalBots">0</div>
+            <div style="font-size:11px;color:var(--muted)">Aktywne Boty</div>
+          </div>
+          <div style="background:#17130c;padding:8px;border-radius:6px;border:1px solid #2e2617">
+            <div style="font-size:22px;font-weight:700;color:#a855f7" id="statInParty">0</div>
+            <div style="font-size:11px;color:var(--muted)">W Grupach (PT)</div>
+          </div>
+          <div style="background:#17130c;padding:8px;border-radius:6px;border:1px solid #2e2617">
+            <div style="font-size:22px;font-weight:700;color:#2ecc71" id="statAvgLevel">0</div>
+            <div style="font-size:11px;color:var(--muted)">Średni Poziom</div>
+          </div>
+          <div style="background:#17130c;padding:8px;border-radius:6px;border:1px solid #2e2617">
+            <div style="font-size:22px;font-weight:700;color:#e67e22" id="statMaxLevel">0</div>
+            <div style="font-size:11px;color:var(--muted)">Max Poziom</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card" style="padding:14px">
+        <h4 style="margin:0 0 10px;color:var(--gold2)">🏆 Rankingi Botów</h4>
+        <div style="display:flex;gap:4px;margin-bottom:10px;flex-wrap:wrap">
+          <button type="button" class="btn btn-sm rank-tab active" onclick="setRankCategory('level', this)" style="font-size:11px;padding:3px 6px">⭐ Poziom</button>
+          <button type="button" class="btn btn-sm rank-tab" onclick="setRankCategory('gold', this)" style="font-size:11px;padding:3px 6px">💰 Yang</button>
+          <button type="button" class="btn btn-sm rank-tab" onclick="setRankCategory('weapon', this)" style="font-size:11px;padding:3px 6px">🗡️ Broń</button>
+          <button type="button" class="btn btn-sm rank-tab" onclick="setRankCategory('armor', this)" style="font-size:11px;padding:3px 6px">🛡️ Zbroja</button>
+          <button type="button" class="btn btn-sm rank-tab" onclick="setRankCategory('items', this)" style="font-size:11px;padding:3px 6px">🎒 Przedmioty</button>
+          <button type="button" class="btn btn-sm rank-tab" onclick="setRankCategory('horse', this)" style="font-size:11px;padding:3px 6px">🐴 Koń</button>
+          <button type="button" class="btn btn-sm rank-tab" onclick="setRankCategory('biologist', this)" style="font-size:11px;padding:3px 6px">🌿 Biolog</button>
+          <button type="button" class="btn btn-sm rank-tab" onclick="setRankCategory('hunting', this)" style="font-size:11px;padding:3px 6px">🎯 Polowanie</button>
+        </div>
+        <div style="max-height:410px;overflow-y:auto" id="topBotsList">
+          <p class="muted" style="font-size:12px;text-align:center">Ładowanie rankingu...</p>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<style>
+.lvl-btn.active, .rank-tab.active { background: var(--gold) !important; color: #000 !important; font-weight: 700; }
+.bot-marker {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  cursor: pointer;
+  transition: left 0.8s ease-out, top 0.8s ease-out;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  z-index: 10;
+}
+.bot-marker:hover { z-index: 150; }
+.bot-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  box-shadow: 0 0 8px rgba(0,0,0,0.8);
+  border: 1.5px solid #fff;
+  transition: transform 0.2s;
+}
+.bot-dot.player {
+  width: 14px;
+  height: 14px;
+  background: #ef4444;
+  border-color: #ffd700;
+  box-shadow: 0 0 12px #ef4444;
+  animation: pulse 1.5s infinite;
+}
+.bot-dot.pt { background: #a855f7; box-shadow: 0 0 8px #a855f7; }
+.bot-dot.solo { background: #2ecc71; box-shadow: 0 0 6px #2ecc71; }
+.bot-dot.metin { background: #eab308; box-shadow: 0 0 10px #eab308; }
+.bot-label {
+  font-size: 9px;
+  font-weight: 700;
+  color: #fff;
+  background: rgba(0,0,0,0.75);
+  padding: 1px 4px;
+  border-radius: 3px;
+  white-space: nowrap;
+  margin-top: 2px;
+  border: 1px solid rgba(255,255,255,0.2);
+  pointer-events: none;
+}
+@keyframes pulse {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.35); }
+  100% { transform: scale(1); }
+}
+.rank-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 6px 8px;
+  border-radius: 6px;
+  margin-bottom: 4px;
+  background: #14110a;
+  border: 1px solid #231d10;
+  font-size: 12px;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+}
+.rank-row:hover { background: #241e12; border-color: var(--gold); }
+
+/* Modal Styles */
+.modal-overlay {
+  display: none;
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0,0,0,0.85);
+  backdrop-filter: blur(4px);
+  z-index: 9999;
+  justify-content: center;
+  align-items: center;
+}
+.modal-box {
+  background: #14110a;
+  border: 2px solid var(--gold);
+  box-shadow: 0 0 30px rgba(0,0,0,0.9), 0 0 15px rgba(212,175,55,0.3);
+  border-radius: 10px;
+  width: 90%;
+  max-width: 820px;
+  max-height: 88vh;
+  overflow-y: auto;
+  padding: 20px;
+  color: #e5e5e5;
+  position: relative;
+}
+.eq-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+  margin-top: 10px;
+}
+.eq-slot {
+  background: #1e1910;
+  border: 1px solid #3d3119;
+  border-radius: 6px;
+  padding: 8px 6px;
+  text-align: center;
+  font-size: 11px;
+}
+.eq-slot.filled {
+  border-color: var(--gold2);
+  background: #282012;
+}
+.eq-slot-icon { font-size: 18px; margin-bottom: 2px; }
+.eq-slot-name { font-weight: 700; color: #ffd700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.inv-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+  gap: 6px;
+  max-height: 180px;
+  overflow-y: auto;
+  margin-top: 8px;
+  padding-right: 4px;
+}
+.inv-item {
+  background: #1a150e;
+  border: 1px solid #332814;
+  border-radius: 4px;
+  padding: 5px;
+  font-size: 11px;
+}
+.bot-build-grid {
+  display: grid;
+  grid-template-columns: minmax(250px, 0.8fr) minmax(340px, 1.2fr);
+  gap: 10px;
+  margin: 12px 0 14px;
+}
+.bot-build-panel {
+  background: #1a150e;
+  border: 1px solid #332814;
+  border-radius: 6px;
+  padding: 9px;
+}
+.stat-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+  margin-top: 7px;
+}
+.stat-box {
+  background: #11100b;
+  border: 1px solid #3d3119;
+  border-radius: 5px;
+  padding: 7px 4px;
+  text-align: center;
+}
+.skill-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 8px;
+  padding: 4px 6px;
+  margin-top: 4px;
+  background: #11100b;
+  border-radius: 4px;
+  font-size: 11px;
+}
+@media (max-width: 720px) {
+  .bot-build-grid { grid-template-columns: 1fr; }
+}
+.modal-close-btn {
+  position: absolute;
+  top: 12px;
+  right: 14px;
+  background: none;
+  border: none;
+  color: #aaa;
+  font-size: 20px;
+  cursor: pointer;
+}
+.modal-close-btn:hover { color: #fff; }
+</style>
+
+<!-- Bot Detail & Inventory Modal -->
+<div id="botModal" class="modal-overlay" onclick="if(event.target===this)closeBotModal()">
+  <div class="modal-box">
+    <button class="modal-close-btn" onclick="closeBotModal()">&times;</button>
+    <div id="botModalContent">
+      <p class="muted" style="text-align:center">Ładowanie ekwipunku postaci...</p>
+    </div>
+  </div>
+</div>
+
+<script>
+var g_bots = [];
+var g_selectedLevel = 'all';
+var g_selectedRankCategory = 'level';
+var g_rankData = [];
+var g_highlightedId = null;
+
+function setLevelFilter(lvl, btn) {
+  g_selectedLevel = lvl;
+  document.querySelectorAll('.lvl-btn').forEach(function(b){ b.classList.remove('active'); });
+  btn.classList.add('active');
+  renderMap();
+}
+
+function setRankCategory(cat, btn) {
+  g_selectedRankCategory = cat;
+  document.querySelectorAll('.rank-tab').forEach(function(b){ b.classList.remove('active'); });
+  btn.classList.add('active');
+  fetchRankings();
+}
+
+function fetchBotPositions() {
+  fetch('/api/bot_positions')
+    .then(function(res) { return res.json(); })
+    .then(function(data) {
+      if (data && data.ok) {
+        g_bots = data.bots;
+        renderMap();
+        updateStats();
+      }
+    })
+    .catch(function(err) { console.error('Map fetch error:', err); });
+}
+
+function fetchRankings() {
+  fetch('/api/bot_rankings?type=' + g_selectedRankCategory)
+    .then(function(res) { return res.json(); })
+    .then(function(data) {
+      if (data && data.ok) {
+        g_rankData = data.rankings || [];
+        renderRankings();
+      }
+    })
+    .catch(function(err) { console.error('Ranking fetch error:', err); });
+}
+
+function updateStats() {
+  var total = g_bots.length;
+  var inPt = 0;
+  var sumLvl = 0;
+  var maxLvl = 1;
+
+  g_bots.forEach(function(b) {
+    if (b.in_pt) inPt++;
+    sumLvl += b.level;
+    if (b.level > maxLvl) maxLvl = b.level;
+  });
+
+  document.getElementById('statTotalBots').innerText = total;
+  document.getElementById('statInParty').innerText = inPt;
+  document.getElementById('statAvgLevel').innerText = total > 0 ? (sumLvl / total).toFixed(1) : 0;
+  document.getElementById('statMaxLevel').innerText = maxLvl;
+
+  if (g_rankData.length === 0) {
+    fetchRankings();
+  }
+}
+
+function renderRankings() {
+  var listEl = document.getElementById('topBotsList');
+  if (!listEl) return;
+  if (!g_rankData || g_rankData.length === 0) {
+    listEl.innerHTML = '<p class="muted" style="font-size:12px;text-align:center">Brak danych rankingu.</p>';
+    return;
+  }
+
+  var rankHtml = '';
+  g_rankData.forEach(function(b, idx) {
+    var ptBadge = b.in_pt ? '<span style="color:#a855f7;font-weight:700">[PT]</span> ' : '';
+    var detailStr = '';
+    if (g_selectedRankCategory === 'gold') {
+      detailStr = '<span style="color:#eab308;font-weight:700">' + (b.gold || 0).toLocaleString() + ' Yang</span>';
+    } else if (g_selectedRankCategory === 'weapon') {
+      detailStr = '<span style="color:#38bdf8;font-weight:700">' + (b.weapon_name || 'Brak') + '</span>';
+    } else if (g_selectedRankCategory === 'armor') {
+      detailStr = '<span style="color:#2ecc71;font-weight:700">' + (b.armor_name || 'Brak') + '</span>';
+    } else if (g_selectedRankCategory === 'items') {
+      detailStr = '<span style="color:#f59e0b;font-weight:700">' + (b.item_count || 0) + ' przedm.</span>';
+    } else if (g_selectedRankCategory === 'horse') {
+      detailStr = '<span style="color:#c084fc;font-weight:700">Koń Lv ' + (b.horse_level || 0) + '</span>';
+    } else if (g_selectedRankCategory === 'biologist') {
+      detailStr = '<span style="color:#4ade80;font-weight:700">' + (b.biologist_label || '0/6') + '</span>';
+    } else if (g_selectedRankCategory === 'hunting') {
+      detailStr = '<span style="color:#fb923c;font-weight:700">' + (b.hunting_label || 'Brak') + '</span>';
+    } else {
+      detailStr = '<span style="color:var(--gold);font-weight:700">Lv ' + b.level + '</span>';
+    }
+
+    rankHtml += '<div class="rank-row" onclick="openBotModal(' + b.id + ')">' +
+                '<div><b>#' + (idx+1) + '</b> ' + ptBadge + '<b>' + b.name + '</b> <span class="muted">(' + b.job + ')</span></div>' +
+                '<div style="text-align:right">' + detailStr + ' <span style="font-size:10px;color:#888">🔍</span></div>' +
+                '</div>';
+  });
+  listEl.innerHTML = rankHtml;
+}
+
+function highlightBot(pid) {
+  g_highlightedId = pid;
+  renderMap();
+  var marker = document.getElementById('marker_' + pid);
+  if (marker) {
+    marker.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    showTooltip(pid);
+  }
+}
+
+function renderMap() {
+  var layer = document.getElementById('markersLayer');
+  if (!layer) return;
+
+  var showBots = document.getElementById('toggleBots').checked;
+  var showLabels = document.getElementById('toggleLabels').checked;
+  var showPTOnly = document.getElementById('togglePT').checked;
+  var searchStr = document.getElementById('searchInput').value.toLowerCase().trim();
+
+  var html = '';
+  var visibleCount = 0;
+
+  g_bots.forEach(function(b) {
+    var isBot = b.is_bot;
+    if (isBot && !showBots) return;
+    if (showPTOnly && !b.in_pt) return;
+
+    if (g_selectedLevel === '1-5' && (b.level < 1 || b.level > 5)) return;
+    if (g_selectedLevel === '6-10' && (b.level < 6 || b.level > 10)) return;
+    if (g_selectedLevel === '11-15' && (b.level < 11 || b.level > 15)) return;
+    if (g_selectedLevel === '16+' && b.level < 16) return;
+
+    if (searchStr && b.name.toLowerCase().indexOf(searchStr) === -1) return;
+
+    visibleCount++;
+
+    var dotClass = b.in_pt ? 'pt' : 'solo';
+    var isHighlighted = (b.id === g_highlightedId);
+    var transformStyle = isHighlighted ? 'transform:translate(-50%, -50%) scale(1.6);z-index:180;' : '';
+    var pxVal = b.px !== undefined ? b.px : b.percent_x;
+    var pyVal = b.py !== undefined ? b.py : b.percent_y;
+
+    html += '<div id="marker_' + b.id + '" class="bot-marker" style="left:' + pxVal + '%;top:' + pyVal + '%;' + transformStyle + '"' +
+            ' onmouseenter="showTooltip(' + b.id + ', event)" onmouseleave="hideTooltip()"' +
+            ' onclick="openBotModal(' + b.id + ')">' +
+            '<div class="bot-dot ' + dotClass + '"></div>';
+
+    if (showLabels || isHighlighted) {
+      html += '<div class="bot-label">' + b.name + ' (' + b.level + ')</div>';
+    }
+
+    html += '</div>';
+  });
+
+  layer.innerHTML = html;
+  document.getElementById('visibleCountBadge').innerText = 'Widocznych: ' + visibleCount + ' postaci';
+}
+
+function showTooltip(pid, ev) {
+  var bot = g_bots.find(function(x) { return x.id === pid; });
+  if (!bot) return;
+
+  var tt = document.getElementById('mapTooltip');
+  if (!tt) return;
+
+  var ptStr = bot.in_pt ? '<span style="color:#a855f7;font-weight:700">W Grupie [PT]</span>' : '<span style="color:#2ecc71">Solo</span>';
+  var statusBadge = bot.is_player ? '<span style="color:#ef4444;font-weight:700">👑 GRACZ</span>' : '🤖 Bot';
+  var actionStr = bot.action || (bot.in_pt ? '⚔️ [PT] Expienie w grupie' : '⚔️ Solo Expienie');
+
+  tt.innerHTML = '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">' +
+                 '<b style="font-size:14px;color:var(--gold2)">' + bot.name + '</b> ' + statusBadge + '</div>' +
+                 '<div style="color:#ddd;margin-bottom:4px"><b>Klasa:</b> ' + bot.job + ' &nbsp;|&nbsp; <b>Poziom:</b> ' + bot.level + '</div>' +
+                 '<div style="color:#ffd700;margin-bottom:4px"><b>Akcja:</b> ' + actionStr + '</div>' +
+                 '<div style="color:#ddd;margin-bottom:4px"><b>Status:</b> ' + ptStr + '</div>' +
+                 '<div style="color:#aaa;margin-bottom:4px"><b>Koordynaty:</b> (' + bot.x + ', ' + bot.y + ')</div>' +
+                 '<div style="color:#eab308;margin-bottom:4px"><b>Yang:</b> ' + (bot.gold || 0).toLocaleString() + '</div>' +
+                 '<div style="color:#38bdf8;font-size:10px;font-weight:700;margin-top:4px">👉 Kliknij, aby otworzyć Ekwipunek i EQ</div>';
+
+  var pxVal = bot.px !== undefined ? bot.px : (bot.percent_x || 50);
+  var pyVal = bot.py !== undefined ? bot.py : (bot.percent_y || 50);
+  tt.style.display = 'block';
+  tt.style.left = Math.min(pxVal + 2, 75) + '%';
+  tt.style.top = Math.min(pyVal + 2, 80) + '%';
+}
+
+function hideTooltip() {
+  var tt = document.getElementById('mapTooltip');
+  if (tt) tt.style.display = 'none';
+}
+
+function openBotModal(pid) {
+  var modal = document.getElementById('botModal');
+  var content = document.getElementById('botModalContent');
+  modal.style.display = 'flex';
+  content.innerHTML = '<p class="muted" style="text-align:center;padding:20px">Ładowanie ekwipunku i statystyk postaci #' + pid + '...</p>';
+
+  fetch('/api/bot_inventory/' + pid)
+    .then(function(res) { return res.json(); })
+    .then(function(data) {
+      if (!data || !data.ok) {
+        content.innerHTML = '<p style="color:#ef4444;text-align:center">Błąd: ' + (data.error || 'Nie znaleziono danych') + '</p>';
+        return;
+      }
+
+      var p = data.player;
+      var eq = data.equipment || {};
+      var inv = data.inventory || [];
+      var stats = p.stats || {};
+      var skills = p.skills || [];
+      var isBot = p.name.startsWith('bot');
+      var typeBadge = isBot ? '<span style="background:#2ecc71;color:#000;padding:2px 6px;border-radius:4px;font-size:11px;font-weight:700">BOT</span>'
+                            : '<span style="background:#ef4444;color:#fff;padding:2px 6px;border-radius:4px;font-size:11px;font-weight:700">GRACZ</span>';
+
+      var html = '<div style="display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #332814;padding-bottom:10px;margin-bottom:12px">' +
+                 '<div><h3 style="margin:0;color:var(--gold2);font-size:18px">' + p.name + ' <span style="font-size:13px;color:#aaa">Lv ' + p.level + ' ' + p.job_name + '</span></h3></div>' +
+                 '<div>' + typeBadge + '</div>' +
+                 '</div>';
+
+      // GM Teleport bar
+      var wx = Math.floor(p.x / 100);
+      var wy = Math.floor(p.y / 100);
+      html += '<div style="margin-bottom:12px">' +
+              '<button type="button" class="btn btn-sm" onclick="warpMeToBot(' + p.x + ',' + p.y + ')" style="width:100%;margin-bottom:8px;background:#16a34a;color:#fff;font-weight:700;padding:8px 12px;border:none;border-radius:6px;cursor:pointer;font-size:13px;box-shadow:0 0 10px rgba(22,163,74,0.5)">' +
+              '⚡ Teleportuj moją postać w grze (1-klik)' +
+              '</button>' +
+              '<div style="display:flex;gap:8px">' +
+              '<button type="button" class="btn btn-sm" onclick="copyWarp(' + wx + ',' + wy + ')" style="flex:1;background:#2563eb;color:#fff;font-weight:700;padding:6px;border:none;border-radius:4px;cursor:pointer;font-size:12px">' +
+              '📋 /warp ' + wx + ' ' + wy +
+              '</button>' +
+              '<button type="button" class="btn btn-sm" onclick="copyWarp(' + p.x + ',' + p.y + ')" style="background:#374151;color:#fff;font-weight:700;padding:6px 12px;border:none;border-radius:4px;cursor:pointer;font-size:12px">' +
+              '🌐 /warp ' + p.x + ' ' + p.y +
+              '</button>' +
+              '</div>' +
+              '</div>';
+
+      html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px;font-size:12px;background:#1a150e;padding:10px;border-radius:6px">' +
+              '<div><b>HP:</b> <span style="color:#ef4444">' + (p.hp || 0) + '</span> / <b>MP:</b> <span style="color:#38bdf8">' + (p.mp || 0) + '</span></div>' +
+              '<div><b>Yang:</b> <span style="color:#eab308;font-weight:700">' + (p.gold || 0).toLocaleString() + '</span></div>' +
+              '<div><b>Pozycja:</b> (' + p.x + ', ' + p.y + ')</div>' +
+              '<div><b>Akcja:</b> <span style="color:#ffd700">' + (p.in_pt ? '[PT] Expienie w grupie' : 'Solo Expienie') + '</span></div>' +
+              '<div><b>Koń:</b> <span style="color:#c084fc;font-weight:700">Lv ' + (p.horse_level || 0) + '</span></div>' +
+              '<div><b>Biolog:</b> <span style="color:#4ade80;font-weight:700">' + (p.biologist_completed || 0) + '/6</span></div>' +
+              '<div style="grid-column:1 / -1"><b>Etap Biologa:</b> <span style="color:#86efac">' + (p.biologist_label || 'Brak danych') + '</span></div>' +
+              '<div style="grid-column:1 / -1"><b>Polowanie:</b> <span style="color:#fb923c">' + (p.hunting_label || 'Brak danych') + '</span></div>' +
+              '</div>';
+
+      // Character build: allocated attributes and the exact packed server skills.
+      html += '<div class="bot-build-grid">' +
+              '<div class="bot-build-panel">' +
+              '<h4 style="margin:0;color:var(--gold)">📊 Statystyki</h4>' +
+              '<div class="stat-grid">';
+      ['STR', 'VIT', 'DEX', 'INT'].forEach(function(key) {
+        html += '<div class="stat-box"><div style="font-size:10px;color:var(--muted)">' + key + '</div>' +
+                '<div style="font-size:17px;font-weight:700;color:#f8fafc">' + (stats[key] || 0) + '</div></div>';
+      });
+      html += '</div><div class="muted" style="font-size:10px;margin-top:7px">Nierozdane: ' +
+              (p.stat_point || 0) + ' pkt statystyk</div></div>' +
+              '<div class="bot-build-panel">' +
+              '<div style="display:flex;justify-content:space-between;gap:8px;align-items:center">' +
+              '<h4 style="margin:0;color:var(--gold)">✨ Skille</h4>' +
+              '<span style="font-size:11px;color:#38bdf8;font-weight:700">' +
+              (p.profession_name || 'Nie wybrano') + '</span></div>';
+      if (skills.length === 0) {
+        html += '<div class="muted" style="font-size:11px;margin-top:8px">Profesja nie została jeszcze wybrana.</div>';
+      } else {
+        skills.forEach(function(skill) {
+          var rankColor = skill.rank === '0' ? '#71717a' :
+                          (skill.rank.charAt(0) === 'P' ? '#f472b6' :
+                          (skill.rank.charAt(0) === 'G' ? '#c084fc' :
+                          (skill.rank.charAt(0) === 'M' ? '#38bdf8' : '#f8fafc')));
+          html += '<div class="skill-row"><span>' + skill.name + '</span>' +
+                  '<b style="color:' + rankColor + '">' + skill.rank + '</b></div>';
+        });
+      }
+      html += '<div class="muted" style="font-size:10px;margin-top:7px">Nierozdane: ' +
+              (p.skill_point || 0) + ' pkt skilli</div></div></div>';
+
+      // Equipment Slots (8 core slots)
+      html += '<h4 style="margin:0 0 4px;color:var(--gold)">🛡️ Założony Ekwipunek (EQ)</h4>';
+      html += '<div class="eq-grid">';
+
+      var slots = [
+        { key: 'weapon', name: 'Broń', icon: '🗡️' },
+        { key: 'body', name: 'Zbroja', icon: '🛡️' },
+        { key: 'head', name: 'Hełm', icon: '🪖' },
+        { key: 'shield', name: 'Tarcza', icon: '🛡️' },
+        { key: 'wrist', name: 'Bransoleta', icon: '💍' },
+        { key: 'foots', name: 'Buty', icon: '🥾' },
+        { key: 'neck', name: 'Naszyjnik', icon: '📿' },
+        { key: 'ear', name: 'Kolczyki', icon: '👂' }
+      ];
+
+      slots.forEach(function(s) {
+        var it = eq[s.key];
+        if (it) {
+          html += '<div class="eq-slot filled">' +
+                  '<div class="eq-slot-icon">' + s.icon + '</div>' +
+                  '<div class="muted" style="font-size:10px">' + s.name + '</div>' +
+                  '<div class="eq-slot-name" title="' + it.name + '">' + it.name + '</div>' +
+                  '</div>';
+        } else {
+          html += '<div class="eq-slot">' +
+                  '<div class="eq-slot-icon" style="opacity:0.3">' + s.icon + '</div>' +
+                  '<div class="muted" style="font-size:10px">' + s.name + '</div>' +
+                  '<div class="muted" style="font-size:10px">Puste</div>' +
+                  '</div>';
+        }
+      });
+      html += '</div>';
+
+      // Inventory Items
+      html += '<h4 style="margin:14px 0 4px;color:var(--gold)">🎒 Zawartość Ekwipunku (' + inv.length + ' przedmiotów)</h4>';
+      if (inv.length === 0) {
+        html += '<p class="muted" style="font-size:12px;text-align:center;padding:10px">Ekwipunek jest pusty.</p>';
+      } else {
+        html += '<div class="inv-grid">';
+        inv.forEach(function(it) {
+          var countStr = it.count > 1 ? ' <span style="color:#38bdf8;font-weight:700">x' + it.count + '</span>' : '';
+          html += '<div class="inv-item">' +
+                  '<div style="color:#ffd700;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="' + it.name + '">' + it.name + '</div>' +
+                  '<div class="muted" style="font-size:10px">Ilość:' + countStr + '</div>' +
+                  '</div>';
+        });
+        html += '</div>';
+      }
+
+      // Live Bot Logs section
+      html += '<div style="margin-top:16px;border-top:1px solid #332814;padding-top:12px">' +
+              '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">' +
+              '<h4 style="margin:0;color:var(--gold);font-size:13px">📜 Dziennik Zdarzeń Bota (Logi Live)</h4>' +
+              '<div style="display:flex;gap:10px;align-items:center">' +
+              '<label style="font-size:11px;display:flex;align-items:center;gap:4px;cursor:pointer;color:#38bdf8">' +
+              '<input type="checkbox" id="chkAutoLog" checked onchange="toggleLogTracking()"> 🔄 Śledź na żywo' +
+              '</label>' +
+              '<button type="button" onclick="copyBotLogs()" style="padding:2px 8px;font-size:11px;background:#334155;color:#fff;border:none;border-radius:4px;cursor:pointer">📋 Kopiuj logi</button>' +
+              '</div>' +
+              '</div>' +
+              '<div id="botLogsConsole" style="background:#09090b;border:1px solid #27272a;border-radius:6px;padding:8px;max-height:160px;overflow-y:auto;font-family:monospace;font-size:10px;color:#a1a1aa;line-height:1.4">' +
+              'Ładowanie logów postaci ' + p.name + '...' +
+              '</div>' +
+              '</div>';
+
+      content.innerHTML = html;
+      startLogTracking(p.name);
+    })
+    .catch(function(err) {
+      content.innerHTML = '<p style="color:#ef4444;text-align:center">Błąd sieci: ' + err + '</p>';
+    });
+}
+
+var g_activeLogBot = null;
+var g_logInterval = null;
+var g_collectedLogs = [];
+var g_seenLogsSet = {};
+
+function fetchBotLogs(botName) {
+  var consoleEl = document.getElementById('botLogsConsole');
+  if (!consoleEl) return;
+
+  fetch('/api/bot_logs/' + encodeURIComponent(botName))
+    .then(function(res) { return res.json(); })
+    .then(function(data) {
+      if (!consoleEl) return;
+      if (data && data.ok && data.logs && data.logs.length > 0) {
+        var addedNew = false;
+        data.logs.forEach(function(line) {
+          if (!g_seenLogsSet[line]) {
+            g_seenLogsSet[line] = true;
+            g_collectedLogs.push(line);
+            addedNew = true;
+          }
+        });
+
+        if (g_collectedLogs.length > 1000) {
+          g_collectedLogs = g_collectedLogs.slice(-1000);
+        }
+
+        var logHtml = '';
+        g_collectedLogs.forEach(function(line) {
+          var color = '#a1a1aa';
+          if (line.indexOf('USE_SKILL') !== -1 || line.indexOf('activated self buff') !== -1) color = '#38bdf8';
+          else if (line.indexOf('target acquired') !== -1) color = '#eab308';
+          else if (line.indexOf('picked up loot') !== -1 || line.indexOf('GIVE_GOLD') !== -1) color = '#2ecc71';
+          else if (line.indexOf('used health potion') !== -1 || line.indexOf('used mana potion') !== -1) color = '#f43f5e';
+          else if (line.indexOf('SYSERR') !== -1 || line.indexOf('failed') !== -1) color = '#ef4444';
+          logHtml += '<div style="color:' + color + ';white-space:nowrap">' + line + '</div>';
+        });
+        consoleEl.innerHTML = logHtml;
+        consoleEl.scrollTop = consoleEl.scrollHeight;
+      } else if (g_collectedLogs.length === 0) {
+        consoleEl.innerHTML = '<div style="color:#71717a">Brak najświeższych wpisów w logach dla tej postaci.</div>';
+      }
+    })
+    .catch(function(err) {
+      if (consoleEl && g_collectedLogs.length === 0) {
+        consoleEl.innerHTML = '<div style="color:#ef4444">Błąd odczytu logów: ' + err + '</div>';
+      }
+    });
+}
+
+function startLogTracking(botName) {
+  if (g_activeLogBot !== botName) {
+    g_activeLogBot = botName;
+    g_collectedLogs = [];
+    g_seenLogsSet = {};
+  }
+  if (g_logInterval) clearInterval(g_logInterval);
+  fetchBotLogs(botName);
+  g_logInterval = setInterval(function() {
+    var chk = document.getElementById('chkAutoLog');
+    if (chk && chk.checked && g_activeLogBot) {
+      fetchBotLogs(g_activeLogBot);
+    }
+  }, 1500);
+}
+
+function toggleLogTracking() {
+  var chk = document.getElementById('chkAutoLog');
+  if (chk && chk.checked && g_activeLogBot) {
+    startLogTracking(g_activeLogBot);
+  }
+}
+
+function copyBotLogs() {
+  var consoleEl = document.getElementById('botLogsConsole');
+  if (consoleEl) {
+    var fullText = g_collectedLogs.length > 0 ? g_collectedLogs.join(String.fromCharCode(10)) : consoleEl.innerText;
+    copyCommand(fullText);
+  }
+}
+
+function closeBotModal() {
+  if (g_logInterval) {
+    clearInterval(g_logInterval);
+    g_logInterval = null;
+  }
+  g_activeLogBot = null;
+  g_collectedLogs = [];
+  g_seenLogsSet = {};
+  document.getElementById('botModal').style.display = 'none';
+}
+
+function copyWarp(x, y) {
+  copyCommand('/warp ' + x + ' ' + y);
+}
+
+function warpMeToBot(x, y) {
+  var t = document.getElementById('mapToast');
+  if (t) {
+    t.innerText = '⏳ Teleportowanie Twojej postaci w grze...';
+    t.style.display = 'block';
+  }
+  fetch('/api/admin/warp_me', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ x: x, y: y, player_name: 'tieru' })
+  })
+  .then(function(res) { return res.json(); })
+  .then(function(data) {
+    if (data && data.ok) {
+      if (t) {
+        t.innerText = '✅ Przeteleportowano ' + (data.name || 'Cię') + ' do bota w grze!';
+        setTimeout(function() { t.style.display = 'none'; }, 4000);
+      }
+    } else {
+      if (t) {
+        t.innerText = '❌ Błąd: ' + (data.error || data.status || 'Niepowodzenie');
+        setTimeout(function() { t.style.display = 'none'; }, 4000);
+      }
+    }
+  })
+  .catch(function(err) {
+    if (t) {
+      t.innerText = '❌ Błąd sieci: ' + err;
+      setTimeout(function() { t.style.display = 'none'; }, 4000);
+    }
+  });
+}
+
+function copyCommand(cmd) {
+  if (navigator.clipboard) {
+    navigator.clipboard.writeText(cmd);
+  }
+  var t = document.getElementById('mapToast');
+  if (t) {
+    t.innerText = '📋 Skopiowano: ' + cmd + ' (wklej w grze [Enter] -> Ctrl+V -> [Enter])';
+    t.style.display = 'block';
+    setTimeout(function() { t.style.display = 'none'; }, 3500);
+  }
+}
+
+// Initial fetch and 1.5s interval polling
+fetchBotPositions();
+setInterval(fetchBotPositions, 1500);
+</script>
+<div id="mapToast" style="display:none;position:fixed;bottom:25px;left:50%;transform:translateX(-50%);background:#1e293b;border:1px solid #38bdf8;color:#f8fafc;padding:10px 20px;border-radius:8px;font-size:13px;font-weight:600;box-shadow:0 10px 25px rgba(0,0,0,0.5);z-index:999999;transition:all 0.3s ease"></div>
+""")
+
+
+@app.route("/live_map")
+@app.route("/map")
+def live_map():
+    return render_template_string(TPL_LIVE_MAP,
+                                  brand=CONF.get("server_name", "Metin2"),
+                                  browser_ready=browser_client_ready(),
+                                  play_url=play_url(),
+                                  langs=LANGS,
+                                  curlang=session.get("lang", "en"),
+                                  is_admin=bool(session.get("auth")))
+
+@app.route("/api/admin/warp_me", methods=["POST"])
+def api_admin_warp_me():
+    try:
+        data = request.get_json(force=True, silent=True) or {}
+        target_x = int(data.get("x", 0))
+        target_y = int(data.get("y", 0))
+        gm_name = data.get("player_name", "tieru")
+
+        # Fallback to the latest active human player
+        if not gm_name or gm_name == "auto":
+            with db() as c, c.cursor() as cur:
+                cur.execute("SELECT name FROM player.player WHERE name NOT LIKE 'bot%' ORDER BY last_play DESC LIMIT 1")
+                r = cur.fetchone()
+                if r:
+                    gm_name = r["name"]
+                else:
+                    gm_name = "tieru"
+
+        st, qid = queue_and_wait(gm_name, "WARP", target_x, target_y, wait=5.0)
+        return jsonify({"ok": True, "status": st, "name": gm_name, "x": target_x, "y": target_y})
+    except Exception as e:
+        return jsonify({"ok": False, "error": str(e)}), 500
+
+@app.route("/api/bot_logs/<string:bot_name>")
+def api_bot_logs(bot_name):
+    try:
+        bot_name = bot_name.strip()
+        log_files = [
+            "/opt/metin2/var/channel1/game1/syslog",
+            "/opt/metin2/var/channel1/first/syslog",
+            "/opt/metin2/var/channel1/game2/syslog"
+        ]
+        matched_lines = []
+        for log_path in log_files:
+            if os.path.exists(log_path):
+                try:
+                    with open(log_path, "r", encoding="latin-1", errors="ignore") as f:
+                        lines = f.readlines()
+                        recent = lines[-800:] if len(lines) > 800 else lines
+                        for line in recent:
+                            if bot_name.lower() in line.lower():
+                                matched_lines.append(line.strip())
+                except Exception:
+                    pass
+        last_logs = matched_lines[-60:] if len(matched_lines) > 60 else matched_lines
+        return jsonify({"ok": True, "bot_name": bot_name, "count": len(last_logs), "logs": last_logs})
+    except Exception as e:
+        return jsonify({"ok": False, "error": str(e), "logs": []})
+
+@app.route("/api/bot_positions")
+def api_bot_positions():
+    try:
+        with db() as c, c.cursor() as cur:
+            cur.execute("""
+                SELECT id, name, level, job, x, y, hp, gold
+                FROM player.player
+                WHERE name LIKE 'bot%' AND map_index = 21
+                ORDER BY level DESC, id ASC
+            """)
+            rows = cur.fetchall()
+            bots = []
+            jobs_map = {
+                0: "Wojownik (M)", 4: "Wojowniczka (K)",
+                1: "Ninja (M)", 5: "Ninja (K)",
+                2: "Sura (M)", 6: "Sura (K)",
+                3: "Szaman (M)", 7: "Szamanka (K)"
+            }
+            total_count = len(rows)
+            for r in rows:
+                pid = r.get("id") or 0
+                name = r.get("name") or ""
+                level = r.get("level") or 1
+                job = r.get("job") or 0
+                gx = r.get("x") or 55000
+                gy = r.get("y") or 160000
+                hp = r.get("hp") or 0
+                gold = r.get("gold") or 0
+
+                px = max(0.0, min(100.0, (float(gx) / 102400.0) * 100.0))
+                py = max(0.0, min(100.0, ((float(gy) - 102400.0) / 128000.0) * 100.0))
+                is_bot = name.startswith("bot")
+                in_pt = bot_in_party_cohort(pid)
+
+                action = "⚔️ [PT] Expienie w grupie" if in_pt else "⚔️ Solo Expienie"
+                if level >= 10 and (pid % 5 == 0):
+                    action = "💎 Polowanie na Metiny"
+
+                bots.append({
+                    "id": pid,
+                    "name": name,
+                    "level": level,
+                    "job": jobs_map.get(job, "Wojownik"),
+                    "x": gx,
+                    "y": gy,
+                    "px": round(px, 1),
+                    "py": round(py, 1),
+                    "hp": hp,
+                    "gold": gold,
+                    "in_pt": in_pt,
+                    "is_bot": is_bot,
+                    "action": action
+                })
+            return jsonify({"ok": True, "count": total_count, "bots": bots})
+    except Exception as e:
+        return jsonify({"ok": False, "error": str(e), "bots": []})
+
+@app.route("/api/bot_inventory/<int:pid>")
+def api_bot_inventory(pid):
+    try:
+        with db() as c, c.cursor() as cur:
+            cur.execute("""
+                SELECT id, name, level, job, exp, gold, hp, mp, x, y,
+                       horse_level, st, ht, dx, iq, stat_point, skill_point,
+                       skill_group, skill_level
+                FROM player.player
+                WHERE id = %s
+            """, (pid,))
+            player = cur.fetchone()
+            if not player:
+                return jsonify({"ok": False, "error": "Postać nie znaleziona"})
+
+            jobs_map = {
+                0: "Wojownik (M)", 4: "Wojowniczka (K)",
+                1: "Ninja (M)", 5: "Ninja (K)",
+                2: "Sura (M)", 6: "Sura (K)",
+                3: "Szaman (M)", 7: "Szamanka (K)"
+            }
+            player["job_name"] = jobs_map.get(player.get("job", 0), "Wojownik")
+            player["in_pt"] = bot_in_party_cohort(pid)
+            raw_skills = player.pop("skill_level", b"")
+            player["profession_name"] = SKILL_GROUP_NAMES.get(
+                (int(player.get("job") or 0) % 4, int(player.get("skill_group") or 0)),
+                "Nie wybrano")
+            player["skills"] = parse_player_skills(
+                raw_skills, player.get("job"), player.get("skill_group"))
+            player["stats"] = {
+                "STR": int(player.get("st") or 0),
+                "VIT": int(player.get("ht") or 0),
+                "DEX": int(player.get("dx") or 0),
+                "INT": int(player.get("iq") or 0),
+            }
+
+            mission_names = tuple(m[0] for m in BIOLOGIST_MISSIONS)
+            placeholders = ",".join(["%s"] * len(mission_names))
+            quest_sql = """
+                SELECT szName, szState, lValue
+                FROM player.quest
+                WHERE dwPID = %s AND szName IN ({})
+            """.format(placeholders)
+            cur.execute(quest_sql, (pid,) + mission_names)
+            quest_rows = cur.fetchall()
+            quest_flags = {
+                (row["szName"], row["szState"]): int(row.get("lValue") or 0)
+                for row in quest_rows
+            }
+            completed = 0
+            biologist_label = "Pierwsza misja jeszcze nierozpoczęta"
+            for quest_name, required_level, item_name, required_count in BIOLOGIST_MISSIONS:
+                if quest_flags.get((quest_name, "__status")) == BIOLOGIST_COMPLETE_STATE:
+                    completed += 1
+                    biologist_label = "Ukończono: %s" % item_name
+                    continue
+                if int(player.get("level") or 1) >= required_level:
+                    accepted = quest_flags.get((quest_name, "collect_count"), 0)
+                    biologist_label = "%s: %d/%d" % (item_name, accepted, required_count)
+                else:
+                    biologist_label = "Następna misja od Lv %d: %s" % (required_level, item_name)
+                break
+            else:
+                biologist_label = "Wszystkie podstawowe misje ukończone"
+            player["biologist_completed"] = completed
+            player["biologist_label"] = biologist_label
+
+            cur.execute("""
+                SELECT szState, lValue
+                FROM player.quest
+                WHERE dwPID = %s AND szName = 'levelup'
+                  AND szState IN ('current','select','remain','complete')
+            """, (pid,))
+            hunting_flags = {
+                row["szState"]: int(row.get("lValue") or 0)
+                for row in cur.fetchall()
+            }
+            player["hunting_current"] = hunting_flags.get("current", 0)
+            player["hunting_complete"] = hunting_flags.get("complete", 0)
+            player["hunting_remaining"] = hunting_flags.get("remain", 0)
+            player["hunting_label"] = hunting_progress_label(
+                hunting_flags.get("current", 0), hunting_flags.get("select", 1),
+                hunting_flags.get("remain", 0), hunting_flags.get("complete", 0))
+
+            cur.execute("""
+                SELECT id, `window`, pos, `count`, vnum, socket0, socket1, socket2,
+                       attrtype0, attrvalue0, attrtype1, attrvalue1
+                FROM player.item
+                WHERE owner_id = %s
+                ORDER BY `window` ASC, pos ASC
+            """, (pid,))
+            items = cur.fetchall()
+
+            wear_map = {
+                0: "body",       # Zbroja
+                1: "head",       # Hełm
+                2: "foots",      # Buty
+                3: "wrist",      # Bransoleta
+                4: "weapon",     # Broń
+                5: "neck",       # Naszyjnik
+                6: "ear",        # Kolczyki
+                7: "shield"      # Tarcza
+            }
+            equipment = {}
+            inventory = []
+
+            for it in items:
+                vnum = it.get("vnum") or 0
+                name = ITEM_NAMES.get(vnum, f"Przedmiot #{vnum}")
+                count = it.get("count") or 1
+                pos = it.get("pos") or 0
+                win = it.get("window") or ""
+
+                item_obj = {
+                    "id": it.get("id"),
+                    "vnum": vnum,
+                    "name": name,
+                    "count": count,
+                    "pos": pos
+                }
+
+                if win == "EQUIPMENT" and pos in wear_map:
+                    equipment[wear_map[pos]] = item_obj
+                elif win == "INVENTORY":
+                    inventory.append(item_obj)
+
+            return jsonify({
+                "ok": True,
+                "player": player,
+                "equipment": equipment,
+                "inventory": inventory
+            })
+    except Exception as e:
+        return jsonify({"ok": False, "error": str(e)})
+
+@app.route("/api/bot_rankings")
+def api_bot_rankings():
+    rtype = request.args.get("type", "level")
+    try:
+        with db() as c, c.cursor() as cur:
+            if rtype == "gold":
+                cur.execute("""
+                    SELECT id, name, level, job, gold
+                    FROM player.player
+                    WHERE name LIKE 'bot%'
+                    ORDER BY gold DESC, level DESC
+                    LIMIT 15
+                """)
+            elif rtype == "weapon":
+                cur.execute("""
+                    SELECT p.id, p.name, p.level, p.job, p.gold, i.vnum as weapon_vnum
+                    FROM player.player p
+                    LEFT JOIN player.item i ON p.id = i.owner_id AND i.window = 'EQUIPMENT' AND i.pos = 4
+                    WHERE p.name LIKE 'bot%'
+                    ORDER BY (i.vnum % 10) DESC, i.vnum DESC, p.level DESC
+                    LIMIT 15
+                """)
+            elif rtype == "armor":
+                cur.execute("""
+                    SELECT p.id, p.name, p.level, p.job, p.gold, i.vnum as armor_vnum
+                    FROM player.player p
+                    LEFT JOIN player.item i ON p.id = i.owner_id AND i.window = 'EQUIPMENT' AND i.pos = 0
+                    WHERE p.name LIKE 'bot%'
+                    ORDER BY (i.vnum % 10) DESC, i.vnum DESC, p.level DESC
+                    LIMIT 15
+                """)
+            elif rtype == "items":
+                cur.execute("""
+                    SELECT p.id, p.name, p.level, p.job, p.gold, COUNT(i.id) as item_count
+                    FROM player.player p
+                    LEFT JOIN player.item i ON p.id = i.owner_id AND i.window = 'INVENTORY'
+                    WHERE p.name LIKE 'bot%'
+                    GROUP BY p.id
+                    ORDER BY item_count DESC, p.level DESC
+                    LIMIT 15
+                """)
+            elif rtype == "horse":
+                cur.execute("""
+                    SELECT id, name, level, job, gold, horse_level
+                    FROM player.player
+                    WHERE name LIKE 'bot%'
+                    ORDER BY horse_level DESC, level DESC, exp DESC
+                    LIMIT 15
+                """)
+            elif rtype == "biologist":
+                mission_names = tuple(m[0] for m in BIOLOGIST_MISSIONS)
+                placeholders = ",".join(["%s"] * len(mission_names))
+                ranking_sql = """
+                    SELECT p.id, p.name, p.level, p.job, p.gold,
+                           COUNT(DISTINCT CASE
+                               WHEN q.szState = '__status' AND q.lValue = %s
+                               THEN q.szName END) AS biologist_completed
+                    FROM player.player p
+                    LEFT JOIN player.quest q
+                      ON q.dwPID = p.id AND q.szName IN ({})
+                    WHERE p.name LIKE 'bot%%'
+                    GROUP BY p.id
+                    ORDER BY biologist_completed DESC, p.level DESC, p.exp DESC
+                    LIMIT 15
+                """.format(placeholders)
+                cur.execute(ranking_sql, (BIOLOGIST_COMPLETE_STATE,) + mission_names)
+            elif rtype == "hunting":
+                cur.execute("""
+                    SELECT p.id, p.name, p.level, p.job, p.gold,
+                           MAX(CASE WHEN q.szState = 'complete' THEN q.lValue ELSE 0 END) AS hunting_complete,
+                           MAX(CASE WHEN q.szState = 'current' THEN q.lValue ELSE 0 END) AS hunting_current,
+                           MAX(CASE WHEN q.szState = 'select' THEN q.lValue ELSE 1 END) AS hunting_select,
+                           MAX(CASE WHEN q.szState = 'remain' THEN q.lValue ELSE 0 END) AS hunting_remain
+                    FROM player.player p
+                    LEFT JOIN player.quest q
+                      ON q.dwPID = p.id AND q.szName = 'levelup'
+                    WHERE p.name LIKE 'bot%'
+                    GROUP BY p.id
+                    ORDER BY hunting_complete DESC, hunting_current DESC,
+                             hunting_remain ASC, p.level DESC
+                    LIMIT 15
+                """)
+            else: # level
+                cur.execute("""
+                    SELECT id, name, level, job, exp, gold
+                    FROM player.player
+                    WHERE name LIKE 'bot%'
+                    ORDER BY level DESC, exp DESC
+                    LIMIT 15
+                """)
+
+            rows = cur.fetchall()
+            jobs_map = {
+                0: "Wojownik (M)", 4: "Wojowniczka (K)",
+                1: "Ninja (M)", 5: "Ninja (K)",
+                2: "Sura (M)", 6: "Sura (K)",
+                3: "Szaman (M)", 7: "Szamanka (K)"
+            }
+            rankings = []
+            for r in rows:
+                wv = r.get("weapon_vnum")
+                av = r.get("armor_vnum")
+                w_name = ITEM_NAMES.get(wv, "") if wv else ""
+                a_name = ITEM_NAMES.get(av, "") if av else ""
+                bio_completed = max(0, min(len(BIOLOGIST_MISSIONS), int(r.get("biologist_completed") or 0)))
+                if bio_completed >= len(BIOLOGIST_MISSIONS):
+                    bio_label = "%d/%d • komplet" % (bio_completed, len(BIOLOGIST_MISSIONS))
+                elif bio_completed > 0:
+                    bio_label = "%d/%d • %s" % (
+                        bio_completed, len(BIOLOGIST_MISSIONS),
+                        BIOLOGIST_MISSIONS[bio_completed - 1][2])
+                else:
+                    bio_label = "0/%d • w toku" % len(BIOLOGIST_MISSIONS)
+                hunting_complete = max(0, int(r.get("hunting_complete") or 0))
+                hunting_current = max(0, int(r.get("hunting_current") or 0))
+                hunting_remain = max(0, int(r.get("hunting_remain") or 0))
+                hunting_label = hunting_progress_label(
+                    hunting_current, r.get("hunting_select") or 1,
+                    hunting_remain, hunting_complete)
+                rankings.append({
+                    "id": r["id"],
+                    "name": r["name"],
+                    "level": r["level"],
+                    "job": jobs_map.get(r.get("job", 0), "Wojownik"),
+                    "gold": r.get("gold", 0),
+                    "weapon_name": w_name,
+                    "armor_name": a_name,
+                    "item_count": r.get("item_count", 0),
+                    "horse_level": r.get("horse_level", 0),
+                    "biologist_completed": bio_completed,
+                    "biologist_label": bio_label,
+                    "hunting_complete": hunting_complete,
+                    "hunting_current": hunting_current,
+                    "hunting_remaining": hunting_remain,
+                    "hunting_label": hunting_label,
+                    "in_pt": bot_in_party_cohort(r["id"])
+                })
+            return jsonify({"ok": True, "type": rtype, "rankings": rankings})
+    except Exception as e:
+        return jsonify({"ok": False, "error": str(e), "rankings": []})
 
 @app.route("/rates", methods=["GET", "POST"])
 @login_required
