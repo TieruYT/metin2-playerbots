@@ -46,7 +46,7 @@ manifest hash so anyone can repeat that check.
 ## Building and running it
 
 ```sh
-./fetch-sources.sh                       # acquire, extract, patch, stage
+./fetch-sources.sh --archive /path/Reference_Server.zip
 cd docker && cp .env.example .env        # then edit .env
 docker compose up -d --build
 ```
@@ -54,10 +54,9 @@ docker compose up -d --build
 `installer/install.sh` (Linux, public) and `installer/install.ps1` (Windows,
 loopback only) do all of that for you, including installing Docker.
 
-> **The MEGA share the upstream package is published from is currently over
-> quota** — downloads fail with HTTP 509 until it clears, which takes hours, not
-> a fix. `fetch-sources.sh` detects that case and says so instead of hanging;
-> pass `--reference-dir` or `--archive` if you already have the package.
+> The repository does not distribute or automatically download the r40250
+> baseline. Pass `--reference-dir`, `--archive`, or an explicit `--url` that
+> you are authorised to use.
 
 ## Known limits
 

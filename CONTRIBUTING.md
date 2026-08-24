@@ -88,8 +88,8 @@ exists, so the second run costs seconds. If you are only changing the panel or
 the compose file, `./prepare-context.sh` on its own is enough — it restages
 `files/` into the build context without touching the source tree.
 
-**You cannot do this without the upstream archive.** The MEGA share it normally
-comes from is over quota; pass `--archive /path/to/it` or
+**You cannot do this without a compatible upstream archive.** It is not
+distributed or downloaded automatically; pass `--archive /path/to/it` or
 `--reference-dir /path/to/unpacked`.
 
 ### Shell changes

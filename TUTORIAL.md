@@ -4,15 +4,13 @@ One command. Ten to sixty minutes, mostly waiting. You do not need to know
 Linux, Docker, MySQL or anything else — the script does all of it and tells you
 what it is doing.
 
-At the end you get three things: a **download link for the game client** to give
-to players, a link to your **admin panel**, and the **password** for it.
+At the end you get a running Playerbots server, an **admin panel** link and its
+password. You connect with a compatible native Windows client.
 
-> **One thing before you start.** The game files are not part of this project —
-> the script downloads them from a share belonging to whoever assembled them,
-> and **that share is over its bandwidth quota right now**, so the download
-> fails. If you already have the server-file archive, the script can use your
-> copy and skips the download entirely. If you do not, this will not get past
-> that step today. It says so clearly rather than hanging.
+> **One thing before you start.** Game files are not part of this project and
+> are not downloaded automatically. Have your own compatible r40250 server
+> archive ready. The upstream WebClient was withdrawn and is not supported by
+> this fork; use a native Windows client. See [docs/INSTALL_EN.md](docs/INSTALL_EN.md).
 
 ---
 
@@ -50,7 +48,8 @@ server later. Nothing is wasted.
 Open **PowerShell** (press Start, type `powershell`, press Enter) and paste:
 
 ```powershell
-irm https://raw.githubusercontent.com/AzzlackSyndicate/metin2-singleplayer-serverfiles-linux/main/installer/install.ps1 | iex
+$env:M2_SRC_ARCHIVE = 'C:\path\Reference_Server.zip'
+irm https://raw.githubusercontent.com/TieruYT/metin2-playerbots/main/installer/install.ps1 | iex
 ```
 
 That is it. Now read the next section while it works.
@@ -60,9 +59,8 @@ That is it. Now read the next section while it works.
 1. Checks your PC has enough memory and disk space, and stops early with a clear
    explanation if it does not.
 2. Installs Docker Desktop if it is missing.
-3. Downloads the server, builds it, and starts it.
-4. Starts downloading the game client in the background — that is over a
-   gigabyte, so it keeps running after the script finishes.
+3. Assembles the server from your local archive, builds it, and starts it.
+4. Uses your native client archive when supplied, or leaves client setup to you.
 
 ### Important: this server is for you alone
 
@@ -102,7 +100,8 @@ Around 5 € a month at Hetzner, Netcup or Contabo. Any provider works.
 Connect to your server over SSH, then paste:
 
 ```sh
-curl -fsSL https://raw.githubusercontent.com/AzzlackSyndicate/metin2-singleplayer-serverfiles-linux/main/installer/install.sh | sudo sh
+curl -fsSL https://raw.githubusercontent.com/TieruYT/metin2-playerbots/main/installer/install.sh | \
+  sudo sh -s -- --archive /path/Reference_Server.zip --no-client
 ```
 
 ### With your own domain name (recommended)
@@ -110,7 +109,8 @@ curl -fsSL https://raw.githubusercontent.com/AzzlackSyndicate/metin2-singleplaye
 If you own a domain, point it at your server's IP address first, then run:
 
 ```sh
-curl -fsSL https://raw.githubusercontent.com/AzzlackSyndicate/metin2-singleplayer-serverfiles-linux/main/installer/install.sh | sudo sh -s -- \
+curl -fsSL https://raw.githubusercontent.com/TieruYT/metin2-playerbots/main/installer/install.sh | sudo sh -s -- \
+    --archive /path/Reference_Server.zip --no-client \
     --domain panel.yourdomain.com --email you@example.com
 ```
 
@@ -250,13 +250,9 @@ and your settings, and tells you what it found.
 This is a hobby project and it is written to be honest with you rather than to
 sell you anything. So:
 
-- **The download does not work at the moment.** The game files are not hosted
-  here — the installer fetches them from a third-party MEGA share, and that
-  share is currently **over its bandwidth quota**. It answers `509 (over quota)`
-  and the install stops there with an explanation. If you already have the
-  archive, the installer will use it instead of downloading; it tells you how.
-  This will keep happening: an anonymous share has a bandwidth cap, and one day
-  the link will stop working for good.
+- **Game files are deliberately not distributed.** Supply a compatible r40250
+  server baseline and native client that you are authorised to use. The
+  installer does not depend on a project-owned mirror.
 - **The game server is 2014 code.** It works, and it has been ported to Linux
   carefully with real tests, but it is old software with old assumptions. It is
   32-bit and it will not run on ARM.

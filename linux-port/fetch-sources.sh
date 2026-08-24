@@ -10,8 +10,7 @@
 #
 #  So a checkout is not buildable on its own, and this is the missing step:
 #
-#      1. acquire   the upstream archive -- a local copy if you have one,
-#                   otherwise the MEGA share the package's author publishes
+#      1. acquire   a compatible upstream archive supplied by the operator
 #      2. extract   the pristine source, the share/ data tree, the extern
 #                   dependency sources and the SQL dumps
 #      3. patch     apply patches/0001-r40250-linux-port.patch to the pristine
@@ -46,9 +45,9 @@
 #                                                    "[40250] Reference
 #                                                    Serverfile" folder (the one
 #                                                    with Server/ in it)
-#      --url URL             M2_SRC_URL              where to download from when
-#                                                    neither of the above is
-#                                                    given.  MEGA or direct.
+#      --url URL             M2_SRC_URL              an explicit operator-owned
+#                                                    download source used when
+#                                                    neither local form is given
 #      --url-fallback URL    M2_SRC_URL_FALLBACK     the same archive somewhere
 #                                                    else, tried when the one
 #                                                    above will not come -- a
@@ -95,7 +94,7 @@
 #  Nothing here is interactive and nothing here needs a terminal.
 #
 #  ---------------------------------------------------------------------------
-#  A NOTE ON MEGA, learned the hard way
+#  A NOTE ON OPTIONAL REMOTE SOURCES
 #  ---------------------------------------------------------------------------
 #  megatools exits 0 when it refuses a link.  A revoked or malformed share
 #  prints "WARNING: Skipping invalid Mega download link" and returns success, so
@@ -131,9 +130,10 @@ BASELINE_TARBALL_SHA256=6e9e7339935058f73fead81e609219b496adbc867dfeca70f6330317
 BASELINE_MANIFEST_SHA256=37fe257e0cb8f7e68e1a9567332ad0dff8ca21f902a0651becd88c6e325a81b8
 BASELINE_FILE_COUNT=744
 
-# The share the server-file package's author publishes. It is somebody else's
-# MEGA account: one day it will stop working, and that day is not a bug here.
-DEFAULT_URL='https://mega.nz/file/W6xnUZTB#SMbCxbo22RHrjtgWa5ohsF1uclDbNpNhwfhXi0oXYYk'
+# No third-party server-file mirror is built in. The repository distributes
+# only its own code and patches; the operator supplies a compatible r40250
+# archive/reference directory, or opts into an explicit URL they may use.
+DEFAULT_URL=''
 
 ARCHIVE_GIVEN="${M2_SRC_ARCHIVE:-}"
 REFDIR="${M2_SRC_REFERENCE_DIR:-}"
@@ -361,9 +361,9 @@ quota_advice() {
 
 dead_link_advice() {
     note ""
-    note "  The download did not succeed. This link is a share on someone else's"
-    note "  MEGA account, so one day it will stop working. Either way, you never"
-    note "  have to download it through this script:"
+    note "  No Metin2 server-file package is bundled with or published by this"
+    note "  project. Supply a compatible r40250 baseline that you may lawfully"
+    note "  use. The installer accepts any of these forms:"
     note ""
     note "    already have the archive:   $0 --archive /path/to/archive.zip"
     note "    already unpacked it:        $0 --reference-dir '/path/[40250] Reference Serverfile'"

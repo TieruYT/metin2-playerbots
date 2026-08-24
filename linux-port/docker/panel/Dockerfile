@@ -63,7 +63,7 @@ RUN if [ -n "$M2_PANEL_VERSION" ]; then \
     fi ; \
     printf 'panel version: %s\n' "$(cat /opt/panel/VERSION 2>/dev/null || echo unknown)"
 LABEL org.opencontainers.image.title="Metin2 admin panel" \
-      org.opencontainers.image.source="https://github.com/AzzlackSyndicate/metin2-singleplayer-serverfiles-linux"
+      org.opencontainers.image.source="https://github.com/TieruYT/metin2-playerbots"
 COPY bin/entrypoint.sh /usr/local/bin/entrypoint.sh
 # The panel starts this one itself, through M2PANEL_RATES_SCRIPT, whenever
 # somebody saves the rates page.  It lives in /usr/local/bin and NOT on the

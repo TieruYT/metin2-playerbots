@@ -49,9 +49,14 @@ licensing decision first and a repository-size decision second.
 **The third-party server-file package itself** — the `[40250] Reference
 Serverfile` by TMP4. The `packs/*.pack` profiles in this repository are *our*
 description of that package — where its numbers live and how its client is
-assembled — not any part of the package. It is downloaded from its own
-publisher's link at install time and is not hosted here. Its authors' own terms
-apply to it.
+assembled — not any part of the package. It is not hosted or automatically
+downloaded by this project. Operators must supply a compatible copy they are
+authorised to use; its authors' own terms apply to it.
+
+**The retired upstream WebClient and its game data.** This fork retains some
+legacy service definitions for compatibility with already-installed stacks,
+but its installer disables them and it publishes no WebClient archives or
+download links. The supported play path is a compatible native Windows client.
 
 **Vendored third-party libraries** inside the game source (Python 2.7, LZ4,
 MariaDB Connector/C, Boost fragments, and others) carry their own licences,

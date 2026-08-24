@@ -29,6 +29,6 @@ HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
     CMD ["python3", "-c", "import os,urllib.request;urllib.request.urlopen('http://127.0.0.1:%s/health' % os.environ.get('M2_BRIDGE_LISTEN_PORT','7789'), timeout=4).read()"]
 
 LABEL org.opencontainers.image.title="Metin2 WebSocket-to-TCP bridge" \
-      org.opencontainers.image.source="https://github.com/AzzlackSyndicate/metin2-singleplayer-serverfiles-linux"
+      org.opencontainers.image.source="https://github.com/TieruYT/metin2-playerbots"
 
 ENTRYPOINT ["python3", "/usr/local/bin/ws2tcp.py"]

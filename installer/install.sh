@@ -57,10 +57,9 @@ set -eu
 #
 #     1. get the repository -- a git clone of a few megabytes -- unless a
 #        checkout is already on this machine
-#     2. run linux-port/fetch-sources.sh, which obtains the upstream r40250
-#        package (a local copy if you have one, otherwise the MEGA share its
-#        author publishes), extracts the source, the share/ data tree and the
-#        SQL dumps, applies the port, and fills in the Docker build context
+#     2. run linux-port/fetch-sources.sh with an operator-supplied r40250
+#        archive/reference directory. It extracts the source, share/ data tree
+#        and SQL dumps, applies the port, and fills the Docker build context
 #
 #  Override any of it:
 #      M2_REPO_URL=https://.../server.git            sh install.sh
@@ -69,10 +68,10 @@ set -eu
 #      M2_SRC_ARCHIVE=/path/to/serverfiles.zip       sh install.sh
 #      M2_LOCAL_CONTEXT=/path/to/linux-port/docker   sh install.sh
 # -----------------------------------------------------------------------------
-M2_REPO_URL="${M2_REPO_URL:-https://github.com/AzzlackSyndicate/metin2-singleplayer-serverfiles-linux.git}"
+M2_REPO_URL="${M2_REPO_URL:-https://github.com/TieruYT/metin2-playerbots.git}"
 # Where this script itself lives. The panel shows it as the way to update, so
 # an operator who fetched this from somewhere else gets told to go back there.
-M2_INSTALLER_URL="${M2_INSTALLER_URL:-https://raw.githubusercontent.com/AzzlackSyndicate/metin2-singleplayer-serverfiles-linux/main/installer/install.sh}"
+M2_INSTALLER_URL="${M2_INSTALLER_URL:-https://raw.githubusercontent.com/TieruYT/metin2-playerbots/main/installer/install.sh}"
 M2_REPO_DIR="${M2_REPO_DIR:-}"
 M2_LOCAL_CONTEXT="${M2_LOCAL_CONTEXT:-}"
 
@@ -408,8 +407,8 @@ usage() {
 
   Metin2 server installer (Linux)
 
-    curl -fsSL https://raw.githubusercontent.com/AzzlackSyndicate/metin2-singleplayer-serverfiles-linux/main/installer/install.sh | sh
-    curl -fsSL https://raw.githubusercontent.com/AzzlackSyndicate/metin2-singleplayer-serverfiles-linux/main/installer/install.sh | sh -s -- [options]
+    curl -fsSL https://raw.githubusercontent.com/TieruYT/metin2-playerbots/main/installer/install.sh | sh
+    curl -fsSL https://raw.githubusercontent.com/TieruYT/metin2-playerbots/main/installer/install.sh | sh -s -- [options]
 
   Options:
 
@@ -431,8 +430,8 @@ usage() {
     --game-ports A-B      channel ports (default: 13000-13002)
     --panel-port N        admin panel port (default: 7788)
     --no-client           don't build the downloadable game client
-    --web-client          install the browser client (~1.8 GB) without asking
-    --no-web-client       don't install the browser client, and don't ask
+    --web-client          deprecated compatibility flag; ignored (native only)
+    --no-web-client       compatibility flag; native-only is already default
     --custom-experience   turn the Custom Experience on without asking: bigger
                           pick-up range, a horse that always comes when called,
                           no waiting between the Horse Medal steps, bonus drops
@@ -451,8 +450,7 @@ usage() {
                           downloaded when you give this.
     --archive PATH        the server-file package as you downloaded it --
                           the .zip/.rar/.7z, or metin2_server+src.tar.gz
-    --source-url URL      download the package from here instead of from the
-                          MEGA share its author publishes
+    --source-url URL      explicit operator-owned source for the package
     --source-cache DIR    where the download and the working copies live
                           (default: /var/cache/m2src, needs ~4 GB)
     --repo-dir PATH       use this checkout instead of cloning one
@@ -513,7 +511,7 @@ check_root() {
         if have sudo; then
             die "Please run this as root. The usual way is:
 
-      curl -fsSL https://raw.githubusercontent.com/AzzlackSyndicate/metin2-singleplayer-serverfiles-linux/main/installer/install.sh | sudo sh
+      curl -fsSL https://raw.githubusercontent.com/TieruYT/metin2-playerbots/main/installer/install.sh | sudo sh
 
   It needs root to install Docker, open the firewall and write to
   $INSTALL_DIR."
@@ -1059,15 +1057,10 @@ choose_custom_experience() {
 run_fetch_sources() {
     # WHERE THE SERVER FILES COME FROM.
     #
-    # From artifacts.json, so that the split archives are used: Reference_Server.zip
-    # is the server alone, and the desktop client travels separately in
-    # Reference_Client.zip. Without this, fetch-sources.sh falls back to the
-    # DEFAULT_URL compiled into it -- the old combined package, 1.6 GB of server
-    # AND client, which is downloaded in full even by somebody who chose the
-    # browser client and will never unpack a desktop client at all.
-    #
-    # Anything the operator said wins: --source-url, a local archive, an
-    # unpacked directory. This only fills in the blank.
+    # No project-owned download source is built in. Anything the operator said
+    # wins: --source-url, a local archive, or an unpacked directory.
+    # artifacts.json is consulted only as optional metadata and normally has
+    # an empty URL.
     if [ -z "$M2_SRC_URL" ] && [ -z "$M2_SRC_ARCHIVE" ] && [ -z "$M2_SRC_REFERENCE_DIR" ]; then
         _pu=$(pointer_link src_server_url)
         if [ -n "$_pu" ]; then
@@ -1081,10 +1074,7 @@ run_fetch_sources() {
         fi
     fi
 
-    # The same archive somewhere else, for when MEGA answers "509 over quota".
-    # Passed even when the operator named their own --source-url: a fallback is
-    # only ever reached after that link has already failed, so it can do no
-    # harm and it saves the person a wait of hours.
+    # Optional operator-owned fallbacks, reached only after the primary URL.
     M2_SRC_URL_FALLBACK=${M2_SRC_URL_FALLBACK:-$(pointer_link src_server_url_fallback)}
     M2_SRC_URL_FALLBACK2=${M2_SRC_URL_FALLBACK2:-$(pointer_link src_server_url_fallback2)}
     export M2_SRC_URL_FALLBACK M2_SRC_URL_FALLBACK2
@@ -1095,22 +1085,18 @@ run_fetch_sources() {
 
     step "Assembling the server"
     say "The game itself is not in this project and cannot be -- it belongs to"
-    say "Ymir/Webzen. What happens now is that the original r40250 server-file"
-    say "package is fetched, the Linux port is applied to it, and the result is"
-    say "turned into something Docker can build."
+    say "Ymir/Webzen. The compatible r40250 files you supplied (or the cached"
+    say "copy from an earlier run) are validated, the Linux port is applied,"
+    say "and the result is turned into something Docker can build."
     say ""
     if [ -n "$M2_SRC_REFERENCE_DIR" ]; then
         info "using the unpacked package in $M2_SRC_REFERENCE_DIR"
     elif [ -n "$M2_SRC_ARCHIVE" ]; then
         info "using the package archive $M2_SRC_ARCHIVE"
     else
-        _mb=$(pointer_get src_server_size_mb)
-        case "$_mb" in
-            ''|*[!0-9]*) say "It is a download of a few hundred MB the first time," ;;
-            *)           say "It is a ${_mb} MB download the first time," ;;
-        esac
-        say "into $M2_SRC_CACHE. The desktop client is NOT part of it -- that is"
-        say "a separate download, and only if you ask for it."
+        say "Looking for a compatible r40250 package already present in"
+        say "$M2_SRC_CACHE. On a clean install, pass --archive or"
+        say "--reference-dir; this project does not publish game files."
     fi
     say ""
 
@@ -1165,27 +1151,15 @@ run_fetch_sources() {
   On Debian or Ubuntu that is usually:
 
       apt-get install -y patch unzip megatools p7zip-full python3" ;;
-        4) die "The server-file package could not be downloaded.
+        4) die "The compatible r40250 server-file package was not supplied.
 
-  If the address above is the MEGA share, the overwhelmingly likely reason is
-  that the share has run out of bandwidth for the day. MEGA gives anonymous
-  downloads a quota; when it is spent every request comes back '509 over
-  quota' and the download makes no progress at all. It is not a broken link,
-  and it is nothing wrong with this machine -- it clears by itself, usually
-  within a few hours.
-
-  Nothing was installed and nothing was left running, so there is nothing to
-  undo. Three ways forward:
-
-    - wait a few hours and run this installer again. It continues from where
-      it stopped and re-downloads nothing it already has.
-
-    - download the package yourself, however you like -- a browser and a MEGA
-      account of your own both work -- and hand it over:
+  This repository intentionally contains no game server source, game data or
+  download mirror. Nothing was installed and nothing was left running. Use a
+  local package that you are authorised to use:
 
           sh install.sh --archive /path/to/the-package.zip
 
-    - if you have already unpacked it:
+  Or, if you have already unpacked it:
 
           sh install.sh --reference-dir '/path/to/[40250] Reference Serverfile'" ;;
         5) die "The server-file package was obtained but it is not the r40250
@@ -1795,7 +1769,14 @@ write_env() {
     #
     # Not overwritten: an operator who set this by hand, to a client of their
     # own with their own patches in it, keeps theirs.
-    if [ -z "$(env_get "$_env" M2_CLIENT_ARCHIVE_URL || true)" ]; then
+    _old_client_url=$(env_get "$_env" M2_CLIENT_ARCHIVE_URL || true)
+    case "$_old_client_url" in
+        'https://mega.nz/file/X7YT3BRB#uSVimr2N0y87gTrbdChLUQJWXOnZ49cIkqrc-wJU4MU'|\
+        'https://dl.htpsoftware.com/Reference_Client.zip')
+            env_set "$_env" M2_CLIENT_ARCHIVE_URL ""
+            _old_client_url="" ;;
+    esac
+    if [ -z "$_old_client_url" ]; then
         _cu=$(pointer_link src_client_url)
         if [ -n "$_cu" ]; then
             env_set "$_env" M2_CLIENT_ARCHIVE_URL "$_cu"
@@ -2707,19 +2688,29 @@ start_client_build() {
     # builder scans its drop folder for a .zip/.rar/.7z and filters out the
     # ClientVS22.zip beside it (the C++ source) by name, so the folder is all
     # it needs.
+    mkdir -p "$INSTALL_DIR/client-archive"
     _reuse=""
     _cachedir=""
     if [ -n "$M2_SRC_REFERENCE_DIR" ] && [ -d "$M2_SRC_REFERENCE_DIR/Client" ]; then
         _cachedir="$M2_SRC_REFERENCE_DIR/Client"
         _reuse=1
         info "the client comes from $_cachedir -- nothing to download"
-    else
-        _cachedir="$M2_SRC_CACHE/archive"
+    elif [ -d "$INSTALL_DIR/client-archive" ]; then
+        _cachedir="$INSTALL_DIR/client-archive"
         if [ -n "$(find "$_cachedir" -maxdepth 1 -type f -size +10M \
                         ! -name '.megatmp.*' ! -name '*.part' ! -name '*.tmp' \
                         ! -name '*.meta' 2>/dev/null | head -1)" ]; then
             _reuse=1
         fi
+    fi
+
+    if [ -z "$_reuse" ] && [ -z "$(env_get "$INSTALL_DIR/.env" M2_CLIENT_ARCHIVE_URL 2>/dev/null || true)" ]; then
+        warn "No native client archive was supplied."
+        warn "The server is ready; use your existing compatible client, or put"
+        warn "your archive in $INSTALL_DIR/client-archive and run:"
+        warn "    cd $INSTALL_DIR && docker compose run --rm client-builder"
+        CLIENT_STATE="unavailable"
+        return 0
     fi
 
     say "Starting the client build in the background."
@@ -2931,7 +2922,7 @@ summary() {
         printf '     the clear, and anyone between you and the server can read them.\n'
         printf '\n'
         printf '     To fix that, point a domain name at %s and run:\n' "$PUBLIC_ADDRESS"
-        printf '         curl -fsSL https://raw.githubusercontent.com/AzzlackSyndicate/metin2-singleplayer-serverfiles-linux/main/installer/install.sh | sh -s -- \\\n'
+        printf '         curl -fsSL https://raw.githubusercontent.com/TieruYT/metin2-playerbots/main/installer/install.sh | sh -s -- \\\n'
         printf '             --domain your.domain.com --email you@example.com\n'
         printf '     It will get a free certificate and switch the panel to HTTPS.\n'
     fi
@@ -3030,7 +3021,25 @@ detect_installed_clients() {
 }
 
 choose_clients() {
-    step "Which clients your players get"
+    step "Native Windows client"
+
+    # The upstream WebClient was withdrawn by its author. Keep accepting the
+    # old flags so saved installer commands do not fail, but never download its
+    # data or start the WebSocket bridge from this project.
+    if [ "${WANT_WEB_FLAG:-}" = "1" ]; then
+        warn "--web-client is no longer available and will be ignored."
+        warn "Use a compatible native Windows r40250 client."
+    fi
+    WANT_WEB=0
+    if [ "$SKIP_CLIENT" = "1" ]; then
+        WANT_DESKTOP=0
+        info "client preparation skipped (--no-client); the server will still be installed"
+    else
+        WANT_DESKTOP=1
+        good "Native client mode selected."
+        info "Client files must be supplied locally; they are not in this repository."
+    fi
+    return 0
 
     # An explicit flag always wins over a question, so an unattended run can say
     # exactly what it wants. --no-client already means "no desktop client".

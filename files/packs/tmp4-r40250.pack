@@ -19,11 +19,9 @@ PACK_DESC="FreeBSD 13.5+ / MariaDB 10.11 — official 2014 r40250 rebuild, 4 cha
 # name of these server files; this is the name of the SERVER built from them.
 PACK_SERVER_NAME="Singleplayer Official Metin2"
 
-# The whole "[40250] Reference Serverfile" folder in one archive: Client/,
-# Server/ and the Readme/FAQ/Changelog. A MEGA link, so the engine installs
-# megatools before fetching it. The user can always paste a different URL at
-# the prompt; this is only the default they get by pressing Enter.
-PACK_URL="https://mega.nz/file/W6xnUZTB#SMbCxbo22RHrjtgWa5ohsF1uclDbNpNhwfhXi0oXYYk"
+# No third-party archive is a project default. Operators supply their own
+# compatible r40250 package or an explicit URL they are authorised to use.
+PACK_URL=""
 
 # The database password these files ship with. It is NOT a secret: it is printed
 # in the pack's own Readme and sits inside metin2_mysql.tar.gz, which anyone can

@@ -85,15 +85,16 @@ try {
 #      $env:M2_SRC_ARCHIVE        = 'C:\path\to\the-package.zip'
 #      $env:M2_LOCAL_CONTEXT      = 'C:\path\to\linux-port\docker'
 # -----------------------------------------------------------------------------
-$script:RepoUrl      = if ($env:M2_REPO_URL)          { $env:M2_REPO_URL }          else { 'https://github.com/AzzlackSyndicate/metin2-singleplayer-serverfiles-linux.git' }
+$script:RepoUrl      = if ($env:M2_REPO_URL)          { $env:M2_REPO_URL }          else { 'https://github.com/TieruYT/metin2-playerbots.git' }
 # Where this script itself lives, so it can tell the panel how to update: on
 # Windows the update IS re-running this, and the panel shows the line to paste.
-$script:SelfUrl      = if ($env:M2_INSTALLER_URL)     { $env:M2_INSTALLER_URL }     else { 'https://raw.githubusercontent.com/AzzlackSyndicate/metin2-singleplayer-serverfiles-linux/main/installer/install.ps1' }
+$script:SelfUrl      = if ($env:M2_INSTALLER_URL)     { $env:M2_INSTALLER_URL }     else { 'https://raw.githubusercontent.com/TieruYT/metin2-playerbots/main/installer/install.ps1' }
 $script:RepoDir      = if ($env:M2_REPO_DIR)          { $env:M2_REPO_DIR }          else { '' }
 $script:LocalContext = if ($env:M2_LOCAL_CONTEXT)     { $env:M2_LOCAL_CONTEXT }     else { '' }
 $script:SrcArchive   = if ($env:M2_SRC_ARCHIVE)       { $env:M2_SRC_ARCHIVE }       else { '' }
 $script:SrcRefDir    = if ($env:M2_SRC_REFERENCE_DIR) { $env:M2_SRC_REFERENCE_DIR } else { '' }
 $script:SrcUrl       = if ($env:M2_SRC_URL)           { $env:M2_SRC_URL }           else { '' }
+$script:ClientArchive = if ($env:M2_CLIENT_ARCHIVE)   { $env:M2_CLIENT_ARCHIVE }    else { '' }
 
 # The download, the unpacked source and the staged tree all live in a Docker
 # volume rather than in a folder on C:. Three reasons, all learned by trying the
@@ -131,6 +132,7 @@ $script:BrowserPlay       = '0'
 # deliberate no from a default.
 $script:WantWeb           = $false
 $script:WantDesktop       = $true
+$script:SkipClient        = $false
 $script:WantWebFlag       = $null
 $script:HaveWeb           = $false
 $script:HaveDesktop       = $false
@@ -1050,11 +1052,11 @@ function Invoke-SourceFetch {
         }
     }
     else {
-        # Where the server files come from: artifacts.json, so that the SERVER
-        # archive is used rather than the old package that carried the desktop
-        # client with it. Anything the operator said wins; this fills the blank.
+        # No project-owned download source is built in. An explicit operator
+        # URL still works; artifacts.json is consulted only as optional local
+        # metadata and normally contains an empty URL.
         $url = $script:SrcUrl
-        $sha = ''
+        $sha = if ($env:M2_SRC_SHA256) { $env:M2_SRC_SHA256 } else { '' }
         if (-not $url) {
             $url = Get-PointerLink 'src_server_url'
             if ($url) {
@@ -1065,27 +1067,20 @@ function Invoke-SourceFetch {
         if ($url) { $runArgs += @('-e', "M2_SRC_URL=$url") }
         if ($sha -match '^[0-9a-f]{64}$') { $runArgs += @('-e', "M2_SRC_SHA256=$sha") }
 
-        # The same archive somewhere else, reached only after the link above has
-        # already failed -- a MEGA "509 over quota" above all, which is the
-        # share owner's daily allowance being spent and is otherwise a wait of
-        # hours. Passed even when the operator named their own -SourceUrl,
-        # because a fallback cannot be reached until that one has failed.
-        $fb1 = Get-PointerLink 'src_server_url_fallback'
-        $fb2 = Get-PointerLink 'src_server_url_fallback2'
+        # Optional operator-owned fallbacks, tried only after the primary URL.
+        $fb1 = if ($env:M2_SRC_URL_FALLBACK)  { $env:M2_SRC_URL_FALLBACK }
+               else { Get-PointerLink 'src_server_url_fallback' }
+        $fb2 = if ($env:M2_SRC_URL_FALLBACK2) { $env:M2_SRC_URL_FALLBACK2 }
+               else { Get-PointerLink 'src_server_url_fallback2' }
         if ($fb1) { $runArgs += @('-e', "M2_SRC_URL_FALLBACK=$fb1") }
         if ($fb2) { $runArgs += @('-e', "M2_SRC_URL_FALLBACK2=$fb2") }
 
-        $mb = Get-PointerValue 'src_server_size_mb'
-        if ($mb -match '^[0-9]+$') {
-            Write-Say "The server files are about $mb MB and are downloaded once."
-        } else {
-            Write-Say 'The server files are a few hundred MB and are downloaded once.'
-        }
-        Write-Say 'The desktop client is NOT part of that -- it is a separate'
-        Write-Say 'download, and only if you ask for it.'
+        Write-Say 'Looking for a compatible r40250 package already present in the'
+        Write-Say 'source cache. If this is a clean install, provide -Archive or'
+        Write-Say '-ReferenceDir; this project does not publish game files.'
         Write-Say ''
-        Write-Say 'It is kept in a Docker volume afterwards, so running this'
-        Write-Say 'installer again does not download it a second time.'
+        Write-Say 'Once supplied, it is kept in a Docker volume so later updates'
+        Write-Say 'do not need the original local path again.'
     }
 
     # The movement-speed bonus has to be known HERE, before the build context is
@@ -1141,28 +1136,16 @@ names it. That is a fault in this installer rather than anything you did;
 please report it with the output above.
 "@ }
         4 { Stop-Friendly @"
-The server-file package could not be downloaded.
+The compatible r40250 server-file package was not supplied.
 
-If the address above is the MEGA share, the overwhelmingly likely reason is
-that the share has run out of bandwidth for the day. MEGA gives anonymous
-downloads a quota, and once it is spent every request comes back "509 over
-quota" -- the link still looks fine, the file name still resolves, and not one
-byte arrives. That is not a broken link and there is nothing wrong with this
-PC. It clears by itself, usually within a few hours.
-
-Nothing was installed and no server was left half-built, so there is nothing
-to undo. Three ways forward:
-
-  - wait a few hours and run this installer again. It carries on from where it
-    stopped and re-downloads nothing it already has.
-
-  - download the package yourself -- a browser works, and so does a MEGA
-    account of your own -- and then:
+This repository intentionally contains no game server source, game data or
+download mirror. Nothing was installed and no server was left half-built.
+Use a local package that you are authorised to use, then run:
 
         `$env:M2_SRC_ARCHIVE = 'C:\Users\$($env:USERNAME)\Downloads\package.zip'
-        irm https://raw.githubusercontent.com/AzzlackSyndicate/metin2-singleplayer-serverfiles-linux/main/installer/install.ps1 | iex
+        irm https://raw.githubusercontent.com/TieruYT/metin2-playerbots/main/installer/install.ps1 | iex
 
-  - if you have already unpacked it:
+Or, if you have already unpacked it:
 
         `$env:M2_SRC_REFERENCE_DIR = 'C:\path\to\[40250] Reference Serverfile'
 "@ }
@@ -1240,7 +1223,7 @@ The most likely cause is Windows' 260-character path limit: the game carries
 quest files about 125 characters below whatever folder you choose. Install
 somewhere shorter -- C:\Metin2Server, say:
 
-    iex "& { `$(irm https://raw.githubusercontent.com/AzzlackSyndicate/metin2-singleplayer-serverfiles-linux/main/installer/install.ps1) } -InstallDir C:\Metin2Server"
+    iex "& { `$(irm https://raw.githubusercontent.com/TieruYT/metin2-playerbots/main/installer/install.ps1) } -InstallDir C:\Metin2Server"
 "@
         }
         # Two files the browser client's fetcher needs live OUTSIDE
@@ -1440,9 +1423,9 @@ function Get-Stack {
     }
 
     Write-Say 'The game itself is not part of this project and cannot be -- it'
-    Write-Say 'belongs to Ymir/Webzen. What happens now is that the original'
-    Write-Say 'r40250 server files are fetched, the Linux port is applied to'
-    Write-Say 'them, and the result is turned into something Docker can build.'
+    Write-Say 'belongs to Ymir/Webzen. The compatible r40250 files you supplied'
+    Write-Say '(or the cached copy from an earlier run) are validated, the Linux'
+    Write-Say 'port is applied, and the result becomes a Docker build context.'
     Write-Say ''
 
     if ($script:DryRun) {
@@ -1657,7 +1640,14 @@ downloaded server files, the client -- is kept either way.
     # split. Left empty, the builder looks for a client inside the server files,
     # which is where it used to be and no longer is. Not overwritten, so an
     # operator who pointed this at a client of their own keeps theirs.
-    if (-not (Get-EnvValue $envPath 'M2_CLIENT_ARCHIVE_URL')) {
+    $oldClientUrl = Get-EnvValue $envPath 'M2_CLIENT_ARCHIVE_URL'
+    if ($oldClientUrl -in @(
+        'https://mega.nz/file/X7YT3BRB#uSVimr2N0y87gTrbdChLUQJWXOnZ49cIkqrc-wJU4MU',
+        'https://dl.htpsoftware.com/Reference_Client.zip')) {
+        Set-EnvValue $envPath 'M2_CLIENT_ARCHIVE_URL' ''
+        $oldClientUrl = ''
+    }
+    if (-not $oldClientUrl) {
         $cu = Get-PointerLink 'src_client_url'
         if ($cu) {
             Set-EnvValue $envPath 'M2_CLIENT_ARCHIVE_URL' $cu
@@ -2594,7 +2584,24 @@ function Select-CustomExperience {
 }
 
 function Select-Clients {
-    Write-Step 'Which clients your players get'
+    Write-Step 'Native Windows client'
+
+    # The upstream WebClient was withdrawn by its author and is no longer
+    # distributed or supported by this project. Keep the old switches accepted
+    # so saved commands do not fail, but never fetch data or start its bridge.
+    if ($script:WantWebFlag -eq $true) {
+        Write-Warn '-WebClient is no longer available and will be ignored.'
+        Write-Warn 'Use a compatible native Windows r40250 client.'
+    }
+    $script:WantWeb = $false
+    $script:WantDesktop = -not $script:SkipClient
+    if ($script:WantDesktop) {
+        Write-Good 'Native client mode selected.'
+        Write-Info 'The client files must be supplied locally; they are not in this repository.'
+    } else {
+        Write-Info 'Client preparation skipped (-NoClient). The server will still be installed.'
+    }
+    return
 
     if ($script:WantWebFlag -ne $null) {
         $script:WantWeb = $script:WantWebFlag
@@ -2720,6 +2727,12 @@ function Get-WebClient {
 function Start-ClientBuild {
     Write-Step 'The game client'
 
+    if (-not $script:WantDesktop) {
+        Write-Info 'skipped (-NoClient)'
+        $script:ClientState = 'skipped'
+        return
+    }
+
     $script:ClientDir = Join-Path $script:InstallDir 'client'
     $script:ClientLog = Join-Path $script:InstallDir 'client-build.log'
 
@@ -2837,7 +2850,19 @@ function Start-ClientBuild {
     # regularly. The builder scans its drop folder for a .zip/.rar/.7z, so
     # mounting that folder is all it takes; it filters ClientVS22.zip (the C++
     # source that sits beside it) out by name on its own.
-    if ($haveBuilder -and $script:SrcRefDir) {
+    if ($haveBuilder -and $script:ClientArchive) {
+        if (-not (Test-Path -LiteralPath $script:ClientArchive -PathType Leaf)) {
+            Write-Warn "M2_CLIENT_ARCHIVE points at '$($script:ClientArchive)', which is not a file."
+            $script:ClientState = 'unavailable'
+            return
+        }
+        $clientPath = ConvertTo-MountPath $script:ClientArchive
+        $clientLeaf = Split-Path -Leaf $clientPath
+        $reuseArgs = @('-v', "$($clientPath):/archive/$($clientLeaf):ro")
+        $cachedArchive = "/archive/$clientLeaf"
+        Write-Info "the native client comes from $clientPath -- nothing to download"
+    }
+    if ($haveBuilder -and $reuseArgs.Count -eq 0 -and $script:SrcRefDir) {
         $refClient = Join-Path $script:SrcRefDir 'Client'
         if (Test-Path -LiteralPath $refClient -PathType Container) {
             $p = ConvertTo-MountPath $refClient
@@ -2845,33 +2870,13 @@ function Start-ClientBuild {
             Write-Info "the client comes from $p -- nothing to download"
         }
     }
-    if ($haveBuilder -and $reuseArgs.Count -eq 0) {
-        try {
-            $findCmd = 'find /srccache/cache/archive -maxdepth 1 -type f -size +10M ' +
-                       "! -name '.megatmp.*' ! -name '*.part' ! -name '*.tmp' " +
-                       "! -name '*.meta' 2>/dev/null | sort | head -1"
-            $probe = Invoke-Native 'docker' @(
-                'run','--rm','-v',"$($script:SrcVolume):/srccache:ro",
-                $script:FetcherImage,'sh','-c',$findCmd)
-            $cached = ($probe.Output -split "`n" |
-                       ForEach-Object { $_.Trim() } |
-                       Where-Object { $_ -like '/srccache/*' } |
-                       Select-Object -First 1)
-            if ($probe.Code -eq 0 -and $cached) {
-                # The volume name is safe on a command line; the FILE NAME is
-                # not. The archive is published as "[40250] Reference
-                # Serverfile-....zip", and anything that joins arguments with
-                # spaces tears that in half -- docker then read the remainder
-                # as a service name ("no such service: Reference"). It is
-                # written into client-setup.ps1 as a quoted string literal for
-                # exactly that reason, and set there as an environment
-                # variable, which the compose file already reads.
-                $reuseArgs = @('-v', "$($script:SrcVolume):/srccache:ro")
-                $cachedArchive = $cached
-            }
-        } catch {
-            # Not being able to look is not a reason to fail -- it just downloads.
-        }
+    if ($haveBuilder -and $reuseArgs.Count -eq 0 -and
+        -not (Get-EnvValue $envPath 'M2_CLIENT_ARCHIVE_URL')) {
+        Write-Warn 'No native client archive was supplied.'
+        Write-Warn 'The server is ready; use your existing compatible client, or run again with:'
+        Write-Warn "    -ClientArchive 'C:\path\to\Reference_Client.zip'"
+        $script:ClientState = 'unavailable'
+        return
     }
 
     $buildArgs = @()
@@ -3081,7 +3086,8 @@ function Show-Summary {
         Write-Host '    Rent a small Linux VPS instead -- 4 GB of memory is about 5 EUR'
         Write-Host '    a month at Hetzner, Contabo or Netcup -- and run one line on it:'
         Write-Host ''
-        Write-Host '        curl -fsSL https://raw.githubusercontent.com/AzzlackSyndicate/metin2-singleplayer-serverfiles-linux/main/installer/install.sh | sudo sh' -ForegroundColor Cyan
+        Write-Host '        curl -fsSL https://raw.githubusercontent.com/TieruYT/metin2-playerbots/main/installer/install.sh | sudo sh -s -- ' -ForegroundColor Cyan
+        Write-Host '            --archive /path/Reference_Server.zip --no-client' -ForegroundColor Cyan
         Write-Host ''
         Write-Host '    That installer does the opposite of this one: it publishes the'
         Write-Host '    game to the internet, opens the firewall, and can put a real'
@@ -3103,7 +3109,7 @@ function Show-Summary {
     Write-Host '     The one dangerous command is "docker compose down -v".' -ForegroundColor Yellow
     Write-Host '     The -v deletes every account, character and item, with no undo.'
     Write-Host ''
-    if ($script:LocalOnly -and $script:ClientState -ne 'unavailable') {
+    if ($script:LocalOnly -and $script:ClientState -in @('local-ready','local-working')) {
         Write-Host "     The game lives in $($script:ClientDir)." -ForegroundColor White
         Write-Host '     If the Desktop shortcut goes missing, or the unpacking did not'
         Write-Host '     finish, this puts it right -- and does nothing when there is'
@@ -3204,6 +3210,14 @@ function Show-Summary {
             Write-Host "     If a client was built before it failed, $url/download"
             Write-Host '     still has it.'
         }
+        'skipped' {
+            Write-Host '       (client preparation skipped)' -ForegroundColor Yellow
+            Write-Host ''
+            Write-Host '     Use your existing compatible native Windows client and set:'
+            Write-Host '       address: 127.0.0.1'
+            Write-Host "       auth:    $($script:AuthPort)"
+            Write-Host "       game:    $($script:GamePorts)"
+        }
         default {
             Write-Host '       (no game yet)' -ForegroundColor Yellow
             Write-Host ''
@@ -3289,11 +3303,13 @@ function Invoke-Metin2Install {
         [string]$RepoUrl = '',
         [string]$ReferenceDir = '',
         [string]$Archive = '',
+        [string]$ClientArchive = '',
         [string]$LocalContext = '',
         # Given, these skip the question entirely -- for an unattended run that
         # knows what it wants. Not given, the installer asks once.
         [switch]$WebClient,
         [switch]$NoWebClient,
+        [switch]$NoClient,
         # The same arrangement for the Custom Experience: given, the question is
         # skipped; not given, the installer asks once and defaults to no.
         [switch]$CustomExperience,
@@ -3306,11 +3322,11 @@ function Invoke-Metin2Install {
 
   Metin2 server installer (Windows)
 
-    irm https://raw.githubusercontent.com/AzzlackSyndicate/metin2-singleplayer-serverfiles-linux/main/installer/install.ps1 | iex
+    irm https://raw.githubusercontent.com/TieruYT/metin2-playerbots/main/installer/install.ps1 | iex
 
   With options:
 
-    iex "& { $(irm https://raw.githubusercontent.com/AzzlackSyndicate/metin2-singleplayer-serverfiles-linux/main/installer/install.ps1) } -DryRun"
+    iex "& { $(irm https://raw.githubusercontent.com/TieruYT/metin2-playerbots/main/installer/install.ps1) } -DryRun"
 
     -DryRun            show what would happen, change nothing
     -Yes               don't ask anything; accept every default
@@ -3318,8 +3334,9 @@ function Invoke-Metin2Install {
     -AuthPort N        login port (default: 11000)
     -GamePorts A-B     channel ports (default: 13000-13002)
     -PanelPort N       admin panel port (default: 7788)
-    -WebClient         install the browser client (~1.8 GB) without asking
-    -NoWebClient       don't install the browser client, and don't ask
+    -WebClient         deprecated compatibility switch; ignored (native only)
+    -NoWebClient       compatibility switch; native-only is already the default
+    -NoClient          install the server only; use an existing native client
     -CustomExperience  turn the Custom Experience on without asking: bigger
                        pick-up range, a horse that always comes when called,
                        no waiting between the Horse Medal steps, bonus drops
@@ -3337,6 +3354,9 @@ function Invoke-Metin2Install {
                        downloaded when you give this.
     -Archive PATH      the server-file package as you downloaded it -- the
                        .zip/.rar/.7z, or metin2_server+src.tar.gz
+    -ClientArchive PATH
+                       a compatible native Windows client archive to configure
+                       locally (not included or downloaded by this project)
     -RepoDir PATH      use this checkout of the project instead of cloning one
     -RepoUrl URL       clone the project from here
     -LocalContext DIR  skip all of the above: install from a Docker build
@@ -3347,6 +3367,7 @@ function Invoke-Metin2Install {
 
     $env:M2_REPO_URL           $env:M2_REPO_DIR
     $env:M2_SRC_REFERENCE_DIR  $env:M2_SRC_ARCHIVE   $env:M2_SRC_URL
+    $env:M2_CLIENT_ARCHIVE
     $env:M2_LOCAL_CONTEXT      $env:M2_SRC_VOLUME
 
   Everything installs bound to 127.0.0.1. Nobody else can connect.
@@ -3361,6 +3382,7 @@ function Invoke-Metin2Install {
     # which is what lets a re-run tell a deliberate no from a default.
     if     ($WebClient)   { $script:WantWebFlag = $true  }
     elseif ($NoWebClient) { $script:WantWebFlag = $false }
+    $script:SkipClient = [bool]$NoClient
     if     ($CustomExperience)   { $script:CustomExperienceFlag = $true  }
     elseif ($NoCustomExperience) { $script:CustomExperienceFlag = $false }
     $script:InstallDir = if ($InstallDir) { $InstallDir }
@@ -3374,6 +3396,7 @@ function Invoke-Metin2Install {
     if ($RepoUrl)      { $script:RepoUrl      = $RepoUrl }
     if ($ReferenceDir) { $script:SrcRefDir    = $ReferenceDir }
     if ($Archive)      { $script:SrcArchive   = $Archive }
+    if ($ClientArchive) { $script:ClientArchive = $ClientArchive }
     if ($LocalContext) { $script:LocalContext = $LocalContext }
 
     Write-Host ''

@@ -179,10 +179,10 @@ services:
 
     ports:
       # auth -- the login server. Every client contacts this first.
-      - "${M2_HOST_BIND_ADDRESS:-0.0.0.0}:${M2_AUTH_PORT:-11000}:11000/tcp"
+      - "${M2_AUTH_PORT:-11000}:11000/tcp"
       # The channel cores. A range because channel N occupies 13000+10*(N-1)
       # through +2; raise it when you raise M2_CHANNELS (see .env.example).
-      - "${M2_HOST_BIND_ADDRESS:-0.0.0.0}:${M2_GAME_PORT_RANGE:-13000-13002}:${M2_GAME_PORT_RANGE:-13000-13002}/tcp"
+      - "${M2_GAME_PORT_RANGE:-13000-13002}:13000-13002/tcp"
       #
       # NOT published, and must never be:
       #   12000, 14000-14002   p2p between cores
@@ -364,7 +364,7 @@ services:
       TZ: "${M2_TZ:-UTC}"
 
     ports:
-      - "${M2_HOST_BIND_ADDRESS:-0.0.0.0}:${M2_PANEL_PUBLIC_PORT:-7788}:7788/tcp"
+      - "${M2_PANEL_PUBLIC_PORT:-7788}:7788/tcp"
 
     volumes:
       # m2panel.conf: the admin password hash, per-install salt and Flask

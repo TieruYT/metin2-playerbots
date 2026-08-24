@@ -38,8 +38,7 @@ import sys
 ROOT = os.environ.get("M2WASM", "/opt/m2wasm")
 REPO = os.environ.get(
     "M2REPO",
-    "/mnt/c/Users/hatip/Downloads/Fliege V3 - Fratello/Fliege V3 - Fratello/"
-    "metin2-singleplayer-serverfiles-linux")
+    os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..")))
 
 SHELL = os.path.join(ROOT, "tools/wasm/shell.html")
 CMAKE = os.path.join(ROOT, "src/UserInterface/CMakeLists.txt")

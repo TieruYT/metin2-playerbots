@@ -62,18 +62,18 @@ tree, not the database dumps. Those belong to Ymir/Webzen and to whoever
 assembled the r40250 package, and there is no release archive of them here and
 never will be.
 
-So the first thing to run is the script that goes and gets them:
+So the first thing to run is the script with a compatible local baseline:
 
 ```sh
 cd linux-port
-./fetch-sources.sh
+./fetch-sources.sh --archive /path/to/Reference_Server.zip
 ```
 
-It obtains the upstream archive (a local copy if you have one, otherwise the
-MEGA share its author publishes), extracts the source, the `share/` data tree
-and the SQL dumps, applies the port patch — zero fuzz and zero rejects or it
-stops — and fills in the Docker build context. It is idempotent: a second run
-costs seconds, and a failed one can simply be repeated.
+It extracts the source, the `share/` data tree and the SQL dumps, applies the
+port patch — zero fuzz and zero rejects or it stops — and fills in the Docker
+build context. No game archive is bundled or downloaded automatically. The
+script is idempotent: a second run costs seconds, and a failed one can simply
+be repeated.
 
 If you already have the server-file package, hand it over rather than
 downloading 1.4 GB again:
@@ -214,9 +214,10 @@ out it tells people "the game download is not ready yet". This builds one:
 docker compose run --rm client-builder
 ```
 
-It downloads the server files (over a gigabyte, from the MEGA link the server
-files ship with), writes **your** address into the client inside them, and puts
-the finished `client.zip` where the panel serves it. Then the button works.
+Place a compatible native client archive that you are authorised to use in
+`./client-archive/` first. The builder writes **your** address into that client
+and puts the finished `client.zip` where the panel serves it. Then the button
+works. This project supplies no default client download URL.
 
 The first run takes as long as your line and your disk take: measured at four
 minutes on a fast machine with a 60 Mbit link, and it can be an hour on a small

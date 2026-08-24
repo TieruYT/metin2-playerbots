@@ -4,6 +4,9 @@
 
 Lokalny świat Metin2 singleplayer, w którym po mapie biegają i autentycznie grają autonomiczne postacie (Playerbots): zdobywają poziomy, walczą solo i w party, zbierają łup, ulepszają ekwipunek u Kowala, polują na Metiny i zapisują swój postęp w standardowej bazie danych.
 
+> [!IMPORTANT]
+> Projekt działa wyłącznie z **natywnym klientem Windows**. Nie zawiera ani nie pobiera automatycznie plików Metin2, pakietu r40250 lub wycofanego WebClienta. Do instalacji potrzebujesz własnej zgodnej kopii plików. Zobacz [pochodzenie projektu i atrybucję](docs/ATTRIBUTION.md).
+
 W przeciwieństwie do tradycyjnych botów-klientów, boty w tym projekcie są **pełnoprawnymi bytami PC sterowanymi przez AI bezpośrednio wewnątrz silnika serwera (`game core`)**. Oznacza to, że zwykły gracz po wejściu do gry widzi ich naturalny ruch, animacje ataków, skille oraz ekwipunek przez standardowy protokół gry.
 
 ---
@@ -36,20 +39,29 @@ Projekt jest w fazie aktywnego rozwoju.
 
 ## 🚀 Szybki start (Quickstart)
 
-### 1. Klonowanie i instalacja (Windows)
+### 1. Przygotowanie plików
+
+Przygotuj lokalnie zgodne archiwum serwera r40250. Opcjonalnie przygotuj także archiwum natywnego klienta Windows. Żaden z tych plików nie może być publikowany w tym repozytorium.
+
+### 2. Klonowanie i instalacja (Windows)
 ```powershell
 git clone https://github.com/TieruYT/metin2-playerbots.git
 Set-Location .\metin2-playerbots
-& .\installer\install.ps1
+& .\installer\install.ps1 `
+    -Archive 'C:\ścieżka\Reference_Server.zip' `
+    -ClientArchive 'C:\ścieżka\Reference_Client.zip' `
+    -NoWebClient
 ```
 
-### 2. Uruchomienie serwera
+Jeśli masz już skonfigurowanego klienta, użyj zamiast `-ClientArchive` przełącznika `-NoClient`.
+
+### 3. Uruchomienie serwera po instalacji
 ```powershell
-Set-Location .\linux-port\docker
+Set-Location "$env:USERPROFILE\Metin2Server"
 docker compose up -d
 ```
 
-### 3. Wejście do gry
+### 4. Wejście do gry
 Skonfiguruj dowolnego klienta zgodnego z r40250 na adres `127.0.0.1` (port Auth `11000`, porty gry `13000–13002`) i ciesz się tętniącym życiem światem w Chunjo!
 
 👉 **Szczegółowy przewodnik instalacji, konfiguracji `.env` i klienta znajdziesz w: [docs/INSTALL.md](docs/INSTALL.md)**
@@ -87,11 +99,12 @@ Szczegółowe informacje podzielone na dedykowane poradniki:
 
 - 📖 **[Instalacja i Konfiguracja (docs/INSTALL.md)](docs/INSTALL.md)** – Docker, WSL2, Linux, `.env`, podłączanie klienta.
 - 💻 **[Przewodnik Deweloperski (docs/DEVELOPMENT.md)](docs/DEVELOPMENT.md)** – Szybka kompilacja C++ w 8s (`fast-game-build`), debugowanie i logi AI.
+- 🧾 **[Pochodzenie i atrybucja (docs/ATTRIBUTION.md)](docs/ATTRIBUTION.md)** – historia forka, granice licencji i status WebClienta.
 
 ---
 
 ## 🤝 Podziękowania i Credits
 
-- [AzzlackSyndicate/metin2-singleplayer-serverfiles-linux](https://github.com/AzzlackSyndicate/metin2-singleplayer-serverfiles-linux) — Baza linuksowego portu serwera, instalatory i panel webowy.
+- **AzzlackSyndicate** — autor pierwotnej bazy linuksowego portu, instalatorów i panelu. Repozytorium źródłowe jest obecnie prywatne; zachowujemy historię Git i pełną atrybucję.
 - [DadsMmoLab/dads-mmo-lab](https://github.com/DadsMmoLab/dads-mmo-lab) — Inspiracja badawcza dla autonomicznych agentów w grach MMO.
 - Społeczność badaczy i entuzjastów platformy Metin2.

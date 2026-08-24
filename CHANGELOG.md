@@ -17,6 +17,22 @@ every version here.
 
 ---
 
+## 1.16.0 — 2026-08-24
+
+### Changed
+
+- **The project is now installable independently of the retired upstream repository.** Installer, updater, panel metadata, and image labels point at `TieruYT/metin2-playerbots`.
+- **Native-client-only installation.** The withdrawn upstream WebClient is not fetched, published, or started. Legacy WebClient flags remain accepted only so old saved commands do not fail.
+- **Bring your own files (BYOF).** No third-party r40250 server/client mirror is built in. Supply a local server archive/reference directory and, optionally, a native client archive you are authorised to use. Windows adds `-ClientArchive` and `-NoClient`.
+- Added an explicit provenance and attribution document, retained upstream Git history, and clarified the licensing boundary for all game files.
+
+### Fixed
+
+- Corrected Docker Compose host/container port interpolation so a fresh local install can bind the panel and game ports without producing an invalid four-part port mapping.
+- Verified the complete local archive path against `Reference_Server.zip`: checksum, r40250 baseline, extraction, 30 patched files, and staging all pass without fuzz or rejects.
+
+---
+
 ## 1.15.6 — 2026-08-14
 
 ### Fixed

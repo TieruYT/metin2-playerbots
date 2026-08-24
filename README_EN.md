@@ -4,6 +4,9 @@
 
 A local Metin2 singleplayer world populated by genuine, autonomous player characters (Playerbots): leveling up, grinding solo and in squads, looting items, refining gear at the Blacksmith, hunting Metin stones, and persisting their full progression in the standard database.
 
+> [!IMPORTANT]
+> This project supports the **native Windows client only**. It neither contains nor automatically downloads Metin2 files, the r40250 package, or the withdrawn upstream WebClient. Installation requires your own compatible files. See [project provenance and attribution](docs/ATTRIBUTION.md).
+
 Unlike conventional external client-bot scripts, bots in this project are **first-class PC entities controlled by AI logic embedded directly inside the game core server engine**. Real players connecting to the server observe their natural movement, combat combos, skill casts, and equipment via standard Metin2 network packets.
 
 ---
@@ -36,20 +39,29 @@ The project is under active research and development.
 
 ## 🚀 Quickstart
 
-### 1. Clone and Install (Windows)
+### 1. Prepare the files
+
+Have a compatible local r40250 server archive ready. A native Windows client archive is optional if you already have a configured client. Neither file belongs in this repository.
+
+### 2. Clone and Install (Windows)
 ```powershell
 git clone https://github.com/TieruYT/metin2-playerbots.git
 Set-Location .\metin2-playerbots
-& .\installer\install.ps1
+& .\installer\install.ps1 `
+    -Archive 'C:\path\Reference_Server.zip' `
+    -ClientArchive 'C:\path\Reference_Client.zip' `
+    -NoWebClient
 ```
 
-### 2. Start the Server
+If you already have a configured client, replace `-ClientArchive` with `-NoClient`.
+
+### 3. Start the Server after installation
 ```powershell
-Set-Location .\linux-port\docker
+Set-Location "$env:USERPROFILE\Metin2Server"
 docker compose up -d
 ```
 
-### 3. Join the Game
+### 4. Join the Game
 Point any standard r40250-compatible game client to `127.0.0.1` (Auth port `11000`, Game ports `13000–13002`) and jump into the living world in Joan (Chunjo)!
 
 👉 **Detailed installation, `.env` options, and client setup instructions: [docs/INSTALL_EN.md](docs/INSTALL_EN.md)**
@@ -87,11 +99,12 @@ Detailed guides separated into dedicated documentation modules:
 
 - 📖 **[Installation & Setup Guide (docs/INSTALL_EN.md)](docs/INSTALL_EN.md)** – Docker, WSL2, Linux, `.env`, client connection.
 - 💻 **[Developer Guide & Diagnostics (docs/DEVELOPMENT_EN.md)](docs/DEVELOPMENT_EN.md)** – 8-second fast C++ builds (`fast-game-build`), debugging, and telemetry logs.
+- 🧾 **[Provenance & Attribution (docs/ATTRIBUTION.md)](docs/ATTRIBUTION.md)** – fork history, licensing boundary, and WebClient status.
 
 ---
 
 ## 🤝 Credits & Acknowledgements
 
-- [AzzlackSyndicate/metin2-singleplayer-serverfiles-linux](https://github.com/AzzlackSyndicate/metin2-singleplayer-serverfiles-linux) — Upstream Linux server port, installers, and web management panel.
+- **AzzlackSyndicate** — author of the original Linux port foundation, installers, and panel. The source repository is now private; its Git history and attribution are retained.
 - [DadsMmoLab/dads-mmo-lab](https://github.com/DadsMmoLab/dads-mmo-lab) — Research inspiration for autonomous MMO agent design.
 - The Metin2 emulation and research community.

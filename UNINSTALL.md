@@ -146,19 +146,16 @@ rm -rf /var/lib/docker
 ## Installing again
 
 ```sh
-curl -fsSL https://raw.githubusercontent.com/AzzlackSyndicate/metin2-singleplayer-serverfiles-linux/main/installer/install.sh \
-  | sudo sh -s -- --domain example.com --email you@example.com
+curl -fsSL https://raw.githubusercontent.com/TieruYT/metin2-playerbots/main/installer/install.sh \
+  | sudo sh -s -- --archive /path/Reference_Server.zip --no-client \
+      --domain example.com --email you@example.com
 ```
 
 Leave off `--domain` and `--email` for a server reachable by IP address only;
 you then get plain HTTP and no certificate.
 
-It asks which clients you want before it downloads anything large. Roughly what
-each choice costs on a fresh machine:
-
-- **Server only** — about 220 MB
-- **plus the browser client** — about 1.8 GB more
-- **plus the desktop client** — about 1.3 GB more
+The installer does not download game files. Supply the r40250 server baseline
+yourself and use a compatible native Windows client.
 
 ### Putting your characters back
 
@@ -193,16 +190,7 @@ docker compose build game && docker compose up -d game
 sh /var/cache/m2src/repo/linux-port/fetch-sources.sh --force redownload
 ```
 
-**Fetch the browser client again.** The whole command has to be written out:
-arguments given to `run` replace the service's own, and leaving out `--target`
-would put the client somewhere the panel does not look.
-
-```sh
-docker compose --profile webclient run --rm webclient-fetcher \
-  sh /opt/fetch-web-client.sh install --target /out/browser --force
-```
-
-All three restart the game, which disconnects everyone who is playing. Say so
+Both operations restart the game, which disconnects everyone who is playing. Say so
 in advance if anybody is.
 
 ---

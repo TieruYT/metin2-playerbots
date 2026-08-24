@@ -523,13 +523,10 @@ download_direct() { # download_direct URL DEST_DIR
 
 dead_link_advice() {
     note ""
-    note "  The download did not succeed. This link is a share on someone else's"
-    note "  MEGA account, so one day it will stop working, and that day is not a"
-    note "  bug in this server. Two ways round it, both of which skip the"
-    note "  download entirely:"
+    note "  This project supplies no native client archive or default mirror."
+    note "  Provide a compatible client that you are authorised to use:"
     note ""
-    note "    1. Another link. Any direct download or MEGA link to the same"
-    note "       server-file archive:"
+    note "    1. An explicit direct or MEGA link:"
     note "         M2_CLIENT_ARCHIVE_URL=https://... docker compose run --rm client-builder"
     note ""
     note "    2. The file itself. Download it on your own PC, copy it next to"

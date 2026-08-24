@@ -18,19 +18,48 @@ Przewodnik instalacji i konfiguracji lokalnego serwera Metin2 ze zintegrowanym s
 
 ---
 
+## 📦 Wymagane pliki zewnętrzne (BYOF)
+
+Repozytorium zawiera Playerboty, patche, instalatory i opakowanie Docker, ale
+nie zawiera kodu lub danych gry. Do czystej instalacji przygotuj:
+
+- zgodne archiwum serwera r40250 zawierające `metin2_server+src.tar.gz` oraz `metin2_mysql_dump.zip`, albo rozpakowany katalog `[40250] Reference Serverfile`;
+- opcjonalnie archiwum kompatybilnego natywnego klienta Windows. Możesz też użyć własnego, już skonfigurowanego klienta.
+
+WebClient nie jest częścią tego forka i instalator zawsze go wyłącza. Nie dodawaj
+archiwów gry do Git — patrz [NOTICE.md](../NOTICE.md) i [ATTRIBUTION.md](ATTRIBUTION.md).
+
+---
+
 ## 🚀 Instalacja
 
 ### 1. Windows 10 / 11 (Zalecane)
 
 1. Zainstaluj **Docker Desktop** i upewnij się, że włączony jest backend **WSL2**.
 2. Uruchom Docker Desktop i poczekaj, aż pojawi się status **Engine running**.
-3. Sklonuj repozytorium i uruchom instalator PowerShell:
+3. Sklonuj repozytorium i uruchom instalator PowerShell, podając własne archiwa:
 
 ```powershell
 git clone https://github.com/TieruYT/metin2-playerbots.git
 Set-Location .\metin2-playerbots
-& .\installer\install.ps1
+& .\installer\install.ps1 `
+    -Archive 'C:\PlikiMetin2\Reference_Server.zip' `
+    -ClientArchive 'C:\PlikiMetin2\Reference_Client.zip' `
+    -NoWebClient
 ```
+
+Jeżeli korzystasz z już skonfigurowanego klienta, uruchom instalację serwera bez
+budowania klienta:
+
+```powershell
+& .\installer\install.ps1 `
+    -Archive 'C:\PlikiMetin2\Reference_Server.zip' `
+    -NoClient -NoWebClient
+```
+
+Zamiast archiwum można użyć `-ReferenceDir 'C:\ścieżka\[40250] Reference Serverfile'`.
+Po pierwszym złożeniu źródła instalator trzyma je w wolumenie Dockera, więc
+aktualizacja nie wymaga ponownego podawania archiwum.
 
 Instalator automatycznie:
 - Skonfiguruje środowisko Docker Compose.
@@ -44,7 +73,9 @@ Instalator automatycznie:
 ```sh
 git clone https://github.com/TieruYT/metin2-playerbots.git
 cd metin2-playerbots
-sudo sh ./installer/install.sh --local
+sudo sh ./installer/install.sh --local \
+  --archive '/ścieżka/Reference_Server.zip' \
+  --no-client --no-web-client
 ```
 
 Flaga `--local` gwarantuje, że serwer nasłuchuje wyłącznie na `127.0.0.1` bez otwierania portów na świat.
@@ -53,7 +84,8 @@ Flaga `--local` gwarantuje, że serwer nasłuchuje wyłącznie na `127.0.0.1` be
 
 ## ⚙️ Konfiguracja (.env)
 
-Główna konfiguracja znajduje się w pliku `linux-port/docker/.env`.
+Po instalacji główna konfiguracja znajduje się domyślnie w
+`%USERPROFILE%\Metin2Server\.env` na Windows lub `/opt/metin2/stack/.env` na Linux.
 
 Najważniejsze opcje:
 ```ini
@@ -93,7 +125,8 @@ docker compose up -d --force-recreate game
 
 ## 🔄 Codzienne zarządzanie serwerem
 
-Wszystkie polecenia wykonuj w katalogu `linux-port/docker/`:
+Wszystkie polecenia wykonuj w katalogu instalacji (domyślnie
+`%USERPROFILE%\Metin2Server` na Windows):
 
 ```powershell
 # Uruchomienie serwera w tle

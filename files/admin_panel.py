@@ -1125,8 +1125,8 @@ def local_changelog():
 # CHANGELOG.md (text, escaped before it is ever shown).
 UPDATE_BASE_URL = _env_path(
     "M2PANEL_UPDATE_URL",
-    "https://raw.githubusercontent.com/AzzlackSyndicate/"
-    "metin2-singleplayer-serverfiles-linux/main")
+    "https://raw.githubusercontent.com/TieruYT/"
+    "metin2-playerbots/main")
 
 UPDATE_TIMEOUT  = 8             # seconds, hard, on every network operation
 UPDATE_EVERY    = 24 * 3600     # after a successful check
@@ -1195,8 +1195,8 @@ def _update_fetch(url, limit):
         # Honest about who is calling. GitHub sees this, and so would anyone
         # else the operator points M2PANEL_UPDATE_URL at.
         "User-Agent": "metin2-panel/%s (+%s)" % (PANEL_VERSION or "unknown",
-                                                 "https://github.com/AzzlackSyndicate/"
-                                                 "metin2-singleplayer-serverfiles-linux"),
+                                                 "https://github.com/TieruYT/"
+                                                 "metin2-playerbots"),
         "Accept": "text/plain",
     })
     with urllib.request.urlopen(req, timeout=UPDATE_TIMEOUT) as resp:
