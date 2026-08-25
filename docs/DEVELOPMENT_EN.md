@@ -17,6 +17,8 @@ linux-port/overlays/playerbot/
 │   └── playerbot_manager.h      # Class declarations and data structures
 ├── sql/
 │   └── playerbots_seed.sql      # MariaDB seed dataset for 350 persistent characters
+├── serverfiles/
+│   └── mob_drop_item.m3.append.txt # Additive M3 progression drops
 ├── tools/
 │   └── generate_seed.py         # Cohort generator (classes, baseline gear, names)
 └── patches/
@@ -92,3 +94,25 @@ docker compose up -d --force-recreate panel
 ```
 
 Access the panel at: `http://127.0.0.1:7788`.
+
+---
+
+## 💾 Database Backup and Horse Diagnostics
+
+Before a major AI change, stop state-writing services and create a verified compressed backup of the complete database:
+
+```sh
+docker compose stop game panel
+./backup_database.sh /safe/path/database-all.sql.gz
+docker compose start
+```
+
+The helper neither prints nor stores the database password; it reads the credential only inside `metin2-db` and validates the resulting gzip archive.
+
+Run the complete read-only Horse Medal journey report with:
+
+```sh
+./diagnose_horse_journeys.sh
+```
+
+The report covers bot distribution across M1/M2/M3 and the Monkey Dungeon, carried medals, horse levels, and persisted medal pickup/delivery telemetry.

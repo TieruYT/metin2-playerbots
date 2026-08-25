@@ -1,0 +1,63 @@
+
+# Playerbot M3/Waryong progression drops. These use the ordinary kill-drop
+# path, so ownership, server rates, random bonuses and pickup remain native.
+Group	playerbot_m3_cursed_wolf_level30
+{
+	Kill_drop	400
+	Mob	127
+	Type	kill
+	1	1170	1	15	10
+}
+Group	playerbot_m3_cursed_alpha_level30
+{
+	Kill_drop	400
+	Mob	128
+	Type	kill
+	1	2100	1	15	10
+}
+Group	playerbot_m3_cursed_boar_level30
+{
+	Kill_drop	400
+	Mob	129
+	Type	kill
+	1	3210	1	15	10
+}
+Group	playerbot_m3_cursed_red_boar_level30
+{
+	Kill_drop	400
+	Mob	130
+	Type	kill
+	1	5110	1	20	10
+}
+Group	playerbot_m3_cursed_bear_level30
+{
+	Kill_drop	400
+	Mob	132
+	Type	kill
+	1	290	1	15	10
+}
+Group	playerbot_m3_cursed_black_bear_level30
+{
+	Kill_drop	400
+	Mob	133
+	Type	kill
+	1	7160	1	15	10
+}
+Group	playerbot_m3_cursed_tiger_level30
+{
+	Kill_drop	400
+	Mob	135
+	Type	kill
+	1	1170	1	25	10
+	2	2100	1	25	10
+	3	13020	1	20	10
+}
+Group	playerbot_m3_cursed_white_tiger_level30
+{
+	Kill_drop	400
+	Mob	136
+	Type	kill
+	1	3210	1	20	10
+	2	5110	1	20	10
+	3	13020	1	20	10
+}

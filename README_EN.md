@@ -15,8 +15,10 @@ Unlike conventional external client-bot scripts, bots in this project are **firs
 
 - ⚔️ **Smart Combat Engine**: Full support for all character classes (Warrior, Sura BM/WP, Ninja Dagger/Archer, Shaman), smooth combo animations, projectile-based bow attacks consuming arrows, active buff maintenance, and skill rotations.
 - 🗺️ **Global 2D NavGrid (A*)**: High-resolution collision grid generated from engine map attributes (`server_attr`) coupled with Global A* and String-Pulling line-of-sight trajectory smoothing.
+- 🚪 **Multi-map Travel**: Autonomous portal traversal across M1 ↔ M2 ↔ M3 and the internal teleports of the Easy Monkey Dungeon. Bots choose zones according to level and equipment readiness.
 - 💎 **Metin Stone Hunting**: Dedicated roving Metin hunters patrolling the map, shattering stones, and clearing spawned add waves.
-- 🎒 **Looting & Town Economy**: Post-battle loot collection, automated equipment evaluation and upgrades, routine town visits to sell junk inventory, restock potions, and refine gear at the **Blacksmith**.
+- 🎒 **Looting & Town Economy**: Post-battle loot collection, automated equipment evaluation including shields, appropriate merchant visits, potion restocking, and gear refinement at the **Blacksmith**.
+- 🐴 **Horse Progression**: Real Horse Medal expeditions into the Monkey Dungeon, delivery to the nearest Stable Boy, and mounted long-distance travel.
 - 👥 **Party & Squad Dynamics**: Dynamic 2–3 player squad formations, cooperative exping, and pulling mobs in dense monster camps.
 - 💾 **Native MariaDB Persistence**: Each bot has its own persistent account and character entry in MariaDB, retaining Level, EXP, Yang, items, and quest flags across server restarts.
 
@@ -27,7 +29,7 @@ Unlike conventional external client-bot scripts, bots in this project are **firs
 The project is under active research and development.
 
 > [!NOTE]
-> **Supported Kingdom:** The current version features full 2D NavGrid collision navigation, 32 regional hunting hubs, and Metin clusters implemented specifically for the **Chunjo Kingdom (Yellows / Map 21 – Joan)**. Support for other kingdoms (*Shinsoo – Reds* and *Jinno – Blues*) is planned for future development phases.
+> **Supported Kingdom:** The autonomous world currently covers **Chunjo**: Joan (M1, map 21), Bokjung (M2, map 23), Waryong/M3 (map 24), and the Easy Monkey Dungeon (map 25). More Chunjo regions and the other kingdoms (*Shinsoo – Reds* and *Jinno – Blues*) remain future work.
 
 ### Resource Footprint (350 Bot Snapshot)
 - **Game Engine (`game core`)**: ~1.05 GiB RAM
@@ -85,9 +87,11 @@ Manage bots directly via in-game chat (requires GM / Administrator permissions):
 ## 🗺️ Roadmap
 
 - [x] **Phase 1**: Full combat animations for all classes, Archer projectiles, 2D NavGrid (A*), Blacksmith refinement cycle, and 32 regional hubs in Chunjo.
-- [ ] **Phase 2**: Multi-map zone traversal (M2, Orc Valley, Desert) and full **Demon Tower (DT)** runs.
+- [x] **Phase 2A**: M1/M2/M3 traversal, level-based zones, the Easy Monkey Dungeon, and real Horse Medal expeditions.
+- [ ] **Phase 2B**: Orc Valley, Desert, and full **Demon Tower (DT)** runs.
 - [ ] **Phase 3**: Reading Skill Books (KU) and Soul Stones (KD), advanced skill priority trees.
-- [ ] **Phase 4**: Biologist quest progression and complete horse training cycle (Beginner, Combat, Military).
+- [x] **Phase 4A**: Early Biologist missions and first-stage horse progression backed by real Horse Medal drops.
+- [ ] **Phase 4B**: Orc Tooth and later Biologist missions plus Combat and Military Horse progression.
 - [ ] **Phase 5**: Non-combat life skills: Fishing minigame, mining ore veins, and alchemy crafting.
 - [ ] **Phase 6**: Private offline player shops in town centers, inter-bot trading, and dynamic market pricing.
 

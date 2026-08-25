@@ -15,8 +15,10 @@ W przeciwieństwie do tradycyjnych botów-klientów, boty w tym projekcie są **
 
 - ⚔️ **Inteligentna walka**: Obsługa wszystkich klas (Wojownik, Sura BM/WP, Ninja Dagger/Archer, Szaman), płynne animacje kombosów, ataki z łuku z uwzględnieniem strzał, utrzymywanie buffów i rotacje skilli.
 - 🗺️ **Globalna nawigacja 2D NavGrid (A*)**: Własna siatka kolizji generowana z atrybutów mapy (`server_attr`) oraz algorytm A* z wygładzaniem tras (*String Pulling*). Boty sprawnie omijają góry, rzeki i mury miejskie.
+- 🚪 **Podróże między mapami**: Autonomiczne przejścia przez portale M1 ↔ M2 ↔ M3 oraz połączenia wewnątrz Łatwego Lochu Małp. Boty dobierają strefę do poziomu i jakości ekwipunku.
 - 💎 **Polowanie na Metiny**: Dedykowana rola łowców Metinów patrolujących całą mapę, niszczących kamienie i czyszczących fale potworów.
-- 🎒 **Loot i ekonomia miejska**: Zbieranie Yang i przedmiotów po walce, automatyczne ubieranie lepszego ekwipunku, regularne powroty do miasta, sprzedaż zapchanego plecaka u Handlarki, uzupełnianie mikstur i ulepszanie u **Kowala**.
+- 🎒 **Loot i ekonomia miejska**: Zbieranie Yang i przedmiotów po walce, automatyczne ubieranie lepszego ekwipunku wraz z tarczami, regularne powroty do odpowiednich handlarzy, uzupełnianie mikstur i ulepszanie u **Kowala**.
+- 🐴 **Rozwój konia**: Wyprawy po prawdziwe Medale Konne do Lochu Małp, oddawanie ich najbliższemu Stajennemu i używanie konia do długich podróży.
 - 👥 **Grupy i Party**: Dynamiczne tworzenie 2–3 osobowych drużyn, formacje bojowe i wspólne expienie w gęstych obozach potworów.
 - 💾 **Trwały zapis w bazie**: Każdy bot posiada własne konto i postać w bazie MariaDB — zachowuje poziom, przedmioty, Yang i postępy po restarcie serwera.
 
@@ -27,7 +29,7 @@ W przeciwieństwie do tradycyjnych botów-klientów, boty w tym projekcie są **
 Projekt jest w fazie aktywnego rozwoju.
 
 > [!NOTE]
-> **Obsługiwane Królestwo:** Obecnie pełna siatka nawigacyjna NavGrid 2D, rozkład 32 hubów expienia oraz punkty Metinów zostały wdrożone dla **Królestwa Chunjo (Żółci / Mapa 21 – Joan)**. Obsługa kolejnych królestw (*Shinsoo – Czerwoni* oraz *Jinno – Niebiescy*) jest zaplanowana w dalszych etapach.
+> **Obsługiwane Królestwo:** Obecnie autonomiczny świat obejmuje **Chunjo**: Joan (M1, mapa 21), Bokjung (M2, mapa 23), Waryong/M3 (mapa 24) oraz Łatwy Loch Małp (mapa 25). Obsługa kolejnych regionów Chunjo i królestw (*Shinsoo – Czerwoni* oraz *Jinno – Niebiescy*) jest zaplanowana w dalszych etapach.
 
 ### Zużycie zasobów (Snapshot dla 350 botów)
 - **Serwer gry (`game core`)**: ~1.05 GiB RAM
@@ -85,9 +87,11 @@ Zarządzanie botami bezpośrednio z poziomu czatu w grze (dla konta GM / Adminis
 ## 🗺️ Roadmapa rozwoju
 
 - [x] **Faza 1**: Pełne animacje wszystkich klas, łucznicy z pociskami, siatka 2D NavGrid (A*), ulepszanie u Kowala i 32 huby expienia w Chunjo.
-- [ ] **Faza 2**: Przejścia między mapami (M2, Dolina Orków, Pustynia) oraz wyprawy na **Wieżę Demonów (DT)**.
+- [x] **Faza 2A**: Przejścia M1/M2/M3, expienie strefowe, Łatwy Loch Małp i rzeczywiste wyprawy po Medale Konne.
+- [ ] **Faza 2B**: Dolina Orków, Pustynia oraz wyprawy na **Wieżę Demonów (DT)**.
 - [ ] **Faza 3**: Czytanie Ksiąg Umiejętności (KU) i Kamieni Duchowych (KD), zaawansowane buildy skilli.
-- [ ] **Faza 4**: Misje Biologa (od zębów orka wzwyż) oraz pełny cykl rozwoju konia (zwykły, bojowy, militarny).
+- [x] **Faza 4A**: Podstawowe misje Biologa i pierwszy etap konia oparty na prawdziwym dropie Medali Konnych.
+- [ ] **Faza 4B**: Zęby Orka i późniejsze misje Biologa oraz koń bojowy i militarny.
 - [ ] **Faza 5**: Aktywności poboczne: łowienie ryb, kilof i wydobywanie rud z żył alchemii.
 - [ ] **Faza 6**: Prywatne tobołki/sklepy botów w miastach, handel między botami i dynamiczna wycena przedmiotów.
 

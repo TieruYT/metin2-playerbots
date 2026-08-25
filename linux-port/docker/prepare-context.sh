@@ -64,6 +64,7 @@ PLAYERBOT_ECONOMY_PATCH="$PLAYERBOT_OVERLAY/patches/0002-economy-yang-x5.patch"
 PLAYERBOT_SEED_GENERATOR="$PLAYERBOT_OVERLAY/tools/generate_seed.py"
 PLAYERBOT_SEED="$PLAYERBOT_OVERLAY/sql/playerbots_seed.sql"
 PLAYERBOT_MIGRATOR="$HERE/mariadb/playerbot/apply.sh"
+PLAYERBOT_M3_DROPS="$PLAYERBOT_OVERLAY/serverfiles/mob_drop_item.m3.append.txt"
 
 while [ $# -gt 0 ]; do
   case "$1" in
@@ -97,7 +98,8 @@ for p in \
   "$PLAYERBOT_ECONOMY_PATCH" \
   "$PLAYERBOT_SEED_GENERATOR" \
   "$PLAYERBOT_SEED" \
-  "$PLAYERBOT_MIGRATOR"
+  "$PLAYERBOT_MIGRATOR" \
+  "$PLAYERBOT_M3_DROPS"
 do
   [ -s "$p" ] || die "Playerbot overlay input is missing or empty: $p"
 done
@@ -206,6 +208,9 @@ for d in conf data locale package; do
   info "share/$d  $(du -sh "$GAME_CTX/serverfiles/share/$d" | cut -f1)"
 done
 
+cp -a "$PLAYERBOT_M3_DROPS" "$HERE/game/mob_drop_item.m3.append.txt"
+info "M3/Waryong level-30 weapon and level-21 shield drop overlay staged"
+
 # share/bin is deliberately NOT copied. The binaries in the image come from the
 # builder stage; the tree also still carries the original FreeBSD game.freebsd
 # and db.freebsd (90 MB + 20 MB) which cannot run on Linux at all.
@@ -259,6 +264,14 @@ cp -a "$PANEL_SRC/admin_panel.py" "$HERE/panel/app/"
 for f in items.json favicon.png; do
   [ -f "$PANEL_SRC/$f" ] && cp -a "$PANEL_SRC/$f" "$HERE/panel/app/" && info "$f"
 done
+# The live map's Polish mode uses the complete server locale rather than a
+# partial hand-maintained dictionary.  Keep this optional for custom source
+# trees that genuinely do not ship Polish, in which case the panel falls back
+# to its small built-in family translator.
+if [ -f "$RUNTIME_SRC/share/conf/item_names_pl.txt" ]; then
+  cp -a "$RUNTIME_SRC/share/conf/item_names_pl.txt" "$HERE/panel/app/"
+  info "item_names_pl.txt"
+fi
 # The version, and the changelog that explains it. Both are plain text and both
 # are read by the panel at runtime: VERSION is what it reports and what it
 # compares against the published one, CHANGELOG.md is what its patch log shows

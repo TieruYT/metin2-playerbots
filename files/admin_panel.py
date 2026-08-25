@@ -61,17 +61,35 @@ HUNTING_MISSIONS = {
     25: ((551, "Strong Savage Infantry", 80), (454, "Evil Black Storm Joh-Hwan", 20)),
 }
 
-def hunting_progress_label(current, selection, remain, complete):
+HUNTING_MOB_NAMES_PL = {
+    171: "Głodny Dziki Pies", 172: "Głodny Wilk", 173: "Głodny Alfa Wilk",
+    174: "Głodny Niebieski Wilk", 175: "Głodny Alfa Niebieski Wilk",
+    176: "Głodny Szary Wilk", 177: "Głodny Alfa Szary Wilk",
+    178: "Głodny Dzik", 179: "Głodny Czerwony Dzik",
+    180: "Głodny Niedźwiedź", 181: "Głodny Grizzly",
+    182: "Głodny Czarny Niedźwiedź", 183: "Głodny Brązowy Niedźwiedź",
+    184: "Głodny Tygrys", 185: "Głodny Biały Tygrys",
+    352: "Tchórzliwy Łucznik Białych Zaprzysiężonych",
+    354: "Tchórzliwy Dowódca Białych Zaprzysiężonych",
+    402: "Maniak Czarnego Wiatru", 451: "Żołnierz Czarnego Wiatru",
+    454: "Joh-Hwan Czarnego Wiatru", 551: "Silny Dziki Piechur",
+}
+
+def hunting_progress_label(current, selection, remain, complete, language=None):
+    language = language or (lang() if has_request_context() else "en")
     current, selection = int(current or 0), 2 if int(selection or 1) == 2 else 1
     remain, complete = max(0, int(remain or 0)), max(0, int(complete or 0))
     mission = HUNTING_MISSIONS.get(current)
     if mission:
-        _vnum, mob_name, required = mission[selection - 1]
+        mob_vnum, mob_name, required = mission[selection - 1]
+        if language == "pl":
+            mob_name = HUNTING_MOB_NAMES_PL.get(mob_vnum, mob_name)
         done = max(0, required - remain)
         return "Lv %d • %s: %d/%d" % (current, mob_name, done, required)
     if complete:
-        return "Ukończone do Lv %d" % complete
-    return "Jeszcze nierozpoczęte"
+        return ("Ukończone do Lv %d" if language == "pl" else
+                "Completed through Lv %d") % complete
+    return "Jeszcze nierozpoczęte" if language == "pl" else "Not started yet"
 
 # Party membership is intentionally restricted by the game core to this
 # deterministic ten-percent cohort.  Runtime parties are not persisted in the
@@ -90,6 +108,13 @@ SKILL_GROUP_NAMES = {
     (1, 1): "Sztylety", (1, 2): "Łucznik",
     (2, 1): "Magia Broni", (2, 2): "Czarna Magia",
     (3, 1): "Smok", (3, 2): "Leczenie",
+}
+
+SKILL_GROUP_NAMES_EN = {
+    (0, 1): "Body", (0, 2): "Mental",
+    (1, 1): "Dagger", (1, 2): "Archer",
+    (2, 1): "Weaponry", (2, 2): "Black Magic",
+    (3, 1): "Dragon", (3, 2): "Healing",
 }
 
 PLAYER_SKILLS = {
@@ -115,6 +140,29 @@ PLAYER_SKILLS = {
              (110, "Zwinność"), (111, "Zwiększenie Ataku")),
 }
 
+PLAYER_SKILLS_EN = {
+    (0, 1): ((1, "Three-Way Cut"), (2, "Sword Spin"), (3, "Berserk"),
+             (4, "Aura of Sword"), (5, "Dash")),
+    (0, 2): ((16, "Spirit Strike"), (17, "Bash"), (18, "Stump"),
+             (19, "Strong Body"), (20, "Sword Strike")),
+    (1, 1): ((31, "Ambush"), (32, "Fast Attack"), (33, "Rolling Dagger"),
+             (34, "Stealth"), (35, "Poison Cloud")),
+    (1, 2): ((46, "Repetitive Shot"), (47, "Arrow Shower"),
+             (48, "Fire Arrow"), (49, "Feather Walk"), (50, "Poison Arrow")),
+    (2, 1): ((61, "Finger Strike"), (62, "Dragon Swirl"),
+             (63, "Enchanted Blade"), (64, "Fear"),
+             (65, "Enchanted Armour"), (66, "Dispel")),
+    (2, 2): ((76, "Dark Strike"), (77, "Flame Strike"),
+             (78, "Flame Spirit"), (79, "Dark Protection"),
+             (80, "Spirit Strike"), (81, "Dark Orb")),
+    (3, 1): ((91, "Flying Talisman"), (92, "Shooting Dragon"),
+             (93, "Dragon Roar"), (94, "Blessing"),
+             (95, "Reflect"), (96, "Dragon's Aid")),
+    (3, 2): ((106, "Lightning Throw"), (107, "Summon Lightning"),
+             (108, "Lightning Claw"), (109, "Cure"),
+             (110, "Swiftness"), (111, "Attack Up")),
+}
+
 
 def skill_rank_label(master_type, level):
     master_type, level = int(master_type or 0), int(level or 0)
@@ -127,7 +175,7 @@ def skill_rank_label(master_type, level):
     return str(level)
 
 
-def parse_player_skills(raw, job, skill_group):
+def parse_player_skills(raw, job, skill_group, language=None):
     """Decode r40250's packed TPlayerSkill[255] (master, level, next-read)."""
     if isinstance(raw, memoryview):
         raw = raw.tobytes()
@@ -137,7 +185,8 @@ def parse_player_skills(raw, job, skill_group):
     base_job = int(job or 0) % 4
     group = int(skill_group or 0)
     result = []
-    for vnum, name in PLAYER_SKILLS.get((base_job, group), ()):
+    skill_names = PLAYER_SKILLS if language == "pl" else PLAYER_SKILLS_EN
+    for vnum, name in skill_names.get((base_job, group), ()):
         offset = vnum * 6
         master_type = raw[offset] if offset < len(raw) else 0
         level = raw[offset + 1] if offset + 1 < len(raw) else 0
@@ -1522,9 +1571,71 @@ except Exception:
     ITEMS = []
 # vnum -> display name, for the read-only inventory view
 ITEM_NAMES = {it["v"]: it["n"] for it in ITEMS}
+ITEM_NAMES_PL = {}
 
-# ---- UI translations (interface language: de / en / tr) ----
-LANGS = {"en": "English", "de": "Deutsch", "tr": "Türkçe"}
+# The stock serverfiles already ship a complete Polish locale table.  The
+# context-preparation script places it next to this module so the map does not
+# have to maintain a second, inevitably incomplete, hand-written item list.
+# r40250's Polish table is Windows-1250 encoded.
+try:
+    _pl_item_names_path = os.path.join(os.path.dirname(__file__), "item_names_pl.txt")
+    with open(_pl_item_names_path, "r", encoding="cp1250", errors="replace") as _pl_names:
+        for _line in _pl_names:
+            _parts = _line.rstrip("\r\n").split("\t", 1)
+            if len(_parts) != 2 or not _parts[0].isdigit():
+                continue
+            ITEM_NAMES_PL[int(_parts[0])] = _parts[1].strip()
+except (OSError, UnicodeError):
+    ITEM_NAMES_PL = {}
+
+_ITEM_PL_EXACT = {
+    "Full Moon Sword": "Miecz Pełni Księżyca",
+    "Red Iron Blade": "Czerwone Żelazne Ostrze",
+    "Black Leaf Dirk": "Sztylet Czarnego Liścia",
+    "Bull's Horn Bow": "Łuk z Rogu Byka",
+    "Antique Bell": "Antyczny Dzwon",
+    "Autumn Wind Fan": "Wachlarz Jesiennego Wiatru",
+    "Battle Shield": "Tarcza Bojowa",
+    "Pentagon Shield": "Tarcza Pięciokątna",
+    "Horse Medal": "Medal Konny",
+    "Red Potion": "Czerwona Mikstura",
+    "Blue Potion": "Niebieska Mikstura",
+    "Green Potion": "Zielona Mikstura",
+    "Purple Potion": "Fioletowa Mikstura",
+}
+_ITEM_PL_WORDS = (
+    ("Skill Book", "Księga Umiejętności"), ("Armour", "Zbroja"),
+    ("Armor", "Zbroja"), ("Earrings", "Kolczyki"),
+    ("Bracelet", "Bransoleta"), ("Necklace", "Naszyjnik"),
+    ("Helmet", "Hełm"), ("Shield", "Tarcza"), ("Boots", "Buty"),
+    ("Shoes", "Buty"), ("Sword", "Miecz"), ("Blade", "Ostrze"),
+    ("Dagger", "Sztylet"), ("Dirk", "Sztylet"), ("Bow", "Łuk"),
+    ("Bell", "Dzwon"), ("Fan", "Wachlarz"), ("Potion", "Mikstura"),
+    ("Stone", "Kamień"), ("Book", "Księga"),
+)
+
+def translate_item_name_pl(name):
+    """Translate stock item families while preserving refinement suffixes."""
+    name = str(name or "")
+    for source, translated in _ITEM_PL_EXACT.items():
+        if name == source or name.startswith(source + "+") or name.startswith(source + " ("):
+            return translated + name[len(source):]
+    for source, translated in _ITEM_PL_WORDS:
+        name = re.sub(r"\b%s\b" % re.escape(source), translated, name,
+                      flags=re.IGNORECASE)
+    return name
+
+def localized_item_name(vnum, language=None):
+    language = language or (lang() if has_request_context() else "en")
+    if language == "pl" and int(vnum or 0) in ITEM_NAMES_PL:
+        return ITEM_NAMES_PL[int(vnum or 0)]
+    name = ITEM_NAMES.get(vnum, "")
+    if not name:
+        return ("Przedmiot #%d" if language == "pl" else "Item #%d") % int(vnum or 0)
+    return translate_item_name_pl(name) if language == "pl" else name
+
+# ---- UI translations -------------------------------------------------------
+LANGS = {"pl": "Polski", "en": "English", "de": "Deutsch", "tr": "Türkçe"}
 T = {
  "welcome":      {"en":"Welcome!","de":"Willkommen!","tr":"Hoş geldin!"},
  "admin_hint":   {"en":"If you're the admin, enter your passphrase.","de":"Wenn du der Admin bist, gib deine Passphrase ein.","tr":"Yöneticiysen gizli kelimeni yaz."},
@@ -2149,6 +2260,14 @@ T = {
                   "tr":"İstek yazılamadı — paylaşılan güncelleyici dizini bu kapsayıcıda bağlı değil."},
  "upd_not_now":  {"en":"There is nothing to install right now.","de":"Im Moment gibt es nichts zu installieren.","tr":"Şu anda kurulacak bir şey yok."},
 }
+# The live map can now be switched to Polish.  These shared-frame strings are
+# the only values from the older panel dictionary that the map renders.
+T["logout"]["pl"] = "Wyloguj"
+T["back_front"]["pl"] = "← Strona główna"
+T["tip_lang"]["pl"] = "Zmień język tego panelu. Język w grze pozostaje bez zmian."
+T["tip_logout"]["pl"] = "Zakończ sesję administratora w panelu. Konto w grze pozostaje bez zmian."
+T["about_goal"]["pl"] = "Lokalny świat Metin2 rozwijany jako hobbystyczne środowisko dla autonomicznych botów graczy."
+
 CATS = ["all","weapon","armor","usable","ds","metin","special","other"]
 
 def lang():
@@ -2855,7 +2974,7 @@ pre.cmd{padding:12px;border:1px solid var(--line);background:#131007;color:#cdc5
 {# The title is the way home, as it is on every other site. Worth having even
    where a logout link exists: from a player page it is one click instead of
    two, and on a local install it is the only route back. #}
-<div class="top"><h1 title="{{t('about_goal')}}"><a href="{{url_for('login')}}"><img src="/favicon.ico" alt="">{{brand}}</a> <a href="{{url_for('live_map')}}" style="font-size:14px;margin-left:14px;color:#e9b64b;text-decoration:none;font-weight:700;padding:3px 10px;background:rgba(233,182,75,0.12);border:1px solid rgba(233,182,75,0.3);border-radius:6px">🗺️ Live Map</a></h1>
+<div class="top"><h1 title="{{t('about_goal')}}"><a href="{{url_for('login')}}"><img src="/favicon.ico" alt="">{{brand}}</a> <a href="{{url_for('live_map')}}" style="font-size:14px;margin-left:14px;color:#e9b64b;text-decoration:none;font-weight:700;padding:3px 10px;background:rgba(233,182,75,0.12);border:1px solid rgba(233,182,75,0.3);border-radius:6px">🗺️ {{'Mapa na żywo' if curlang == 'pl' else 'Live map'}}</a></h1>
 <div>
 <span style="font-size:13px" title="{{t('tip_lang')}}">
 {% for code, name in langs.items() %}<a href="{{url_for('setlang', code=code)}}" title="{{name}}" style="margin:0 3px;{{'font-weight:700;text-decoration:underline' if code==curlang else 'opacity:.7'}}">{{code|upper}}</a>{% endfor %}
@@ -3508,22 +3627,88 @@ function m2rates(e,d,y){
 # every state apply_rates.sh can leave behind has a sentence of its own
 RATE_STATES = ("running", "ok", "unsupported", "failed", "no_restart")
 
+MAP_I18N = {
+ "pl": {
+  "title":"Mapa świata na żywo — Chunjo","live":"NA ŻYWO (1,5 s)","subtitle":"Interaktywny podgląd pozycji i rozwoju botów w czasie rzeczywistym",
+  "player_panel":"Panel graczy","play_browser":"Graj w przeglądarce","show_bots":"Pokaż boty","names_levels":"Nicki i poziomy","pt_only":"Tylko w grupie (PT)",
+  "level":"Poziom","all":"Wszystkie","map":"Mapa","m1":"M1 — Joan","m2":"M2 — Bokjung","m3":"M3 — Waryong","monkey":"Łatwy Loch Małp","search":"🔍 Szukaj bota (np. botarek)...",
+  "solo_bot":"Bot solo","party_bot":"W grupie (PT)","metin_fight":"Walka z Metinem","loading":"Ładowanie...","world_stats":"Statystyki świata","active_bots":"Aktywne boty",
+  "in_parties":"W grupach (PT)","avg_level":"Średni poziom","max_level":"Maks. poziom","rankings":"Rankingi botów","rank_level":"Poziom","rank_weapon":"Broń","rank_armor":"Zbroja",
+  "rank_items":"Przedmioty","rank_horse":"Koń","rank_biologist":"Biolog","rank_hunting":"Polowanie","rank_empty":"Brak danych rankingu.","none":"Brak","items_short":"przedm.",
+  "horse_lv":"Koń Lv","visible":"Widocznych","characters":"postaci","in_group":"W grupie [PT]","solo":"Solo","player":"GRACZ","bot":"Bot","class":"Klasa","action":"Akcja","status":"Status",
+  "coordinates":"Koordynaty","open_inventory":"Kliknij, aby otworzyć ekwipunek i EQ","loading_character":"Ładowanie ekwipunku i statystyk postaci","error":"Błąd","not_found":"Nie znaleziono danych",
+  "teleport_me":"Teleportuj moją postać w grze (1 klik)","position":"Pozycja","horse":"Koń","biologist":"Biolog","bio_stage":"Etap Biologa","hunting":"Polowanie","no_data":"Brak danych",
+  "stats":"Statystyki","unspent_stats":"Nierozdane: {n} pkt statystyk","skills":"Umiejętności","profession_none":"Nie wybrano","profession_pending":"Profesja nie została jeszcze wybrana.",
+  "unspent_skills":"Nierozdane: {n} pkt umiejętności","equipped":"Założony ekwipunek (EQ)","weapon":"Broń","armor":"Zbroja","helmet":"Hełm","shield":"Tarcza","bracelet":"Bransoleta",
+  "boots":"Buty","necklace":"Naszyjnik","earrings":"Kolczyki","empty":"Puste","inventory":"Zawartość ekwipunku","items_count":"przedmiotów","inventory_empty":"Ekwipunek jest pusty.","quantity":"Ilość",
+  "event_log":"Dziennik zdarzeń bota (logi na żywo)","track_live":"Śledź na żywo","copy_logs":"Kopiuj logi","loading_logs":"Ładowanie logów postaci","no_logs":"Brak najświeższych wpisów w logach dla tej postaci.",
+  "log_error":"Błąd odczytu logów","network_error":"Błąd sieci","teleporting":"Teleportowanie Twojej postaci w grze...","teleported":"Przeteleportowano {name} do bota w grze!","you":"Cię","failure":"Niepowodzenie",
+  "copied":"Skopiowano","paste":"wklej w grze [Enter] → Ctrl+V → [Enter]","solo_exp":"Solo — zdobywanie doświadczenia","party_exp":"[PT] Zdobywanie doświadczenia w grupie","metin_hunt":"Polowanie na Metiny",
+  "character_missing":"Postać nie znaleziona","bio_not_started":"Pierwsza misja jeszcze nierozpoczęta","bio_completed":"Ukończono: {name}","bio_next":"Następna misja od Lv {level}: {name}",
+  "bio_all":"Wszystkie podstawowe misje ukończone","bio_complete":"komplet","bio_in_progress":"w toku"
+ },
+ "en": {
+  "title":"Live world map — Chunjo","live":"LIVE (1.5 s)","subtitle":"Interactive real-time view of bot positions and progression",
+  "player_panel":"Player panel","play_browser":"Play in browser","show_bots":"Show bots","names_levels":"Names and levels","pt_only":"Party only (PT)",
+  "level":"Level","all":"All","map":"Map","m1":"M1 — Joan","m2":"M2 — Bokjung","m3":"M3 — Waryong","monkey":"Easy Monkey Dungeon","search":"🔍 Find a bot (e.g. botarek)...",
+  "solo_bot":"Solo bot","party_bot":"In party (PT)","metin_fight":"Fighting a Metin","loading":"Loading...","world_stats":"World statistics","active_bots":"Active bots",
+  "in_parties":"In parties (PT)","avg_level":"Average level","max_level":"Max level","rankings":"Bot rankings","rank_level":"Level","rank_weapon":"Weapon","rank_armor":"Armour",
+  "rank_items":"Items","rank_horse":"Horse","rank_biologist":"Biologist","rank_hunting":"Hunting","rank_empty":"No ranking data.","none":"None","items_short":"items",
+  "horse_lv":"Horse Lv","visible":"Visible","characters":"characters","in_group":"In party [PT]","solo":"Solo","player":"PLAYER","bot":"Bot","class":"Class","action":"Action","status":"Status",
+  "coordinates":"Coordinates","open_inventory":"Click to open inventory and equipment","loading_character":"Loading character equipment and statistics","error":"Error","not_found":"No data found",
+  "teleport_me":"Teleport my in-game character (one click)","position":"Position","horse":"Horse","biologist":"Biologist","bio_stage":"Biologist stage","hunting":"Hunting","no_data":"No data",
+  "stats":"Statistics","unspent_stats":"Unspent: {n} stat points","skills":"Skills","profession_none":"Not selected","profession_pending":"The profession has not been selected yet.",
+  "unspent_skills":"Unspent: {n} skill points","equipped":"Equipped items","weapon":"Weapon","armor":"Armour","helmet":"Helmet","shield":"Shield","bracelet":"Bracelet",
+  "boots":"Boots","necklace":"Necklace","earrings":"Earrings","empty":"Empty","inventory":"Inventory contents","items_count":"items","inventory_empty":"The inventory is empty.","quantity":"Quantity",
+  "event_log":"Bot event log (live)","track_live":"Track live","copy_logs":"Copy logs","loading_logs":"Loading logs for","no_logs":"No recent log entries for this character.",
+  "log_error":"Log read error","network_error":"Network error","teleporting":"Teleporting your in-game character...","teleported":"Teleported {name} to the bot in game!","you":"you","failure":"Failure",
+  "copied":"Copied","paste":"paste in game [Enter] → Ctrl+V → [Enter]","solo_exp":"Solo levelling","party_exp":"[PT] Party levelling","metin_hunt":"Hunting Metins",
+  "character_missing":"Character not found","bio_not_started":"The first mission has not started yet","bio_completed":"Completed: {name}","bio_next":"Next mission at Lv {level}: {name}",
+  "bio_all":"All basic missions completed","bio_complete":"complete","bio_in_progress":"in progress"
+ }
+}
+
+def map_i18n(language=None):
+    language = language or (lang() if has_request_context() else "en")
+    return MAP_I18N.get(language, MAP_I18N["en"])
+
+JOB_NAMES_MAP = {
+ "pl": {0:"Wojownik (M)",4:"Wojowniczka (K)",1:"Ninja (M)",5:"Ninja (K)",
+        2:"Sura (M)",6:"Sura (K)",3:"Szaman (M)",7:"Szamanka (K)"},
+ "en": {0:"Warrior (M)",4:"Warrior (F)",1:"Ninja (M)",5:"Ninja (F)",
+        2:"Sura (M)",6:"Sura (F)",3:"Shaman (M)",7:"Shaman (F)"},
+}
+BIOLOGIST_NAMES_EN = {
+ "make_herb_lv4":"Peach Blossom","make_herb_lv7":"Bellflower",
+ "make_herb_lv10":"Kaki Blossom","make_herb_lv15":"Gango Root",
+ "make_herb_lv20":"Lilac","make_herb_lv25":"Tue Mushroom",
+}
+
+def localized_job_name(job, language=None):
+    language = language or (lang() if has_request_context() else "en")
+    names = JOB_NAMES_MAP.get(language, JOB_NAMES_MAP["en"])
+    return names.get(int(job or 0), "Wojownik" if language == "pl" else "Warrior")
+
+def localized_biologist_name(quest_name, polish_name, language=None):
+    language = language or (lang() if has_request_context() else "en")
+    return polish_name if language == "pl" else BIOLOGIST_NAMES_EN.get(quest_name, polish_name)
+
 
 TPL_LIVE_MAP = BASE.replace("__BODY__", """
 <div style="max-width:1240px;margin:0 auto">
   <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:10px">
     <div>
       <h2 style="margin:0;color:var(--gold2);display:flex;align-items:center;gap:10px;font-size:22px">
-        🗺️ Live World Map — Chunjo (Joan, m1)
+        🗺️ {{m.title}}
         <span class="badge" style="font-size:12px;background:rgba(46,204,113,0.15);color:#2ecc71;border:1px solid #2ecc71;padding:3px 8px">
-          <span class="dot on"></span> LIVE (1.5s)
+          <span class="dot on"></span> {{m.live}}
         </span>
       </h2>
-      <p class="muted" style="margin:4px 0 0;font-size:13px">Interaktywny podgląd pozycji botów w czasie rzeczywistym</p>
+      <p class="muted" style="margin:4px 0 0;font-size:13px">{{m.subtitle}}</p>
     </div>
     <div style="display:flex;gap:8px">
-      <a href="{{url_for('dash')}}" class="btn">← Panel Graczy</a>
-      {% if browser_ready %}<a href="{{play_url}}" target="_blank" class="btn" style="background:#27ae60">🎮 Graj w Przeglądarce</a>{% endif %}
+      <a href="{{url_for('dash')}}" class="btn">← {{m.player_panel}}</a>
+      {% if browser_ready %}<a href="{{play_url}}" target="_blank" class="btn" style="background:#27ae60">🎮 {{m.play_browser}}</a>{% endif %}
     </div>
   </div>
 
@@ -3533,21 +3718,21 @@ TPL_LIVE_MAP = BASE.replace("__BODY__", """
       <!-- Checkboxes -->
       <div style="display:flex;flex-wrap:wrap;align-items:center;gap:18px">
         <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-weight:600;font-size:13px">
-          <input type="checkbox" id="toggleBots" checked onchange="renderMap()"> 🤖 Pokaż boty
+          <input type="checkbox" id="toggleBots" checked onchange="renderMap()"> 🤖 {{m.show_bots}}
         </label>
         <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-weight:600;font-size:13px">
-          <input type="checkbox" id="toggleLabels" checked onchange="renderMap()"> 🏷️ Nicki i Poziomy
+          <input type="checkbox" id="toggleLabels" checked onchange="renderMap()"> 🏷️ {{m.names_levels}}
         </label>
         <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-weight:600;font-size:13px">
-          <input type="checkbox" id="togglePT" onchange="renderMap()"> 👥 Tylko w grupie (PT)
+          <input type="checkbox" id="togglePT" onchange="renderMap()"> 👥 {{m.pt_only}}
         </label>
       </div>
 
       <!-- Level Filter -->
       <div style="display:flex;align-items:center;gap:6px">
-        <span class="muted" style="font-size:13px">Poziom:</span>
+        <span class="muted" style="font-size:13px">{{m.level}}:</span>
         <div style="display:flex;gap:4px" id="lvlFilterGroup">
-          <button type="button" class="btn lvl-btn active" style="padding:4px 8px;font-size:12px" onclick="setLevelFilter('all', this)">Wszystkie</button>
+          <button type="button" class="btn lvl-btn active" style="padding:4px 8px;font-size:12px" onclick="setLevelFilter('all', this)">{{m.all}}</button>
           <button type="button" class="btn lvl-btn" style="padding:4px 8px;font-size:12px" onclick="setLevelFilter('1-5', this)">1-5</button>
           <button type="button" class="btn lvl-btn" style="padding:4px 8px;font-size:12px" onclick="setLevelFilter('6-10', this)">6-10</button>
           <button type="button" class="btn lvl-btn" style="padding:4px 8px;font-size:12px" onclick="setLevelFilter('11-15', this)">11-15</button>
@@ -3555,9 +3740,17 @@ TPL_LIVE_MAP = BASE.replace("__BODY__", """
         </div>
       </div>
 
+      <div style="display:flex;align-items:center;gap:6px">
+        <span class="muted" style="font-size:13px">{{m.map}}:</span>
+        <select id="mapFilter" onchange="setMapFilter(this.value)" style="width:auto;padding:6px 9px;font-size:12px;margin:0">
+          <option value="21">{{m.m1}}</option><option value="23">{{m.m2}}</option>
+          <option value="24">{{m.m3}}</option><option value="25">{{m.monkey}}</option>
+        </select>
+      </div>
+
       <!-- Search Box -->
       <div>
-        <input type="text" id="searchInput" placeholder="🔍 Szukaj bota (np. botarek)..." 
+        <input type="text" id="searchInput" placeholder="{{m.search}}"
                style="padding:6px 12px;font-size:13px;border-radius:6px;background:#15120a;border:1px solid #3d3522;color:#fff;width:200px"
                oninput="renderMap()">
       </div>
@@ -3578,52 +3771,52 @@ TPL_LIVE_MAP = BASE.replace("__BODY__", """
       </div>
       <div style="display:flex;justify-content:space-between;align-items:center;margin-top:8px;padding:0 6px;font-size:12px;color:var(--muted)">
         <div style="display:flex;gap:12px;align-items:center">
-          <span><b style="color:#2ecc71">●</b> Solo Bot</span>
-          <span><b style="color:#a855f7">●</b> W grupie (PT)</span>
-          <span><b style="color:#eab308">●</b> Walka z Metinem</span>
+          <span><b style="color:#2ecc71">●</b> {{m.solo_bot}}</span>
+          <span><b style="color:#a855f7">●</b> {{m.party_bot}}</span>
+          <span><b style="color:#eab308">●</b> {{m.metin_fight}}</span>
         </div>
-        <div id="visibleCountBadge" style="font-weight:700;color:var(--gold2)">Ładowanie...</div>
+        <div id="visibleCountBadge" style="font-weight:700;color:var(--gold2)">{{m.loading}}</div>
       </div>
     </div>
 
     <!-- Sidebar Stats & Leaderboard -->
     <div style="display:flex;flex-direction:column;gap:14px">
       <div class="card" style="padding:14px">
-        <h4 style="margin:0 0 10px;color:var(--gold2)">📊 Statystyki Świata</h4>
+        <h4 style="margin:0 0 10px;color:var(--gold2)">📊 {{m.world_stats}}</h4>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;text-align:center">
           <div style="background:#17130c;padding:8px;border-radius:6px;border:1px solid #2e2617">
             <div style="font-size:22px;font-weight:700;color:var(--gold)" id="statTotalBots">0</div>
-            <div style="font-size:11px;color:var(--muted)">Aktywne Boty</div>
+            <div style="font-size:11px;color:var(--muted)">{{m.active_bots}}</div>
           </div>
           <div style="background:#17130c;padding:8px;border-radius:6px;border:1px solid #2e2617">
             <div style="font-size:22px;font-weight:700;color:#a855f7" id="statInParty">0</div>
-            <div style="font-size:11px;color:var(--muted)">W Grupach (PT)</div>
+            <div style="font-size:11px;color:var(--muted)">{{m.in_parties}}</div>
           </div>
           <div style="background:#17130c;padding:8px;border-radius:6px;border:1px solid #2e2617">
             <div style="font-size:22px;font-weight:700;color:#2ecc71" id="statAvgLevel">0</div>
-            <div style="font-size:11px;color:var(--muted)">Średni Poziom</div>
+            <div style="font-size:11px;color:var(--muted)">{{m.avg_level}}</div>
           </div>
           <div style="background:#17130c;padding:8px;border-radius:6px;border:1px solid #2e2617">
             <div style="font-size:22px;font-weight:700;color:#e67e22" id="statMaxLevel">0</div>
-            <div style="font-size:11px;color:var(--muted)">Max Poziom</div>
+            <div style="font-size:11px;color:var(--muted)">{{m.max_level}}</div>
           </div>
         </div>
       </div>
 
       <div class="card" style="padding:14px">
-        <h4 style="margin:0 0 10px;color:var(--gold2)">🏆 Rankingi Botów</h4>
+        <h4 style="margin:0 0 10px;color:var(--gold2)">🏆 {{m.rankings}}</h4>
         <div style="display:flex;gap:4px;margin-bottom:10px;flex-wrap:wrap">
-          <button type="button" class="btn btn-sm rank-tab active" onclick="setRankCategory('level', this)" style="font-size:11px;padding:3px 6px">⭐ Poziom</button>
+          <button type="button" class="btn btn-sm rank-tab active" onclick="setRankCategory('level', this)" style="font-size:11px;padding:3px 6px">⭐ {{m.rank_level}}</button>
           <button type="button" class="btn btn-sm rank-tab" onclick="setRankCategory('gold', this)" style="font-size:11px;padding:3px 6px">💰 Yang</button>
-          <button type="button" class="btn btn-sm rank-tab" onclick="setRankCategory('weapon', this)" style="font-size:11px;padding:3px 6px">🗡️ Broń</button>
-          <button type="button" class="btn btn-sm rank-tab" onclick="setRankCategory('armor', this)" style="font-size:11px;padding:3px 6px">🛡️ Zbroja</button>
-          <button type="button" class="btn btn-sm rank-tab" onclick="setRankCategory('items', this)" style="font-size:11px;padding:3px 6px">🎒 Przedmioty</button>
-          <button type="button" class="btn btn-sm rank-tab" onclick="setRankCategory('horse', this)" style="font-size:11px;padding:3px 6px">🐴 Koń</button>
-          <button type="button" class="btn btn-sm rank-tab" onclick="setRankCategory('biologist', this)" style="font-size:11px;padding:3px 6px">🌿 Biolog</button>
-          <button type="button" class="btn btn-sm rank-tab" onclick="setRankCategory('hunting', this)" style="font-size:11px;padding:3px 6px">🎯 Polowanie</button>
+          <button type="button" class="btn btn-sm rank-tab" onclick="setRankCategory('weapon', this)" style="font-size:11px;padding:3px 6px">🗡️ {{m.rank_weapon}}</button>
+          <button type="button" class="btn btn-sm rank-tab" onclick="setRankCategory('armor', this)" style="font-size:11px;padding:3px 6px">🛡️ {{m.rank_armor}}</button>
+          <button type="button" class="btn btn-sm rank-tab" onclick="setRankCategory('items', this)" style="font-size:11px;padding:3px 6px">🎒 {{m.rank_items}}</button>
+          <button type="button" class="btn btn-sm rank-tab" onclick="setRankCategory('horse', this)" style="font-size:11px;padding:3px 6px">🐴 {{m.rank_horse}}</button>
+          <button type="button" class="btn btn-sm rank-tab" onclick="setRankCategory('biologist', this)" style="font-size:11px;padding:3px 6px">🌿 {{m.rank_biologist}}</button>
+          <button type="button" class="btn btn-sm rank-tab" onclick="setRankCategory('hunting', this)" style="font-size:11px;padding:3px 6px">🎯 {{m.rank_hunting}}</button>
         </div>
         <div style="max-height:410px;overflow-y:auto" id="topBotsList">
-          <p class="muted" style="font-size:12px;text-align:center">Ładowanie rankingu...</p>
+          <p class="muted" style="font-size:12px;text-align:center">{{m.loading}}</p>
         </div>
       </div>
     </div>
@@ -3811,14 +4004,16 @@ TPL_LIVE_MAP = BASE.replace("__BODY__", """
   <div class="modal-box">
     <button class="modal-close-btn" onclick="closeBotModal()">&times;</button>
     <div id="botModalContent">
-      <p class="muted" style="text-align:center">Ładowanie ekwipunku postaci...</p>
+      <p class="muted" style="text-align:center">{{m.loading_character}}...</p>
     </div>
   </div>
 </div>
 
 <script>
+var I18N = {{m|tojson}};
 var g_bots = [];
 var g_selectedLevel = 'all';
+var g_selectedMap = 21;
 var g_selectedRankCategory = 'level';
 var g_rankData = [];
 var g_highlightedId = null;
@@ -3827,6 +4022,11 @@ function setLevelFilter(lvl, btn) {
   g_selectedLevel = lvl;
   document.querySelectorAll('.lvl-btn').forEach(function(b){ b.classList.remove('active'); });
   btn.classList.add('active');
+  renderMap();
+}
+
+function setMapFilter(mapIndex) {
+  g_selectedMap = parseInt(mapIndex, 10) || 21;
   renderMap();
 }
 
@@ -3888,7 +4088,7 @@ function renderRankings() {
   var listEl = document.getElementById('topBotsList');
   if (!listEl) return;
   if (!g_rankData || g_rankData.length === 0) {
-    listEl.innerHTML = '<p class="muted" style="font-size:12px;text-align:center">Brak danych rankingu.</p>';
+    listEl.innerHTML = '<p class="muted" style="font-size:12px;text-align:center">' + I18N.rank_empty + '</p>';
     return;
   }
 
@@ -3899,17 +4099,17 @@ function renderRankings() {
     if (g_selectedRankCategory === 'gold') {
       detailStr = '<span style="color:#eab308;font-weight:700">' + (b.gold || 0).toLocaleString() + ' Yang</span>';
     } else if (g_selectedRankCategory === 'weapon') {
-      detailStr = '<span style="color:#38bdf8;font-weight:700">' + (b.weapon_name || 'Brak') + '</span>';
+      detailStr = '<span style="color:#38bdf8;font-weight:700">' + (b.weapon_name || I18N.none) + '</span>';
     } else if (g_selectedRankCategory === 'armor') {
-      detailStr = '<span style="color:#2ecc71;font-weight:700">' + (b.armor_name || 'Brak') + '</span>';
+      detailStr = '<span style="color:#2ecc71;font-weight:700">' + (b.armor_name || I18N.none) + '</span>';
     } else if (g_selectedRankCategory === 'items') {
-      detailStr = '<span style="color:#f59e0b;font-weight:700">' + (b.item_count || 0) + ' przedm.</span>';
+      detailStr = '<span style="color:#f59e0b;font-weight:700">' + (b.item_count || 0) + ' ' + I18N.items_short + '</span>';
     } else if (g_selectedRankCategory === 'horse') {
-      detailStr = '<span style="color:#c084fc;font-weight:700">Koń Lv ' + (b.horse_level || 0) + '</span>';
+      detailStr = '<span style="color:#c084fc;font-weight:700">' + I18N.horse_lv + ' ' + (b.horse_level || 0) + '</span>';
     } else if (g_selectedRankCategory === 'biologist') {
       detailStr = '<span style="color:#4ade80;font-weight:700">' + (b.biologist_label || '0/6') + '</span>';
     } else if (g_selectedRankCategory === 'hunting') {
-      detailStr = '<span style="color:#fb923c;font-weight:700">' + (b.hunting_label || 'Brak') + '</span>';
+      detailStr = '<span style="color:#fb923c;font-weight:700">' + (b.hunting_label || I18N.none) + '</span>';
     } else {
       detailStr = '<span style="color:var(--gold);font-weight:700">Lv ' + b.level + '</span>';
     }
@@ -3945,6 +4145,7 @@ function renderMap() {
   var visibleCount = 0;
 
   g_bots.forEach(function(b) {
+    if (parseInt(b.map_index, 10) !== g_selectedMap) return;
     var isBot = b.is_bot;
     if (isBot && !showBots) return;
     if (showPTOnly && !b.in_pt) return;
@@ -3977,7 +4178,7 @@ function renderMap() {
   });
 
   layer.innerHTML = html;
-  document.getElementById('visibleCountBadge').innerText = 'Widocznych: ' + visibleCount + ' postaci';
+  document.getElementById('visibleCountBadge').innerText = I18N.visible + ': ' + visibleCount + ' ' + I18N.characters;
 }
 
 function showTooltip(pid, ev) {
@@ -3987,18 +4188,18 @@ function showTooltip(pid, ev) {
   var tt = document.getElementById('mapTooltip');
   if (!tt) return;
 
-  var ptStr = bot.in_pt ? '<span style="color:#a855f7;font-weight:700">W Grupie [PT]</span>' : '<span style="color:#2ecc71">Solo</span>';
-  var statusBadge = bot.is_player ? '<span style="color:#ef4444;font-weight:700">👑 GRACZ</span>' : '🤖 Bot';
-  var actionStr = bot.action || (bot.in_pt ? '⚔️ [PT] Expienie w grupie' : '⚔️ Solo Expienie');
+  var ptStr = bot.in_pt ? '<span style="color:#a855f7;font-weight:700">' + I18N.in_group + '</span>' : '<span style="color:#2ecc71">' + I18N.solo + '</span>';
+  var statusBadge = bot.is_player ? '<span style="color:#ef4444;font-weight:700">👑 ' + I18N.player + '</span>' : '🤖 ' + I18N.bot;
+  var actionStr = bot.action || (bot.in_pt ? '⚔️ ' + I18N.party_exp : '⚔️ ' + I18N.solo_exp);
 
   tt.innerHTML = '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">' +
                  '<b style="font-size:14px;color:var(--gold2)">' + bot.name + '</b> ' + statusBadge + '</div>' +
-                 '<div style="color:#ddd;margin-bottom:4px"><b>Klasa:</b> ' + bot.job + ' &nbsp;|&nbsp; <b>Poziom:</b> ' + bot.level + '</div>' +
-                 '<div style="color:#ffd700;margin-bottom:4px"><b>Akcja:</b> ' + actionStr + '</div>' +
-                 '<div style="color:#ddd;margin-bottom:4px"><b>Status:</b> ' + ptStr + '</div>' +
-                 '<div style="color:#aaa;margin-bottom:4px"><b>Koordynaty:</b> (' + bot.x + ', ' + bot.y + ')</div>' +
+                 '<div style="color:#ddd;margin-bottom:4px"><b>' + I18N.class + ':</b> ' + bot.job + ' &nbsp;|&nbsp; <b>' + I18N.level + ':</b> ' + bot.level + '</div>' +
+                 '<div style="color:#ffd700;margin-bottom:4px"><b>' + I18N.action + ':</b> ' + actionStr + '</div>' +
+                 '<div style="color:#ddd;margin-bottom:4px"><b>' + I18N.status + ':</b> ' + ptStr + '</div>' +
+                 '<div style="color:#aaa;margin-bottom:4px"><b>' + I18N.coordinates + ':</b> (' + bot.x + ', ' + bot.y + ')</div>' +
                  '<div style="color:#eab308;margin-bottom:4px"><b>Yang:</b> ' + (bot.gold || 0).toLocaleString() + '</div>' +
-                 '<div style="color:#38bdf8;font-size:10px;font-weight:700;margin-top:4px">👉 Kliknij, aby otworzyć Ekwipunek i EQ</div>';
+                 '<div style="color:#38bdf8;font-size:10px;font-weight:700;margin-top:4px">👉 ' + I18N.open_inventory + '</div>';
 
   var pxVal = bot.px !== undefined ? bot.px : (bot.percent_x || 50);
   var pyVal = bot.py !== undefined ? bot.py : (bot.percent_y || 50);
@@ -4016,13 +4217,13 @@ function openBotModal(pid) {
   var modal = document.getElementById('botModal');
   var content = document.getElementById('botModalContent');
   modal.style.display = 'flex';
-  content.innerHTML = '<p class="muted" style="text-align:center;padding:20px">Ładowanie ekwipunku i statystyk postaci #' + pid + '...</p>';
+  content.innerHTML = '<p class="muted" style="text-align:center;padding:20px">' + I18N.loading_character + ' #' + pid + '...</p>';
 
   fetch('/api/bot_inventory/' + pid)
     .then(function(res) { return res.json(); })
     .then(function(data) {
       if (!data || !data.ok) {
-        content.innerHTML = '<p style="color:#ef4444;text-align:center">Błąd: ' + (data.error || 'Nie znaleziono danych') + '</p>';
+        content.innerHTML = '<p style="color:#ef4444;text-align:center">' + I18N.error + ': ' + (data.error || I18N.not_found) + '</p>';
         return;
       }
 
@@ -4045,7 +4246,7 @@ function openBotModal(pid) {
       var wy = Math.floor(p.y / 100);
       html += '<div style="margin-bottom:12px">' +
               '<button type="button" class="btn btn-sm" onclick="warpMeToBot(' + p.x + ',' + p.y + ')" style="width:100%;margin-bottom:8px;background:#16a34a;color:#fff;font-weight:700;padding:8px 12px;border:none;border-radius:6px;cursor:pointer;font-size:13px;box-shadow:0 0 10px rgba(22,163,74,0.5)">' +
-              '⚡ Teleportuj moją postać w grze (1-klik)' +
+              '⚡ ' + I18N.teleport_me +
               '</button>' +
               '<div style="display:flex;gap:8px">' +
               '<button type="button" class="btn btn-sm" onclick="copyWarp(' + wx + ',' + wy + ')" style="flex:1;background:#2563eb;color:#fff;font-weight:700;padding:6px;border:none;border-radius:4px;cursor:pointer;font-size:12px">' +
@@ -4060,32 +4261,32 @@ function openBotModal(pid) {
       html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px;font-size:12px;background:#1a150e;padding:10px;border-radius:6px">' +
               '<div><b>HP:</b> <span style="color:#ef4444">' + (p.hp || 0) + '</span> / <b>MP:</b> <span style="color:#38bdf8">' + (p.mp || 0) + '</span></div>' +
               '<div><b>Yang:</b> <span style="color:#eab308;font-weight:700">' + (p.gold || 0).toLocaleString() + '</span></div>' +
-              '<div><b>Pozycja:</b> (' + p.x + ', ' + p.y + ')</div>' +
-              '<div><b>Akcja:</b> <span style="color:#ffd700">' + (p.in_pt ? '[PT] Expienie w grupie' : 'Solo Expienie') + '</span></div>' +
-              '<div><b>Koń:</b> <span style="color:#c084fc;font-weight:700">Lv ' + (p.horse_level || 0) + '</span></div>' +
-              '<div><b>Biolog:</b> <span style="color:#4ade80;font-weight:700">' + (p.biologist_completed || 0) + '/6</span></div>' +
-              '<div style="grid-column:1 / -1"><b>Etap Biologa:</b> <span style="color:#86efac">' + (p.biologist_label || 'Brak danych') + '</span></div>' +
-              '<div style="grid-column:1 / -1"><b>Polowanie:</b> <span style="color:#fb923c">' + (p.hunting_label || 'Brak danych') + '</span></div>' +
+              '<div><b>' + I18N.position + ':</b> (' + p.x + ', ' + p.y + ')</div>' +
+              '<div><b>' + I18N.action + ':</b> <span style="color:#ffd700">' + (p.in_pt ? I18N.party_exp : I18N.solo_exp) + '</span></div>' +
+              '<div><b>' + I18N.horse + ':</b> <span style="color:#c084fc;font-weight:700">Lv ' + (p.horse_level || 0) + '</span></div>' +
+              '<div><b>' + I18N.biologist + ':</b> <span style="color:#4ade80;font-weight:700">' + (p.biologist_completed || 0) + '/6</span></div>' +
+              '<div style="grid-column:1 / -1"><b>' + I18N.bio_stage + ':</b> <span style="color:#86efac">' + (p.biologist_label || I18N.no_data) + '</span></div>' +
+              '<div style="grid-column:1 / -1"><b>' + I18N.hunting + ':</b> <span style="color:#fb923c">' + (p.hunting_label || I18N.no_data) + '</span></div>' +
               '</div>';
 
       // Character build: allocated attributes and the exact packed server skills.
       html += '<div class="bot-build-grid">' +
               '<div class="bot-build-panel">' +
-              '<h4 style="margin:0;color:var(--gold)">📊 Statystyki</h4>' +
+              '<h4 style="margin:0;color:var(--gold)">📊 ' + I18N.stats + '</h4>' +
               '<div class="stat-grid">';
       ['STR', 'VIT', 'DEX', 'INT'].forEach(function(key) {
         html += '<div class="stat-box"><div style="font-size:10px;color:var(--muted)">' + key + '</div>' +
                 '<div style="font-size:17px;font-weight:700;color:#f8fafc">' + (stats[key] || 0) + '</div></div>';
       });
-      html += '</div><div class="muted" style="font-size:10px;margin-top:7px">Nierozdane: ' +
-              (p.stat_point || 0) + ' pkt statystyk</div></div>' +
+      html += '</div><div class="muted" style="font-size:10px;margin-top:7px">' +
+              I18N.unspent_stats.replace('{n}', p.stat_point || 0) + '</div></div>' +
               '<div class="bot-build-panel">' +
               '<div style="display:flex;justify-content:space-between;gap:8px;align-items:center">' +
-              '<h4 style="margin:0;color:var(--gold)">✨ Skille</h4>' +
+              '<h4 style="margin:0;color:var(--gold)">✨ ' + I18N.skills + '</h4>' +
               '<span style="font-size:11px;color:#38bdf8;font-weight:700">' +
-              (p.profession_name || 'Nie wybrano') + '</span></div>';
+              (p.profession_name || I18N.profession_none) + '</span></div>';
       if (skills.length === 0) {
-        html += '<div class="muted" style="font-size:11px;margin-top:8px">Profesja nie została jeszcze wybrana.</div>';
+        html += '<div class="muted" style="font-size:11px;margin-top:8px">' + I18N.profession_pending + '</div>';
       } else {
         skills.forEach(function(skill) {
           var rankColor = skill.rank === '0' ? '#71717a' :
@@ -4096,22 +4297,22 @@ function openBotModal(pid) {
                   '<b style="color:' + rankColor + '">' + skill.rank + '</b></div>';
         });
       }
-      html += '<div class="muted" style="font-size:10px;margin-top:7px">Nierozdane: ' +
-              (p.skill_point || 0) + ' pkt skilli</div></div></div>';
+      html += '<div class="muted" style="font-size:10px;margin-top:7px">' +
+              I18N.unspent_skills.replace('{n}', p.skill_point || 0) + '</div></div></div>';
 
       // Equipment Slots (8 core slots)
-      html += '<h4 style="margin:0 0 4px;color:var(--gold)">🛡️ Założony Ekwipunek (EQ)</h4>';
+      html += '<h4 style="margin:0 0 4px;color:var(--gold)">🛡️ ' + I18N.equipped + '</h4>';
       html += '<div class="eq-grid">';
 
       var slots = [
-        { key: 'weapon', name: 'Broń', icon: '🗡️' },
-        { key: 'body', name: 'Zbroja', icon: '🛡️' },
-        { key: 'head', name: 'Hełm', icon: '🪖' },
-        { key: 'shield', name: 'Tarcza', icon: '🛡️' },
-        { key: 'wrist', name: 'Bransoleta', icon: '💍' },
-        { key: 'foots', name: 'Buty', icon: '🥾' },
-        { key: 'neck', name: 'Naszyjnik', icon: '📿' },
-        { key: 'ear', name: 'Kolczyki', icon: '👂' }
+        { key: 'weapon', name: I18N.weapon, icon: '🗡️' },
+        { key: 'body', name: I18N.armor, icon: '🛡️' },
+        { key: 'head', name: I18N.helmet, icon: '🪖' },
+        { key: 'shield', name: I18N.shield, icon: '🛡️' },
+        { key: 'wrist', name: I18N.bracelet, icon: '💍' },
+        { key: 'foots', name: I18N.boots, icon: '🥾' },
+        { key: 'neck', name: I18N.necklace, icon: '📿' },
+        { key: 'ear', name: I18N.earrings, icon: '👂' }
       ];
 
       slots.forEach(function(s) {
@@ -4126,23 +4327,23 @@ function openBotModal(pid) {
           html += '<div class="eq-slot">' +
                   '<div class="eq-slot-icon" style="opacity:0.3">' + s.icon + '</div>' +
                   '<div class="muted" style="font-size:10px">' + s.name + '</div>' +
-                  '<div class="muted" style="font-size:10px">Puste</div>' +
+                  '<div class="muted" style="font-size:10px">' + I18N.empty + '</div>' +
                   '</div>';
         }
       });
       html += '</div>';
 
       // Inventory Items
-      html += '<h4 style="margin:14px 0 4px;color:var(--gold)">🎒 Zawartość Ekwipunku (' + inv.length + ' przedmiotów)</h4>';
+      html += '<h4 style="margin:14px 0 4px;color:var(--gold)">🎒 ' + I18N.inventory + ' (' + inv.length + ' ' + I18N.items_count + ')</h4>';
       if (inv.length === 0) {
-        html += '<p class="muted" style="font-size:12px;text-align:center;padding:10px">Ekwipunek jest pusty.</p>';
+        html += '<p class="muted" style="font-size:12px;text-align:center;padding:10px">' + I18N.inventory_empty + '</p>';
       } else {
         html += '<div class="inv-grid">';
         inv.forEach(function(it) {
           var countStr = it.count > 1 ? ' <span style="color:#38bdf8;font-weight:700">x' + it.count + '</span>' : '';
           html += '<div class="inv-item">' +
                   '<div style="color:#ffd700;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="' + it.name + '">' + it.name + '</div>' +
-                  '<div class="muted" style="font-size:10px">Ilość:' + countStr + '</div>' +
+                  '<div class="muted" style="font-size:10px">' + I18N.quantity + ':' + countStr + '</div>' +
                   '</div>';
         });
         html += '</div>';
@@ -4151,16 +4352,16 @@ function openBotModal(pid) {
       // Live Bot Logs section
       html += '<div style="margin-top:16px;border-top:1px solid #332814;padding-top:12px">' +
               '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">' +
-              '<h4 style="margin:0;color:var(--gold);font-size:13px">📜 Dziennik Zdarzeń Bota (Logi Live)</h4>' +
+              '<h4 style="margin:0;color:var(--gold);font-size:13px">📜 ' + I18N.event_log + '</h4>' +
               '<div style="display:flex;gap:10px;align-items:center">' +
               '<label style="font-size:11px;display:flex;align-items:center;gap:4px;cursor:pointer;color:#38bdf8">' +
-              '<input type="checkbox" id="chkAutoLog" checked onchange="toggleLogTracking()"> 🔄 Śledź na żywo' +
+              '<input type="checkbox" id="chkAutoLog" checked onchange="toggleLogTracking()"> 🔄 ' + I18N.track_live +
               '</label>' +
-              '<button type="button" onclick="copyBotLogs()" style="padding:2px 8px;font-size:11px;background:#334155;color:#fff;border:none;border-radius:4px;cursor:pointer">📋 Kopiuj logi</button>' +
+              '<button type="button" onclick="copyBotLogs()" style="padding:2px 8px;font-size:11px;background:#334155;color:#fff;border:none;border-radius:4px;cursor:pointer">📋 ' + I18N.copy_logs + '</button>' +
               '</div>' +
               '</div>' +
               '<div id="botLogsConsole" style="background:#09090b;border:1px solid #27272a;border-radius:6px;padding:8px;max-height:160px;overflow-y:auto;font-family:monospace;font-size:10px;color:#a1a1aa;line-height:1.4">' +
-              'Ładowanie logów postaci ' + p.name + '...' +
+              I18N.loading_logs + ' ' + p.name + '...' +
               '</div>' +
               '</div>';
 
@@ -4168,7 +4369,7 @@ function openBotModal(pid) {
       startLogTracking(p.name);
     })
     .catch(function(err) {
-      content.innerHTML = '<p style="color:#ef4444;text-align:center">Błąd sieci: ' + err + '</p>';
+      content.innerHTML = '<p style="color:#ef4444;text-align:center">' + I18N.network_error + ': ' + err + '</p>';
     });
 }
 
@@ -4212,12 +4413,12 @@ function fetchBotLogs(botName) {
         consoleEl.innerHTML = logHtml;
         consoleEl.scrollTop = consoleEl.scrollHeight;
       } else if (g_collectedLogs.length === 0) {
-        consoleEl.innerHTML = '<div style="color:#71717a">Brak najświeższych wpisów w logach dla tej postaci.</div>';
+        consoleEl.innerHTML = '<div style="color:#71717a">' + I18N.no_logs + '</div>';
       }
     })
     .catch(function(err) {
       if (consoleEl && g_collectedLogs.length === 0) {
-        consoleEl.innerHTML = '<div style="color:#ef4444">Błąd odczytu logów: ' + err + '</div>';
+        consoleEl.innerHTML = '<div style="color:#ef4444">' + I18N.log_error + ': ' + err + '</div>';
       }
     });
 }
@@ -4271,7 +4472,7 @@ function copyWarp(x, y) {
 function warpMeToBot(x, y) {
   var t = document.getElementById('mapToast');
   if (t) {
-    t.innerText = '⏳ Teleportowanie Twojej postaci w grze...';
+    t.innerText = '⏳ ' + I18N.teleporting;
     t.style.display = 'block';
   }
   fetch('/api/admin/warp_me', {
@@ -4283,19 +4484,19 @@ function warpMeToBot(x, y) {
   .then(function(data) {
     if (data && data.ok) {
       if (t) {
-        t.innerText = '✅ Przeteleportowano ' + (data.name || 'Cię') + ' do bota w grze!';
+        t.innerText = '✅ ' + I18N.teleported.replace('{name}', data.name || I18N.you);
         setTimeout(function() { t.style.display = 'none'; }, 4000);
       }
     } else {
       if (t) {
-        t.innerText = '❌ Błąd: ' + (data.error || data.status || 'Niepowodzenie');
+        t.innerText = '❌ ' + I18N.error + ': ' + (data.error || data.status || I18N.failure);
         setTimeout(function() { t.style.display = 'none'; }, 4000);
       }
     }
   })
   .catch(function(err) {
     if (t) {
-      t.innerText = '❌ Błąd sieci: ' + err;
+      t.innerText = '❌ ' + I18N.network_error + ': ' + err;
       setTimeout(function() { t.style.display = 'none'; }, 4000);
     }
   });
@@ -4307,7 +4508,7 @@ function copyCommand(cmd) {
   }
   var t = document.getElementById('mapToast');
   if (t) {
-    t.innerText = '📋 Skopiowano: ' + cmd + ' (wklej w grze [Enter] -> Ctrl+V -> [Enter])';
+    t.innerText = '📋 ' + I18N.copied + ': ' + cmd + ' (' + I18N.paste + ')';
     t.style.display = 'block';
     setTimeout(function() { t.style.display = 'none'; }, 3500);
   }
@@ -4324,12 +4525,14 @@ setInterval(fetchBotPositions, 1500);
 @app.route("/live_map")
 @app.route("/map")
 def live_map():
+    language = lang()
     return render_template_string(TPL_LIVE_MAP,
                                   brand=CONF.get("server_name", "Metin2"),
                                   browser_ready=browser_client_ready(),
                                   play_url=play_url(),
+                                  m=map_i18n(language),
                                   langs=LANGS,
-                                  curlang=session.get("lang", "en"),
+                                  curlang=language,
                                   is_admin=bool(session.get("auth")))
 
 @app.route("/api/admin/warp_me", methods=["POST"])
@@ -4383,22 +4586,25 @@ def api_bot_logs(bot_name):
 
 @app.route("/api/bot_positions")
 def api_bot_positions():
+    language = lang()
+    messages = map_i18n(language)
+    map_bounds = {
+        # base_x, base_y, width, height -- coordinates from the server atlas.
+        21: (0, 102400, 102400, 128000),       # Joan (Chunjo M1)
+        23: (102400, 204800, 102400, 102400),  # Bokjung (Chunjo M2)
+        24: (179200, 0, 51200, 51200),         # Waryong (Chunjo M3)
+        25: (844800, 435200, 76800, 76800),    # Easy Monkey Dungeon
+    }
     try:
         with db() as c, c.cursor() as cur:
             cur.execute("""
-                SELECT id, name, level, job, x, y, hp, gold
+                SELECT id, name, level, job, x, y, hp, gold, map_index
                 FROM player.player
-                WHERE name LIKE 'bot%' AND map_index = 21
+                WHERE name LIKE 'bot%' AND map_index IN (21, 23, 24, 25)
                 ORDER BY level DESC, id ASC
             """)
             rows = cur.fetchall()
             bots = []
-            jobs_map = {
-                0: "Wojownik (M)", 4: "Wojowniczka (K)",
-                1: "Ninja (M)", 5: "Ninja (K)",
-                2: "Sura (M)", 6: "Sura (K)",
-                3: "Szaman (M)", 7: "Szamanka (K)"
-            }
             total_count = len(rows)
             for r in rows:
                 pid = r.get("id") or 0
@@ -4409,23 +4615,26 @@ def api_bot_positions():
                 gy = r.get("y") or 160000
                 hp = r.get("hp") or 0
                 gold = r.get("gold") or 0
+                map_index = int(r.get("map_index") or 21)
+                base_x, base_y, width, height = map_bounds.get(map_index, map_bounds[21])
 
-                px = max(0.0, min(100.0, (float(gx) / 102400.0) * 100.0))
-                py = max(0.0, min(100.0, ((float(gy) - 102400.0) / 128000.0) * 100.0))
+                px = max(0.0, min(100.0, ((float(gx) - base_x) / width) * 100.0))
+                py = max(0.0, min(100.0, ((float(gy) - base_y) / height) * 100.0))
                 is_bot = name.startswith("bot")
                 in_pt = bot_in_party_cohort(pid)
 
-                action = "⚔️ [PT] Expienie w grupie" if in_pt else "⚔️ Solo Expienie"
+                action = "⚔️ " + (messages["party_exp"] if in_pt else messages["solo_exp"])
                 if level >= 10 and (pid % 5 == 0):
-                    action = "💎 Polowanie na Metiny"
+                    action = "💎 " + messages["metin_hunt"]
 
                 bots.append({
                     "id": pid,
                     "name": name,
                     "level": level,
-                    "job": jobs_map.get(job, "Wojownik"),
+                    "job": localized_job_name(job, language),
                     "x": gx,
                     "y": gy,
+                    "map_index": map_index,
                     "px": round(px, 1),
                     "py": round(py, 1),
                     "hp": hp,
@@ -4440,6 +4649,8 @@ def api_bot_positions():
 
 @app.route("/api/bot_inventory/<int:pid>")
 def api_bot_inventory(pid):
+    language = lang()
+    messages = map_i18n(language)
     try:
         with db() as c, c.cursor() as cur:
             cur.execute("""
@@ -4451,22 +4662,17 @@ def api_bot_inventory(pid):
             """, (pid,))
             player = cur.fetchone()
             if not player:
-                return jsonify({"ok": False, "error": "Postać nie znaleziona"})
+                return jsonify({"ok": False, "error": messages["character_missing"]})
 
-            jobs_map = {
-                0: "Wojownik (M)", 4: "Wojowniczka (K)",
-                1: "Ninja (M)", 5: "Ninja (K)",
-                2: "Sura (M)", 6: "Sura (K)",
-                3: "Szaman (M)", 7: "Szamanka (K)"
-            }
-            player["job_name"] = jobs_map.get(player.get("job", 0), "Wojownik")
+            player["job_name"] = localized_job_name(player.get("job", 0), language)
             player["in_pt"] = bot_in_party_cohort(pid)
             raw_skills = player.pop("skill_level", b"")
-            player["profession_name"] = SKILL_GROUP_NAMES.get(
+            profession_names = SKILL_GROUP_NAMES if language == "pl" else SKILL_GROUP_NAMES_EN
+            player["profession_name"] = profession_names.get(
                 (int(player.get("job") or 0) % 4, int(player.get("skill_group") or 0)),
-                "Nie wybrano")
+                messages["profession_none"])
             player["skills"] = parse_player_skills(
-                raw_skills, player.get("job"), player.get("skill_group"))
+                raw_skills, player.get("job"), player.get("skill_group"), language)
             player["stats"] = {
                 "STR": int(player.get("st") or 0),
                 "VIT": int(player.get("ht") or 0),
@@ -4488,20 +4694,22 @@ def api_bot_inventory(pid):
                 for row in quest_rows
             }
             completed = 0
-            biologist_label = "Pierwsza misja jeszcze nierozpoczęta"
+            biologist_label = messages["bio_not_started"]
             for quest_name, required_level, item_name, required_count in BIOLOGIST_MISSIONS:
+                item_name = localized_biologist_name(quest_name, item_name, language)
                 if quest_flags.get((quest_name, "__status")) == BIOLOGIST_COMPLETE_STATE:
                     completed += 1
-                    biologist_label = "Ukończono: %s" % item_name
+                    biologist_label = messages["bio_completed"].format(name=item_name)
                     continue
                 if int(player.get("level") or 1) >= required_level:
                     accepted = quest_flags.get((quest_name, "collect_count"), 0)
                     biologist_label = "%s: %d/%d" % (item_name, accepted, required_count)
                 else:
-                    biologist_label = "Następna misja od Lv %d: %s" % (required_level, item_name)
+                    biologist_label = messages["bio_next"].format(
+                        level=required_level, name=item_name)
                 break
             else:
-                biologist_label = "Wszystkie podstawowe misje ukończone"
+                biologist_label = messages["bio_all"]
             player["biologist_completed"] = completed
             player["biologist_label"] = biologist_label
 
@@ -4520,7 +4728,8 @@ def api_bot_inventory(pid):
             player["hunting_remaining"] = hunting_flags.get("remain", 0)
             player["hunting_label"] = hunting_progress_label(
                 hunting_flags.get("current", 0), hunting_flags.get("select", 1),
-                hunting_flags.get("remain", 0), hunting_flags.get("complete", 0))
+                hunting_flags.get("remain", 0), hunting_flags.get("complete", 0),
+                language)
 
             cur.execute("""
                 SELECT id, `window`, pos, `count`, vnum, socket0, socket1, socket2,
@@ -4546,7 +4755,7 @@ def api_bot_inventory(pid):
 
             for it in items:
                 vnum = it.get("vnum") or 0
-                name = ITEM_NAMES.get(vnum, f"Przedmiot #{vnum}")
+                name = localized_item_name(vnum, language)
                 count = it.get("count") or 1
                 pos = it.get("pos") or 0
                 win = it.get("window") or ""
@@ -4576,6 +4785,8 @@ def api_bot_inventory(pid):
 @app.route("/api/bot_rankings")
 def api_bot_rankings():
     rtype = request.args.get("type", "level")
+    language = lang()
+    messages = map_i18n(language)
     try:
         with db() as c, c.cursor() as cur:
             if rtype == "gold":
@@ -4665,38 +4876,35 @@ def api_bot_rankings():
                 """)
 
             rows = cur.fetchall()
-            jobs_map = {
-                0: "Wojownik (M)", 4: "Wojowniczka (K)",
-                1: "Ninja (M)", 5: "Ninja (K)",
-                2: "Sura (M)", 6: "Sura (K)",
-                3: "Szaman (M)", 7: "Szamanka (K)"
-            }
             rankings = []
             for r in rows:
                 wv = r.get("weapon_vnum")
                 av = r.get("armor_vnum")
-                w_name = ITEM_NAMES.get(wv, "") if wv else ""
-                a_name = ITEM_NAMES.get(av, "") if av else ""
+                w_name = localized_item_name(wv, language) if wv else ""
+                a_name = localized_item_name(av, language) if av else ""
                 bio_completed = max(0, min(len(BIOLOGIST_MISSIONS), int(r.get("biologist_completed") or 0)))
                 if bio_completed >= len(BIOLOGIST_MISSIONS):
-                    bio_label = "%d/%d • komplet" % (bio_completed, len(BIOLOGIST_MISSIONS))
+                    bio_label = "%d/%d • %s" % (
+                        bio_completed, len(BIOLOGIST_MISSIONS), messages["bio_complete"])
                 elif bio_completed > 0:
+                    mission = BIOLOGIST_MISSIONS[bio_completed - 1]
                     bio_label = "%d/%d • %s" % (
                         bio_completed, len(BIOLOGIST_MISSIONS),
-                        BIOLOGIST_MISSIONS[bio_completed - 1][2])
+                        localized_biologist_name(mission[0], mission[2], language))
                 else:
-                    bio_label = "0/%d • w toku" % len(BIOLOGIST_MISSIONS)
+                    bio_label = "0/%d • %s" % (
+                        len(BIOLOGIST_MISSIONS), messages["bio_in_progress"])
                 hunting_complete = max(0, int(r.get("hunting_complete") or 0))
                 hunting_current = max(0, int(r.get("hunting_current") or 0))
                 hunting_remain = max(0, int(r.get("hunting_remain") or 0))
                 hunting_label = hunting_progress_label(
                     hunting_current, r.get("hunting_select") or 1,
-                    hunting_remain, hunting_complete)
+                    hunting_remain, hunting_complete, language)
                 rankings.append({
                     "id": r["id"],
                     "name": r["name"],
                     "level": r["level"],
-                    "job": jobs_map.get(r.get("job", 0), "Wojownik"),
+                    "job": localized_job_name(r.get("job", 0), language),
                     "gold": r.get("gold", 0),
                     "weapon_name": w_name,
                     "armor_name": a_name,

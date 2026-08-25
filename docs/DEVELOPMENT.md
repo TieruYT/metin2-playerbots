@@ -17,6 +17,8 @@ linux-port/overlays/playerbot/
 │   └── playerbot_manager.h      # Nagłówek i definicje klas
 ├── sql/
 │   └── playerbots_seed.sql      # Seed bazy MariaDB dla 350 unikalnych postaci
+├── serverfiles/
+│   └── mob_drop_item.m3.append.txt # Dodatkowy drop progresyjny M3
 ├── tools/
 │   └── generate_seed.py         # Generator kohorty botów (klasy, ekwipunek, imiona)
 └── patches/
@@ -92,3 +94,25 @@ docker compose up -d --force-recreate panel
 ```
 
 Panel dostępny jest pod adresem: `http://127.0.0.1:7788`.
+
+---
+
+## 💾 Kopia bazy i diagnostyka konia
+
+Przed większą zmianą AI zatrzymaj procesy zapisujące stan i wykonaj sprawdzoną, skompresowaną kopię całej bazy:
+
+```sh
+docker compose stop game panel
+./backup_database.sh /bezpieczna/sciezka/database-all.sql.gz
+docker compose start
+```
+
+Hasło bazy nie jest wypisywane ani przechowywane w skrypcie — polecenie odczytuje je wyłącznie wewnątrz kontenera `metin2-db`. Skrypt sprawdza również integralność powstałego pliku gzip.
+
+Pełną, tylko-do-odczytu diagnostykę podróży po Medal Konny uruchomisz poleceniem:
+
+```sh
+./diagnose_horse_journeys.sh
+```
+
+Raport pokazuje rozmieszczenie botów na M1/M2/M3 i w Lochu Małp, posiadane medale, poziomy konia oraz utrwalone znaczniki zebrania i oddania medalu.

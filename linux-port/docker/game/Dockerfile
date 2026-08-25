@@ -341,6 +341,10 @@ COPY src/serverfiles/share/conf    /opt/metin2/share/conf
 COPY src/serverfiles/share/data    /opt/metin2/share/data
 COPY src/serverfiles/share/locale  /opt/metin2/share/locale
 COPY src/serverfiles/share/package /opt/metin2/share/package
+COPY mob_drop_item.m3.append.txt /tmp/mob_drop_item.m3.append.txt
+RUN cat /tmp/mob_drop_item.m3.append.txt >> \
+        /opt/metin2/share/locale/english/mob_drop_item.txt \
+ && rm -f /tmp/mob_drop_item.m3.append.txt
 
 # The admin panel's in-game helper, compiled in stage 2b. A pure addition on
 # top of the line above: new files under quest/object/, the quest source next

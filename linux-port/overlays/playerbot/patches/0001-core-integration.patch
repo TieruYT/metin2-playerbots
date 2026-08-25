@@ -416,8 +416,8 @@ index 237f41d..316ecf2 100644
 +			autoSpawnCount = std::atoi(configuredCount);
 +		if (autoSpawnCount < 0)
 +			autoSpawnCount = 0;
-+		else if (autoSpawnCount > 350)
-+			autoSpawnCount = 350;
++		else if (autoSpawnCount > 1000)
++			autoSpawnCount = 1000;
 +
 +		for (DWORD pid = 4; pid < 4 + (DWORD)autoSpawnCount; ++pid)
 +			CPlayerBotManager::instance().Spawn(pid, 2);
