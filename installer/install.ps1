@@ -385,6 +385,23 @@ function Set-EnvValue {
     [IO.File]::WriteAllText($Path, (($out -join "`n") + "`n"), (New-Object System.Text.UTF8Encoding($false)))
 }
 
+function Assert-ValidPortConfiguration {
+    if ($script:AuthPort -lt 1 -or $script:AuthPort -gt 65535) {
+        throw "-AuthPort must be a number from 1 to 65535."
+    }
+    if ($script:PanelPort -lt 1 -or $script:PanelPort -gt 65535) {
+        throw "-PanelPort must be a number from 1 to 65535."
+    }
+    if ($script:GamePorts -notmatch '^(\d+)-(\d+)$') {
+        throw "-GamePorts must be a range of exactly three ports, for example 13000-13002."
+    }
+    $first = [int]$Matches[1]
+    $last = [int]$Matches[2]
+    if ($first -lt 1 -or $last -gt 65535 -or $last -ne ($first + 2)) {
+        throw "-GamePorts must be a valid range of exactly three consecutive ports, for example 13000-13002."
+    }
+}
+
 # =============================================================================
 #  docker compose, always in the right directory
 # =============================================================================
@@ -1575,6 +1592,8 @@ downloaded server files, the client -- is kept either way.
     # Everything points at this computer and nowhere else.
     Set-EnvValue $envPath 'M2_PUBLIC_ADDRESS'   '127.0.0.1'
     Set-EnvValue $envPath 'M2_CLIENT_ADDRESS'   '127.0.0.1'
+    Set-EnvValue $envPath 'M2_HOST_BIND_ADDRESS' '127.0.0.1'
+    Set-EnvValue $envPath 'M2_PANEL_BIND_ADDRESS' '127.0.0.1'
     # A Windows install is always local-only, so the panel's introduction should
     # say "nobody else can join" rather than "hand this address out". The panel
     # cannot work that out on its own -- a public Linux server behind nginx also
@@ -1594,9 +1613,10 @@ downloaded server files, the client -- is kept either way.
         "irm $($script:SelfUrl) | iex"
     Set-EnvValue $envPath 'M2_AUTH_PORT'        "$($script:AuthPort)"
     Set-EnvValue $envPath 'M2_GAME_PORT_RANGE'  $script:GamePorts
-    # The base compose file publishes the panel as "${M2_PANEL_PUBLIC_PORT}:7788",
-    # so an address in front of the port is all it takes to bind it to loopback.
-    Set-EnvValue $envPath 'M2_PANEL_PUBLIC_PORT' "127.0.0.1:$($script:PanelPort)"
+    # Bind address and numeric published port are deliberately separate. Docker
+    # Compose cannot parse two concatenated addresses such as
+    # "127.0.0.1:127.0.0.1:7788:7788".
+    Set-EnvValue $envPath 'M2_PANEL_PUBLIC_PORT' "$($script:PanelPort)"
 
     # --- the client that runs in a browser ----------------------------------
     #
@@ -3411,6 +3431,7 @@ function Invoke-Metin2Install {
     }
 
     try {
+        Assert-ValidPortConfiguration
         Test-Machine
         Initialize-Docker
         # ASKED BEFORE ANYTHING LARGE IS DOWNLOADED.

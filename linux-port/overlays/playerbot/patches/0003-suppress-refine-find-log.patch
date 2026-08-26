@@ -1,0 +1,5 @@
+diff --git a/game/src/refine.cpp b/game/src/refine.cpp
+--- a/game/src/refine.cpp
++++ b/game/src/refine.cpp
+@@ -29 +28,0 @@ const TRefineTable* CRefineManager::GetRefineRecipe(DWORD vnum)
+-	sys_log(0, "REFINE: FIND %u %s", vnum, it == m_map_RefineRecipe.end() ? "FALSE" : "TRUE");

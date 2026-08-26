@@ -134,6 +134,10 @@ DROP_DOMAIN=0   # --no-domain: forget the domain an earlier run set up
 AUTH_PORT="${M2_AUTH_PORT:-11000}"
 GAME_PORTS="${M2_GAME_PORT_RANGE:-13000-13002}"
 PANEL_PORT="${M2_PANEL_PUBLIC_PORT:-7788}"
+# Migrate values written by older installers (127.0.0.1:7788) and even the
+# doubly-prefixed malformed form reported in Issue #2. From here onward a port
+# is always digits only; its bind address has a separate environment key.
+PANEL_PORT="${PANEL_PORT##*:}"
 # The WebSocket bridge for the browser client. Off unless the operator turns it
 # on in .env, and this installer never turns it on by itself: it is only useful
 # once a browser client has been put on the panel's volume, and until then it
@@ -500,6 +504,24 @@ parse_args() {
             *) usage; die "I do not understand the option '$1'." ;;
         esac
     done
+}
+
+valid_port() {
+    case "${1:-}" in ''|*[!0-9]*) return 1 ;; esac
+    [ "$1" -ge 1 ] && [ "$1" -le 65535 ]
+}
+
+validate_ports() {
+    valid_port "$AUTH_PORT" || die "--auth-port must be a number from 1 to 65535."
+    valid_port "$PANEL_PORT" || die "--panel-port must be a number from 1 to 65535."
+    case "$GAME_PORTS" in
+        *-*) _game_first=${GAME_PORTS%%-*}; _game_last=${GAME_PORTS##*-} ;;
+        *) die "--game-ports must be a range of exactly three ports, for example 13000-13002." ;;
+    esac
+    valid_port "$_game_first" && valid_port "$_game_last" ||
+        die "--game-ports must contain valid numeric ports."
+    [ "$_game_last" -eq $(( _game_first + 2 )) ] ||
+        die "--game-ports must contain exactly three consecutive ports, for example 13000-13002."
 }
 
 # =============================================================================
@@ -1703,15 +1725,17 @@ write_env() {
     #                   it through, so binding it to loopback would just mean
     #                   nobody could ever administer the server.
     #
-    # The base compose file publishes the panel as "${M2_PANEL_PUBLIC_PORT}:7788",
-    # so putting an address in front of the port is enough to set the binding --
-    # no override file needed.
     if [ -n "$DOMAIN" ] || [ "$LOCAL_ONLY" = "1" ]; then
         PANEL_BIND="127.0.0.1"
-        env_set "$_env" M2_PANEL_PUBLIC_PORT "127.0.0.1:$PANEL_PORT"
     else
         PANEL_BIND="0.0.0.0"
-        env_set "$_env" M2_PANEL_PUBLIC_PORT "$PANEL_PORT"
+    fi
+    env_set "$_env" M2_PANEL_BIND_ADDRESS "$PANEL_BIND"
+    env_set "$_env" M2_PANEL_PUBLIC_PORT "$PANEL_PORT"
+    if [ "$LOCAL_ONLY" = "1" ]; then
+        env_set "$_env" M2_HOST_BIND_ADDRESS "127.0.0.1"
+    else
+        env_set "$_env" M2_HOST_BIND_ADDRESS "0.0.0.0"
     fi
 
     # The client the panel offers for download is built for this address.
@@ -2107,6 +2131,7 @@ setup_tls() {
         DOMAIN=""
         # Re-publish the panel, since nothing will be proxying to it.
         env_set "$INSTALL_DIR/.env" M2_PANEL_PUBLIC_PORT "$PANEL_PORT"
+        env_set "$INSTALL_DIR/.env" M2_PANEL_BIND_ADDRESS "0.0.0.0"
         PANEL_BIND="0.0.0.0"
         dc up -d panel >/dev/null 2>&1 || true
         return 0
@@ -2225,6 +2250,7 @@ _tls_fallback() {
     DOMAIN=""
     PANEL_BIND="0.0.0.0"
     env_set "$INSTALL_DIR/.env" M2_PANEL_PUBLIC_PORT "$PANEL_PORT"
+    env_set "$INSTALL_DIR/.env" M2_PANEL_BIND_ADDRESS "0.0.0.0"
     dc up -d panel >/dev/null 2>&1 || true
     # The firewall was opened for 80 and 443 on the assumption that nginx would
     # be answering on them. It is not, and the panel is now on its own port
@@ -3219,6 +3245,7 @@ fetch_web_client() {
 main() {
     ui_init
     parse_args "$@"
+    validate_ports
     trap cleanup EXIT INT TERM
 
     printf '\n'

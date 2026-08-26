@@ -90,6 +90,8 @@ namespace
 	const DWORD PLAYERBOT_WANDER_INTERVAL = 8000;
 	const DWORD PLAYERBOT_PARTY_CHECK_INTERVAL = 10000;
 	const int PLAYERBOT_PARTY_DESIRED_MAX = 6;
+	const int PLAYERBOT_PARTY_COHESION_RADIUS = 2800;
+	const int PLAYERBOT_ARCHER_LURE_MIN_PARTY_MEMBERS = 5;
 	const int PLAYERBOT_PARTY_CHALLENGE_MIN_MEMBERS = 3;
 	const int PLAYERBOT_PARTY_CHALLENGE_RADIUS = 3000;
 	const int PLAYERBOT_PARTY_READY_HP_PERCENT = 55;
@@ -239,6 +241,13 @@ namespace
 	};
 
 	struct TPlayerBotMapPoint { long x; long y; };
+	// Exact world coordinates of the two rare M2 enemies from
+	// metin2_map_b3/boss.txt (map base 102400,204800). They are the classic
+	// level-30 weapon hunt: Bestial Archer (533) and Specialist (534).
+	const TPlayerBotMapPoint PLAYERBOT_M2_BESTIAL_HOTSPOTS[2] = {
+		{ 132300, 259300 }, // Bestial Archer, local 299,545
+		{ 129700, 275100 }  // Bestial Specialist, local 273,703
+	};
 	const TPlayerBotMapPoint PLAYERBOT_METIN_HOTSPOTS[12] = {
 		{ 33400, 211800 }, { 29200, 164500 }, { 32900, 161600 },
 		{ 39400, 160900 }, { 39400, 187100 }, { 63500, 204100 },
@@ -5088,9 +5097,60 @@ namespace
 		return false;
 	}
 
+	class FPlayerBotPartyCohesion
+	{
+		public:
+			FPlayerBotPartyCohesion(LPCHARACTER leader, int maxDistance) :
+				m_leader(leader), m_maxDistance(maxDistance), m_onlineBots(0),
+				m_togetherBots(0)
+			{
+			}
+
+			void operator () (LPCHARACTER member)
+			{
+				if (!member || !member->GetDesc() || !member->GetDesc()->IsBot())
+					return;
+				++m_onlineBots;
+				if (member->GetMapIndex() == m_leader->GetMapIndex() &&
+						DISTANCE_APPROX(member->GetX() - m_leader->GetX(),
+							member->GetY() - m_leader->GetY()) <= m_maxDistance)
+					++m_togetherBots;
+			}
+
+			int OnlineBots() const { return m_onlineBots; }
+			int TogetherBots() const { return m_togetherBots; }
+
+		private:
+			LPCHARACTER m_leader;
+			int m_maxDistance;
+			int m_onlineBots;
+			int m_togetherBots;
+	};
+
+	bool IsPlayerBotPartyCohesive(LPCHARACTER ch, int minMembers, int maxDistance)
+	{
+		if (!ch || !ch->GetParty() || ch->GetParty()->GetMemberCount() < (DWORD)minMembers)
+			return false;
+		LPCHARACTER leader = ch->GetParty()->GetLeaderCharacter();
+		if (!leader || leader->GetMapIndex() != ch->GetMapIndex())
+			return false;
+
+		FPlayerBotPartyCohesion cohesion(leader, maxDistance);
+		ch->GetParty()->ForEachOnlineMember(cohesion);
+		return cohesion.OnlineBots() >= minMembers &&
+				cohesion.TogetherBots() == cohesion.OnlineBots() &&
+				cohesion.OnlineBots() == (int)ch->GetParty()->GetMemberCount();
+	}
+
 	bool ExecutePlayerBotArcherLuring(LPCHARACTER ch, TPlayerBotAIState& state, DWORD dwNow)
 	{
 		if (!ch || ch->GetJob() != JOB_ASSASSIN || ch->GetSkillGroup() != 2 || !ch->GetParty())
+			return false;
+		// Luring is a group role, not a solo Archer shortcut. Every party member
+		// must be online, on this map and inside one local formation; otherwise an
+		// Archer could pull for a nominal party scattered across different zones.
+		if (!IsPlayerBotPartyCohesive(ch, PLAYERBOT_ARCHER_LURE_MIN_PARTY_MEMBERS,
+				PLAYERBOT_PARTY_COHESION_RADIUS))
 			return false;
 
 		LPITEM weapon = ch->GetWear(WEAR_WEAPON);
@@ -5102,7 +5162,7 @@ namespace
 		if (dwNow < state.dwNextLureTime)
 			return false;
 
-		state.dwNextLureTime = dwNow + 5000;
+		state.dwNextLureTime = dwNow + number(3500, 5500);
 
 		LPCHARACTER leader = ch->GetParty()->GetLeaderCharacter();
 		if (!leader || leader->GetMapIndex() != ch->GetMapIndex())
@@ -5120,10 +5180,14 @@ namespace
 				if (!ent || !ent->IsType(ENTITY_CHARACTER))
 					return false;
 				LPCHARACTER mob = static_cast<LPCHARACTER>(ent);
-				if (!mob->IsMonster() || mob->IsDead())
+				if (!mob->IsMonster() || mob->IsDead() || mob->GetVictim() != NULL ||
+						IsPlayerBotSafeZone(mob->GetMapIndex(), mob->GetX(), mob->GetY()) ||
+						mob->GetLevel() > m_me->GetLevel() + 10)
 					return false;
 				int dist = DISTANCE_APPROX(m_me->GetX() - mob->GetX(), m_me->GetY() - mob->GetY());
-				if (dist >= 1200 && dist <= 3200 && dist < m_bestDist)
+				if (dist >= 1200 && dist <= 3000 && dist < m_bestDist &&
+						IsPlayerBotReachable(m_me->GetMapIndex(), m_me->GetX(), m_me->GetY(),
+							mob->GetX(), mob->GetY()))
 				{
 					m_bestDist = dist;
 					m_targetVID = mob->GetVID();
@@ -5144,18 +5208,21 @@ namespace
 			if (mob && !mob->IsDead())
 			{
 				ch->SetRotationToXY(mob->GetX(), mob->GetY());
-				if (ch->UseSkill(48, mob)) // Fire Arrow lure
-				{
-					SendPlayerBotFlyTargetPacket(ch, mob);
-					ch->ComputeSkill(48, mob);
-					SendPlayerBotSkillPacket(ch, 48);
-					state.dwLastBotSkillTime = dwNow;
-					state.dwNextAttackTime = dwNow + PLAYERBOT_SKILL_ANIMATION_LOCK;
-					state.dwLastCombatActionTime = dwNow;
-					sys_log(0, "PLAYERBOT_AI: archer lured distant mob pid=%u name=%s target_vid=%u target=%s",
-							ch->GetPlayerID(), ch->GetName(), mob->GetVID(), mob->GetName());
-					return true;
-				}
+				// Use a normal bow shot for the pull. Fire Arrow is part of the normal
+				// offensive rotation and was almost always on its real skill cooldown,
+				// which made the old lure silently fail even in a valid six-person PT.
+				LPITEM arrow = ch->GetWear(WEAR_ARROW);
+				int damage = CalcArrowDamage(ch, mob, weapon, arrow, false);
+				if (damage < 5)
+					damage = number(10, 20) + ch->GetLevel() * 2;
+				SendPlayerBotAttackPacket(ch, mob, MOTION_COMBO_ATTACK_1);
+				mob->Damage(ch, damage, DAMAGE_TYPE_NORMAL);
+				mob->SetSyncOwner(ch);
+				state.dwNextAttackTime = dwNow + PLAYERBOT_SKILL_ANIMATION_LOCK;
+				state.dwLastCombatActionTime = dwNow;
+				sys_log(0, "PLAYERBOT_AI: archer lured distant mob pid=%u name=%s target_vid=%u target=%s damage=%d",
+						ch->GetPlayerID(), ch->GetName(), mob->GetVID(), mob->GetName(), damage);
+				return true;
 			}
 		}
 
@@ -5797,6 +5864,19 @@ namespace
 		return (PlayerBotNavHash(ch->GetPlayerID() ^ 0x4d335850U) % 3U) == 0;
 	}
 
+	bool ShouldPlayerBotHuntM2Bestials(LPCHARACTER ch)
+	{
+		if (!ch || ch->GetLevel() < 25 || ch->GetLevel() > 35 ||
+				!HasPlayerBotM3ReadyEquipment(ch) ||
+				HasPlayerBotSpecialLevel30Weapon(ch, true) ||
+				ShouldPlayerBotVisitM3(ch))
+			return false;
+		// M3 already owns one third of the eligible weapon hunters. Half of the
+		// remaining cohort searches the two rare Bestial spawns in M2, while the
+		// rest keeps levelling normally instead of camping one pair of enemies.
+		return (PlayerBotNavHash(ch->GetPlayerID() ^ 0x42455354U) % 2U) == 0;
+	}
+
 	int GetPlayerBotDesiredHorseMedalStock(LPCHARACTER ch)
 	{
 		if (!ch)
@@ -5982,14 +6062,16 @@ namespace
 				return false; // fight monkeys until a real medal drops
 
 			SetPlayerBotGoal(ch, state, BOT_GOAL_HORSE, dwNow);
-			const bool moving = MovePlayerBotToWorldPortal(ch, state,
-					PLAYERBOT_MONKEY_RETURN_PORTAL_X, PLAYERBOT_MONKEY_RETURN_PORTAL_Y,
+			// The Easy Monkey Dungeon is a maze with local, no-loading-screen
+			// teleports. Navigating every corridor only to leave is expensive and
+			// fragile, so departure is the one deliberately direct dungeon transfer.
+			const bool transitioned = TransitionPlayerBotMap(ch, state,
 					PLAYERBOT_MAP_CHUNJO_M2, PLAYERBOT_M2_MONKEY_RETURN_X,
 					PLAYERBOT_M2_MONKEY_RETURN_Y, dwNow,
-					hasMedal ? "monkey_medal_found" : "monkey_timeout");
-			if (ch->GetMapIndex() == PLAYERBOT_MAP_CHUNJO_M2 && !hasMedal)
+					hasMedal ? "monkey_medal_found_direct" : "monkey_timeout_direct");
+			if (transitioned && !hasMedal)
 				state.dwNextWorldTravelTime = dwNow + number(300000, 900000);
-			return moving;
+			return transitioned;
 		}
 
 		return false;
@@ -6643,9 +6725,8 @@ namespace
 		state.dwNextPartyCheckTime = dwNow + PLAYERBOT_PARTY_CHECK_INTERVAL + number(0, 3000);
 
 		LPPARTY pParty = ch->GetParty();
-		// Party play is an explicit, deterministic cohort.  Keeping it near ten
-		// percent makes roughly 66 of the current 668 bots eligible, instead of
-		// letting every nearby bot create or join a group on each check.
+		// Party play is an explicit, deterministic cohort. Archer weighting is
+		// decided at login, while the total cohort remains close to ten percent.
 		if (state.bBotRole != BOT_ROLE_PARTY_FIGHTER)
 		{
 			if (pParty)
@@ -6675,10 +6756,12 @@ namespace
 			LPCHARACTER leader = pParty->GetLeaderCharacter();
 			if (leader && leader != ch)
 			{
-				// If leader too far (> 4500) or level gap too large (> 6 levels)
+				// A party is one local hunting formation, not a database label shared
+				// by bots in separate sectors of the map.
 				int levelDelta = abs((int)ch->GetLevel() - (int)leader->GetLevel());
 				int distToLeader = DISTANCE_APPROX(ch->GetX() - leader->GetX(), ch->GetY() - leader->GetY());
-				if (levelDelta > 6 || leader->GetMapIndex() != ch->GetMapIndex() || distToLeader > 4500)
+				if (levelDelta > 6 || leader->GetMapIndex() != ch->GetMapIndex() ||
+						distToLeader > PLAYERBOT_PARTY_COHESION_RADIUS)
 				{
 					pParty->Quit(ch->GetPlayerID());
 					state.dwNextPartyCheckTime = dwNow + number(30000, 90000);
@@ -6738,7 +6821,10 @@ namespace
 						if (leader && leader->GetMapIndex() == m_me->GetMapIndex())
 						{
 							int ld = DISTANCE_APPROX(m_me->GetX() - leader->GetX(), m_me->GetY() - leader->GetY());
-							if (ld <= 1800 && IsPlayerBotPathClear(m_me->GetMapIndex(), m_me->GetX(), m_me->GetY(), leader->GetX(), leader->GetY()))
+							if (ld <= 1800 &&
+									IsPlayerBotPartyCohesive(candidate, 2,
+										PLAYERBOT_PARTY_COHESION_RADIUS) &&
+									IsPlayerBotPathClear(m_me->GetMapIndex(), m_me->GetX(), m_me->GetY(), leader->GetX(), leader->GetY()))
 							{
 								m_pTargetParty = cp;
 								return false; // Found existing local party with nearby leader
@@ -6979,26 +7065,46 @@ namespace
 		}
 		else if (ch->GetMapIndex() == PLAYERBOT_MAP_CHUNJO_M2)
 		{
-			// Real spawn clusters from metin2_map_b3/regen.txt. Persistent hub
-			// assignment stops the M2 cohort from tracing one identical route.
-			const TPlayerBotMapPoint hubs[12] = {
-				{ 173800, 218500 }, { 182500, 224300 }, { 188900, 234700 },
-				{ 190000, 250200 }, { 187300, 263200 }, { 185500, 278700 },
-				{ 175000, 286500 }, { 162200, 288900 }, { 149200, 289900 },
-				{ 136900, 287300 }, { 125700, 286800 }, { 116500, 279800 }
-			};
 			const DWORD pid = ch->GetPlayerID();
-			const size_t hubIndex = (pid + state.uMetinHotspotIndex) % 12;
-			long offsetX = 0, offsetY = 0;
-			GetPlayerBotStableOffset(pid, 0x4d324855U + (DWORD)hubIndex,
-					150, 700, offsetX, offsetY);
-			targetX = hubs[hubIndex].x + offsetX;
-			targetY = hubs[hubIndex].y + offsetY;
-			if (DISTANCE_APPROX(ch->GetX() - targetX, ch->GetY() - targetY) < 1400)
+			if (ShouldPlayerBotHuntM2Bestials(ch))
 			{
-				++state.uMetinHotspotIndex;
-				targetX = ch->GetX() + number(-700, 700);
-				targetY = ch->GetY() + number(-700, 700);
+				SetPlayerBotGoal(ch, state, BOT_GOAL_GET_EQUIPMENT, dwNow);
+				const size_t bestialIndex = (pid + state.uMetinHotspotIndex) % 2;
+				long offsetX = 0, offsetY = 0;
+				GetPlayerBotStableOffset(pid, 0x42455354U + (DWORD)bestialIndex,
+						100, 450, offsetX, offsetY);
+				targetX = PLAYERBOT_M2_BESTIAL_HOTSPOTS[bestialIndex].x + offsetX;
+				targetY = PLAYERBOT_M2_BESTIAL_HOTSPOTS[bestialIndex].y + offsetY;
+				if (DISTANCE_APPROX(ch->GetX() - targetX, ch->GetY() - targetY) < 1000)
+				{
+					++state.uMetinHotspotIndex;
+					state.dwNextWanderTime = dwNow + number(5000, 9000);
+					targetX = ch->GetX() + number(-500, 500);
+					targetY = ch->GetY() + number(-500, 500);
+				}
+			}
+			else
+			{
+				// Real spawn clusters from metin2_map_b3/regen.txt. Persistent hub
+				// assignment stops the M2 cohort from tracing one identical route.
+				const TPlayerBotMapPoint hubs[12] = {
+					{ 173800, 218500 }, { 182500, 224300 }, { 188900, 234700 },
+					{ 190000, 250200 }, { 187300, 263200 }, { 185500, 278700 },
+					{ 175000, 286500 }, { 162200, 288900 }, { 149200, 289900 },
+					{ 136900, 287300 }, { 125700, 286800 }, { 116500, 279800 }
+				};
+				const size_t hubIndex = (pid + state.uMetinHotspotIndex) % 12;
+				long offsetX = 0, offsetY = 0;
+				GetPlayerBotStableOffset(pid, 0x4d324855U + (DWORD)hubIndex,
+						150, 700, offsetX, offsetY);
+				targetX = hubs[hubIndex].x + offsetX;
+				targetY = hubs[hubIndex].y + offsetY;
+				if (DISTANCE_APPROX(ch->GetX() - targetX, ch->GetY() - targetY) < 1400)
+				{
+					++state.uMetinHotspotIndex;
+					targetX = ch->GetX() + number(-700, 700);
+					targetY = ch->GetY() + number(-700, 700);
+				}
 			}
 		}
 		else if (ch->GetMapIndex() == PLAYERBOT_MAP_CHUNJO_M3)
@@ -7159,6 +7265,106 @@ namespace
 			std::vector<std::pair<int, LPITEM> > m_items;
 	};
 
+	class CDetectPlayerBotCombatThreat
+	{
+		public:
+			CDetectPlayerBotCombatThreat(LPCHARACTER owner) : m_owner(owner), m_found(false) {}
+
+			bool operator () (LPENTITY entity)
+			{
+				if (m_found || !entity || !entity->IsType(ENTITY_CHARACTER))
+					return false;
+				LPCHARACTER mob = static_cast<LPCHARACTER>(entity);
+				if (!mob || !mob->IsMonster() || mob->IsDead() ||
+						mob->GetMapIndex() != m_owner->GetMapIndex())
+					return false;
+				LPCHARACTER victim = mob->GetVictim();
+				if (victim == m_owner || (victim && m_owner->GetParty() &&
+						victim->GetParty() == m_owner->GetParty()))
+				{
+					if (DISTANCE_APPROX(m_owner->GetX() - mob->GetX(),
+							m_owner->GetY() - mob->GetY()) <= 2500)
+						m_found = true;
+				}
+				return false;
+			}
+
+			bool Found() const { return m_found; }
+
+		private:
+			LPCHARACTER m_owner;
+			bool m_found;
+	};
+
+	bool TryPlayerBotCombatPickup(LPCHARACTER ch, TPlayerBotAIState& state, DWORD dwNow)
+	{
+		if (!ch || !ch->GetSectree() || dwNow < state.dwNextLootPickupTime)
+			return false;
+
+		// This is the server equivalent of repeatedly pressing Z: inspect only the
+		// immediate pickup circle, never Stop(), never clear the victim and never
+		// walk toward an item while a pack is still engaged.
+		CCollectPlayerBotLoot collector(ch, PLAYERBOT_PICKUP_RANGE,
+				state.mapFailedLootVIDs, dwNow);
+		ch->GetSectree()->ForEachAround(collector);
+		collector.Sort();
+		const std::vector<std::pair<int, LPITEM> >& items = collector.GetItems();
+		if (items.empty())
+			return false;
+
+		LPITEM pickup = NULL;
+		DWORD firstSeen = 0;
+		for (size_t i = 0; i < items.size(); ++i)
+		{
+			LPITEM item = items[i].second;
+			if (!item || !item->GetSectree())
+				continue;
+			const DWORD itemVID = item->GetVID();
+			std::map<DWORD, DWORD>::iterator seen = state.mapLootSeenSince.find(itemVID);
+			if (seen == state.mapLootSeenSince.end())
+			{
+				state.mapLootSeenSince[itemVID] = dwNow;
+				continue;
+			}
+			const DWORD visibleDelay = PLAYERBOT_LOOT_VISIBLE_DELAY_MIN +
+					(PlayerBotNavHash(itemVID ^ ch->GetPlayerID()) %
+					 (PLAYERBOT_LOOT_VISIBLE_DELAY_MAX - PLAYERBOT_LOOT_VISIBLE_DELAY_MIN + 1));
+			if (dwNow - seen->second >= visibleDelay)
+			{
+				pickup = item;
+				firstSeen = seen->second;
+				break;
+			}
+		}
+		if (!pickup)
+			return false;
+
+		const DWORD itemVID = pickup->GetVID();
+		const DWORD itemVnum = pickup->GetVnum();
+		state.dwNextLootPickupTime = dwNow + number(
+				PLAYERBOT_LOOT_PICKUP_INTERVAL_MIN, PLAYERBOT_LOOT_PICKUP_INTERVAL_MAX);
+		if (ch->PickupItem(itemVID))
+		{
+			state.mapLootSeenSince.erase(itemVID);
+			if (itemVnum == PLAYERBOT_HORSE_MEDAL_VNUM)
+			{
+				const int looted = std::max(0,
+						ch->GetQuestFlag(PLAYERBOT_HORSE_MEDALS_LOOTED_FLAG)) + 1;
+				ch->SetQuestFlag(PLAYERBOT_HORSE_MEDALS_LOOTED_FLAG, looted);
+				ch->SetQuestFlag(PLAYERBOT_HORSE_LAST_LOOT_MAP_FLAG, ch->GetMapIndex());
+				ch->SetQuestFlag(PLAYERBOT_HORSE_LAST_LOOT_TIME_FLAG, get_global_time());
+			}
+			sys_log(0, "PLAYERBOT_AI: combat-Z pickup pid=%u name=%s item_vid=%u vnum=%u visible_ms=%u",
+					ch->GetPlayerID(), ch->GetName(), itemVID, itemVnum,
+					(unsigned int)(dwNow - firstSeen));
+			return true;
+		}
+
+		state.mapFailedLootVIDs[itemVID] = dwNow + 5000;
+		state.mapLootSeenSince.erase(itemVID);
+		return false;
+	}
+
 	bool HandleLoot(LPCHARACTER ch, TPlayerBotAIState& state, DWORD dwNow)
 	{
 		if (!ch || !ch->GetSectree())
@@ -7169,10 +7375,17 @@ namespace
 			: NULL;
 		const bool bFightingActiveTarget = activeTarget && !activeTarget->IsDead() &&
 				(activeTarget->IsMonster() || activeTarget->IsStone());
-		// Loot never interrupts a live pull.  The engaged-target pass will finish
-		// the rest of the pack, then the complete drop remains available for pickup.
-		if (bFightingActiveTarget)
+		CDetectPlayerBotCombatThreat threat(ch);
+		ch->GetSectree()->ForEachAround(threat);
+		const bool bRecentCombat = state.dwLastCombatActionTime != 0 &&
+				dwNow - state.dwLastCombatActionTime < 1800;
+		// A dead primary target does not mean its group is finished. While either a
+		// live target or an attacking pack exists, perform only non-blocking Z pickup.
+		if (bFightingActiveTarget || threat.Found() || bRecentCombat)
+		{
+			TryPlayerBotCombatPickup(ch, state, dwNow);
 			return false;
+		}
 
 		// Clean up expired failed loot entries
 		if (!state.mapFailedLootVIDs.empty())
@@ -7648,11 +7861,11 @@ namespace
 						IsPlayerBotSafeZone(candidate->GetMapIndex(), candidate->GetX(), candidate->GetY()) ||
 						!IsPlayerBotReachable(m_owner->GetMapIndex(),
 								m_owner->GetX(), m_owner->GetY(), candidate->GetX(), candidate->GetY()) ||
-						DISTANCE_APPROX(candidate->GetX() - m_owner->GetX(), candidate->GetY() - m_owner->GetY()) > PLAYERBOT_SEARCH_RANGE ||
+						DISTANCE_APPROX(candidate->GetX() - m_owner->GetX(), candidate->GetY() - m_owner->GetY()) > PLAYERBOT_PARTY_COHESION_RADIUS ||
 						(candidate->IsStone() && candidate->GetLevel() > m_owner->GetLevel() + 9) ||
 						(candidate->IsMonster() &&
-							(candidate->GetLevel() <= m_owner->GetLevel() + PLAYERBOT_MAX_TARGET_LEVEL_DELTA ||
-							 !CanPlayerBotPartyChallenge(m_owner, candidate, m_dwNow, NULL))))
+							 candidate->GetLevel() > m_owner->GetLevel() + PLAYERBOT_MAX_TARGET_LEVEL_DELTA &&
+							 !CanPlayerBotPartyChallenge(m_owner, candidate, m_dwNow, NULL)))
 					return;
 
 				const bool bCandidateIsLeaderTarget =
@@ -7676,6 +7889,7 @@ namespace
 	LPCHARACTER FindPlayerBotPartyFocusTarget(LPCHARACTER ch, TPlayerBotAIState& state, DWORD dwNow)
 	{
 		if (!ch || !ch->GetParty() || state.bVisitingShop || state.bRecoveringAfterDeath ||
+				!IsPlayerBotPartyCohesive(ch, 2, PLAYERBOT_PARTY_COHESION_RADIUS) ||
 				IsPlayerBotSafeZone(ch->GetMapIndex(), ch->GetX(), ch->GetY()) ||
 				(state.dwLastDeathTime != 0 && dwNow - state.dwLastDeathTime < 60000) ||
 				ch->GetMaxHP() <= 0 ||
@@ -7795,7 +8009,9 @@ namespace
 				m_avoidRadius(avoidRadius),
 				m_failedStones(failedStones),
 				m_failedTargets(failedTargets),
-				m_dwNow(dwNow)
+				m_dwNow(dwNow),
+				m_huntM2Bestials(owner && owner->GetMapIndex() == PLAYERBOT_MAP_CHUNJO_M2 &&
+						ShouldPlayerBotHuntM2Bestials(owner))
 			{
 			}
 
@@ -7859,6 +8075,9 @@ namespace
 				const int levelDelta = mobLevel - botLevel;
 				const bool isQuestTarget = candidate->IsMonster() &&
 						m_desiredMobVnum != 0 && candidate->GetRaceNum() == m_desiredMobVnum;
+				const bool isBestialWeaponTarget = candidate->IsMonster() &&
+						m_huntM2Bestials &&
+						(candidate->GetRaceNum() == 533 || candidate->GetRaceNum() == 534);
 
 				// High level bots ignore weak low-level mobs below bot level unless the mob is attacking the bot
 				if (candidate->IsMonster() && !isQuestTarget && botLevel >= 6 &&
@@ -7894,6 +8113,8 @@ namespace
 					// bot would never return to the alpha wolves required by early quests.
 					if (isQuestTarget)
 						baseScore += 1800000;
+					if (isBestialWeaponTarget)
+						baseScore += 1750000;
 
 					// If mob is attacking the bot, give high defense priority
 					if (candidate->GetVictim() == m_owner)
@@ -7971,6 +8192,7 @@ namespace
 			const std::map<DWORD, DWORD>& m_failedStones;
 			const std::map<DWORD, DWORD>& m_failedTargets;
 			DWORD m_dwNow;
+			bool m_huntM2Bestials;
 			std::vector<TTargetCandidate> m_targets;
 	};
 
@@ -8052,7 +8274,9 @@ namespace
 				desiredQuestMobVnum = desiredHuntingMobVnum;
 		}
 
-		CCollectPlayerBotTargets collector(ch, PLAYERBOT_SEARCH_RANGE, maxLevel,
+		const int targetSearchRange = ch->GetParty()
+				? PLAYERBOT_PARTY_COHESION_RADIUS : PLAYERBOT_SEARCH_RANGE;
+		CCollectPlayerBotTargets collector(ch, targetSearchRange, maxLevel,
 				partyChallengeMaxLevel, desiredQuestMobVnum, dwAvoidVID,
 				lAvoidX, lAvoidY, avoidRadius, state.mapFailedStones,
 				state.mapFailedTargets, dwNow);
@@ -8064,7 +8288,7 @@ namespace
 		// Fallback: If no safer/lower level targets found in range, allow normal level cap but still avoid exact killer
 		if (targets.empty() && bRecentDeath)
 		{
-			CCollectPlayerBotTargets fallbackCollector(ch, PLAYERBOT_SEARCH_RANGE,
+			CCollectPlayerBotTargets fallbackCollector(ch, targetSearchRange,
 					ch->GetLevel(), 0, desiredQuestMobVnum, dwAvoidVID, 0, 0, 0,
 					state.mapFailedStones, state.mapFailedTargets, dwNow);
 			ch->GetSectree()->ForEachAround(fallbackCollector);
@@ -9001,9 +9225,15 @@ void CPlayerBotManager::OnPlayerLoaded(LPDESC d)
 		state.lLastX = d->GetCharacter()->GetX();
 		state.lLastY = d->GetCharacter()->GetY();
 
-		// Deterministic role assignment per bot PID.  The party cohort is checked
-		// first and intentionally holds about 10% of bots (66/668 at present).
-		if (dwPID % 10 == 3)
+		// Keep roughly one bot in ten eligible for party play, but deliberately
+		// weight Archer builds more heavily: about 30% of Archers and 7% of all
+		// other builds. With eight class/build combinations this remains close to
+		// the previous global population while making a five-person lure party
+		// realistically obtainable.
+		const bool isArcher = d->GetCharacter()->GetJob() == JOB_ASSASSIN &&
+				d->GetCharacter()->GetSkillGroup() == 2;
+		const DWORD partyRoll = PlayerBotNavHash(dwPID ^ 0x50415254U) % 100U;
+		if ((isArcher && partyRoll < 30U) || (!isArcher && partyRoll < 7U))
 			state.bBotRole = BOT_ROLE_PARTY_FIGHTER;
 		else if (dwPID % 4 == 0)
 			state.bBotRole = BOT_ROLE_METIN_HUNTER;
@@ -9255,8 +9485,13 @@ void CPlayerBotManager::Update()
 		if (!bFightingMetin && ManagePlayerBotBiologist(ch, state, dwNow))
 			continue;
 
+		// Missing/progression gear starts the first visit immediately because the
+		// shop timer is zero after login.  Once a visit finishes, however, respect
+		// its 5-10 minute retry cooldown.  Otherwise a bot that cannot yet afford
+		// the next tier loops forever between the weapon and armour merchants and
+		// never returns to combat (or to its local party).
 		if (ch->GetMapIndex() == 21 && !state.bVisitingShop && !bFightingMetin &&
-				(bNeedsProfession || bNeedsCoreGear || dwNow > state.dwNextShopCheckTime))
+				(bNeedsProfession || dwNow > state.dwNextShopCheckTime))
 		{
 			size_t occupiedItems = 0;
 			size_t occupiedGridCells = 0;
@@ -9487,6 +9722,11 @@ void CPlayerBotManager::Update()
 
 		ch->SetPosition(POS_FIGHTING);
 		ch->SetRotationToXY(target->GetX(), target->GetY());
+
+		// In a compact party of five or more, an Archer periodically tags one
+		// additional nearby pack before returning to the shared focus target.
+		if (ExecutePlayerBotArcherLuring(ch, state, dwNow))
+			continue;
 
 		if (ExecutePlayerBotAttackSkill(ch, target, state, dwNow))
 			continue;

@@ -919,9 +919,11 @@ Full annotated list with defaults: **`.env.example`**.
 | `M2_GAME_PORT_RANGE` | `13000-13002` | Published channel ports. Must match `M2_CHANNELS`. |
 | `M2_AUTH_PORT` | `11000` | Published login port. |
 | `M2_PANEL_PUBLIC_PORT` | `7788` | Published panel port. |
+| `M2_PANEL_BIND_ADDRESS` | `0.0.0.0` | Host address used only for the panel. Use `127.0.0.1` for local-only or reverse-proxy installs. |
 | `M2_TZ` | `UTC` | Timezone; log directories are named by local date. |
 | `M2_MAX_LEVEL` | `120` | Level cap. 120 is the highest the game can do. |
 | `M2_LOG_KEEP_DAYS` | `3` | Server-side log retention. |
+| `M2_HOST_BIND_ADDRESS` | `0.0.0.0` | Host address on which Docker publishes auth and game ports. |
 | `M2_BIND_IP` | `0.0.0.0` | Address the cores listen on. `0.0.0.0` (the default) renders `BIND_IP: 0.0.0.0`; anything else renders `LISTEN_IP`. Either way it sets only the listen address, never what clients are told. |
 | `M2_TEST_SERVER` | `0` | Test-server behaviour. |
 | `M2_TABLE_POSTFIX` | *(empty)* | Suffix on every game table name. |

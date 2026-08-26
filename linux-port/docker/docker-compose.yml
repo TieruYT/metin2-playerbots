@@ -364,7 +364,13 @@ services:
       TZ: "${M2_TZ:-UTC}"
 
     ports:
-      - "${M2_HOST_BIND_ADDRESS:-0.0.0.0}:${M2_PANEL_PUBLIC_PORT:-7788}:7788/tcp"
+      # Keep the host address separate from the numeric port.  Older installers
+      # encoded "127.0.0.1:7788" in M2_PANEL_PUBLIC_PORT; once the common host
+      # bind variable was introduced that produced an invalid two-address
+      # mapping such as "0.0.0.0:127.0.0.1:7788:7788".
+      # Falling back to M2_HOST_BIND_ADDRESS keeps older local .env files
+      # loopback-only until their next installer/update run adds the new key.
+      - "${M2_PANEL_BIND_ADDRESS:-${M2_HOST_BIND_ADDRESS:-0.0.0.0}}:${M2_PANEL_PUBLIC_PORT:-7788}:7788/tcp"
 
     volumes:
       # m2panel.conf: the admin password hash, per-install salt and Flask

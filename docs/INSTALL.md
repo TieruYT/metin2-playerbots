@@ -98,7 +98,7 @@ M2_AUTH_PORT=11000
 # Porty kanału gry (Channel 1)
 M2_GAME_PORT_RANGE=13000-13002
 
-# Port panelu webowego
+# Port panelu webowego (tylko liczba; adres bindowania jest osobną opcją)
 M2_PANEL_PUBLIC_PORT=7788
 
 # Maksymalny poziom postaci

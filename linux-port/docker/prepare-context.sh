@@ -61,6 +61,7 @@ PLAYERBOT_OVERLAY="$REPO_ROOT/linux-port/overlays/playerbot"
 PLAYERBOT_SRC="$PLAYERBOT_OVERLAY/src/game/src"
 PLAYERBOT_CORE_PATCH="$PLAYERBOT_OVERLAY/patches/0001-core-integration.patch"
 PLAYERBOT_ECONOMY_PATCH="$PLAYERBOT_OVERLAY/patches/0002-economy-yang-x5.patch"
+PLAYERBOT_LOG_PATCH="$PLAYERBOT_OVERLAY/patches/0003-suppress-refine-find-log.patch"
 PLAYERBOT_SEED_GENERATOR="$PLAYERBOT_OVERLAY/tools/generate_seed.py"
 PLAYERBOT_SEED="$PLAYERBOT_OVERLAY/sql/playerbots_seed.sql"
 PLAYERBOT_MIGRATOR="$HERE/mariadb/playerbot/apply.sh"
@@ -96,6 +97,7 @@ for p in \
   "$PLAYERBOT_SRC/playerbot_manager.h" \
   "$PLAYERBOT_CORE_PATCH" \
   "$PLAYERBOT_ECONOMY_PATCH" \
+  "$PLAYERBOT_LOG_PATCH" \
   "$PLAYERBOT_SEED_GENERATOR" \
   "$PLAYERBOT_SEED" \
   "$PLAYERBOT_MIGRATOR" \
@@ -160,9 +162,14 @@ if ! (cd "$GAME_CTX/server" && \
       patch --batch --forward --fuzz=0 -p1 --dry-run < "$PLAYERBOT_ECONOMY_PATCH"); then
   die "the Playerbot economy patch does not apply cleanly to the staged port source"
 fi
+if ! (cd "$GAME_CTX/server" && \
+      patch --batch --forward --fuzz=0 -p1 --dry-run < "$PLAYERBOT_LOG_PATCH"); then
+  die "the Playerbot log-noise patch does not apply cleanly to the staged port source"
+fi
 (cd "$GAME_CTX/server" && \
   patch --batch --forward --fuzz=0 -p1 < "$PLAYERBOT_CORE_PATCH" && \
-  patch --batch --forward --fuzz=0 -p1 < "$PLAYERBOT_ECONOMY_PATCH") \
+  patch --batch --forward --fuzz=0 -p1 < "$PLAYERBOT_ECONOMY_PATCH" && \
+  patch --batch --forward --fuzz=0 -p1 < "$PLAYERBOT_LOG_PATCH") \
   || die "the Playerbot source overlay could not be applied"
 
 cp -a "$PLAYERBOT_SRC/playerbot_manager.cpp" "$GAME_CTX/server/game/src/playerbot_manager.cpp"
@@ -186,12 +193,13 @@ cmp -s "$PLAYERBOT_SRC/playerbot_manager.h" "$GAME_CTX/server/game/src/playerbot
 {
   printf 'core_patch=%s\n' "$(git hash-object "$PLAYERBOT_CORE_PATCH")"
   printf 'economy_patch=%s\n' "$(git hash-object "$PLAYERBOT_ECONOMY_PATCH")"
+  printf 'log_patch=%s\n' "$(git hash-object "$PLAYERBOT_LOG_PATCH")"
   printf 'manager_cpp=%s\n' "$(git hash-object "$PLAYERBOT_SRC/playerbot_manager.cpp")"
   printf 'manager_h=%s\n' "$(git hash-object "$PLAYERBOT_SRC/playerbot_manager.h")"
   printf 'seed_generator=%s\n' "$(git hash-object "$PLAYERBOT_SEED_GENERATOR")"
   printf 'seed_sql=%s\n' "$(git hash-object "$PLAYERBOT_SEED")"
 } > "$GAME_CTX/.playerbot-overlay"
-info "core integration, manager sources and 5x Yang economy adjustment staged"
+info "core integration, manager sources, 5x Yang economy and quiet refine lookup staged"
 
 # The regression that must be present. Checked here as well as in the
 # Dockerfile so that a bad context is caught before a 10-minute build.

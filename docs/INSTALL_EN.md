@@ -100,7 +100,7 @@ M2_AUTH_PORT=11000
 # Channel 1 Game core port range
 M2_GAME_PORT_RANGE=13000-13002
 
-# Web Admin Panel port
+# Web Admin Panel port (number only; its bind address is a separate setting)
 M2_PANEL_PUBLIC_PORT=7788
 
 # Max character level
