@@ -47,6 +47,18 @@ namespace
 	const DWORD PLAYERBOT_LOOT_VISIBLE_DELAY_MAX = 1800;
 	const DWORD PLAYERBOT_LOOT_PICKUP_INTERVAL_MIN = 450;
 	const DWORD PLAYERBOT_LOOT_PICKUP_INTERVAL_MAX = 850;
+	// A combat pickup is a cheap-looking action but an expensive query: Metin2's
+	// ForEachAround snapshots every entity in nine neighbouring sectrees before
+	// the callback can apply the 3 m pickup radius.  Throttle empty scans as well
+	// as successful pickups, otherwise hundreds of fighting bots repeat the same
+	// work several thousand times per second.
+	const DWORD PLAYERBOT_COMBAT_LOOT_SCAN_INTERVAL_MIN = 750;
+	const DWORD PLAYERBOT_COMBAT_LOOT_SCAN_INTERVAL_MAX = 1000;
+	const DWORD PLAYERBOT_EMPTY_LOOT_SCAN_INTERVAL_MIN = 750;
+	const DWORD PLAYERBOT_EMPTY_LOOT_SCAN_INTERVAL_MAX = 1000;
+	const DWORD PLAYERBOT_LOOT_THREAT_SCAN_INTERVAL_MIN = 900;
+	const DWORD PLAYERBOT_LOOT_THREAT_SCAN_INTERVAL_MAX = 1300;
+	const DWORD PLAYERBOT_LOOT_CLEANUP_INTERVAL = 10000;
 	const int PLAYERBOT_POTION_HP_PERCENT = 65;
 	const int PLAYERBOT_POTION_SP_PERCENT = 30;
 	const int PLAYERBOT_RECOVERY_HP_PERCENT = 75;
@@ -62,6 +74,10 @@ namespace
 	const DWORD PLAYERBOT_EQUIPMENT_CHECK_INTERVAL = 1000;
 	const DWORD PLAYERBOT_EQUIPMENT_COMBAT_DELAY = 1700;
 	const DWORD PLAYERBOT_GEAR_LOG_INTERVAL = 10000;
+	const DWORD PLAYERBOT_WOODEN_ARROW_VNUM = 8000;
+	const int PLAYERBOT_ARROW_RESTOCK_THRESHOLD = 100;
+	const int PLAYERBOT_ARROW_SMALL_BUNDLE = 100;
+	const int PLAYERBOT_ARROW_LARGE_BUNDLE = 200;
 	const DWORD PLAYERBOT_POTION_LOG_INTERVAL = 10000;
 	const DWORD PLAYERBOT_PERSIST_INTERVAL = 30000;
 	const DWORD PLAYERBOT_RECOVERY_PROTECTION_INTERVAL = 3000;
@@ -368,6 +384,9 @@ namespace
 			dwM3EnteredTime(0),
 			dwMonkeyReversePortalBlockUntil(0),
 			dwNextLootPickupTime(0),
+			dwNextLootSearchTime(0),
+			dwNextLootThreatCheckTime(0),
+			dwNextLootCleanupTime(0),
 			dwNextWanderTime(0),
 			dwNextPartyCheckTime(0),
 			dwNextPartyShareTime(0),
@@ -378,6 +397,7 @@ namespace
 			dwStoneFightStartTime(0),
 			dwNextNavPlanTime(0),
 			dwNextNavProgressTime(0),
+			dwNextNavErrorLogTime(0),
 			dwNavFailedTargetVID(0),
 			dwNextGoalPlanTime(0),
 			dwGoalStartedTime(0),
@@ -389,6 +409,7 @@ namespace
 			bRouteAllowsHorse(false),
 			bRecoveringAfterDeath(false),
 			bTacticalRetreat(false),
+			bLootThreatNearby(false),
 			bEquipPending(false),
 			bVisitingShop(false),
 			bTownNeedMisc(false),
@@ -471,6 +492,9 @@ namespace
 		DWORD dwM3EnteredTime;
 		DWORD dwMonkeyReversePortalBlockUntil;
 		DWORD dwNextLootPickupTime;
+		DWORD dwNextLootSearchTime;
+		DWORD dwNextLootThreatCheckTime;
+		DWORD dwNextLootCleanupTime;
 		DWORD dwNextWanderTime;
 		DWORD dwNextPartyCheckTime;
 		DWORD dwNextPartyShareTime;
@@ -481,6 +505,7 @@ namespace
 		DWORD dwStoneFightStartTime;
 		DWORD dwNextNavPlanTime;
 		DWORD dwNextNavProgressTime;
+		DWORD dwNextNavErrorLogTime;
 		DWORD dwNavFailedTargetVID;
 		DWORD dwNextGoalPlanTime;
 		DWORD dwGoalStartedTime;
@@ -492,6 +517,7 @@ namespace
 		bool bRouteAllowsHorse;
 		bool bRecoveringAfterDeath;
 		bool bTacticalRetreat;
+		bool bLootThreatNearby;
 		bool bEquipPending;
 		bool bVisitingShop;
 		bool bTownNeedMisc;
@@ -1376,14 +1402,14 @@ namespace
 	// moving target; SegmentClearWorld still validates every new segment.
 	const int PLAYERBOT_NAV_ARRIVAL_DISTANCE = 100;
 	const int PLAYERBOT_NAV_GOAL_REPLAN_DISTANCE = 400;
-	// Component-corridor planning only searches the handful of clusters crossed
-	// by a route. With 350 bots, eight plans per manager tick still let recurring
-	// low-PID retries starve later characters for minutes after a cold start or a
-	// mass town trip. Sixty-four drains that queue in a few seconds while retaining
-	// a hard per-frame cap. It also guarantees early/mid PID service during the
-	// first pass; the live container remained far below its CPU limit at 32.
-	const int PLAYERBOT_NAV_MAX_HEAVY_PLANS_PER_TICK = 64;
+	// This is one global budget for the manager update, not one budget per map.
+	// Giving M1, M2, M3 and the Monkey Dungeon 64 searches each multiplied the
+	// old M1 load by four. Already built routes still advance every update; only
+	// new expensive HPA/A* requests wait for a later staggered slot.
+	const int PLAYERBOT_NAV_MAX_HEAVY_PLANS_PER_TICK = 32;
 	const int PLAYERBOT_NAV_MAX_EXPANDED_NODES = 120000;
+	DWORD s_dwPlayerBotNavBudgetStamp = 0;
+	int s_iPlayerBotNavHeavyPlansThisTick = 0;
 
 	enum EPlayerBotNavPlanResult
 	{
@@ -1470,9 +1496,7 @@ namespace
 				m_width(0),
 				m_height(0),
 				m_searchToken(0),
-				m_regionSearchToken(0),
-				m_budgetStamp(0),
-				m_heavyPlansThisTick(0)
+				m_regionSearchToken(0)
 			{
 			}
 
@@ -1707,14 +1731,14 @@ namespace
 						!IsInsideWorld(targetX, targetY))
 					return PLAYERBOT_NAV_PLAN_UNREACHABLE;
 
-				if (m_budgetStamp != now)
+				if (s_dwPlayerBotNavBudgetStamp != now)
 				{
-					m_budgetStamp = now;
-					m_heavyPlansThisTick = 0;
+					s_dwPlayerBotNavBudgetStamp = now;
+					s_iPlayerBotNavHeavyPlansThisTick = 0;
 				}
-				if (m_heavyPlansThisTick >= PLAYERBOT_NAV_MAX_HEAVY_PLANS_PER_TICK)
+				if (s_iPlayerBotNavHeavyPlansThisTick >= PLAYERBOT_NAV_MAX_HEAVY_PLANS_PER_TICK)
 					return PLAYERBOT_NAV_PLAN_DEFERRED;
-				++m_heavyPlansThisTick;
+				++s_iPlayerBotNavHeavyPlansThisTick;
 
 				int sx, sy, tx, ty;
 				WorldToCell(startX, startY, sx, sy);
@@ -1730,7 +1754,7 @@ namespace
 					if (!FindNearestWalkableCell(tx, ty, targetSnapRadius, component,
 							seed ^ 0x9e3779b9U))
 					{
-						sys_err("PLAYERBOT_NAV: goal snap failed map=%ld from=(%ld,%ld) to=(%ld,%ld) component=%u radius=%d",
+						sys_log(1, "PLAYERBOT_NAV: goal snap failed map=%ld from=(%ld,%ld) to=(%ld,%ld) component=%u radius=%d",
 								m_mapIndex, startX, startY, targetX, targetY,
 								(unsigned int)component, targetSnapRadius);
 						return PLAYERBOT_NAV_PLAN_UNREACHABLE;
@@ -1741,13 +1765,13 @@ namespace
 					if (!FindNearestWalkableCell(tx, ty, targetSnapRadius, 0,
 							seed ^ 0x9e3779b9U))
 					{
-						sys_err("PLAYERBOT_NAV: strict goal snap failed map=%ld from=(%ld,%ld) to=(%ld,%ld) radius=%d",
+						sys_log(1, "PLAYERBOT_NAV: strict goal snap failed map=%ld from=(%ld,%ld) to=(%ld,%ld) radius=%d",
 								m_mapIndex, startX, startY, targetX, targetY, targetSnapRadius);
 						return PLAYERBOT_NAV_PLAN_UNREACHABLE;
 					}
 					if (m_component[Index(tx, ty)] != component)
 					{
-						sys_err("PLAYERBOT_NAV: disconnected goal map=%ld from=(%ld,%ld) to=(%ld,%ld) start_component=%u target_component=%u",
+						sys_log(1, "PLAYERBOT_NAV: disconnected goal map=%ld from=(%ld,%ld) to=(%ld,%ld) start_component=%u target_component=%u",
 								m_mapIndex, startX, startY, targetX, targetY,
 								(unsigned int)component, (unsigned int)m_component[Index(tx, ty)]);
 						return PLAYERBOT_NAV_PLAN_UNREACHABLE;
@@ -1774,7 +1798,7 @@ namespace
 				std::vector<int> rawPath;
 				if (!FindHierarchicalRawPath(startIndex, targetIndex, seed, rawPath))
 				{
-					sys_err("PLAYERBOT_NAV: hierarchical route failed map=%ld from=(%ld,%ld) to=(%ld,%ld) start_region=%u target_region=%u",
+					sys_log(1, "PLAYERBOT_NAV: hierarchical route failed map=%ld from=(%ld,%ld) to=(%ld,%ld) start_region=%u target_region=%u",
 							m_mapIndex, startX, startY, targetX, targetY,
 							(unsigned int)m_cellRegion[startIndex],
 							(unsigned int)m_cellRegion[targetIndex]);
@@ -2707,8 +2731,6 @@ namespace
 			std::vector<int> m_regionParent;
 			std::vector<int> m_regionParentEdge;
 			DWORD m_regionSearchToken;
-			DWORD m_budgetStamp;
-			int m_heavyPlansThisTick;
 	};
 
 	struct TPlayerBotMonkeyPortal
@@ -3077,11 +3099,16 @@ namespace
 	{
 		if (!ch)
 			return false;
+		TPlayerBotAIState& state = s_mapPlayerBotAIStates[ch->GetPlayerID()];
 		if (!ch->GetSectree())
 		{
-			sys_err("PLAYERBOT_NAV: missing sectree pid=%u name=%s map=%ld pos=(%ld,%ld) dest=(%ld,%ld)",
-					ch->GetPlayerID(), ch->GetName(), ch->GetMapIndex(), ch->GetX(), ch->GetY(),
-					destX, destY);
+			if (dwNow >= state.dwNextNavErrorLogTime)
+			{
+				state.dwNextNavErrorLogTime = dwNow + 10000;
+				sys_err("PLAYERBOT_NAV: missing sectree pid=%u name=%s map=%ld pos=(%ld,%ld) dest=(%ld,%ld)",
+						ch->GetPlayerID(), ch->GetName(), ch->GetMapIndex(), ch->GetX(), ch->GetY(),
+						destX, destY);
+			}
 			return false;
 		}
 
@@ -3091,7 +3118,6 @@ namespace
 			return false;
 		navigation.ClampWorld(destX, destY);
 
-		TPlayerBotAIState& state = s_mapPlayerBotAIStates[ch->GetPlayerID()];
 		bool redirectedToMonkeyPortal = false;
 		if (mapIndex == PLAYERBOT_MAP_MONKEY_EASY &&
 				!navigation.CanReach(ch->GetX(), ch->GetY(), destX, destY))
@@ -3177,8 +3203,8 @@ namespace
 								ch->GetPlayerID(), ch->GetName(), ch->GetX(), ch->GetY(), destX, destY);
 					// Desynchronise retries so the same low PIDs do not consume every
 					// planning slot on each pass through the ordered bot map.
-					state.dwNextNavPlanTime = dwNow + 250 +
-							(PlayerBotNavHash(ch->GetPlayerID()) % 500U);
+					state.dwNextNavPlanTime = dwNow + 750 +
+							(PlayerBotNavHash(ch->GetPlayerID()) % 1251U);
 					if (ch->IsStateMove())
 						ch->Stop();
 					return true;
@@ -3337,7 +3363,7 @@ namespace
 			{
 				case JOB_ASSASSIN:
 					if (ch->GetSkillGroup() == 2)
-						return subType == WEAPON_BOW || subType == WEAPON_ARROW;
+						return subType == WEAPON_BOW;
 					// Before selecting a profession and on Dagger training, never equip
 					// a bow: melee Ninja skills ask CalcMeleeDamage and reject bows.
 					return subType == WEAPON_DAGGER || subType == WEAPON_SWORD;
@@ -3362,7 +3388,6 @@ namespace
 			case WEAPON_MOUNT_SPEAR:
 				return true;
 			case WEAPON_BOW:
-			case WEAPON_ARROW:
 				return true;
 		}
 
@@ -4038,26 +4063,105 @@ namespace
 	{
 		if (!ch || ch->GetJob() != JOB_ASSASSIN || ch->GetSkillGroup() != 2)
 			return false;
-		return CountPlayerBotArrows(ch) < 100;
+		return CountPlayerBotArrows(ch) < PLAYERBOT_ARROW_RESTOCK_THRESHOLD;
+	}
+
+	long long GetPlayerBotNpcPurchasePrice(const TItemTable* proto, int count)
+	{
+		if (!proto || count <= 0)
+			return 0;
+		if (IS_SET(proto->dwFlags, ITEM_FLAG_COUNT_PER_1GOLD))
+			return proto->dwGold == 0 ? count : count / proto->dwGold;
+		return (long long)proto->dwGold * count;
+	}
+
+	DWORD GetPlayerBotNpcSellUnitPrice(LPITEM item)
+	{
+		if (!item || !item->GetProto() || IS_SET(item->GetAntiFlag(), ITEM_ANTIFLAG_SELL))
+			return 0;
+
+		DWORD price = item->GetShopBuyPrice();
+		if (IS_SET(item->GetFlag(), ITEM_FLAG_COUNT_PER_1GOLD))
+			price = price == 0 ? 1 : 1 / price;
+		price /= 5;
+		price -= price * 3 / 100;
+		return price;
+	}
+
+	bool SellOnePlayerBotSupplyForArrows(LPCHARACTER ch, long long requiredGold)
+	{
+		if (!ch || ch->GetGold() >= requiredGold)
+			return false;
+
+		// The native NPC shop accepts any sellable item. An Archer which has no
+		// ammunition cannot earn the missing Yang, so sell exactly one potion from
+		// an excessive stack rather than giving free arrows or deleting the stack.
+		// Blue potions go first because an Archer has no sustained SP demand.
+		const DWORD potionVnums[] = {
+			27004, 27005, 27006, 27052,
+			27001, 27002, 27003, 27051
+		};
+		for (size_t v = 0; v < sizeof(potionVnums) / sizeof(potionVnums[0]); ++v)
+		{
+			const bool bluePotion = v < 4;
+			const DWORD reserve = bluePotion ? 10 : 30;
+			for (WORD cell = 0; cell < INVENTORY_MAX_NUM; ++cell)
+			{
+				LPITEM item = ch->GetInventoryItem(cell);
+				if (!item || item->GetVnum() != potionVnums[v] || item->GetCount() <= reserve)
+					continue;
+
+				const DWORD price = GetPlayerBotNpcSellUnitPrice(item);
+				if (price == 0)
+					continue;
+
+				item->SetCount(item->GetCount() - 1);
+				ch->PointChange(POINT_GOLD, price);
+				sys_log(0, "PLAYERBOT_GEAR: sold one potion for arrow money pid=%u name=%s vnum=%u price=%u total_gold=%lld",
+						ch->GetPlayerID(), ch->GetName(), potionVnums[v], price,
+						(long long)ch->GetGold());
+				return true;
+			}
+		}
+		return false;
 	}
 
 	bool BuyPlayerBotArrowsAtMerchant(LPCHARACTER ch)
 	{
 		if (!NeedsPlayerBotArrows(ch))
 			return false;
-		TItemTable* proto = ITEM_MANAGER::instance().GetTable(8001);
-		const int bundle = 200;
-		const long long unitPrice = proto ? std::max<DWORD>(1, proto->dwShopBuyPrice) : 1;
-		const long long price = unitPrice * bundle;
-		if (ch->GetGold() < price)
+		TItemTable* proto = ITEM_MANAGER::instance().GetTable(PLAYERBOT_WOODEN_ARROW_VNUM);
+		if (!proto)
 			return false;
-		LPITEM arrows = ch->AutoGiveItem(8001, bundle, -1, false);
+
+		const long long smallPrice = GetPlayerBotNpcPurchasePrice(
+				proto, PLAYERBOT_ARROW_SMALL_BUNDLE);
+		if (ch->GetGold() < smallPrice)
+			SellOnePlayerBotSupplyForArrows(ch, smallPrice);
+
+		int bundle = 0;
+		long long price = GetPlayerBotNpcPurchasePrice(
+				proto, PLAYERBOT_ARROW_LARGE_BUNDLE);
+		if (price > 0 && ch->GetGold() >= price)
+			bundle = PLAYERBOT_ARROW_LARGE_BUNDLE;
+		else
+		{
+			price = smallPrice;
+			if (price > 0 && ch->GetGold() >= price)
+				bundle = PLAYERBOT_ARROW_SMALL_BUNDLE;
+		}
+		if (bundle == 0)
+			return false;
+
+		LPITEM arrows = ch->AutoGiveItem(
+				PLAYERBOT_WOODEN_ARROW_VNUM, bundle, -1, false);
 		if (!arrows)
 			return false;
 		ch->PointChange(POINT_GOLD, -price);
-		EnsurePlayerBotArrowsEquipped(ch);
-		sys_log(0, "PLAYERBOT_GEAR: bought arrows pid=%u name=%s count=%d price=%lld",
-				ch->GetPlayerID(), ch->GetName(), bundle, price);
+		const bool equipped = EnsurePlayerBotArrowsEquipped(ch);
+		sys_log(0, "PLAYERBOT_GEAR: bought wooden arrows pid=%u name=%s vnum=%u count=%d price=%lld equipped=%d",
+				ch->GetPlayerID(), ch->GetName(), PLAYERBOT_WOODEN_ARROW_VNUM,
+				bundle, price, equipped ? 1 : 0);
 		return true;
 	}
 
@@ -5054,10 +5158,12 @@ namespace
 	{
 		if (!ch || !target || ch->GetSkillGroup() == 0 || dwNow < state.dwNextSkillCastTime)
 			return false;
+		LPITEM archerBow = NULL;
+		LPITEM archerArrow = NULL;
 		if (ch->GetJob() == JOB_ASSASSIN && ch->GetSkillGroup() == 2)
 		{
-			LPITEM bow = ch->GetWear(WEAR_WEAPON);
-			if (!bow || bow->GetSubType() != WEAPON_BOW || !EnsurePlayerBotArrowsEquipped(ch))
+			if (!EnsurePlayerBotArrowsEquipped(ch) ||
+					ch->GetArrowAndBow(&archerBow, &archerArrow, 1) != 1)
 				return false;
 		}
 
@@ -5078,6 +5184,8 @@ namespace
 				// packet follows the same order as the build verified in the client.
 				ch->ComputeSkill(skillVnum, target);
 				SendPlayerBotSkillPacket(ch, skillVnum);
+				if (archerArrow)
+					ch->UseArrow(archerArrow, 1);
 				state.dwLastBotSkillTime = dwNow;
 				state.dwLastCombatActionTime = dwNow;
 				// Shamans should weave weapon attacks between spells.  Casting an
@@ -5153,11 +5261,11 @@ namespace
 				PLAYERBOT_PARTY_COHESION_RADIUS))
 			return false;
 
-		LPITEM weapon = ch->GetWear(WEAR_WEAPON);
-		if (!weapon || weapon->GetType() != ITEM_WEAPON || weapon->GetSubType() != WEAPON_BOW)
+		LPITEM weapon = NULL;
+		LPITEM arrow = NULL;
+		if (!EnsurePlayerBotArrowsEquipped(ch) ||
+				ch->GetArrowAndBow(&weapon, &arrow, 1) != 1)
 			return false; // Only lure when equipped with a Bow!
-		if (!EnsurePlayerBotArrowsEquipped(ch))
-			return false;
 
 		if (dwNow < state.dwNextLureTime)
 			return false;
@@ -5211,12 +5319,12 @@ namespace
 				// Use a normal bow shot for the pull. Fire Arrow is part of the normal
 				// offensive rotation and was almost always on its real skill cooldown,
 				// which made the old lure silently fail even in a valid six-person PT.
-				LPITEM arrow = ch->GetWear(WEAR_ARROW);
 				int damage = CalcArrowDamage(ch, mob, weapon, arrow, false);
 				if (damage < 5)
 					damage = number(10, 20) + ch->GetLevel() * 2;
 				SendPlayerBotAttackPacket(ch, mob, MOTION_COMBO_ATTACK_1);
 				mob->Damage(ch, damage, DAMAGE_TYPE_NORMAL);
+				ch->UseArrow(arrow, 1);
 				mob->SetSyncOwner(ch);
 				state.dwNextAttackTime = dwNow + PLAYERBOT_SKILL_ANIMATION_LOCK;
 				state.dwLastCombatActionTime = dwNow;
@@ -5326,6 +5434,18 @@ namespace
 		// before the world-travel state machine returned the bot to the Stable Boy.
 		if (vnum == PLAYERBOT_HORSE_MEDAL_VNUM || (vnum >= 50701 && vnum <= 50706))
 			return false;
+
+		// Arrows are ammunition, not a primary weapon/equipment candidate. Keep all
+		// spare stacks for an Archer (including a Ninja which is about to choose the
+		// deterministic Bow profession), while other classes may sell accidental
+		// arrow drops at the Weapon Merchant.
+		if (item->GetType() == ITEM_WEAPON && item->GetSubType() == WEAPON_ARROW)
+		{
+			const bool isOrWillBeArcher = ch->GetJob() == JOB_ASSASSIN &&
+					(ch->GetSkillGroup() == 2 ||
+					 (ch->GetSkillGroup() == 0 && (ch->GetPlayerID() % 2) != 0));
+			return !isOrWillBeArcher;
+		}
 
 		if (item->GetType() == ITEM_SKILLBOOK)
 		{
@@ -5721,12 +5841,19 @@ namespace
 		const bool sold = SellPlayerBotJunkAtMerchant(
 				ch, BOT_MERCHANT_WEAPON, "weapon_merchant");
 		bool bought = false;
-		if (NeedsPlayerBotProgressionWeapon(ch))
-			bought = BuyPlayerBotProgressionGear(ch,
-					GetPlayerBotProgressionWeaponVnum(ch), "weapon");
-		if (!bought && !ch->GetWear(WEAR_WEAPON))
+		const bool isArcher = ch->GetJob() == JOB_ASSASSIN && ch->GetSkillGroup() == 2;
+		// A missing weapon is essential, so restore the cheap functional weapon
+		// first. With a bow already equipped, ammunition takes priority over a
+		// level-tier upgrade: buying a better bow and leaving zero Yang for arrows
+		// merely creates a better-equipped idle bot.
+		if (!ch->GetWear(WEAR_WEAPON))
 			bought = BuyPlayerBotEmergencyWeapon(ch) || bought;
-		bought = BuyPlayerBotArrowsAtMerchant(ch) || bought;
+		if (isArcher)
+			bought = BuyPlayerBotArrowsAtMerchant(ch) || bought;
+		if (NeedsPlayerBotProgressionWeapon(ch) &&
+				(!isArcher || CountPlayerBotArrows(ch) >= PLAYERBOT_ARROW_RESTOCK_THRESHOLD))
+			bought = BuyPlayerBotProgressionGear(ch,
+					GetPlayerBotProgressionWeaponVnum(ch), "weapon") || bought;
 		return sold || bought;
 	}
 
@@ -5961,6 +6088,8 @@ namespace
 		const long mapIndex = ch->GetMapIndex();
 		const bool hasMedal = ch->CountSpecifyItem(PLAYERBOT_HORSE_MEDAL_VNUM) > 0;
 		const bool needsHorseExpedition = CanPlayerBotAdvanceHorse(ch) && !hasMedal;
+		const bool needsEssentialWeaponSupply = ch->GetWear(WEAR_WEAPON) == NULL ||
+				NeedsPlayerBotArrows(ch);
 		const bool m2LevelingCohort = IsPlayerBotM2LevelingCohort(ch);
 		const bool wantsM3 = ShouldPlayerBotVisitM3(ch);
 
@@ -5998,6 +6127,19 @@ namespace
 			// Boy. Returning to M1 here was the source of the needless three-map trip.
 			if (hasMedal)
 				return false;
+
+			// A bow without arrows (or any character without a weapon) cannot earn the
+			// missing supplies.  Return to the real M1 merchant before considering a
+			// new Horse Medal expedition, otherwise the bot immediately re-enters the
+			// dungeon and remains unable to fight.
+			if (needsEssentialWeaponSupply)
+			{
+				SetPlayerBotGoal(ch, state, BOT_GOAL_RESTOCK, dwNow);
+				return MovePlayerBotToWorldPortal(ch, state,
+						PLAYERBOT_M2_TO_M1_PORTAL_X, PLAYERBOT_M2_TO_M1_PORTAL_Y,
+						PLAYERBOT_MAP_CHUNJO_M1, PLAYERBOT_M1_RETURN_X,
+						PLAYERBOT_M1_RETURN_Y, dwNow, "essential_weapon_to_m1");
+			}
 
 			if (needsHorseExpedition)
 			{
@@ -6058,17 +6200,20 @@ namespace
 					PLAYERBOT_MONKEY_MAX_VISIT_TIME;
 			const int medalCount = ch->CountSpecifyItem(PLAYERBOT_HORSE_MEDAL_VNUM);
 			const int desiredMedals = GetPlayerBotDesiredHorseMedalStock(ch);
-			if (medalCount < desiredMedals && !visitExpired && CanPlayerBotAdvanceHorse(ch))
+			if (!needsEssentialWeaponSupply && medalCount < desiredMedals &&
+					!visitExpired && CanPlayerBotAdvanceHorse(ch))
 				return false; // fight monkeys until a real medal drops
 
-			SetPlayerBotGoal(ch, state, BOT_GOAL_HORSE, dwNow);
+			SetPlayerBotGoal(ch, state,
+					needsEssentialWeaponSupply ? BOT_GOAL_RESTOCK : BOT_GOAL_HORSE, dwNow);
 			// The Easy Monkey Dungeon is a maze with local, no-loading-screen
 			// teleports. Navigating every corridor only to leave is expensive and
 			// fragile, so departure is the one deliberately direct dungeon transfer.
 			const bool transitioned = TransitionPlayerBotMap(ch, state,
 					PLAYERBOT_MAP_CHUNJO_M2, PLAYERBOT_M2_MONKEY_RETURN_X,
 					PLAYERBOT_M2_MONKEY_RETURN_Y, dwNow,
-					hasMedal ? "monkey_medal_found_direct" : "monkey_timeout_direct");
+					needsEssentialWeaponSupply ? "monkey_restock_direct" :
+					(hasMedal ? "monkey_medal_found_direct" : "monkey_timeout_direct"));
 			if (transitioned && !hasMedal)
 				state.dwNextWorldTravelTime = dwNow + number(300000, 900000);
 			return transitioned;
@@ -6099,7 +6244,11 @@ namespace
 
 	void StartPlayerBotTownVisit(LPCHARACTER ch, TPlayerBotAIState& state, DWORD dwNow)
 	{
-		if (!ch || state.bVisitingShop)
+		// The merchant state machine contains real Joan coordinates and can only run
+		// on M1.  Marking a bot as visiting while it was still in M2/M3/the dungeon
+		// blocked ManagePlayerBotWorldTravel forever, because both systems yielded to
+		// each other.  Off-map restocking is owned by WorldTravel first.
+		if (!ch || state.bVisitingShop || ch->GetMapIndex() != PLAYERBOT_MAP_CHUNJO_M1)
 			return;
 
 		state.bTownNeedTrainer = ch->GetLevel() >= 5 && ch->GetSkillGroup() == 0 &&
@@ -7301,6 +7450,13 @@ namespace
 		if (!ch || !ch->GetSectree() || dwNow < state.dwNextLootPickupTime)
 			return false;
 
+		// Set the throttle before scanning.  An empty floor used to leave the
+		// timestamp untouched, so the second HandleLoot call in the same update and
+		// every following update repeated a complete nine-sectree snapshot.
+		state.dwNextLootPickupTime = dwNow + number(
+				PLAYERBOT_COMBAT_LOOT_SCAN_INTERVAL_MIN,
+				PLAYERBOT_COMBAT_LOOT_SCAN_INTERVAL_MAX);
+
 		// This is the server equivalent of repeatedly pressing Z: inspect only the
 		// immediate pickup circle, never Stop(), never clear the victim and never
 		// walk toward an item while a pack is still engaged.
@@ -7354,7 +7510,7 @@ namespace
 				ch->SetQuestFlag(PLAYERBOT_HORSE_LAST_LOOT_MAP_FLAG, ch->GetMapIndex());
 				ch->SetQuestFlag(PLAYERBOT_HORSE_LAST_LOOT_TIME_FLAG, get_global_time());
 			}
-			sys_log(0, "PLAYERBOT_AI: combat-Z pickup pid=%u name=%s item_vid=%u vnum=%u visible_ms=%u",
+			sys_log(1, "PLAYERBOT_AI: combat-Z pickup pid=%u name=%s item_vid=%u vnum=%u visible_ms=%u",
 					ch->GetPlayerID(), ch->GetName(), itemVID, itemVnum,
 					(unsigned int)(dwNow - firstSeen));
 			return true;
@@ -7370,26 +7526,12 @@ namespace
 		if (!ch || !ch->GetSectree())
 			return false;
 
-		LPCHARACTER activeTarget = state.dwTargetVID != 0
-			? CHARACTER_MANAGER::instance().Find(state.dwTargetVID)
-			: NULL;
-		const bool bFightingActiveTarget = activeTarget && !activeTarget->IsDead() &&
-				(activeTarget->IsMonster() || activeTarget->IsStone());
-		CDetectPlayerBotCombatThreat threat(ch);
-		ch->GetSectree()->ForEachAround(threat);
-		const bool bRecentCombat = state.dwLastCombatActionTime != 0 &&
-				dwNow - state.dwLastCombatActionTime < 1800;
-		// A dead primary target does not mean its group is finished. While either a
-		// live target or an attacking pack exists, perform only non-blocking Z pickup.
-		if (bFightingActiveTarget || threat.Found() || bRecentCombat)
+		// Cleanup must also run for bots which spend minutes in continuous combat.
+		// Keep it periodic: walking both maps on every AI tick is unnecessary.
+		if (dwNow >= state.dwNextLootCleanupTime)
 		{
-			TryPlayerBotCombatPickup(ch, state, dwNow);
-			return false;
-		}
-
-		// Clean up expired failed loot entries
-		if (!state.mapFailedLootVIDs.empty())
-		{
+			state.dwNextLootCleanupTime = dwNow + PLAYERBOT_LOOT_CLEANUP_INTERVAL +
+					(PlayerBotNavHash(ch->GetPlayerID()) % 5001U);
 			for (std::map<DWORD, DWORD>::iterator it = state.mapFailedLootVIDs.begin();
 					it != state.mapFailedLootVIDs.end(); )
 			{
@@ -7398,9 +7540,6 @@ namespace
 				else
 					++it;
 			}
-		}
-		if (!state.mapLootSeenSince.empty())
-		{
 			for (std::map<DWORD, DWORD>::iterator it = state.mapLootSeenSince.begin();
 					it != state.mapLootSeenSince.end(); )
 			{
@@ -7411,13 +7550,49 @@ namespace
 			}
 		}
 
+		LPCHARACTER activeTarget = state.dwTargetVID != 0
+			? CHARACTER_MANAGER::instance().Find(state.dwTargetVID)
+			: NULL;
+		const bool bFightingActiveTarget = activeTarget && !activeTarget->IsDead() &&
+				(activeTarget->IsMonster() || activeTarget->IsStone());
+		const bool bRecentCombat = state.dwLastCombatActionTime != 0 &&
+				dwNow - state.dwLastCombatActionTime < 1800;
+		if (!bFightingActiveTarget && !bRecentCombat &&
+				dwNow >= state.dwNextLootThreatCheckTime)
+		{
+			CDetectPlayerBotCombatThreat threat(ch);
+			ch->GetSectree()->ForEachAround(threat);
+			state.bLootThreatNearby = threat.Found();
+			state.dwNextLootThreatCheckTime = dwNow + number(
+					PLAYERBOT_LOOT_THREAT_SCAN_INTERVAL_MIN,
+					PLAYERBOT_LOOT_THREAT_SCAN_INTERVAL_MAX);
+		}
+		// A dead primary target does not mean its group is finished. While either a
+		// live target or an attacking pack exists, perform only non-blocking Z pickup.
+		if (bFightingActiveTarget || state.bLootThreatNearby || bRecentCombat)
+		{
+			TryPlayerBotCombatPickup(ch, state, dwNow);
+			return false;
+		}
+		if (dwNow < state.dwNextLootSearchTime)
+			return false;
+
 		CCollectPlayerBotLoot collector(ch, PLAYERBOT_LOOT_SEARCH_RANGE,
 				state.mapFailedLootVIDs, dwNow);
 		ch->GetSectree()->ForEachAround(collector);
 		collector.Sort();
 		const std::vector<std::pair<int, LPITEM> >& items = collector.GetItems();
 		if (items.empty())
+		{
+			// An empty 25 m search used to run twice per second for every peaceful
+			// bot.  Delay only the next empty-floor query; as soon as an item is seen,
+			// the normal 500 ms walking/visibility cadence remains unchanged.
+			state.dwNextLootSearchTime = dwNow + number(
+					PLAYERBOT_EMPTY_LOOT_SCAN_INTERVAL_MIN,
+					PLAYERBOT_EMPTY_LOOT_SCAN_INTERVAL_MAX);
 			return false;
+		}
+		state.dwNextLootSearchTime = 0;
 		SetPlayerBotAction(state, BOT_ACTION_LOOT, dwNow);
 
 		for (size_t i = 0; i < items.size(); ++i)
@@ -7462,7 +7637,7 @@ namespace
 					sys_log(0, "PLAYERBOT_HORSE: real medal looted pid=%u name=%s map=%ld total_looted=%d",
 							ch->GetPlayerID(), ch->GetName(), ch->GetMapIndex(), looted);
 				}
-				sys_log(0, "PLAYERBOT_AI: picked up delayed loot pid=%u name=%s item_vid=%u vnum=%u visible_ms=%u",
+				sys_log(1, "PLAYERBOT_AI: picked up delayed loot pid=%u name=%s item_vid=%u vnum=%u visible_ms=%u",
 						ch->GetPlayerID(), ch->GetName(), nearestVID, itemVnum,
 						(unsigned int)(dwNow - firstSeen));
 				return true;
@@ -7470,7 +7645,7 @@ namespace
 
 			state.mapFailedLootVIDs[nearestVID] = dwNow + 5000;
 			state.mapLootSeenSince.erase(nearestVID);
-			sys_log(0, "PLAYERBOT_AI: pickup failed pid=%u name=%s item_vid=%u vnum=%u -> retrying in 5s",
+			sys_log(1, "PLAYERBOT_AI: pickup failed pid=%u name=%s item_vid=%u vnum=%u -> retrying in 5s",
 					ch->GetPlayerID(), ch->GetName(), nearestVID, itemVnum);
 			return true;
 		}
@@ -7523,13 +7698,14 @@ namespace
 			return;
 
 		state.bLastPersistedLevel = level;
-		state.dwNextPersistTime = dwNow + PLAYERBOT_PERSIST_INTERVAL;
+		state.dwNextPersistTime = dwNow + PLAYERBOT_PERSIST_INTERVAL +
+				(PlayerBotNavHash(ch->GetPlayerID()) % 5001U);
 
 		ch->SaveReal();
 		ch->FlushDelayedSaveItem();
 		const DWORD playerID = ch->GetPlayerID();
 		db_clientdesc->DBPacket(HEADER_GD_FLUSH_CACHE, 0, &playerID, sizeof(playerID));
-		sys_log(0, "PLAYERBOT_AI: persisted state pid=%u name=%s level=%u exp=%u gold=%lld",
+		sys_log(1, "PLAYERBOT_AI: persisted state pid=%u name=%s level=%u exp=%u gold=%lld",
 				playerID, ch->GetName(), level, ch->GetExp(), (long long)ch->GetGold());
 	}
 
@@ -8389,7 +8565,9 @@ namespace
 
 		LPITEM weapon = ch->GetWear(WEAR_WEAPON);
 		const bool isBow = (weapon && weapon->GetType() == ITEM_WEAPON && weapon->GetSubType() == WEAPON_BOW);
-		LPITEM arrow = isBow ? ch->GetWear(WEAR_ARROW) : NULL;
+		LPITEM arrow = NULL;
+		if (isBow && ch->GetArrowAndBow(&weapon, &arrow, 1) != 1)
+			return 0;
 
 		int iDamage = isBow ? CalcArrowDamage(ch, primary, weapon, arrow, false) : CalcMeleeDamage(ch, primary, false, false);
 		if (iDamage < 5)
@@ -8397,6 +8575,8 @@ namespace
 
 		DWORD hitCount = 1;
 		primary->Damage(ch, iDamage, DAMAGE_TYPE_NORMAL);
+		if (isBow)
+			ch->UseArrow(arrow, 1);
 		primary->SetSyncOwner(ch);
 		if (!primary->IsDead() && primary->CanBeginFight())
 			primary->BeginFight(ch);
@@ -8448,6 +8628,13 @@ namespace
 			return false;
 
 		const bool isBow = weapon->GetSubType() == WEAPON_BOW;
+		if (isBow)
+		{
+			LPITEM bow = NULL;
+			LPITEM arrow = NULL;
+			if (ch->GetArrowAndBow(&bow, &arrow, 1) != 1)
+				return false;
+		}
 		const int combatRange = isBow ? 800 : 280;
 		if (DISTANCE_APPROX(ch->GetX() - target->GetX(), ch->GetY() - target->GetY()) > combatRange)
 			return false;
@@ -9463,10 +9650,10 @@ void CPlayerBotManager::Update()
 				 NeedsPlayerBotProgressionArmor(ch) ||
 				 NeedsPlayerBotProgressionShield(ch));
 
-		// Finish the loot sweep before deciding to leave for town.  This is most
-		// important just after a Metin dies: the previous order could start a shop
-		// route in the same update and abandon a fresh, widely distributed drop.
-		if (!bFightingMetin && HandleLoot(ch, state, dwNow))
+		// Exactly one loot decision per full AI pass. HandleLoot performs a
+		// non-blocking, throttled Z-style pickup in combat and returns false, while
+		// peaceful loot may take ownership of this tick and walk to the drop.
+		if (HandleLoot(ch, state, dwNow))
 			continue;
 
 		// Horse medals are equally real resources: a bot leaves combat, walks to
@@ -9543,12 +9730,8 @@ void CPlayerBotManager::Update()
 		{
 			state.dwTargetVID = 0;
 			ch->SetVictim(NULL);
-			// An unarmed bot must still be able to collect an owned weapon drop.
-			if (HandleLoot(ch, state, dwNow))
-				continue;
-
-			// If neither inventory nor ground contains a weapon, begin a real town
-			// visit instead of buying one remotely and remaining permanently idle.
+			// The single HandleLoot call above already gave an unarmed bot a chance
+			// to collect an owned weapon. If none was available, begin a real visit.
 			StartPlayerBotTownVisit(ch, state, dwNow);
 			ch->Stop();
 			continue;
@@ -9588,9 +9771,6 @@ void CPlayerBotManager::Update()
 			continue;
 
 		ManagePlayerBotEquipment(ch, state, dwNow);
-
-		if (HandleLoot(ch, state, dwNow))
-			continue;
 
 		// A buff is a complete action for this AI update.  Continuing into the
 		// attack code used to emit a second skill packet in the very same tick.
@@ -9643,7 +9823,7 @@ void CPlayerBotManager::Update()
 			{
 				if (target->IsStone())
 					ReservePlayerBotMetin(ch, target, dwNow);
-				sys_log(0, "PLAYERBOT_AI: target acquired pid=%u name=%s level=%u target_vid=%u target=%s target_level=%u is_stone=%d recent_death=%d",
+				sys_log(1, "PLAYERBOT_AI: target acquired pid=%u name=%s level=%u target_vid=%u target=%s target_level=%u is_stone=%d recent_death=%d",
 						ch->GetPlayerID(), ch->GetName(), ch->GetLevel(), state.dwTargetVID,
 						target->GetName(), target->GetLevel(), target->IsStone() ? 1 : 0, bRecentDeath ? 1 : 0);
 				if (target->IsMonster() && target->GetLevel() > ch->GetLevel() + PLAYERBOT_MAX_TARGET_LEVEL_DELTA)
