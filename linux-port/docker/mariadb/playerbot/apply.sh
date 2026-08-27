@@ -17,6 +17,14 @@ case "$strict" in
         ;;
 esac
 
+expected_existing_bots=${PLAYERBOT_EXPECT_MIN_EXISTING_BOTS:-0}
+case "$expected_existing_bots" in
+    ''|*[!0-9]*)
+        echo "[playerbot-migrate] FATAL: PLAYERBOT_EXPECT_MIN_EXISTING_BOTS must be a non-negative integer" >&2
+        exit 1
+        ;;
+esac
+
 seed=/opt/playerbot/playerbots_seed.sql
 [ -s "$seed" ] || {
     echo "[playerbot-migrate] FATAL: $seed is missing or empty" >&2
@@ -61,6 +69,24 @@ while :; do
     fi
     sleep 2
 done
+
+# A developer may keep more persistent bots than the public 350-row seed. When
+# that world matters, make its minimum size explicit in .env. This catches the
+# easy-to-miss case where Docker is pointed at another daemon or a fresh volume:
+# fail before the canonical seed can make the empty world look legitimate.
+existing_bot_count=$(db -e "
+    SELECT COUNT(*)
+      FROM player.player
+     WHERE name LIKE 'bot%';
+")
+if [ "$expected_existing_bots" -gt 0 ] && [ "$existing_bot_count" -lt "$expected_existing_bots" ]; then
+    echo "[playerbot-migrate] FATAL: persistent-world guard expected at least $expected_existing_bots bots, found $existing_bot_count" >&2
+    echo "[playerbot-migrate] FATAL: check the Docker context/daemon and the db-data volume before starting the game" >&2
+    exit 1
+fi
+if [ "$expected_existing_bots" -gt 0 ]; then
+    echo "[playerbot-migrate] persistent-world guard satisfied: $existing_bot_count bots present (minimum $expected_existing_bots)"
+fi
 
 echo "[playerbot-migrate] applying deterministic 350-bot seed"
 result=/tmp/playerbot-seed.out

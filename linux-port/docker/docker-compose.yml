@@ -103,6 +103,9 @@ services:
       # 0 preserves an older/non-canonical cohort without changing it. CI and
       # deliberate migrations can choose 1 to fail the stack on any collision.
       PLAYERBOT_SEED_STRICT: "${PLAYERBOT_SEED_STRICT:-0}"
+      # Optional persistent-world guard. A non-zero value refuses to seed/start
+      # when the selected Docker daemon or volume contains fewer bots.
+      PLAYERBOT_EXPECT_MIN_EXISTING_BOTS: "${PLAYERBOT_EXPECT_MIN_EXISTING_BOTS:-0}"
 
     entrypoint: ["/bin/sh", "/opt/playerbot/apply.sh"]
 

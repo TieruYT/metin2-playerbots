@@ -92,6 +92,10 @@ Najważniejsze opcje:
 # Liczba automatycznie spawnowanych botów po starcie serwera
 PLAYERBOT_AUTOSPAWN_COUNT=350
 
+# Opcjonalnie: minimalna liczba botów, która musi już istnieć w trwałym świecie
+# (0 wyłącza kontrolę; ustaw po pierwszym uruchomieniu/odtworzeniu kopii)
+PLAYERBOT_EXPECT_MIN_EXISTING_BOTS=0
+
 # Port logowania (Auth)
 M2_AUTH_PORT=11000
 
@@ -104,6 +108,11 @@ M2_PANEL_PUBLIC_PORT=7788
 # Maksymalny poziom postaci
 M2_MAX_LEVEL=120
 ```
+
+Jeżeli rozwijasz istniejący świat, ustaw
+`PLAYERBOT_EXPECT_MIN_EXISTING_BOTS` na jego bezpieczne minimum. Start zostanie
+zatrzymany, gdy Docker wskaże inny daemon albo świeży wolumen z mniejszą liczbą
+botów. Przy pierwszej instalacji pozostaw `0`.
 
 Po zmianie konfiguracji w `.env` wystarczy zrestartować kontener gry:
 ```powershell
