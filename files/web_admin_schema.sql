@@ -50,12 +50,13 @@ CREATE TABLE IF NOT EXISTS web_admin_queue (
 
 -- ---- server-wide rates ------------------------------------------------
 -- What the panel's "Server rates" page wants; apply_rates.sh reads it back
--- and hands it to the server-files profile. 100 means "exactly like the
--- original game", which is what a fresh server starts out as.
+-- and hands it to the server-files profile. The project deliberately starts
+-- with 650% EXP so the bot population can progress beyond M2 in a reasonable
+-- test cycle; drop and Yang retain their neutral fresh-install defaults.
 CREATE TABLE IF NOT EXISTS web_admin_rates (
   name  VARCHAR(24) PRIMARY KEY,
   value INT NOT NULL DEFAULT 100
 );
 
 INSERT IGNORE INTO web_admin_rates (name, value)
-  VALUES ('exp', 100), ('drop', 100), ('yang', 100);
+  VALUES ('exp', 650), ('drop', 100), ('yang', 100);

@@ -3634,7 +3634,7 @@ MAP_I18N = {
   "level":"Poziom","all":"Wszystkie","map":"Mapa","m1":"M1 — Joan","m2":"M2 — Bokjung","m3":"M3 — Waryong","monkey":"Łatwy Loch Małp","search":"🔍 Szukaj bota (np. botarek)...",
   "solo_bot":"Bot solo","party_bot":"W grupie (PT)","metin_fight":"Walka z Metinem","loading":"Ładowanie...","world_stats":"Statystyki świata","active_bots":"Aktywne boty",
   "in_parties":"W grupach (PT)","avg_level":"Średni poziom","max_level":"Maks. poziom","rankings":"Rankingi botów","rank_level":"Poziom","rank_weapon":"Broń","rank_armor":"Zbroja",
-  "rank_items":"Przedmioty","rank_horse":"Koń","rank_biologist":"Biolog","rank_hunting":"Polowanie","rank_empty":"Brak danych rankingu.","none":"Brak","items_short":"przedm.",
+  "rank_items":"Przedmioty","rank_horse":"Koń","rank_biologist":"Biolog","rank_hunting":"Polowanie","rank_empty":"Brak danych rankingu.","rank_show":"Pokaż","rank_search":"Szukaj w rankingu...","none":"Brak","items_short":"przedm.",
   "horse_lv":"Koń Lv","visible":"Widocznych","characters":"postaci","in_group":"W grupie [PT]","solo":"Solo","player":"GRACZ","bot":"Bot","class":"Klasa","action":"Akcja","status":"Status",
   "coordinates":"Koordynaty","open_inventory":"Kliknij, aby otworzyć ekwipunek i EQ","loading_character":"Ładowanie ekwipunku i statystyk postaci","error":"Błąd","not_found":"Nie znaleziono danych",
   "teleport_me":"Teleportuj moją postać w grze (1 klik)","position":"Pozycja","horse":"Koń","biologist":"Biolog","bio_stage":"Etap Biologa","hunting":"Polowanie","no_data":"Brak danych",
@@ -3653,7 +3653,7 @@ MAP_I18N = {
   "level":"Level","all":"All","map":"Map","m1":"M1 — Joan","m2":"M2 — Bokjung","m3":"M3 — Waryong","monkey":"Easy Monkey Dungeon","search":"🔍 Find a bot (e.g. botarek)...",
   "solo_bot":"Solo bot","party_bot":"In party (PT)","metin_fight":"Fighting a Metin","loading":"Loading...","world_stats":"World statistics","active_bots":"Active bots",
   "in_parties":"In parties (PT)","avg_level":"Average level","max_level":"Max level","rankings":"Bot rankings","rank_level":"Level","rank_weapon":"Weapon","rank_armor":"Armour",
-  "rank_items":"Items","rank_horse":"Horse","rank_biologist":"Biologist","rank_hunting":"Hunting","rank_empty":"No ranking data.","none":"None","items_short":"items",
+  "rank_items":"Items","rank_horse":"Horse","rank_biologist":"Biologist","rank_hunting":"Hunting","rank_empty":"No ranking data.","rank_show":"Show","rank_search":"Search ranking...","none":"None","items_short":"items",
   "horse_lv":"Horse Lv","visible":"Visible","characters":"characters","in_group":"In party [PT]","solo":"Solo","player":"PLAYER","bot":"Bot","class":"Class","action":"Action","status":"Status",
   "coordinates":"Coordinates","open_inventory":"Click to open inventory and equipment","loading_character":"Loading character equipment and statistics","error":"Error","not_found":"No data found",
   "teleport_me":"Teleport my in-game character (one click)","position":"Position","horse":"Horse","biologist":"Biologist","bio_stage":"Biologist stage","hunting":"Hunting","no_data":"No data",
@@ -3814,6 +3814,18 @@ TPL_LIVE_MAP = BASE.replace("__BODY__", """
           <button type="button" class="btn btn-sm rank-tab" onclick="setRankCategory('horse', this)" style="font-size:11px;padding:3px 6px">🐴 {{m.rank_horse}}</button>
           <button type="button" class="btn btn-sm rank-tab" onclick="setRankCategory('biologist', this)" style="font-size:11px;padding:3px 6px">🌿 {{m.rank_biologist}}</button>
           <button type="button" class="btn btn-sm rank-tab" onclick="setRankCategory('hunting', this)" style="font-size:11px;padding:3px 6px">🎯 {{m.rank_hunting}}</button>
+        </div>
+        <div style="display:grid;grid-template-columns:minmax(0,1fr) auto;gap:6px;margin-bottom:10px;align-items:center">
+          <input id="rankSearch" type="search" placeholder="🔍 {{m.rank_search}}" oninput="renderRankings()" style="min-width:0;margin:0;padding:7px 8px;font-size:11px">
+          <label style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--muted);white-space:nowrap">
+            {{m.rank_show}}
+            <select id="rankLimit" onchange="setRankLimit(this.value)" style="margin:0;padding:6px 24px 6px 7px;font-size:11px;width:auto">
+              <option value="15">15</option>
+              <option value="30">30</option>
+              <option value="50">50</option>
+              <option value="100">100</option>
+            </select>
+          </label>
         </div>
         <div style="max-height:410px;overflow-y:auto" id="topBotsList">
           <p class="muted" style="font-size:12px;text-align:center">{{m.loading}}</p>
@@ -4015,6 +4027,7 @@ var g_bots = [];
 var g_selectedLevel = 'all';
 var g_selectedMap = 21;
 var g_selectedRankCategory = 'level';
+var g_rankLimit = 15;
 var g_rankData = [];
 var g_highlightedId = null;
 
@@ -4037,6 +4050,12 @@ function setRankCategory(cat, btn) {
   fetchRankings();
 }
 
+function setRankLimit(value) {
+  var parsed = parseInt(value, 10);
+  g_rankLimit = [15, 30, 50, 100].indexOf(parsed) >= 0 ? parsed : 15;
+  fetchRankings();
+}
+
 function fetchBotPositions() {
   fetch('/api/bot_positions')
     .then(function(res) { return res.json(); })
@@ -4051,7 +4070,8 @@ function fetchBotPositions() {
 }
 
 function fetchRankings() {
-  fetch('/api/bot_rankings?type=' + g_selectedRankCategory)
+  fetch('/api/bot_rankings?type=' + encodeURIComponent(g_selectedRankCategory) +
+        '&limit=' + g_rankLimit)
     .then(function(res) { return res.json(); })
     .then(function(data) {
       if (data && data.ok) {
@@ -4093,7 +4113,12 @@ function renderRankings() {
   }
 
   var rankHtml = '';
+  var rankSearchEl = document.getElementById('rankSearch');
+  var rankSearch = rankSearchEl ? rankSearchEl.value.toLowerCase().trim() : '';
   g_rankData.forEach(function(b, idx) {
+    if (rankSearch && ((b.name || '') + ' ' + (b.job || '')).toLowerCase().indexOf(rankSearch) < 0) {
+      return;
+    }
     var ptBadge = b.in_pt ? '<span style="color:#a855f7;font-weight:700">[PT]</span> ' : '';
     var detailStr = '';
     if (g_selectedRankCategory === 'gold') {
@@ -4119,7 +4144,7 @@ function renderRankings() {
                 '<div style="text-align:right">' + detailStr + ' <span style="font-size:10px;color:#888">🔍</span></div>' +
                 '</div>';
   });
-  listEl.innerHTML = rankHtml;
+  listEl.innerHTML = rankHtml || '<p class="muted" style="font-size:12px;text-align:center">' + I18N.rank_empty + '</p>';
 }
 
 function highlightBot(pid) {
@@ -4785,6 +4810,10 @@ def api_bot_inventory(pid):
 @app.route("/api/bot_rankings")
 def api_bot_rankings():
     rtype = request.args.get("type", "level")
+    try:
+        rank_limit = max(15, min(100, int(request.args.get("limit", "15"))))
+    except (TypeError, ValueError):
+        rank_limit = 15
     language = lang()
     messages = map_i18n(language)
     try:
@@ -4793,46 +4822,46 @@ def api_bot_rankings():
                 cur.execute("""
                     SELECT id, name, level, job, gold
                     FROM player.player
-                    WHERE name LIKE 'bot%'
+                    WHERE name LIKE 'bot%%'
                     ORDER BY gold DESC, level DESC
-                    LIMIT 15
-                """)
+                    LIMIT %s
+                """, (rank_limit,))
             elif rtype == "weapon":
                 cur.execute("""
                     SELECT p.id, p.name, p.level, p.job, p.gold, i.vnum as weapon_vnum
                     FROM player.player p
                     LEFT JOIN player.item i ON p.id = i.owner_id AND i.window = 'EQUIPMENT' AND i.pos = 4
-                    WHERE p.name LIKE 'bot%'
-                    ORDER BY (i.vnum % 10) DESC, i.vnum DESC, p.level DESC
-                    LIMIT 15
-                """)
+                    WHERE p.name LIKE 'bot%%'
+                    ORDER BY MOD(i.vnum, 10) DESC, i.vnum DESC, p.level DESC
+                    LIMIT %s
+                """, (rank_limit,))
             elif rtype == "armor":
                 cur.execute("""
                     SELECT p.id, p.name, p.level, p.job, p.gold, i.vnum as armor_vnum
                     FROM player.player p
                     LEFT JOIN player.item i ON p.id = i.owner_id AND i.window = 'EQUIPMENT' AND i.pos = 0
-                    WHERE p.name LIKE 'bot%'
-                    ORDER BY (i.vnum % 10) DESC, i.vnum DESC, p.level DESC
-                    LIMIT 15
-                """)
+                    WHERE p.name LIKE 'bot%%'
+                    ORDER BY MOD(i.vnum, 10) DESC, i.vnum DESC, p.level DESC
+                    LIMIT %s
+                """, (rank_limit,))
             elif rtype == "items":
                 cur.execute("""
                     SELECT p.id, p.name, p.level, p.job, p.gold, COUNT(i.id) as item_count
                     FROM player.player p
                     LEFT JOIN player.item i ON p.id = i.owner_id AND i.window = 'INVENTORY'
-                    WHERE p.name LIKE 'bot%'
+                    WHERE p.name LIKE 'bot%%'
                     GROUP BY p.id
                     ORDER BY item_count DESC, p.level DESC
-                    LIMIT 15
-                """)
+                    LIMIT %s
+                """, (rank_limit,))
             elif rtype == "horse":
                 cur.execute("""
                     SELECT id, name, level, job, gold, horse_level
                     FROM player.player
-                    WHERE name LIKE 'bot%'
+                    WHERE name LIKE 'bot%%'
                     ORDER BY horse_level DESC, level DESC, exp DESC
-                    LIMIT 15
-                """)
+                    LIMIT %s
+                """, (rank_limit,))
             elif rtype == "biologist":
                 mission_names = tuple(m[0] for m in BIOLOGIST_MISSIONS)
                 placeholders = ",".join(["%s"] * len(mission_names))
@@ -4847,9 +4876,10 @@ def api_bot_rankings():
                     WHERE p.name LIKE 'bot%%'
                     GROUP BY p.id
                     ORDER BY biologist_completed DESC, p.level DESC, p.exp DESC
-                    LIMIT 15
+                    LIMIT %s
                 """.format(placeholders)
-                cur.execute(ranking_sql, (BIOLOGIST_COMPLETE_STATE,) + mission_names)
+                cur.execute(ranking_sql, (BIOLOGIST_COMPLETE_STATE,) + mission_names +
+                            (rank_limit,))
             elif rtype == "hunting":
                 cur.execute("""
                     SELECT p.id, p.name, p.level, p.job, p.gold,
@@ -4860,20 +4890,20 @@ def api_bot_rankings():
                     FROM player.player p
                     LEFT JOIN player.quest q
                       ON q.dwPID = p.id AND q.szName = 'levelup'
-                    WHERE p.name LIKE 'bot%'
+                    WHERE p.name LIKE 'bot%%'
                     GROUP BY p.id
                     ORDER BY hunting_complete DESC, hunting_current DESC,
                              hunting_remain ASC, p.level DESC
-                    LIMIT 15
-                """)
+                    LIMIT %s
+                """, (rank_limit,))
             else: # level
                 cur.execute("""
                     SELECT id, name, level, job, exp, gold
                     FROM player.player
-                    WHERE name LIKE 'bot%'
+                    WHERE name LIKE 'bot%%'
                     ORDER BY level DESC, exp DESC
-                    LIMIT 15
-                """)
+                    LIMIT %s
+                """, (rank_limit,))
 
             rows = cur.fetchall()
             rankings = []
@@ -4918,7 +4948,8 @@ def api_bot_rankings():
                     "hunting_label": hunting_label,
                     "in_pt": bot_in_party_cohort(r["id"])
                 })
-            return jsonify({"ok": True, "type": rtype, "rankings": rankings})
+            return jsonify({"ok": True, "type": rtype, "limit": rank_limit,
+                            "rankings": rankings})
     except Exception as e:
         return jsonify({"ok": False, "error": str(e), "rankings": []})
 
