@@ -4,6 +4,13 @@
 
 A local Metin2 singleplayer world populated by genuine, autonomous player characters (Playerbots): leveling up, grinding solo and in squads, looting items, refining gear at the Blacksmith, hunting Metin stones, and persisting their full progression in the standard database.
 
+## 💬 Community & Project Support
+
+- **[Join our Discord server](https://discord.gg/6v4WkDY6a)** — discuss the project, share playtests and ideas, and follow playerbot development updates.
+- **[Support development on Zrzutka.pl](https://zrzutka.pl/rw4g7p)** — voluntary donations help cover the tools and AI models used to develop the project.
+
+Every contribution — testing, bug reports, ideas, code, or financial support — helps us build a more autonomous and lively Metin2 world.
+
 > [!IMPORTANT]
 > This project supports the **native Windows client only**. It neither contains nor automatically downloads Metin2 files, the r40250 package, or the withdrawn upstream WebClient. Installation requires your own compatible files. See [project provenance and attribution](docs/ATTRIBUTION.md).
 
