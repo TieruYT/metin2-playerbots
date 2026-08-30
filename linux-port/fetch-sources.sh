@@ -129,6 +129,9 @@ CLIENT_DROP="$HERE/docker/client-archive"
 BASELINE_TARBALL_SHA256=6e9e7339935058f73fead81e609219b496adbc867dfeca70f633031730313001
 BASELINE_MANIFEST_SHA256=37fe257e0cb8f7e68e1a9567332ad0dff8ca21f902a0651becd88c6e325a81b8
 BASELINE_FILE_COUNT=744
+# Reported in issue #5. This identifies the public TMP4 2025-03-31 refresh; it
+# does not pretend that the baseline patch is compatible before its dry run.
+KNOWN_TMP4_20250331_TARBALL_SHA256=e72d78817432101a9f102ddac74d69b8fe6e54a49b0538e1ef43b9c98e0cc982
 
 # No third-party server-file mirror is built in. The repository distributes
 # only its own code and patches; the operator supplies a compatible r40250
@@ -689,6 +692,9 @@ identify_source() {
     _s=$(sha256sum "$SRC_TGZ" 2>/dev/null | awk '{print $1}')
     if [ "$_s" = "$BASELINE_TARBALL_SHA256" ]; then
         ok "this is the exact archive the port was made against"
+    elif [ "$_s" = "$KNOWN_TMP4_20250331_TARBALL_SHA256" ]; then
+        warn "this is the known TMP4 2025-03-31 source refresh (issue #5)."
+        warn "Its source differs from the baseline; a patch dry run will decide compatibility."
     else
         warn "this is not the archive the port was made against."
         warn "  its sha256 is $_s"
@@ -788,11 +794,33 @@ apply_patch() {
 
     note "  patch --dry-run first: nothing is written unless every hunk fits"
     if ! ( cd "$PORTED" && patch -p1 --forward --dry-run < "$PATCH_FILE" ) >"$CACHE/patch.log" 2>&1; then
-        sed -n '1,40p' "$CACHE/patch.log" | while IFS= read -r _l; do note "         $_l"; done
+        _source_sum=$(sha256sum "$SRC_TGZ" 2>/dev/null | awk '{print $1}')
+        _variant=unknown
+        [ "$_source_sum" = "$KNOWN_TMP4_20250331_TARBALL_SHA256" ] \
+            && _variant=tmp4-2025-03-31
+        _report="$CACHE/compatibility-report.txt"
+        { printf 'format=metin2-playerbots-source-compatibility-v1\n'
+          printf 'variant=%s\n' "$_variant"
+          printf 'source_tarball_sha256=%s\n' "$_source_sum"
+          printf 'source_manifest_sha256=%s\n' "$_m"
+          printf 'source_file_count=%s\n' "$_n"
+          printf 'baseline_tarball_sha256=%s\n' "$BASELINE_TARBALL_SHA256"
+          printf 'baseline_manifest_sha256=%s\n' "$BASELINE_MANIFEST_SHA256"
+          printf 'port_patch_sha256=%s\n' "$(sha256sum "$PATCH_FILE" 2>/dev/null | awk '{print $1}')"
+          printf '\n[patch-dry-run]\n'
+          cat "$CACHE/patch.log"
+        } > "$_report"
+        sed -n '1,80p' "$CACHE/patch.log" | while IFS= read -r _l; do note "         $_l"; done
+        warn "Compatibility report: $_report"
+        if [ "$_variant" = tmp4-2025-03-31 ]; then
+            warn "Recognised TMP4 2025-03-31. Do not force the baseline patch."
+            warn "Attach compatibility-report.txt to issue #5 so only the conflicting hunks are adapted."
+        fi
         die 6 "The port does not apply to this source." \
             "That means the upstream package is not the one this port was made" \
             "against -- not that the patch is wrong. Do not force it." \
-            "The full output is in $CACHE/patch.log." \
+            "The full output is in $CACHE/patch.log and the shareable report is" \
+            "in $CACHE/compatibility-report.txt." \
             "The baseline is recorded in the patch's own header:" \
             "  head -30 $PATCH_FILE"
     fi

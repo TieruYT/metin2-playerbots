@@ -14,7 +14,8 @@ All custom Playerbots logic is cleanly isolated in `linux-port/overlays/playerbo
 linux-port/overlays/playerbot/
 ├── src/game/src/
 │   ├── playerbot_manager.cpp    # Core AI engine, 2D NavGrid, combat, shopping, refining
-│   └── playerbot_manager.h      # Class declarations and data structures
+│   ├── playerbot_manager.h      # Class declarations and data structures
+│   └── playerbot_world_rules.h  # Pure, testable cross-map travel rules
 ├── sql/
 │   └── playerbots_seed.sql      # MariaDB seed dataset for 350 persistent characters
 ├── serverfiles/
@@ -44,6 +45,17 @@ docker restart metin2-game
 ```
 
 The script compiles the 32-bit ELF `game` binary in ~8 seconds and automatically updates the `metin2/game:40250` Docker image.
+
+Keep the builder container after the first full compile. Later manager changes
+can copy changed headers as well, for example:
+
+```sh
+bash tools/fast-game-build/build.sh playerbot_manager.cpp playerbot_world_rules.h
+```
+
+Pure rules have tests which do not require a running server. Their current
+scope and the incremental split are documented in
+[ARCHITECTURE.md](ARCHITECTURE.md).
 
 ---
 

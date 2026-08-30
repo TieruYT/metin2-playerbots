@@ -26,6 +26,24 @@ nie zawiera kodu lub danych gry. Do czystej instalacji przygotuj:
 - zgodne archiwum serwera r40250 zawierające `metin2_server+src.tar.gz` oraz `metin2_mysql_dump.zip`, albo rozpakowany katalog `[40250] Reference Serverfile`;
 - opcjonalnie archiwum kompatybilnego natywnego klienta Windows. Możesz też użyć własnego, już skonfigurowanego klienta.
 
+Obecna bazowa wersja `metin2_server+src.tar.gz`, wobec której tworzony jest
+port, ma SHA-256:
+
+```text
+6e9e7339935058f73fead81e609219b496adbc867dfeca70f633031730313001
+```
+
+Sprawdzisz plik w PowerShellu poleceniem
+`Get-FileHash .\metin2_server+src.tar.gz -Algorithm SHA256`. Odświeżenie TMP4
+z 31.03.2025 (`e72d7881...`) zawiera zmienione źródła i nie powinno być
+przepuszczane na siłę przez patch bazowy. Instalator rozpoznaje ten wariant i,
+jeśli dry-run się nie powiedzie, zapisuje bezpieczny raport w
+`C:\Metin2Server\diagnostics\compatibility-report.txt` do dołączenia do issue #5.
+
+„Klient r40250” nie oznacza dowolnego klienta znalezionego pod taką nazwą.
+Musi mieć zgodne protokoły/pakiety, `item_proto`/`mob_proto` i locale. Najpewniejszą
+parą jest klient pochodzący z tego samego wydania co dostarczone pliki serwera.
+
 WebClient nie jest częścią tego forka i instalator zawsze go wyłącza. Nie dodawaj
 archiwów gry do Git — patrz [NOTICE.md](../NOTICE.md) i [ATTRIBUTION.md](ATTRIBUTION.md).
 
@@ -107,6 +125,9 @@ M2_PANEL_PUBLIC_PORT=7788
 
 # Maksymalny poziom postaci
 M2_MAX_LEVEL=120
+
+# Domyślny język tekstów wysyłanych przez serwer (nazwy mobów/przedmiotów/questy)
+M2_DEFAULT_GAME_LANGUAGE=pl
 ```
 
 Jeżeli rozwijasz istniejący świat, ustaw

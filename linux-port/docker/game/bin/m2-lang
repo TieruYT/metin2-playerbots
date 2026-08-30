@@ -142,6 +142,28 @@ have_language() {
 cmd_prepare() {
     mkdir -p "$STATE_DIR" 2>/dev/null
     chown metin2:metin2 "$STATE_DIR" 2>/dev/null
+
+    # A recreated game-var volume has no remembered panel choice. Previously
+    # that silently selected the English files baked into the image, which is
+    # why Polish worlds started showing English monster names after a restore.
+    # Persist an explicit deployment default once; later panel choices still
+    # win because an existing WANTED file is never overwritten here.
+    if [ ! -s "$WANTED" ]; then
+        _default=$(printf '%s' "${M2_DEFAULT_GAME_LANGUAGE:-en}" | tr -d ' \r\n')
+        case "$_default" in
+            [a-z][a-z]) : ;;
+            *) warn "M2_DEFAULT_GAME_LANGUAGE='$_default' is invalid; using en"
+               _default=en ;;
+        esac
+        if ! have_language "$_default"; then
+            warn "these server files do not carry the default '$_default'; using en"
+            _default=en
+        fi
+        printf '%s\n' "$_default" > "$WANTED" 2>/dev/null \
+            || warn "could not persist the default language '$_default'"
+    fi
+    chown metin2:metin2 "$WANTED" 2>/dev/null
+    chmod 0640 "$WANTED" 2>/dev/null
     if [ "$LOG" != /dev/null ] && [ -f "$LOG" ]; then
         chown metin2:metin2 "$LOG" 2>/dev/null
         chmod 0640 "$LOG" 2>/dev/null

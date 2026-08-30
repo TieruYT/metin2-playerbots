@@ -14,7 +14,8 @@ Wszystkie autorskie modyfikacje Playerbotów znajdują się w katalogu `linux-po
 linux-port/overlays/playerbot/
 ├── src/game/src/
 │   ├── playerbot_manager.cpp    # Główna logika AI, NavGrid 2D, role, walka, zakupy, kowal
-│   └── playerbot_manager.h      # Nagłówek i definicje klas
+│   ├── playerbot_manager.h      # Nagłówek i definicje klas
+│   └── playerbot_world_rules.h  # Czyste, testowalne reguły podróży między mapami
 ├── sql/
 │   └── playerbots_seed.sql      # Seed bazy MariaDB dla 350 unikalnych postaci
 ├── serverfiles/
@@ -44,6 +45,16 @@ docker restart metin2-game
 ```
 
 Skrypt w ~8 sekund kompiluje 32-bitowy plik ELF `game` i automatycznie aktualizuje obraz `metin2/game:40250`.
+
+Po pierwszej pełnej kompilacji warto zachować kontener-builder. Następne zmiany
+w managerze mogą wtedy kopiować także zmienione nagłówki, np.:
+
+```sh
+bash tools/fast-game-build/build.sh playerbot_manager.cpp playerbot_world_rules.h
+```
+
+Czyste reguły mają testy niewymagające uruchamiania serwera. Ich aktualny
+zakres i plan dalszego dzielenia kodu opisuje [ARCHITECTURE.md](ARCHITECTURE.md).
 
 ---
 

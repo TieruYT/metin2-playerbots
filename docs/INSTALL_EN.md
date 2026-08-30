@@ -26,6 +26,24 @@ but no game code or data. For a clean installation, prepare:
 - a compatible r40250 server archive containing `metin2_server+src.tar.gz` and `metin2_mysql_dump.zip`, or an unpacked `[40250] Reference Serverfile` directory;
 - optionally, a compatible native Windows client archive. You may instead use your own client that is already configured.
 
+The current baseline `metin2_server+src.tar.gz` against which the port is made
+has this SHA-256:
+
+```text
+6e9e7339935058f73fead81e609219b496adbc867dfeca70f633031730313001
+```
+
+Check it in PowerShell with
+`Get-FileHash .\metin2_server+src.tar.gz -Algorithm SHA256`. The 2025-03-31
+TMP4 refresh (`e72d7881...`) contains changed sources and must not be forced
+through the baseline patch. The installer recognises that variant and, if its
+dry run fails, exports a safe report to
+`C:\Metin2Server\diagnostics\compatibility-report.txt` for issue #5.
+
+“An r40250 client” does not mean every download carrying that label. Its packet
+protocol, `item_proto`/`mob_proto`, and locale must match the server. A client
+from the same release as the supplied server files is the most reliable pair.
+
 The WebClient is not part of this fork and is always disabled by the installer.
 Do not add game archives to Git; see [NOTICE.md](../NOTICE.md) and
 [ATTRIBUTION.md](ATTRIBUTION.md).
@@ -109,6 +127,9 @@ M2_PANEL_PUBLIC_PORT=7788
 
 # Max character level
 M2_MAX_LEVEL=120
+
+# Default language for server-sent monster/item/quest text
+M2_DEFAULT_GAME_LANGUAGE=en
 ```
 
 For an established world, set `PLAYERBOT_EXPECT_MIN_EXISTING_BOTS` to a safe

@@ -43,7 +43,7 @@ The project is under active research and development.
 
 ### 1. Prepare the files
 
-Have a compatible local r40250 server archive ready. A native Windows client archive is optional if you already have a configured client. Neither file belongs in this repository.
+Have a compatible local r40250 server archive ready. A native Windows client archive, preferably from the exact same release, is optional if you already have a configured client. The “r40250” label alone does not guarantee matching packets and proto files. Neither file belongs in this repository.
 
 ### 2. Clone and Install (Windows)
 ```powershell
@@ -64,7 +64,7 @@ docker compose up -d
 ```
 
 ### 4. Join the Game
-Point any standard r40250-compatible game client to `127.0.0.1` (Auth port `11000`, Game ports `13000–13002`) and jump into the living world in Joan (Chunjo)!
+Point the client from the same compatible r40250 set to `127.0.0.1` (Auth port `11000`, Game ports `13000–13002`) and jump into the living world in Joan (Chunjo)!
 
 👉 **Detailed installation, `.env` options, and client setup instructions: [docs/INSTALL_EN.md](docs/INSTALL_EN.md)**
 
@@ -103,6 +103,7 @@ Detailed guides separated into dedicated documentation modules:
 
 - 📖 **[Installation & Setup Guide (docs/INSTALL_EN.md)](docs/INSTALL_EN.md)** – Docker, WSL2, Linux, `.env`, client connection.
 - 💻 **[Developer Guide & Diagnostics (docs/DEVELOPMENT_EN.md)](docs/DEVELOPMENT_EN.md)** – 8-second fast C++ builds (`fast-game-build`), debugging, and telemetry logs.
+- 🧩 **[Architecture and refactoring path (docs/ARCHITECTURE.md)](docs/ARCHITECTURE.md)** – module boundaries and the incremental path toward testable AI components.
 - 🧾 **[Provenance & Attribution (docs/ATTRIBUTION.md)](docs/ATTRIBUTION.md)** – fork history, licensing boundary, and WebClient status.
 
 ---

@@ -1201,9 +1201,13 @@ run_fetch_sources() {
   the patch, and it must not be forced -- a partly-applied port produces a
   server that compiles and then does not work.
 
-  What to do: use the r40250 package. The full comparison is in
-  $M2_SRC_CACHE/patch.log, and the baseline is recorded in the patch's own
-  header:
+  What to do: use the supported baseline r40250 package. The full comparison
+  is in $M2_SRC_CACHE/patch.log. A source-free report suitable for attaching
+  to a GitHub issue is in:
+
+      $M2_SRC_CACHE/compatibility-report.txt
+
+  The baseline is recorded in the patch's own header:
 
       head -30 $REPO_DIR/linux-port/patches/0001-r40250-linux-port.patch" ;;
         7) die "There is not enough disk space to assemble the server. The line

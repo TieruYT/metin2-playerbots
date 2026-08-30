@@ -1,5 +1,6 @@
 #include "stdafx.h"
 #include "playerbot_manager.h"
+#include "playerbot_world_rules.h"
 
 #include "char.h"
 #include "char_manager.h"
@@ -6027,25 +6028,38 @@ namespace
 		}
 
 		const long oldMap = ch->GetMapIndex();
+		const bool wasRiding = ch->IsRiding();
 		if (ch->GetParty())
 			ch->GetParty()->Quit(ch->GetPlayerID());
 		state.dwTargetVID = 0;
 		ch->SetVictim(NULL);
 		ch->Stop();
+		// A PC mount and the separately summoned horse are two different server
+		// entities. StopRiding() summons the latter on the old map, so explicitly
+		// remove it before Show(). Otherwise a rider can leave behind an orphaned
+		// horse at a dungeon portal (issue #4).
+		if (wasRiding)
+			ch->StopRiding();
+		ch->HorseSummon(false);
 		ClearPlayerBotRoute(state, true);
 		state.bVisitingShop = false;
 		state.bVisitingBiologist = false;
 		state.bVisitingStable = false;
 		if (!ch->Show(targetMap, targetX, targetY, 0))
 		{
+			if (wasRiding && !ch->IsRiding())
+				ch->StartRiding();
 			sys_err("PLAYERBOT_WORLD: transition failed pid=%u name=%s from=%ld to=%ld reason=%s",
 					ch->GetPlayerID(), ch->GetName(), oldMap, targetMap, reason ? reason : "?");
 			return false;
 		}
 		ch->Stop();
 		ch->SendMovePacket(FUNC_MOVE, 0, targetX, targetY, 0, dwNow);
+		if (wasRiding && ch->GetHorseHealth() > 0 && ch->GetHorseStamina() > 0)
+			ch->StartRiding();
 		ch->Save();
 		state.dwNextWanderTime = dwNow + number(1500, 4500);
+		state.dwNextHorseRideCheckTime = dwNow + 1000;
 		state.dwDungeonEnteredTime = targetMap == PLAYERBOT_MAP_MONKEY_EASY ? dwNow : 0;
 		state.dwM3EnteredTime = targetMap == PLAYERBOT_MAP_CHUNJO_M3 ? dwNow : 0;
 		sys_log(0, "PLAYERBOT_WORLD: transitioned pid=%u name=%s from=%ld to=%ld pos=(%ld,%ld) reason=%s",
@@ -6080,11 +6094,6 @@ namespace
 				state.bVisitingStable || state.bRecoveringAfterDeath || state.bTacticalRetreat)
 			return false;
 
-		LPCHARACTER victim = state.dwTargetVID != 0
-				? CHARACTER_MANAGER::instance().Find(state.dwTargetVID) : NULL;
-		if (victim && !victim->IsDead())
-			return false;
-
 		const long mapIndex = ch->GetMapIndex();
 		const bool hasMedal = ch->CountSpecifyItem(PLAYERBOT_HORSE_MEDAL_VNUM) > 0;
 		const bool needsHorseExpedition = CanPlayerBotAdvanceHorse(ch) && !hasMedal;
@@ -6092,6 +6101,50 @@ namespace
 				NeedsPlayerBotArrows(ch);
 		const bool m2LevelingCohort = IsPlayerBotM2LevelingCohort(ch);
 		const bool wantsM3 = ShouldPlayerBotVisitM3(ch);
+
+		// Leaving the Monkey Dungeon is a decision, not a pathfinding exercise.
+		// Evaluate it before yielding to an existing victim: a monster near the
+		// portal must not keep a finished, timed-out or unequipped bot here forever.
+		if (mapIndex == PLAYERBOT_MAP_MONKEY_EASY)
+		{
+			if (state.dwDungeonEnteredTime == 0)
+				state.dwDungeonEnteredTime = dwNow;
+			const bool visitExpired = dwNow - state.dwDungeonEnteredTime >=
+					PLAYERBOT_MONKEY_MAX_VISIT_TIME;
+			const int medalCount = ch->CountSpecifyItem(PLAYERBOT_HORSE_MEDAL_VNUM);
+			playerbot_world_rules::TMonkeyVisitContext context;
+			context.needsEssentialSupply = needsEssentialWeaponSupply;
+			context.medalCount = medalCount;
+			context.desiredMedalCount = GetPlayerBotDesiredHorseMedalStock(ch);
+			context.visitExpired = visitExpired;
+			context.canAdvanceHorse = CanPlayerBotAdvanceHorse(ch);
+			const playerbot_world_rules::EMonkeyExitDecision exitDecision =
+					playerbot_world_rules::DecideMonkeyExit(context);
+			if (exitDecision != playerbot_world_rules::MONKEY_STAY)
+			{
+				SetPlayerBotGoal(ch, state,
+						exitDecision == playerbot_world_rules::MONKEY_EXIT_RESTOCK
+						? BOT_GOAL_RESTOCK : BOT_GOAL_HORSE, dwNow);
+				const char* reason = "monkey_horse_complete_direct";
+				if (exitDecision == playerbot_world_rules::MONKEY_EXIT_RESTOCK)
+					reason = "monkey_restock_direct";
+				else if (exitDecision == playerbot_world_rules::MONKEY_EXIT_MEDAL_READY)
+					reason = "monkey_medal_found_direct";
+				else if (exitDecision == playerbot_world_rules::MONKEY_EXIT_TIMEOUT)
+					reason = "monkey_timeout_direct";
+				const bool transitioned = TransitionPlayerBotMap(ch, state,
+						PLAYERBOT_MAP_CHUNJO_M2, PLAYERBOT_M2_MONKEY_RETURN_X,
+						PLAYERBOT_M2_MONKEY_RETURN_Y, dwNow, reason);
+				if (transitioned && medalCount == 0)
+					state.dwNextWorldTravelTime = dwNow + number(300000, 900000);
+				return transitioned;
+			}
+		}
+
+		LPCHARACTER victim = state.dwTargetVID != 0
+				? CHARACTER_MANAGER::instance().Find(state.dwTargetVID) : NULL;
+		if (victim && !victim->IsDead())
+			return false;
 
 		if (mapIndex == PLAYERBOT_MAP_CHUNJO_M1)
 		{
@@ -6143,6 +6196,21 @@ namespace
 
 			if (needsHorseExpedition)
 			{
+				// Honour the rest period set by a failed/timed-out expedition and
+				// stagger fresh M2 populations after a restart. Without this guard a
+				// direct exit was followed by an immediate direct re-entry.
+				if (state.dwNextWorldTravelTime == 0)
+				{
+					const DWORD spread = PlayerBotNavHash(ch->GetPlayerID() ^ 0x4d4f4e4bU) %
+							(PLAYERBOT_HORSE_TRAVEL_MAX_DELAY -
+							 PLAYERBOT_HORSE_TRAVEL_MIN_DELAY + 1);
+					state.dwNextWorldTravelTime = dwNow +
+							PLAYERBOT_HORSE_TRAVEL_MIN_DELAY + spread;
+					return false;
+				}
+				if (playerbot_world_rules::IsTravelCooldownActive(
+						dwNow, state.dwNextWorldTravelTime))
+					return false;
 				SetPlayerBotGoal(ch, state, BOT_GOAL_HORSE, dwNow);
 				return MovePlayerBotToWorldPortal(ch, state,
 						PLAYERBOT_M2_MONKEY_PORTAL_X, PLAYERBOT_M2_MONKEY_PORTAL_Y,
@@ -6193,31 +6261,7 @@ namespace
 		}
 
 		if (mapIndex == PLAYERBOT_MAP_MONKEY_EASY)
-		{
-			if (state.dwDungeonEnteredTime == 0)
-				state.dwDungeonEnteredTime = dwNow;
-			const bool visitExpired = dwNow - state.dwDungeonEnteredTime >=
-					PLAYERBOT_MONKEY_MAX_VISIT_TIME;
-			const int medalCount = ch->CountSpecifyItem(PLAYERBOT_HORSE_MEDAL_VNUM);
-			const int desiredMedals = GetPlayerBotDesiredHorseMedalStock(ch);
-			if (!needsEssentialWeaponSupply && medalCount < desiredMedals &&
-					!visitExpired && CanPlayerBotAdvanceHorse(ch))
-				return false; // fight monkeys until a real medal drops
-
-			SetPlayerBotGoal(ch, state,
-					needsEssentialWeaponSupply ? BOT_GOAL_RESTOCK : BOT_GOAL_HORSE, dwNow);
-			// The Easy Monkey Dungeon is a maze with local, no-loading-screen
-			// teleports. Navigating every corridor only to leave is expensive and
-			// fragile, so departure is the one deliberately direct dungeon transfer.
-			const bool transitioned = TransitionPlayerBotMap(ch, state,
-					PLAYERBOT_MAP_CHUNJO_M2, PLAYERBOT_M2_MONKEY_RETURN_X,
-					PLAYERBOT_M2_MONKEY_RETURN_Y, dwNow,
-					needsEssentialWeaponSupply ? "monkey_restock_direct" :
-					(hasMedal ? "monkey_medal_found_direct" : "monkey_timeout_direct"));
-			if (transitioned && !hasMedal)
-				state.dwNextWorldTravelTime = dwNow + number(300000, 900000);
-			return transitioned;
-		}
+			return false; // stay and fight; departure was handled before victim yielding
 
 		return false;
 	}

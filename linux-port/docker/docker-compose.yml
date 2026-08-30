@@ -178,6 +178,10 @@ services:
       # Keep the existing 350-bot world by default; lower this in .env for tests.
       PLAYERBOT_AUTOSPAWN_COUNT: "${PLAYERBOT_AUTOSPAWN_COUNT:-350}"
 
+      # Used only when the persistent language choice does not exist yet.
+      # The panel can change it later and m2-lang preserves that choice.
+      M2_DEFAULT_GAME_LANGUAGE: "${M2_DEFAULT_GAME_LANGUAGE:-en}"
+
       TZ: "${M2_TZ:-UTC}"
 
     ports:
