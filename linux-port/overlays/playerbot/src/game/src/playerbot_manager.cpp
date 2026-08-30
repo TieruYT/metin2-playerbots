@@ -60,6 +60,8 @@ namespace
 	const DWORD PLAYERBOT_LOOT_THREAT_SCAN_INTERVAL_MIN = 900;
 	const DWORD PLAYERBOT_LOOT_THREAT_SCAN_INTERVAL_MAX = 1300;
 	const DWORD PLAYERBOT_LOOT_CLEANUP_INTERVAL = 10000;
+	const DWORD PLAYERBOT_INVENTORY_MAINTENANCE_MIN = 30000;
+	const DWORD PLAYERBOT_INVENTORY_MAINTENANCE_MAX = 60000;
 	const int PLAYERBOT_POTION_HP_PERCENT = 65;
 	const int PLAYERBOT_POTION_SP_PERCENT = 30;
 	const int PLAYERBOT_RECOVERY_HP_PERCENT = 75;
@@ -200,8 +202,8 @@ namespace
 	const DWORD PLAYERBOT_HORSE_RIDE_RETRY_INTERVAL = 10000;
 	const DWORD PLAYERBOT_HORSE_TRAVEL_MIN_DELAY = 30000;
 	const DWORD PLAYERBOT_HORSE_TRAVEL_MAX_DELAY = 300000;
-	const DWORD PLAYERBOT_WORLD_TRAVEL_MIN_DELAY = 180000;
-	const DWORD PLAYERBOT_WORLD_TRAVEL_MAX_DELAY = 900000;
+	const DWORD PLAYERBOT_WORLD_TRAVEL_MIN_DELAY = 60000;
+	const DWORD PLAYERBOT_WORLD_TRAVEL_MAX_DELAY = 360000;
 	const DWORD PLAYERBOT_MONKEY_MAX_VISIT_TIME = 1800000;
 	const DWORD PLAYERBOT_M3_MAX_VISIT_TIME = 1200000;
 	const DWORD PLAYERBOT_MONKEY_REVERSE_PORTAL_BLOCK_TIME = 10000;
@@ -398,6 +400,7 @@ namespace
 			dwNextLootSearchTime(0),
 			dwNextLootThreatCheckTime(0),
 			dwNextLootCleanupTime(0),
+			dwNextInventoryMaintenanceTime(0),
 			dwNextWanderTime(0),
 			dwNextPartyCheckTime(0),
 			dwNextPartyShareTime(0),
@@ -512,6 +515,7 @@ namespace
 		DWORD dwNextLootSearchTime;
 		DWORD dwNextLootThreatCheckTime;
 		DWORD dwNextLootCleanupTime;
+		DWORD dwNextInventoryMaintenanceTime;
 		DWORD dwNextWanderTime;
 		DWORD dwNextPartyCheckTime;
 		DWORD dwNextPartyShareTime;
@@ -4216,6 +4220,179 @@ namespace
 		return price;
 	}
 
+	enum EPlayerBotPotionSupply
+	{
+		PLAYERBOT_POTION_SUPPLY_HP = 0,
+		PLAYERBOT_POTION_SUPPLY_SP,
+		PLAYERBOT_POTION_SUPPLY_GREEN,
+		PLAYERBOT_POTION_SUPPLY_PURPLE,
+		PLAYERBOT_POTION_SUPPLY_NONE
+	};
+
+	EPlayerBotPotionSupply GetPlayerBotPotionSupply(DWORD vnum)
+	{
+		if (vnum == 27051 || (vnum >= 27001 && vnum <= 27003))
+			return PLAYERBOT_POTION_SUPPLY_HP;
+		if (vnum == 27052 || (vnum >= 27004 && vnum <= 27006))
+			return PLAYERBOT_POTION_SUPPLY_SP;
+		if (vnum == 27053 || (vnum >= 27100 && vnum <= 27102))
+			return PLAYERBOT_POTION_SUPPLY_GREEN;
+		if (vnum == 27054 || (vnum >= 27103 && vnum <= 27105))
+			return PLAYERBOT_POTION_SUPPLY_PURPLE;
+		return PLAYERBOT_POTION_SUPPLY_NONE;
+	}
+
+	DWORD GetPlayerBotPotionSupplyLimit(LPCHARACTER ch,
+			EPlayerBotPotionSupply supply)
+	{
+		const bool lowLevel = !ch || ch->GetLevel() <= 10;
+		const bool mage = ch && (ch->GetJob() == JOB_SHAMAN || ch->GetJob() == JOB_SURA);
+		switch (supply)
+		{
+			case PLAYERBOT_POTION_SUPPLY_HP:     return lowLevel ? 160 : 300;
+			case PLAYERBOT_POTION_SUPPLY_SP:     return lowLevel ? (mage ? 100 : 50) : (mage ? 200 : 80);
+			case PLAYERBOT_POTION_SUPPLY_GREEN:  return 30;
+			case PLAYERBOT_POTION_SUPPLY_PURPLE: return 30;
+			default: return 0;
+		}
+	}
+
+	DWORD CountPlayerBotPotionSupply(LPCHARACTER ch,
+			EPlayerBotPotionSupply supply)
+	{
+		if (!ch || supply == PLAYERBOT_POTION_SUPPLY_NONE)
+			return 0;
+		DWORD count = 0;
+		for (WORD cell = 0; cell < INVENTORY_MAX_NUM; ++cell)
+		{
+			LPITEM item = ch->GetInventoryItem(cell);
+			if (item && GetPlayerBotPotionSupply(item->GetVnum()) == supply)
+				count += item->GetCount();
+		}
+		return count;
+	}
+
+	bool HasPlayerBotExcessPotions(LPCHARACTER ch)
+	{
+		if (!ch || !ch->IsItemLoaded())
+			return false;
+		for (int supply = PLAYERBOT_POTION_SUPPLY_HP;
+				supply < PLAYERBOT_POTION_SUPPLY_NONE; ++supply)
+		{
+			const EPlayerBotPotionSupply kind = (EPlayerBotPotionSupply)supply;
+			if (CountPlayerBotPotionSupply(ch, kind) >
+					GetPlayerBotPotionSupplyLimit(ch, kind))
+				return true;
+		}
+		return false;
+	}
+
+	bool CanMergePlayerBotPotionStacks(LPITEM destination, LPITEM source)
+	{
+		if (!destination || !source || destination == source ||
+				destination->GetVnum() != source->GetVnum() ||
+				GetPlayerBotPotionSupply(destination->GetVnum()) == PLAYERBOT_POTION_SUPPLY_NONE ||
+				!destination->IsStackable() || !source->IsStackable() ||
+				IS_SET(destination->GetAntiFlag(), ITEM_ANTIFLAG_STACK) ||
+				IS_SET(source->GetAntiFlag(), ITEM_ANTIFLAG_STACK))
+			return false;
+		for (int socket = 0; socket < ITEM_SOCKET_MAX_NUM; ++socket)
+			if (destination->GetSocket(socket) != source->GetSocket(socket))
+				return false;
+		for (int attr = 0; attr < ITEM_ATTRIBUTE_MAX_NUM; ++attr)
+			if (destination->GetAttributeType(attr) != source->GetAttributeType(attr) ||
+					destination->GetAttributeValue(attr) != source->GetAttributeValue(attr))
+				return false;
+		return true;
+	}
+
+	bool CompactPlayerBotPotionStacks(LPCHARACTER ch)
+	{
+		if (!ch || !ch->IsItemLoaded())
+			return false;
+		DWORD movedUnits = 0;
+		DWORD removedStacks = 0;
+		for (WORD destinationCell = 0; destinationCell < INVENTORY_MAX_NUM; ++destinationCell)
+		{
+			LPITEM destination = ch->GetInventoryItem(destinationCell);
+			if (!destination || destination->GetCount() >= 200 ||
+					GetPlayerBotPotionSupply(destination->GetVnum()) == PLAYERBOT_POTION_SUPPLY_NONE)
+				continue;
+			for (WORD sourceCell = destinationCell + 1;
+					sourceCell < INVENTORY_MAX_NUM && destination->GetCount() < 200;
+					++sourceCell)
+			{
+				LPITEM source = ch->GetInventoryItem(sourceCell);
+				if (!CanMergePlayerBotPotionStacks(destination, source))
+					continue;
+				const DWORD sourceCount = source->GetCount();
+				const DWORD transfer = std::min<DWORD>(200 - destination->GetCount(), sourceCount);
+				if (transfer == 0)
+					continue;
+				destination->SetCount(destination->GetCount() + transfer);
+				source->SetCount(sourceCount - transfer);
+				movedUnits += transfer;
+				if (transfer == sourceCount)
+					++removedStacks;
+			}
+		}
+		if (movedUnits > 0)
+			sys_log(0, "PLAYERBOT_INVENTORY: compacted potions pid=%u name=%s moved=%u freed_stacks=%u",
+					ch->GetPlayerID(), ch->GetName(), movedUnits, removedStacks);
+		return movedUnits > 0;
+	}
+
+	bool SellPlayerBotExcessPotions(LPCHARACTER ch)
+	{
+		if (!ch || !ch->IsItemLoaded())
+			return false;
+		// Sell weaker variants first, while retaining a bounded combat/travel reserve.
+		const DWORD saleOrder[] = {
+			27051, 27001, 27002, 27003,
+			27052, 27004, 27005, 27006,
+			27053, 27100, 27101, 27102,
+			27054, 27103, 27104, 27105
+		};
+		DWORD soldUnits = 0;
+		long long earnedGold = 0;
+		for (int supply = PLAYERBOT_POTION_SUPPLY_HP;
+				supply < PLAYERBOT_POTION_SUPPLY_NONE; ++supply)
+		{
+			const EPlayerBotPotionSupply kind = (EPlayerBotPotionSupply)supply;
+			DWORD total = CountPlayerBotPotionSupply(ch, kind);
+			const DWORD keep = GetPlayerBotPotionSupplyLimit(ch, kind);
+			if (total <= keep)
+				continue;
+			DWORD excess = total - keep;
+			for (size_t order = 0;
+					order < sizeof(saleOrder) / sizeof(saleOrder[0]) && excess > 0; ++order)
+			{
+				if (GetPlayerBotPotionSupply(saleOrder[order]) != kind)
+					continue;
+				for (WORD cell = 0; cell < INVENTORY_MAX_NUM && excess > 0; ++cell)
+				{
+					LPITEM item = ch->GetInventoryItem(cell);
+					if (!item || item->GetVnum() != saleOrder[order])
+						continue;
+					const DWORD unitPrice = GetPlayerBotNpcSellUnitPrice(item);
+					if (unitPrice == 0)
+						continue;
+					const DWORD count = std::min<DWORD>(excess, item->GetCount());
+					item->SetCount(item->GetCount() - count);
+					ch->PointChange(POINT_GOLD, (long long)unitPrice * count);
+					excess -= count;
+					soldUnits += count;
+					earnedGold += (long long)unitPrice * count;
+				}
+			}
+		}
+		if (soldUnits > 0)
+			sys_log(0, "PLAYERBOT_INVENTORY: sold excess potions pid=%u name=%s units=%u earned=%lld gold=%lld",
+					ch->GetPlayerID(), ch->GetName(), soldUnits, earnedGold,
+					(long long)ch->GetGold());
+		return soldUnits > 0;
+	}
+
 	bool RaisePlayerBotEmergencyGold(LPCHARACTER ch, long long requiredGold,
 			const char* reason)
 	{
@@ -4540,9 +4717,25 @@ namespace
 	{
 		if (!ch)
 			return false;
+		LPCHARACTER target = state.dwTargetVID != 0
+				? CHARACTER_MANAGER::instance().Find(state.dwTargetVID) : NULL;
+		const bool activeCombat = target && !target->IsDead() &&
+				(target->IsMonster() || target->IsStone());
+		const bool importantFight = activeCombat && (target->IsStone() ||
+				(target->IsMonster() && target->GetMobRank() >= MOB_RANK_BOSS));
+		// One third of ordinary grinders plans a longer session and uses attack-speed
+		// potions as well. Every bot uses them for Metins/bosses, but nobody drinks
+		// one merely while waiting at an NPC or recovering from death.
+		const bool longGrindingSession = activeCombat && target->IsMonster() &&
+				state.bLongTermGoal == BOT_GOAL_LEVEL_UP &&
+				(PlayerBotNavHash(ch->GetPlayerID() ^ 0x47524545U) % 3U) == 0;
+		const bool shouldUseGreen = !state.bVisitingShop &&
+				!state.bRecoveringAfterDeath && !state.bTacticalRetreat &&
+				(importantFight || longGrindingSession);
 
 		// 1. Green Potion (Zielona Mikstura - Attack Speed)
-		if (ch->FindAffect(AFFECT_ATT_SPEED) == NULL && state.mapBuffActiveUntil[27102] <= dwNow)
+		if (shouldUseGreen && ch->FindAffect(AFFECT_ATT_SPEED) == NULL &&
+				state.mapBuffActiveUntil[27102] <= dwNow)
 		{
 			const DWORD greenPotionVnums[] = { 27102, 27101, 27100, 27053 };
 			for (size_t i = 0; i < sizeof(greenPotionVnums) / sizeof(greenPotionVnums[0]); ++i)
@@ -4553,19 +4746,28 @@ namespace
 					if (!item || item->GetVnum() != greenPotionVnums[i])
 						continue;
 
+					const DWORD potionVnum = item->GetVnum();
 					if (ch->UseItem(TItemPos(INVENTORY, cell)))
 					{
-						state.mapBuffActiveUntil[27102] = dwNow + 600000; // 10 min duration
+						// FindAffect is authoritative for the real item duration. This short
+						// guard only prevents a broken proto from being consumed every tick.
+						state.mapBuffActiveUntil[27102] = dwNow + 30000;
 						sys_log(0, "PLAYERBOT_AI: used green potion pid=%u name=%s vnum=%u",
-								ch->GetPlayerID(), ch->GetName(), item->GetVnum());
+								ch->GetPlayerID(), ch->GetName(), potionVnum);
 						return true;
 					}
 				}
 			}
 		}
 
-		// 2. Purple Potion (Fioletowa Mikstura - Movement Speed)
-		if (ch->FindAffect(AFFECT_MOV_SPEED) == NULL && state.mapBuffActiveUntil[27105] <= dwNow)
+		// 2. Purple Potion (Fioletowa Mikstura - Movement Speed). Use it for travel,
+		// loot runs and the approach to a distant target, not while standing at NPCs.
+		const bool shouldUsePurple = !state.bVisitingShop &&
+				!state.bRecoveringAfterDeath && !state.bTacticalRetreat &&
+				(!activeCombat || DISTANCE_APPROX(ch->GetX() - target->GetX(),
+					target->GetY() - ch->GetY()) > 500);
+		if (shouldUsePurple && ch->FindAffect(AFFECT_MOV_SPEED) == NULL &&
+				state.mapBuffActiveUntil[27105] <= dwNow)
 		{
 			const DWORD purplePotionVnums[] = { 27105, 27104, 27103, 27054 };
 			for (size_t i = 0; i < sizeof(purplePotionVnums) / sizeof(purplePotionVnums[0]); ++i)
@@ -4576,11 +4778,12 @@ namespace
 					if (!item || item->GetVnum() != purplePotionVnums[i])
 						continue;
 
+					const DWORD potionVnum = item->GetVnum();
 					if (ch->UseItem(TItemPos(INVENTORY, cell)))
 					{
-						state.mapBuffActiveUntil[27105] = dwNow + 600000; // 10 min duration
+						state.mapBuffActiveUntil[27105] = dwNow + 30000;
 						sys_log(0, "PLAYERBOT_AI: used purple potion pid=%u name=%s vnum=%u",
-								ch->GetPlayerID(), ch->GetName(), item->GetVnum());
+								ch->GetPlayerID(), ch->GetName(), potionVnum);
 						return true;
 					}
 				}
@@ -5959,6 +6162,9 @@ namespace
 		if (!ch || !ch->IsItemLoaded())
 			return false;
 
+		CompactPlayerBotPotionStacks(ch);
+		SellPlayerBotExcessPotions(ch);
+
 		// Count red and blue potions
 		size_t redCount = 0;
 		size_t blueCount = 0;
@@ -6150,10 +6356,13 @@ namespace
 	{
 		if (!ch || !ch->IsItemLoaded())
 			return false;
-		if (ch->GetWear(WEAR_WEAPON) == NULL || NeedsPlayerBotPotions(ch) ||
-				NeedsPlayerBotProgressionWeapon(ch) || NeedsPlayerBotProgressionArmor(ch) ||
-				NeedsPlayerBotProgressionShield(ch) || NeedsPlayerBotProgressionHelmet(ch) ||
-				NeedsPlayerBotProgressionBoots(ch) ||
+		// Cross-map travel is blocked only by an actual missing equipment slot or a
+		// real supply/inventory problem. Wanting the next armour/helmet tier is an
+		// optional town upgrade; treating it as an emergency kept level-20+ bots in
+		// M1 forever whenever they could not yet afford that particular item.
+		if (ch->GetWear(WEAR_WEAPON) == NULL || ch->GetWear(WEAR_BODY) == NULL ||
+				ch->GetWear(WEAR_SHIELD) == NULL || ch->GetWear(WEAR_HEAD) == NULL ||
+				ch->GetWear(WEAR_FOOTS) == NULL || NeedsPlayerBotPotions(ch) ||
 				NeedsPlayerBotArrows(ch) ||
 				ch->GetEmptyInventory(3) < 0 || CountPlayerBotJunkItems(ch) >= 12)
 			return true;
@@ -6170,10 +6379,10 @@ namespace
 
 	bool IsPlayerBotM2LevelingCohort(LPCHARACTER ch)
 	{
-		// M1 remains the natural 1-23 zone; from level 20 onward most, but not all,
-		// characters gradually move to M2.  The overlap avoids a synchronized exodus.
+		// From level 20 onward M2 is the normal levelling map. Keep a small, stable
+		// 10% minority in M1 for variety and low-level social activity.
 		return ch && ch->GetLevel() >= 20 && ch->GetLevel() <= 35 &&
-				(PlayerBotNavHash(ch->GetPlayerID() ^ 0x4d325850U) % 5U) != 0;
+				(PlayerBotNavHash(ch->GetPlayerID() ^ 0x4d325850U) % 10U) != 0;
 	}
 
 	bool ShouldPlayerBotVisitM3(LPCHARACTER ch)
@@ -6392,7 +6601,12 @@ namespace
 
 		if (mapIndex == PLAYERBOT_MAP_CHUNJO_M1)
 		{
-			if (hasMedal || NeedsPlayerBotM1Services(ch))
+			// Compact and sell an oversized potion reserve before the first trip to
+			// M2. Once the bot is already outside M1, excess potions alone must not
+			// drag it back across maps; it can keep levelling until a real restock or
+			// inventory visit is needed.
+			if (hasMedal || NeedsPlayerBotM1Services(ch) ||
+					HasPlayerBotExcessPotions(ch))
 				return false;
 			if (!needsHorseExpedition && !m2LevelingCohort && !wantsM3)
 				return false;
@@ -6542,7 +6756,8 @@ namespace
 		state.bTownNeedTrainer = ch->GetLevel() >= 5 && ch->GetSkillGroup() == 0 &&
 				ch->GetJob() <= JOB_SHAMAN;
 		state.bTownNeedMisc = HasPlayerBotJunkForMerchant(ch, BOT_MERCHANT_MISC) ||
-				NeedsPlayerBotPotions(ch) || NeedsPlayerBotProgressionBoots(ch);
+				NeedsPlayerBotPotions(ch) || HasPlayerBotExcessPotions(ch) ||
+				NeedsPlayerBotProgressionBoots(ch);
 		state.bTownNeedWeaponMerchant = HasPlayerBotJunkForMerchant(
 				ch, BOT_MERCHANT_WEAPON) || ch->GetWear(WEAR_WEAPON) == NULL ||
 				NeedsPlayerBotProgressionWeapon(ch) || NeedsPlayerBotArrows(ch);
@@ -7855,8 +8070,8 @@ namespace
 				(activeTarget->IsMonster() || activeTarget->IsStone());
 		const bool bRecentCombat = state.dwLastCombatActionTime != 0 &&
 				dwNow - state.dwLastCombatActionTime < 1800;
-		if (!bFightingActiveTarget && !bRecentCombat &&
-				dwNow >= state.dwNextLootThreatCheckTime)
+		if (!bFightingActiveTarget && (bRecentCombat ||
+				dwNow >= state.dwNextLootThreatCheckTime))
 		{
 			CDetectPlayerBotCombatThreat threat(ch);
 			ch->GetSectree()->ForEachAround(threat);
@@ -7867,7 +8082,9 @@ namespace
 		}
 		// A dead primary target does not mean its group is finished. While either a
 		// live target or an attacking pack exists, perform only non-blocking Z pickup.
-		if (bFightingActiveTarget || state.bLootThreatNearby || bRecentCombat)
+		// Once the threat scan says the pack is clear, recent combat no longer hides
+		// the 25 m loot search: the bot finishes its own drop before choosing a new mob.
+		if (bFightingActiveTarget || state.bLootThreatNearby)
 		{
 			TryPlayerBotCombatPickup(ch, state, dwNow);
 			return false;
@@ -9859,6 +10076,9 @@ void CPlayerBotManager::OnPlayerLoaded(LPDESC d)
 		state.dwNextSkillCheckTime = now + number(1000, 5000);
 		state.dwNextSkillBookTime = now + number(3000, 12000);
 		state.dwNextSpiritStoneTime = now + number(3000, 15000);
+		state.dwNextInventoryMaintenanceTime = now + number(
+				PLAYERBOT_INVENTORY_MAINTENANCE_MIN,
+				PLAYERBOT_INVENTORY_MAINTENANCE_MAX);
 		state.dwNextPartyShareTime = now + number(10000, 30000);
 		state.dwNextGoalPlanTime = now + number(1000, 5000);
 		state.dwNextEquipmentCheckTime = now + number(1000, 5000);
@@ -9975,6 +10195,14 @@ void CPlayerBotManager::Update()
 
 		if (!d->IsPhase(PHASE_GAME))
 			continue;
+
+		if (ch->IsItemLoaded() && dwNow >= state.dwNextInventoryMaintenanceTime)
+		{
+			CompactPlayerBotPotionStacks(ch);
+			state.dwNextInventoryMaintenanceTime = dwNow + number(
+					PLAYERBOT_INVENTORY_MAINTENANCE_MIN,
+					PLAYERBOT_INVENTORY_MAINTENANCE_MAX);
+		}
 
 		// Independent safety net for stale goals/state machines. It does not move or
 		// teleport healthy bots; only 90 seconds without travel, attacks or skills
@@ -10148,9 +10376,11 @@ void CPlayerBotManager::Update()
 			const bool bNeedsRefine = HasPlayerBotRefineOpportunity(ch);
 			const bool bNeedsGearUpgrade = bNeedsCoreGear || NeedsPlayerBotArrows(ch);
 			const bool bNeedsSellRun = CountPlayerBotJunkItems(ch) >= 12;
+			const bool bNeedsPotionCleanup = HasPlayerBotExcessPotions(ch);
 
 			if (bNeedsProfession || bInventoryFull || bOutPotions || bWeaponMissing ||
-					bNeedsRefine || bNeedsGearUpgrade || bNeedsSellRun)
+					bNeedsRefine || bNeedsGearUpgrade || bNeedsSellRun ||
+					bNeedsPotionCleanup)
 				StartPlayerBotTownVisit(ch, state, dwNow);
 		}
 
