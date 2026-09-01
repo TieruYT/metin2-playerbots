@@ -106,6 +106,14 @@ client.zip
 .env.*
 !.env.example
 !.env.sample
+.m2launcher.json
+.m2launcher-state.json
+.m2install.json
+support-bundles/
+launcher-logs/
+backups/
+builds/
+release/
 
 # Per-deployment overrides
 docker-compose.override.yml

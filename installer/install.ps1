@@ -980,7 +980,9 @@ function Copy-ProjectIntoVolume {
         # developer's PC that one directory is 300 MB of files we would copy in
         # only to delete.
         $sh = 'set -e; rm -rf /work/repo; mkdir -p /work/repo; ' +
-              'tar cf - -C /src --exclude=./.git --exclude=./linux-port/docker/game/src . ' +
+              'tar cf - -C /src --exclude=./.git --exclude=./linux-port/docker/game/src ' +
+              '--exclude=./linux-port/docker/artifacts.json ' +
+              '--exclude=./linux-port/docker/fetch-web-client.sh . ' +
               '| tar xf - -C /work/repo; ' +
               'test -f /work/repo/linux-port/fetch-sources.sh'
         $code = Invoke-DockerLoud @(
@@ -1293,7 +1295,26 @@ somewhere shorter -- C:\Metin2Server, say:
         # started with a directory where its script should have been. Copied in
         # so every path in docker-compose.yml stays inside this one folder.
         foreach ($extra in @('linux-port/fetch-web-client.sh', 'artifacts.json')) {
-            $rc = Invoke-DockerLoud @('cp', "$($cid):/work/repo/$extra", $script:InstallDir)
+            $leaf = Split-Path -Leaf $extra
+            $target = Join-Path $script:InstallDir $leaf
+
+            # Docker creates a DIRECTORY at a missing bind-mount source. A
+            # checkout that was used to start Compose can therefore contain an
+            # untracked docker\artifacts.json directory. Older installers
+            # copied that directory into the build context and then asked
+            # `docker cp' to overwrite it with the real file. Docker correctly
+            # refused with "cannot overwrite non-directory ... with directory".
+            # Keep any such unexpected directory for inspection instead of
+            # deleting it, then copy to an explicit file path so Docker never
+            # has to guess whether the destination means a file or a folder.
+            if (Test-Path -LiteralPath $target -PathType Container) {
+                $stamp = Get-Date -Format 'yyyyMMdd-HHmmss-fff'
+                $quarantine = "$target.invalid-directory-$stamp"
+                Move-Item -LiteralPath $target -Destination $quarantine
+                Write-Warn "Moved invalid $leaf directory aside: $quarantine"
+            }
+
+            $rc = Invoke-DockerLoud @('cp', "$($cid):/work/repo/$extra", $target)
             if ($rc -ne 0) {
                 Write-Warn "Could not copy $extra -- the browser client cannot be fetched."
             }

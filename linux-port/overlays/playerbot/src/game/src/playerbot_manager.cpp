@@ -8,6 +8,7 @@
 #include "desc.h"
 #include "desc_client.h"
 #include "desc_manager.h"
+#include "db.h"
 #include "event.h"
 #include "input.h"
 #include "item.h"
@@ -10720,6 +10721,8 @@ namespace
 }
 
 CPlayerBotManager::CPlayerBotManager()
+	: m_bRegistryLoaded(false),
+	  m_bRegistryAvailable(false)
 {
 }
 
@@ -10731,8 +10734,18 @@ CPlayerBotManager::~CPlayerBotManager()
 
 bool CPlayerBotManager::Spawn(DWORD dwPlayerID, BYTE bEmpire)
 {
-	if (dwPlayerID == 0 || bEmpire == 0 || bEmpire >= EMPIRE_MAX_NUM)
+	if (dwPlayerID == 0 || bEmpire != 2)
 		return false;
+
+	// A bot descriptor has no authenticated account session.  Never let a raw
+	// PID turn an ordinary player into a server-controlled character: only the
+	// immutable cohort written by playerbots_seed.sql may use this load path.
+	if (!IsRegistered(dwPlayerID))
+	{
+		sys_err("PLAYERBOT_AUTH: rejected unregistered spawn pid=%u empire=%u",
+				dwPlayerID, bEmpire);
+		return false;
+	}
 
 	if (IsManaged(dwPlayerID) || CHARACTER_MANAGER::instance().FindByPID(dwPlayerID))
 		return false;
@@ -10752,6 +10765,82 @@ bool CPlayerBotManager::Spawn(DWORD dwPlayerID, BYTE bEmpire)
 	sys_log(0, "PLAYERBOT: requested player load pid=%u empire=%u handle=%u",
 			dwPlayerID, bEmpire, d->GetHandle());
 	return true;
+}
+
+bool CPlayerBotManager::LoadRegisteredBots()
+{
+	if (m_bRegistryLoaded)
+		return m_bRegistryAvailable;
+
+	// Fail closed for this process.  A missing/corrupt ledger must leave bots
+	// offline instead of falling back to the historical contiguous PID range.
+	m_bRegistryLoaded = true;
+	m_bRegistryAvailable = false;
+	m_setRegisteredBots.clear();
+
+	const char* query =
+			"SELECT l.pid "
+			"FROM common.playerbot_seed_state AS l "
+			"JOIN player.player AS p ON p.id=l.pid "
+			"JOIN account.account AS a ON a.id=p.account_id "
+			"JOIN player.player_index AS pi ON pi.id=a.id "
+			"WHERE l.seed_version=1 "
+			"AND l.state IN ('complete','adopted') "
+			"AND BINARY a.login=BINARY CONCAT('playerbot_',LPAD(l.pid-3,3,'0')) "
+			"AND BINARY a.social_id=BINARY CONCAT('9',LPAD(l.pid-3,12,'0')) "
+			"AND pi.pid1=l.pid AND pi.pid2=0 AND pi.pid3=0 AND pi.pid4=0 "
+			"AND pi.empire=2 ORDER BY l.pid";
+
+	std::unique_ptr<SQLMsg> msg(AccountDB::instance().DirectQuery(query));
+	if (!msg.get() || msg->uiSQLErrno != 0 || !msg->Get() ||
+			!msg->Get()->pSQLResult)
+	{
+		sys_err("PLAYERBOT_AUTH: registry query failed; refusing every bot spawn");
+		return false;
+	}
+
+	MYSQL_ROW row;
+	while (NULL != (row = mysql_fetch_row(msg->Get()->pSQLResult)))
+	{
+		DWORD pid = 0;
+		if (row[0])
+			str_to_number(pid, row[0]);
+		if (pid != 0)
+			m_setRegisteredBots.insert(pid);
+	}
+
+	m_bRegistryAvailable = !m_setRegisteredBots.empty();
+	if (!m_bRegistryAvailable)
+	{
+		sys_err("PLAYERBOT_AUTH: registry has no valid seeded identities; refusing every bot spawn");
+		return false;
+	}
+
+	sys_log(0, "PLAYERBOT_AUTH: loaded %u registered bot identities",
+			(unsigned int)m_setRegisteredBots.size());
+	return true;
+}
+
+bool CPlayerBotManager::IsRegistered(DWORD dwPlayerID)
+{
+	return LoadRegisteredBots() &&
+			m_setRegisteredBots.find(dwPlayerID) != m_setRegisteredBots.end();
+}
+
+size_t CPlayerBotManager::SpawnRegistered(size_t count, BYTE bEmpire)
+{
+	if (count == 0 || bEmpire != 2 || !LoadRegisteredBots())
+		return 0;
+
+	size_t selected = 0;
+	size_t spawned = 0;
+	for (TRegisteredPlayerBotSet::const_iterator it = m_setRegisteredBots.begin();
+			it != m_setRegisteredBots.end() && selected < count; ++it, ++selected)
+	{
+		if (Spawn(*it, bEmpire))
+			++spawned;
+	}
+	return spawned;
 }
 
 bool CPlayerBotManager::Despawn(DWORD dwPlayerID)

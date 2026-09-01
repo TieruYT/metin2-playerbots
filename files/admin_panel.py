@@ -5268,11 +5268,17 @@ def api_bot_positions():
     }
     try:
         with db() as c, c.cursor() as cur:
+            # A bot is defined by its canonical account (playerbot_NNN), not by
+            # its character name -- renaming a bot in player.player used to drop
+            # it off the live map. The name LIKE 'bot%' arm keeps any legacy or
+            # hand-made bot visible too.
             cur.execute("""
-                SELECT id, name, level, job, x, y, hp, gold, map_index
-                FROM player.player
-                WHERE name LIKE 'bot%' AND map_index IN (21, 23, 24, 25)
-                ORDER BY level DESC, id ASC
+                SELECT p.id, p.name, p.level, p.job, p.x, p.y, p.hp, p.gold, p.map_index
+                FROM player.player p
+                LEFT JOIN account.account a ON a.id = p.account_id
+                WHERE (LEFT(a.login, 10) = 'playerbot_' OR p.name LIKE 'bot%')
+                  AND p.map_index IN (21, 23, 24, 25)
+                ORDER BY p.level DESC, p.id ASC
             """)
             rows = cur.fetchall()
             bots = []
@@ -5293,7 +5299,7 @@ def api_bot_positions():
 
                 px = max(0.0, min(100.0, ((float(gx) - base_x) / width) * 100.0))
                 py = max(0.0, min(100.0, ((float(gy) - base_y) / height) * 100.0))
-                is_bot = name.startswith("bot")
+                is_bot = True  # every row from the query above is a playerbot
                 in_pt = live.get("in_pt") if live else bot_in_party_cohort(pid)
 
                 bots.append({

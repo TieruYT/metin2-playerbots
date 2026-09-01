@@ -1,0 +1,79 @@
+Metin2 Singleplayer r40250 + Playerbots
+Wersja paczki: 2026-08-31
+
+NAJPROSTSZE URUCHOMIENIE NA WINDOWS
+1. Zainstaluj Docker Desktop i uruchom go.
+2. Poczekaj, aż Docker pokaże „Engine running”.
+3. Uruchom Metin2-Launcher-GUI.bat — jest to zalecany launcher okienkowy.
+4. Kliknij „ZAINSTALUJ / PRZYGOTUJ”, wskaż plik EXE klienta, a następnie
+   kliknij „GRAJ”. Pierwsza lokalna kompilacja może potrwać
+   kilka lub kilkanaście minut.
+5. Panel i mapa botów: http://127.0.0.1:7788/map
+6. Uruchom oddzielnie pobrany natywny klient Metin2.
+
+Możesz również użyć start.bat do samego uruchomienia oraz stop.bat do
+zatrzymania serwera.
+
+DOMYŚLNE KONTO TESTOWE GRY
+  login: admin
+  hasło: admin
+
+Boty zaludniają królestwo Chunjo (żółte), dlatego tam najlepiej utworzyć
+własną postać. Serwer domyślnie nasłuchuje wyłącznie na 127.0.0.1.
+
+LAUNCHER, AKTUALIZACJE I LOGI
+Metin2-Launcher-GUI.bat ma duże przyciski przeznaczone dla początkujących:
+- ZAINSTALUJ / PRZYGOTUJ — sprawdza paczkę, klienta i tworzy skrót,
+- GRAJ — uruchamia Docker, serwer i klienta,
+- URUCHOM DOCKER,
+- ZATRZYMAJ I ZAPISZ — bezpiecznie zatrzymuje usługi bez kasowania postępu,
+- OTWÓRZ PANEL WWW, WYBIERZ KLIENTA i ZBIERZ LOGI (ZIP),
+- SPRAWDŹ AKTUALIZACJE — tylko porównuje numery wersji i nie zmienia plików,
+- ZAINSTALUJ AKTUALIZACJE — po potwierdzeniu pobiera i instaluje opublikowaną
+  paczkę serwera oraz klienta,
+- OTWÓRZ LOG W NOTATNIKU.
+
+Launcher potrafi również:
+- uruchamiać i zatrzymywać serwer,
+- sprawdzać oraz instalować podpisane sumą SHA-256 aktualizacje serwera,
+- aktualizować klienta znajdującego się w osobnym folderze,
+- zachowywać kopię zmienianych plików i nie naruszać bazy postaci,
+- prowadzić własny dziennik i tworzyć ZIP z logami oraz konfiguracją
+  pozbawioną haseł,
+- opcjonalnie wysłać tę paczkę przez prywatny webhook Discord lub endpoint
+  pomocy, zawsze po potwierdzeniu użytkownika.
+
+Przy pierwszej konfiguracji podaj folder rozpakowanego klienta. Automatyczne
+aktualizacje zaczną działać po opublikowaniu oficjalnego manifestu wydań.
+Dokładny opis znajduje się w docs\LAUNCHER.md.
+
+Każdy rozpakowany egzemplarz serwera otrzymuje własny identyfikator projektu
+Docker i osobny wolumen bazy. Dzięki temu testowa kopia w innym folderze nie
+nadpisuje kont, postaci ani postępu botów z wcześniejszej instalacji.
+
+CO ZAWIERA TA WERSJA
+- najnowszą logikę Playerbots dla M1, M2, M3 i Lochu Małp,
+- walkę, loot, mikstury, ekwipunek, ulepszanie i wizyty u NPC,
+- profesje, skille, PT, Biologa, polowania i rozwój konia,
+- własne profile zachowań, ambicje, aktualne cele i akcje botów,
+- panel WWW z mapą na żywo, rankingami i ekwipunkiem w stylu Metin2,
+- ranking broni 30 poziomu,
+- poprawiony rozruch Docker Desktop na Windows.
+
+WAŻNE
+- Paczka serwera nie zawiera natywnego klienta Windows; klient jest pobierany
+  i rozpakowywany oddzielnie.
+- Paczka nie zawiera prywatnej bazy autora ani postępu jego botów. Czysta baza
+  tworzy 350 botów rozpoczynających od pierwszego poziomu.
+- Nie wyłączaj globalnie programu antywirusowego. Zweryfikuj sumę SHA-256
+  pobranego archiwum i przeskanuj plik. Wyjątek dodawaj tylko dla dokładnie
+  zweryfikowanego pliku, jeśli wykrycie okaże się fałszywe.
+
+Projekt i aktualizacje:
+https://github.com/TieruYT/metin2-playerbots
+
+Discord:
+https://discord.gg/6v4WkDY6a
+
+Wsparcie projektu:
+https://zrzutka.pl/rw4g7p

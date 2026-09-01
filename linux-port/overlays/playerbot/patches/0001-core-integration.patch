@@ -402,7 +402,7 @@ index 237f41d..316ecf2 100644
 +	if (d->IsBot())
 +		CPlayerBotManager::instance().OnPlayerLoaded(d);
 +
-@@ -1355,0 +1363,22 @@ void CInputDB::MapLocations(const char * c_pData)
+@@ -1355,0 +1363,23 @@ void CInputDB::MapLocations(const char * c_pData)
 +
 +	// MapLocations is the first point at which map 21 is known to this core.
 +	// Spawn the initial descriptors here; OnPlayerLoaded then starts the regular
@@ -419,10 +419,11 @@ index 237f41d..316ecf2 100644
 +		else if (autoSpawnCount > 1000)
 +			autoSpawnCount = 1000;
 +
-+		for (DWORD pid = 4; pid < 4 + (DWORD)autoSpawnCount; ++pid)
-+			CPlayerBotManager::instance().Spawn(pid, 2);
++		const size_t spawned = CPlayerBotManager::instance().SpawnRegistered(
++				(size_t)autoSpawnCount, 2);
 +
-+		sys_log(0, "PLAYERBOT: autospawned %d bots in Chunjo on startup", autoSpawnCount);
++		sys_log(0, "PLAYERBOT: autospawn requested=%d registered_started=%u in Chunjo",
++				autoSpawnCount, (unsigned int)spawned);
 +	}
 +
 @@ -2219 +2248,3 @@ int CInputDB::Analyze(LPDESC d, BYTE bHeader, const char * c_pData)

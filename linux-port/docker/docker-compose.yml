@@ -24,7 +24,7 @@
 #  for no isolation benefit -- they already trust each other completely.
 # =============================================================================
 
-name: metin2
+name: "${M2_COMPOSE_PROJECT_NAME:-metin2}"
 
 services:
 
@@ -34,7 +34,7 @@ services:
   # ---------------------------------------------------------------------------
   mariadb:
     image: mariadb:10.11
-    container_name: metin2-db
+    container_name: "${M2_CONTAINER_PREFIX:-metin2}-db"
     restart: unless-stopped
     stop_grace_period: 60s
 
@@ -88,7 +88,7 @@ services:
   # ---------------------------------------------------------------------------
   playerbot-migrate:
     image: mariadb:10.11
-    container_name: metin2-playerbot-migrate
+    container_name: "${M2_CONTAINER_PREFIX:-metin2}-playerbot-migrate"
     restart: "no"
 
     depends_on:
@@ -136,7 +136,7 @@ services:
         MAKE_JOBS: "${M2_MAKE_JOBS:-}"
         STRIP_BINARIES: "${M2_STRIP_BINARIES:-1}"
     image: metin2/game:40250
-    container_name: metin2-game
+    container_name: "${M2_CONTAINER_PREFIX:-metin2}-game"
     restart: unless-stopped
 
     # The cores flush players to the db core on shutdown, and the db core then
@@ -232,7 +232,7 @@ services:
       context: ./panel
       dockerfile: Dockerfile
     image: metin2/panel:latest
-    container_name: metin2-panel
+    container_name: "${M2_CONTAINER_PREFIX:-metin2}-panel"
     restart: unless-stopped
 
     depends_on:
@@ -590,7 +590,7 @@ services:
       context: ./wsbridge
       dockerfile: Dockerfile
     image: metin2/wsbridge:latest
-    container_name: metin2-wsbridge
+    container_name: "${M2_CONTAINER_PREFIX:-metin2}-wsbridge"
     profiles: ["browser"]
     restart: unless-stopped
     init: true
@@ -663,7 +663,7 @@ services:
       context: ./updater
       dockerfile: Dockerfile
     image: metin2/updater:latest
-    container_name: metin2-updater
+    container_name: "${M2_CONTAINER_PREFIX:-metin2}-updater"
     profiles: ["update"]
     restart: unless-stopped
     init: true

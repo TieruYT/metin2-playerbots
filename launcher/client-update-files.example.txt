@@ -1,0 +1,5 @@
+# One path per line, relative to the unpacked client directory.
+# Example:
+# metin2client.exe
+# pack/locale_pl.eix
+# pack/locale_pl.epk

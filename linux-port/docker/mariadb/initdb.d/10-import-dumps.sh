@@ -107,27 +107,37 @@ fi
 #      VALUES ('youraccount', 'YourCharacter', '', 'ALL', 'IMPLEMENTOR');
 #  then restart the game.
 # -----------------------------------------------------------------------------
-if [ "${M2_KEEP_DEMO_ACCOUNTS:-0}" = "1" ]; then
-  echo "[initdb] keeping the shipped admin/test accounts (M2_KEEP_DEMO_ACCOUNTS=1)"
-  echo "[initdb]   both still have the published password 123456789"
-else
-  echo "[initdb] removing the shipped demo accounts"
-  before=$(mysql_do -N -B -e "SELECT COUNT(*) FROM account.account WHERE login IN ('admin','test')" 2>/dev/null || echo 0)
-  mysql_do <<'SQL'
-DELETE FROM player.player
-      WHERE account_id IN (SELECT id FROM account.account WHERE login IN ('admin','test'));
-DELETE FROM player.player_index
-      WHERE id IN (SELECT id FROM account.account WHERE login IN ('admin','test'));
-DELETE FROM common.gmlist WHERE mAccount IN ('admin','test');
-DELETE FROM account.account WHERE login IN ('admin','test');
+echo "[initdb] setting up default tester player account (login: admin / password: admin)"
+mysql_do <<'SQL'
+INSERT INTO account.account (id, login, password, social_id, status, empire, create_time, last_play)
+VALUES (1, 'admin', '*4ACFE3202A5FF5CF467898FC58AAB1D615029441', '1234567', 'OK', 2, NOW(), NOW()),
+       (2, 'test',  '*4ACFE3202A5FF5CF467898FC58AAB1D615029441', '1234567', 'OK', 2, NOW(), NOW())
+ON DUPLICATE KEY UPDATE
+    password='*4ACFE3202A5FF5CF467898FC58AAB1D615029441',
+    status='OK',
+    empire=VALUES(empire);
+
+-- The source dump stores both demo character slots in Jinno (empire 3) and
+-- saves their characters on map 41.  Merely changing account.account.empire is
+-- not enough: the character-selection screen reads player_index.empire, while
+-- the game core loads the last saved map directly from player.player.  Keep all
+-- three records consistent so a clean single-player install really starts in
+-- Chunjo, next to the Joan city services advertised by the package.
+UPDATE player.player_index AS pi
+JOIN account.account AS a ON a.id = pi.id
+SET pi.empire = 2
+WHERE a.login IN ('admin', 'test');
+
+UPDATE player.player AS p
+JOIN account.account AS a ON a.id = p.account_id
+SET p.x = 65900,
+    p.y = 155600,
+    p.z = 0,
+    p.map_index = 21,
+    p.exit_x = 65900,
+    p.exit_y = 155600,
+    p.exit_map_index = 21
+WHERE a.login IN ('admin', 'test');
 SQL
-  after=$(mysql_do -N -B -e "SELECT COUNT(*) FROM account.account WHERE login IN ('admin','test')" 2>/dev/null || echo 0)
-  gm=$(mysql_do -N -B -e "SELECT COUNT(*) FROM common.gmlist" 2>/dev/null || echo 0)
-  echo "[initdb]   accounts removed: $((before - after)) of $before, gmlist rows left: $gm"
-  if [ "$after" != "0" ]; then
-    echo "[initdb] WARNING: a demo account survived -- delete it by hand before"
-    echo "[initdb]          anyone else can reach this server."
-  fi
-fi
 
 echo "[initdb] database initialisation complete"

@@ -1,0 +1,7 @@
+{
+  "schema": 1,
+  "manifestUrl": "https://raw.githubusercontent.com/TieruYT/metin2-playerbots/main/update-manifest.json",
+  "clientRoot": "C:\\Metin2Client",
+  "clientExecutable": "C:\\Metin2Client\\metin2client.exe",
+  "supportUploadUrl": ""
+}
