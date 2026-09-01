@@ -393,6 +393,8 @@ function Import-DatabaseAction {
     $stats = Get-M2VolumeWorldStats -Volume $chosen.Name
     if ($stats.Ok) {
         Write-Host ("Źródło: {0} postaci, najwyższy poziom {1}." -f $stats.Players, $stats.MaxLevel) -ForegroundColor Green
+        if ($stats.Created) { Write-Host ("  Baza utworzona: {0}" -f $stats.Created) -ForegroundColor Gray }
+        if ($stats.LastPlay -and $stats.LastPlay -ne '0') { Write-Host ("  Ostatnia gra: {0}" -f $stats.LastPlay) -ForegroundColor Gray }
     }
     else {
         Write-Host 'Nie udało się odczytać statystyk źródła (mimo to można spróbować importu).' -ForegroundColor Yellow

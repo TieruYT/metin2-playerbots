@@ -62,9 +62,13 @@ services:
       # Runs once, when db-data is empty, and never again.
       - ./mariadb/initdb.d:/docker-entrypoint-initdb.d:ro
 
-    # Deliberately NOT published to the host. Nothing outside this compose
-    # network has any business reaching the database. To inspect it, use
-    #     docker compose exec mariadb mariadb -uroot -p
+    # Published on the loopback interface only, so local database tools
+    # (Navicat, HeidiSQL, DBeaver, ...) can reach it at 127.0.0.1:3306 to edit
+    # items, NPCs and quests. Binding to 127.0.0.1 keeps it off the LAN and the
+    # internet. Set M2_DB_PUBLISH_PORT in .env if 3306 is already taken locally
+    # (e.g. by another MySQL/MariaDB).
+    ports:
+      - "127.0.0.1:${M2_DB_PUBLISH_PORT:-3306}:3306"
     expose:
       - "3306"
 

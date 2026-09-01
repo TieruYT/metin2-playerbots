@@ -514,16 +514,28 @@ function Get-M2VolumeWorldStats {
     param([Parameter(Mandatory = $true)][string]$Volume)
     $previous = $ErrorActionPreference; $ErrorActionPreference = 'Continue'
     $container = $null
+    $created = ''
     try {
+        # The volume's own creation time answers "when was this world made?"
+        # without touching the data or starting a container.
+        $created = [string](& docker volume inspect $Volume --format '{{.CreatedAt}}' 2>$null | Select-Object -First 1)
         $container = Start-M2ThrowawayDb -Volume $Volume
-        $out = & docker exec $container sh -c "mariadb -uroot -N -e 'SELECT COUNT(*), IFNULL(MAX(level),0) FROM player.player'" 2>$null
+        # -B keeps the columns tab-separated so a last_play datetime (which has a
+        # space) is not split apart.
+        $out = & docker exec $container sh -c "mariadb -uroot -N -B -e 'SELECT COUNT(*), IFNULL(MAX(level),0), IFNULL(MAX(last_play),0) FROM player.player'" 2>$null
         if ($LASTEXITCODE -eq 0 -and $out) {
-            $parts = ($out.ToString().Trim() -split '\s+')
-            return [pscustomobject]@{ Players = [int]$parts[0]; MaxLevel = [int]$parts[1]; Ok = $true }
+            $parts = ($out.ToString().Trim() -split "`t")
+            return [pscustomobject]@{
+                Players  = [int]$parts[0]
+                MaxLevel = [int]$parts[1]
+                LastPlay = [string]$parts[2]
+                Created  = $created
+                Ok       = $true
+            }
         }
-        return [pscustomobject]@{ Players = 0; MaxLevel = 0; Ok = $false }
+        return [pscustomobject]@{ Players = 0; MaxLevel = 0; LastPlay = ''; Created = $created; Ok = $false }
     }
-    catch { return [pscustomobject]@{ Players = 0; MaxLevel = 0; Ok = $false } }
+    catch { return [pscustomobject]@{ Players = 0; MaxLevel = 0; LastPlay = ''; Created = $created; Ok = $false } }
     finally { Stop-M2ThrowawayDb -Container $container; $ErrorActionPreference = $previous }
 }
 

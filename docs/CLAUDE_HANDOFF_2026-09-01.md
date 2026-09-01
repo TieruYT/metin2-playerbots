@@ -349,3 +349,34 @@ przebudowuje obrazy gry i panelu bez ruszania wolumenów).
 **Walidacja tej tury:** wszystkie `.ps1/.psm1` parsują; oba testy launchera PASS;
 oba `admin_panel.py` kompilują; GUI buduje formularz; import round-trip OK.
 
+### Sesja: dostęp do bazy (Navicat) + publikacja update (2026-09-01, szósta tura)
+
+**Fix dostępu do bazy (Navicat/HeidiSQL/DBeaver).** Zgłoszenia: „serwer odrzuca
+połączenie", „hasło nieprawidłowe". Przyczyna: mariadb miała tylko `expose: 3306`
+(sieć compose), BEZ `ports:` — nic nie nasłuchiwało na hoście. Hasła i uprawnienia
+były OK (potwierdzone: `root@%` z `local-playerbots-root` i `metin2@%` z
+`local-playerbots-game` uwierzytelniają się zdalnie). Fix: opublikowano
+`127.0.0.1:${M2_DB_PUBLISH_PORT:-3306}:3306` (tylko loopback) w
+`docker-compose.yml`; dodano `M2_DB_PUBLISH_PORT=3306` do `.env.example`.
+Zweryfikowano: po recreate kontenera `127.0.0.1:3306` osiągalny z hosta, root i
+metin2 logują się, złe hasło odrzucone. Aktywuje się po recreate mariadb (u
+istniejących userów przez update `up -d --build`, u nowych od razu).
+
+**Import bazy — więcej danych w wyborze źródła.** `Get-M2VolumeWorldStats`
+zwraca dodatkowo `Created` (z `docker volume inspect .CreatedAt` — kiedy świat
+powstał) i `LastPlay` (`MAX(player.player.last_play)` — ostatnia gra). Pokazywane
+w akcji `ImportDb`. „Jak długo baza była włączona" nie jest metryką wolumenu w
+Dockerze — zamiast tego pokazujemy datę utworzenia i ostatniej gry.
+
+**Publikacja kanału aktualizacji.** VERSION 1.18.0 → 1.19.0. Zbudowano paczkę
+update z allowlisty, opublikowano GitHub Release `v1.19.0` (asset = ZIP update),
+utworzono `update-manifest.json` (server: version/url/sha256) w repo → manifest
+`raw.githubusercontent.com/.../main/update-manifest.json` przestał być 404.
+Od teraz „ZAINSTALUJ AKTUALIZACJE" pobiera i nakłada łatki (kopia allowlisty +
+`up -d --build`, bez ruszania wolumenów). Auto-update aktualizuje też same skrypty
+launchera (są w allowliście), więc kolejne poprawki launchera dojdą tą drogą.
+
+**Pliki dotknięte:** `linux-port/docker/docker-compose.yml`,
+`linux-port/docker/.env.example`, `launcher/Metin2Launcher.psm1`,
+`Metin2-Launcher.ps1`, `VERSION`, `update-manifest.json` (nowy).
+
