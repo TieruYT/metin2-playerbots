@@ -103,6 +103,153 @@ def bot_in_party_cohort(pid):
     return int(pid or 0) % BOT_PARTY_MODULO == BOT_PARTY_REMAINDER
 
 
+PLAYERBOT_STATUS_PATHS = (
+    "/opt/metin2/var/channel1/first/playerbot_status.tsv",
+    "/opt/metin2/var/channel1/game1/playerbot_status.tsv",
+    "/opt/metin2/var/channel1/game2/playerbot_status.tsv",
+)
+_PLAYERBOT_STATUS_LOCK = threading.Lock()
+_PLAYERBOT_STATUS_CACHE_KEY = None
+_PLAYERBOT_STATUS_CACHE = {}
+
+BOT_PERSONALITY_LABELS = {
+    "pl": {
+        0: "Wytrwały poszukiwacz", 1: "Pogromca Metinów", 2: "Towarzysz drużyny",
+        3: "Mistrz ekwipunku", 4: "Rozważny zbieracz", 5: "Wędrowiec",
+    },
+    "en": {
+        0: "Steady adventurer", 1: "Metin breaker", 2: "Team companion",
+        3: "Gear specialist", 4: "Careful collector", 5: "Wanderer",
+    },
+}
+BOT_AMBITION_LABELS = {
+    "pl": {
+        0: "Poziom", 1: "Ekwipunek", 2: "Metiny", 3: "Koń",
+        4: "Biolog", 5: "Umiejętności",
+    },
+    "en": {
+        0: "Level", 1: "Equipment", 2: "Metins", 3: "Horse",
+        4: "Biologist", 5: "Skills",
+    },
+}
+BOT_GOAL_LABELS = {
+    "pl": {
+        0: "Zdobywanie poziomu", 1: "Przetrwanie", 2: "Wybór profesji",
+        3: "Zdobycie ekwipunku", 4: "Uzupełnienie zapasów", 5: "Ulepszanie EQ",
+        6: "Rozwój umiejętności", 7: "Polowanie na Metiny", 8: "Silne cele w PT",
+        9: "Misja Biologa", 10: "Misja Polowania", 11: "Rozwój konia",
+    },
+    "en": {
+        0: "Gain levels", 1: "Survive", 2: "Choose profession",
+        3: "Get equipment", 4: "Restock", 5: "Refine equipment",
+        6: "Improve skills", 7: "Hunt Metins", 8: "Party challenges",
+        9: "Biologist mission", 10: "Hunting mission", 11: "Develop horse",
+    },
+}
+BOT_ACTION_LABELS = {
+    "pl": {
+        0: "Planuje następny ruch", 1: "Podróżuje", 2: "Walczy", 3: "Podnosi łup",
+        4: "Regeneruje się", 5: "Wybiera profesję", 6: "Handluje", 7: "Ulepsza EQ",
+        8: "Czyta KU", 9: "Wkłada KD", 10: "Organizuje PT", 11: "Robi Biologa",
+        12: "Odwiedza Stajennego",
+    },
+    "en": {
+        0: "Planning next move", 1: "Travelling", 2: "Fighting", 3: "Picking up loot",
+        4: "Recovering", 5: "Choosing profession", 6: "Trading", 7: "Refining gear",
+        8: "Reading a skill book", 9: "Socketing a spirit stone", 10: "Organising a party",
+        11: "Doing Biologist mission", 12: "Visiting the Stable Boy",
+    },
+}
+
+
+def read_playerbot_live_status():
+    """Return the newest atomic status snapshots written by all game cores."""
+    global _PLAYERBOT_STATUS_CACHE_KEY, _PLAYERBOT_STATUS_CACHE
+    now = time.time()
+    cache_key = tuple(
+        (path, os.path.getmtime(path) if os.path.exists(path) else 0)
+        for path in PLAYERBOT_STATUS_PATHS
+    )
+    with _PLAYERBOT_STATUS_LOCK:
+        if cache_key == _PLAYERBOT_STATUS_CACHE_KEY:
+            return dict(_PLAYERBOT_STATUS_CACHE)
+
+        result = {}
+        for path, modified in cache_key:
+            if not modified or now - modified > 20:
+                continue
+            try:
+                # The r40250 core and Polish locale tables use Windows-1250.
+                with open(path, "r", encoding="cp1250", errors="replace") as stream:
+                    for line in stream:
+                        if line.startswith("pid\t"):
+                            continue
+                        parts = line.rstrip("\r\n").split("\t", 13)
+                        if len(parts) != 14:
+                            continue
+                        values = [int(value) for value in parts[:13]]
+                        pid = values[0]
+                        result[pid] = {
+                            "pid": pid, "personality_id": values[1],
+                            "ambition_id": values[2], "role": values[3],
+                            "in_pt": bool(values[4]), "goal_id": values[5],
+                            "action_id": values[6], "updated_ms": values[7],
+                            "map_index": values[8], "x": values[9], "y": values[10],
+                            "hp": values[11], "max_hp": values[12],
+                            "status": parts[13],
+                        }
+            except (OSError, ValueError):
+                continue
+
+        _PLAYERBOT_STATUS_CACHE_KEY = cache_key
+        _PLAYERBOT_STATUS_CACHE = result
+        return dict(result)
+
+
+def localize_playerbot_status(entry, language):
+    if not entry:
+        return None
+    if language == "pl":
+        return entry.get("status") or BOT_ACTION_LABELS["pl"].get(
+            entry.get("action_id"), BOT_ACTION_LABELS["pl"][0])
+    text = entry.get("status") or ""
+    replacements = (
+        ("Nieprzytomny - czekam na wstanie", "Unconscious - waiting to revive"),
+        ("Odpoczywam po smierci", "Recovering after death"),
+        ("Uciekam - mam malo HP", "Retreating - low HP"),
+        ("Rozbijam ", "Breaking "), ("Walcze z ", "Fighting "),
+        ("Gonie ", "Chasing "), ("Podnosze lup", "Picking up loot"),
+        ("Regeneruje HP", "Recovering HP"),
+        ("Szukam przeciwnika", "Looking for a target"),
+        ("Szukam miejsca do expa", "Looking for a levelling spot"),
+        ("Ulepszam ekwipunek", "Refining equipment"),
+    )
+    for source, target in replacements:
+        text = text.replace(source, target)
+    return text or BOT_ACTION_LABELS["en"].get(
+        entry.get("action_id"), BOT_ACTION_LABELS["en"][0])
+
+
+def playerbot_live_labels(entry, language):
+    language = language if language in ("pl", "en") else "en"
+    if not entry:
+        return {
+            "personality": BOT_PERSONALITY_LABELS[language][0],
+            "ambition": BOT_AMBITION_LABELS[language][0],
+            "goal": BOT_GOAL_LABELS[language][0],
+            "action": BOT_ACTION_LABELS[language][0],
+        }
+    return {
+        "personality": BOT_PERSONALITY_LABELS[language].get(
+            entry.get("personality_id"), BOT_PERSONALITY_LABELS[language][0]),
+        "ambition": BOT_AMBITION_LABELS[language].get(
+            entry.get("ambition_id"), BOT_AMBITION_LABELS[language][0]),
+        "goal": BOT_GOAL_LABELS[language].get(
+            entry.get("goal_id"), BOT_GOAL_LABELS[language][0]),
+        "action": localize_playerbot_status(entry, language),
+    }
+
+
 SKILL_GROUP_NAMES = {
     (0, 1): "BODY", (0, 2): "MENTAL",
     (1, 1): "Sztylety", (1, 2): "Łucznik",
@@ -3634,8 +3781,8 @@ MAP_I18N = {
   "level":"Poziom","all":"Wszystkie","map":"Mapa","m1":"M1 — Joan","m2":"M2 — Bokjung","m3":"M3 — Waryong","monkey":"Łatwy Loch Małp","search":"🔍 Szukaj bota (np. botarek)...",
   "solo_bot":"Bot solo","party_bot":"W grupie (PT)","metin_fight":"Walka z Metinem","loading":"Ładowanie...","world_stats":"Statystyki świata","active_bots":"Aktywne boty",
   "in_parties":"W grupach (PT)","avg_level":"Średni poziom","max_level":"Maks. poziom","rankings":"Rankingi botów","rank_level":"Poziom","rank_weapon":"Broń","rank_armor":"Zbroja",
-  "rank_items":"Przedmioty","rank_horse":"Koń","rank_biologist":"Biolog","rank_hunting":"Polowanie","rank_empty":"Brak danych rankingu.","rank_show":"Pokaż","rank_search":"Szukaj w rankingu...","none":"Brak","items_short":"przedm.",
-  "horse_lv":"Koń Lv","visible":"Widocznych","characters":"postaci","in_group":"W grupie [PT]","solo":"Solo","player":"GRACZ","bot":"Bot","class":"Klasa","action":"Akcja","status":"Status",
+  "rank_weapon30":"Bronie 30 Lv","rank_items":"Przedmioty","rank_horse":"Koń","rank_biologist":"Biolog","rank_hunting":"Polowanie","rank_empty":"Brak danych rankingu.","rank_show":"Pokaż","rank_search":"Szukaj w rankingu...","none":"Brak","items_short":"przedm.",
+  "horse_lv":"Koń Lv","visible":"Widocznych","characters":"postaci","in_group":"W grupie [PT]","solo":"Solo","player":"GRACZ","bot":"Bot","class":"Klasa","action":"Akcja","status":"Status","personality":"Osobowość","ambition":"Ambicja","current_goal":"Aktualny cel",
   "coordinates":"Koordynaty","open_inventory":"Kliknij, aby otworzyć ekwipunek i EQ","loading_character":"Ładowanie ekwipunku i statystyk postaci","error":"Błąd","not_found":"Nie znaleziono danych",
   "teleport_me":"Teleportuj moją postać w grze (1 klik)","position":"Pozycja","horse":"Koń","biologist":"Biolog","bio_stage":"Etap Biologa","hunting":"Polowanie","no_data":"Brak danych",
   "stats":"Statystyki","unspent_stats":"Nierozdane: {n} pkt statystyk","skills":"Umiejętności","profession_none":"Nie wybrano","profession_pending":"Profesja nie została jeszcze wybrana.",
@@ -3653,8 +3800,8 @@ MAP_I18N = {
   "level":"Level","all":"All","map":"Map","m1":"M1 — Joan","m2":"M2 — Bokjung","m3":"M3 — Waryong","monkey":"Easy Monkey Dungeon","search":"🔍 Find a bot (e.g. botarek)...",
   "solo_bot":"Solo bot","party_bot":"In party (PT)","metin_fight":"Fighting a Metin","loading":"Loading...","world_stats":"World statistics","active_bots":"Active bots",
   "in_parties":"In parties (PT)","avg_level":"Average level","max_level":"Max level","rankings":"Bot rankings","rank_level":"Level","rank_weapon":"Weapon","rank_armor":"Armour",
-  "rank_items":"Items","rank_horse":"Horse","rank_biologist":"Biologist","rank_hunting":"Hunting","rank_empty":"No ranking data.","rank_show":"Show","rank_search":"Search ranking...","none":"None","items_short":"items",
-  "horse_lv":"Horse Lv","visible":"Visible","characters":"characters","in_group":"In party [PT]","solo":"Solo","player":"PLAYER","bot":"Bot","class":"Class","action":"Action","status":"Status",
+  "rank_weapon30":"Lv 30 Weapons","rank_items":"Items","rank_horse":"Horse","rank_biologist":"Biologist","rank_hunting":"Hunting","rank_empty":"No ranking data.","rank_show":"Show","rank_search":"Search ranking...","none":"None","items_short":"items",
+  "horse_lv":"Horse Lv","visible":"Visible","characters":"characters","in_group":"In party [PT]","solo":"Solo","player":"PLAYER","bot":"Bot","class":"Class","action":"Action","status":"Status","personality":"Personality","ambition":"Ambition","current_goal":"Current goal",
   "coordinates":"Coordinates","open_inventory":"Click to open inventory and equipment","loading_character":"Loading character equipment and statistics","error":"Error","not_found":"No data found",
   "teleport_me":"Teleport my in-game character (one click)","position":"Position","horse":"Horse","biologist":"Biologist","bio_stage":"Biologist stage","hunting":"Hunting","no_data":"No data",
   "stats":"Statistics","unspent_stats":"Unspent: {n} stat points","skills":"Skills","profession_none":"Not selected","profession_pending":"The profession has not been selected yet.",
@@ -3808,6 +3955,7 @@ TPL_LIVE_MAP = BASE.replace("__BODY__", """
         <div style="display:flex;gap:4px;margin-bottom:10px;flex-wrap:wrap">
           <button type="button" class="btn btn-sm rank-tab active" onclick="setRankCategory('level', this)" style="font-size:11px;padding:3px 6px">⭐ {{m.rank_level}}</button>
           <button type="button" class="btn btn-sm rank-tab" onclick="setRankCategory('gold', this)" style="font-size:11px;padding:3px 6px">💰 Yang</button>
+          <button type="button" class="btn btn-sm rank-tab" onclick="setRankCategory('weapon30', this)" style="font-size:11px;padding:3px 6px">⚔️ {{m.rank_weapon30}}</button>
           <button type="button" class="btn btn-sm rank-tab" onclick="setRankCategory('weapon', this)" style="font-size:11px;padding:3px 6px">🗡️ {{m.rank_weapon}}</button>
           <button type="button" class="btn btn-sm rank-tab" onclick="setRankCategory('armor', this)" style="font-size:11px;padding:3px 6px">🛡️ {{m.rank_armor}}</button>
           <button type="button" class="btn btn-sm rank-tab" onclick="setRankCategory('items', this)" style="font-size:11px;padding:3px 6px">🎒 {{m.rank_items}}</button>
@@ -3917,52 +4065,233 @@ TPL_LIVE_MAP = BASE.replace("__BODY__", """
   box-shadow: 0 0 30px rgba(0,0,0,0.9), 0 0 15px rgba(212,175,55,0.3);
   border-radius: 10px;
   width: 90%;
-  max-width: 820px;
-  max-height: 88vh;
+  max-width: 980px;
+  max-height: 90vh;
   overflow-y: auto;
   padding: 20px;
   color: #e5e5e5;
   position: relative;
 }
-.eq-grid {
+.m2-modal-columns {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 8px;
-  margin-top: 10px;
+  grid-template-columns: minmax(360px, 1fr) 220px;
+  gap: 16px;
+  align-items: start;
 }
-.eq-slot {
-  background: #1e1910;
-  border: 1px solid #3d3119;
+@media (max-width: 820px) {
+  .m2-modal-columns {
+    grid-template-columns: 1fr;
+  }
+}
+.m2-inv-window {
+  background: #110e0a linear-gradient(180deg, #1e1810 0%, #0d0a07 100%);
+  border: 2px solid #5a4b32;
+  box-shadow: inset 0 0 10px #000, 0 4px 20px rgba(0,0,0,0.8);
   border-radius: 6px;
-  padding: 8px 6px;
+  padding: 10px;
+  width: 220px;
+  box-sizing: border-box;
+  user-select: none;
+  font-family: Arial, sans-serif;
+  margin: 0 auto;
+}
+.m2-window-title {
   text-align: center;
-  font-size: 11px;
+  color: #e6ca65;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  padding-bottom: 6px;
+  margin-bottom: 8px;
+  border-bottom: 1px solid #3d3119;
+  text-shadow: 1px 1px 2px #000;
 }
-.eq-slot.filled {
-  border-color: var(--gold2);
-  background: #282012;
-}
-.eq-slot-icon { font-size: 18px; margin-bottom: 2px; }
-.eq-slot-name { font-weight: 700; color: #ffd700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.inv-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
-  gap: 6px;
-  max-height: 180px;
-  overflow-y: auto;
-  margin-top: 8px;
-  padding-right: 4px;
-}
-.inv-item {
-  background: #1a150e;
-  border: 1px solid #332814;
+.m2-equip-container {
+  position: relative;
+  width: 200px;
+  height: 156px;
+  background: #0d0b08;
+  border: 1px solid #2e2413;
   border-radius: 4px;
-  padding: 5px;
+  margin-bottom: 10px;
+  box-shadow: inset 0 0 15px rgba(0,0,0,0.9);
+}
+.m2-equip-silhouette {
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: radial-gradient(circle at 50% 50%, rgba(212,175,55,0.06) 0%, rgba(0,0,0,0.6) 80%);
+  pointer-events: none;
+}
+.m2-equip-slot {
+  position: absolute;
+  background: rgba(14, 11, 7, 0.9);
+  border: 1px solid #4a3c22;
+  box-shadow: inset 0 0 6px #000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-sizing: border-box;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+.m2-equip-slot:hover {
+  border-color: #ffd700;
+  box-shadow: 0 0 8px rgba(255, 215, 0, 0.5), inset 0 0 6px #000;
+}
+.m2-equip-watermark {
+  font-size: 13px;
+  opacity: 0.3;
+  filter: grayscale(1);
+}
+.m2-inv-tabs {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 6px;
+}
+.m2-tab-btn {
+  flex: 1;
+  background: #231b11;
+  border: 1px solid #4a3c22;
+  color: #a89070;
+  font-weight: 700;
   font-size: 11px;
+  padding: 4px 0;
+  border-radius: 3px;
+  cursor: pointer;
+  text-align: center;
+  transition: all 0.15s;
+}
+.m2-tab-btn.active {
+  background: #c5a059 linear-gradient(180deg, #d4af37 0%, #aa8230 100%);
+  color: #000;
+  border-color: #ffe082;
+  box-shadow: 0 0 6px rgba(212,175,55,0.4);
+}
+.m2-tab-btn:hover:not(.active) {
+  background: #332717;
+  color: #ffd700;
+}
+.m2-grid-frame {
+  position: relative;
+  width: 170px;
+  height: 306px;
+  margin: 0 auto;
+  background: #0a0806;
+  border: 1px solid #3d3119;
+  box-shadow: inset 0 0 10px #000;
+}
+.m2-grid-bg {
+  display: grid;
+  grid-template-columns: repeat(5, 34px);
+  grid-template-rows: repeat(9, 34px);
+  position: absolute;
+  top: 0; left: 0;
+  width: 170px; height: 306px;
+}
+.m2-grid-cell {
+  width: 34px;
+  height: 34px;
+  border-right: 1px solid #221a10;
+  border-bottom: 1px solid #221a10;
+  box-sizing: border-box;
+}
+.m2-item-overlay {
+  position: absolute;
+  top: 0; left: 0;
+  width: 170px; height: 306px;
+  pointer-events: none;
+}
+.m2-item-entity {
+  position: absolute;
+  pointer-events: auto;
+  cursor: pointer;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid transparent;
+  transition: border-color 0.15s;
+}
+.m2-item-entity:hover {
+  border-color: rgba(255, 215, 0, 0.8);
+  background: rgba(255, 215, 0, 0.08);
+  box-shadow: 0 0 8px rgba(255, 215, 0, 0.4);
+}
+.m2-item-count {
+  position: absolute;
+  right: 2px;
+  bottom: 1px;
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  text-shadow: 1px 1px 0 #000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000;
+  pointer-events: none;
+}
+.m2-yang-box {
+  margin-top: 8px;
+  background: #0a0806;
+  border: 1px solid #3d3119;
+  border-radius: 4px;
+  padding: 4px 8px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 11px;
+  box-shadow: inset 0 0 6px #000;
+}
+.m2-yang-val {
+  color: #facc15;
+  font-weight: 700;
+  font-family: monospace;
+  font-size: 12px;
+}
+/* Metin2 In-Game Style Floating Tooltip */
+#m2ItemTooltip {
+  position: fixed;
+  display: none;
+  z-index: 100000;
+  pointer-events: none;
+  background: rgba(12, 10, 8, 0.95);
+  border: 1.5px solid #c5a059;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.9), inset 0 0 10px rgba(0,0,0,0.8);
+  border-radius: 4px;
+  padding: 8px 12px;
+  min-width: 170px;
+  max-width: 260px;
+  color: #d1d5db;
+  font-family: Arial, sans-serif;
+  font-size: 11px;
+  line-height: 1.35;
+}
+.m2-tt-name {
+  color: #ffd700;
+  font-size: 13px;
+  font-weight: 700;
+  text-align: center;
+  margin-bottom: 4px;
+  text-shadow: 1px 1px 2px #000;
+}
+.m2-tt-divider {
+  height: 1px;
+  background: #4a3c22;
+  margin: 4px 0;
+}
+.m2-tt-stat {
+  color: #93c5fd;
+}
+.m2-tt-bonus {
+  color: #4ade80;
+}
+.m2-tt-socket {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 2px;
+  font-size: 10px;
 }
 .bot-build-grid {
   display: grid;
-  grid-template-columns: minmax(250px, 0.8fr) minmax(340px, 1.2fr);
+  grid-template-columns: minmax(200px, 0.8fr) minmax(240px, 1.2fr);
   gap: 10px;
   margin: 12px 0 14px;
 }
@@ -4011,6 +4340,9 @@ TPL_LIVE_MAP = BASE.replace("__BODY__", """
 .modal-close-btn:hover { color: #fff; }
 </style>
 
+<!-- Floating Metin2 In-Game Item Tooltip -->
+<div id="m2ItemTooltip"></div>
+
 <!-- Bot Detail & Inventory Modal -->
 <div id="botModal" class="modal-overlay" onclick="if(event.target===this)closeBotModal()">
   <div class="modal-box">
@@ -4030,6 +4362,12 @@ var g_selectedRankCategory = 'level';
 var g_rankLimit = 15;
 var g_rankData = [];
 var g_highlightedId = null;
+
+function escapeHtml(value) {
+  return String(value === undefined || value === null ? '' : value)
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;').replace(/'/g, '&#039;');
+}
 
 function setLevelFilter(lvl, btn) {
   g_selectedLevel = lvl;
@@ -4123,6 +4461,14 @@ function renderRankings() {
     var detailStr = '';
     if (g_selectedRankCategory === 'gold') {
       detailStr = '<span style="color:#eab308;font-weight:700">' + (b.gold || 0).toLocaleString() + ' Yang</span>';
+    } else if (g_selectedRankCategory === 'weapon30') {
+      var srStr = b.sr !== undefined ? '<span style="color:#4ade80;font-weight:700">ŚR: ' + (b.sr > 0 ? '+' : '') + b.sr + '%</span>' : '';
+      var umStr = b.um !== undefined && b.um !== 0 ? ' <span style="color:#38bdf8;font-weight:700">UM: ' + (b.um > 0 ? '+' : '') + b.um + '%</span>' : '';
+      var winBadge = b.item_window === 'EQUIPMENT' ? '<span style="background:#15803d;color:#fff;font-size:9px;padding:1px 4px;border-radius:3px;margin-left:4px">EQ</span>'
+                                                   : '<span style="background:#374151;color:#bbb;font-size:9px;padding:1px 4px;border-radius:3px;margin-left:4px">Plecak</span>';
+      var iconUrl = b.weapon_vnum ? getItemIconUrl(b.weapon_vnum) : null;
+      var iconImg = iconUrl ? '<img src="' + iconUrl + '" style="width:16px;height:16px;vertical-align:middle;margin-right:4px;image-rendering:pixelated">' : '';
+      detailStr = '<div>' + iconImg + '<span style="color:#ffd700;font-weight:700">' + (b.weapon_name || 'Broń 30 Lv') + '</span> ' + winBadge + '</div><div>' + srStr + umStr + '</div>';
     } else if (g_selectedRankCategory === 'weapon') {
       detailStr = '<span style="color:#38bdf8;font-weight:700">' + (b.weapon_name || I18N.none) + '</span>';
     } else if (g_selectedRankCategory === 'armor') {
@@ -4196,7 +4542,7 @@ function renderMap() {
             '<div class="bot-dot ' + dotClass + '"></div>';
 
     if (showLabels || isHighlighted) {
-      html += '<div class="bot-label">' + b.name + ' (' + b.level + ')</div>';
+      html += '<div class="bot-label">' + escapeHtml(b.name) + ' (' + b.level + ')</div>';
     }
 
     html += '</div>';
@@ -4215,11 +4561,13 @@ function showTooltip(pid, ev) {
 
   var ptStr = bot.in_pt ? '<span style="color:#a855f7;font-weight:700">' + I18N.in_group + '</span>' : '<span style="color:#2ecc71">' + I18N.solo + '</span>';
   var statusBadge = bot.is_player ? '<span style="color:#ef4444;font-weight:700">👑 ' + I18N.player + '</span>' : '🤖 ' + I18N.bot;
-  var actionStr = bot.action || (bot.in_pt ? '⚔️ ' + I18N.party_exp : '⚔️ ' + I18N.solo_exp);
+  var actionStr = escapeHtml(bot.action || (bot.in_pt ? I18N.party_exp : I18N.solo_exp));
 
   tt.innerHTML = '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">' +
-                 '<b style="font-size:14px;color:var(--gold2)">' + bot.name + '</b> ' + statusBadge + '</div>' +
-                 '<div style="color:#ddd;margin-bottom:4px"><b>' + I18N.class + ':</b> ' + bot.job + ' &nbsp;|&nbsp; <b>' + I18N.level + ':</b> ' + bot.level + '</div>' +
+                 '<b style="font-size:14px;color:var(--gold2)">' + escapeHtml(bot.name) + '</b> ' + statusBadge + '</div>' +
+                 '<div style="color:#ddd;margin-bottom:4px"><b>' + I18N.class + ':</b> ' + escapeHtml(bot.job) + ' &nbsp;|&nbsp; <b>' + I18N.level + ':</b> ' + bot.level + '</div>' +
+                 '<div style="color:#c084fc;margin-bottom:4px"><b>' + I18N.personality + ':</b> ' + escapeHtml(bot.personality) + '</div>' +
+                 '<div style="color:#86efac;margin-bottom:4px"><b>' + I18N.ambition + ':</b> ' + escapeHtml(bot.ambition) + ' &nbsp;|&nbsp; <b>' + I18N.current_goal + ':</b> ' + escapeHtml(bot.goal) + '</div>' +
                  '<div style="color:#ffd700;margin-bottom:4px"><b>' + I18N.action + ':</b> ' + actionStr + '</div>' +
                  '<div style="color:#ddd;margin-bottom:4px"><b>' + I18N.status + ':</b> ' + ptStr + '</div>' +
                  '<div style="color:#aaa;margin-bottom:4px"><b>' + I18N.coordinates + ':</b> (' + bot.x + ', ' + bot.y + ')</div>' +
@@ -4238,6 +4586,275 @@ function hideTooltip() {
   if (tt) tt.style.display = 'none';
 }
 
+var g_itemDefs = null;
+var g_itemIcons = null;
+var g_currentInvData = null;
+var g_currentInvTab = 0;
+
+// Preload item definitions and icons lookup table
+fetch('/static/item_defs.json')
+  .then(function(res) { return res.json(); })
+  .then(function(data) { g_itemDefs = data; })
+  .catch(function(err) { console.warn('Could not load item_defs.json:', err); });
+
+fetch('/static/item_icons.json')
+  .then(function(res) { return res.json(); })
+  .then(function(data) { g_itemIcons = data; })
+  .catch(function(err) { console.warn('Could not load item_icons.json:', err); });
+
+var ATTR_NAMES = {
+  1: {pl: "Max PŻ", en: "Max HP"},
+  2: {pl: "Max PE", en: "Max MP"},
+  3: {pl: "Energia Życiowa", en: "Vitality"},
+  4: {pl: "Inteligencja", en: "Intelligence"},
+  5: {pl: "Siła", en: "Strength"},
+  6: {pl: "Zręczność", en: "Dexterity"},
+  7: {pl: "Szybkość Ataku", en: "Attack Speed"},
+  8: {pl: "Szybkość Poruszania się", en: "Movement Speed"},
+  9: {pl: "Szybkość Zaklęcia", en: "Casting Speed"},
+  10: {pl: "Regeneracja PŻ", en: "HP Regen"},
+  11: {pl: "Regeneracja PE", en: "MP Regen"},
+  12: {pl: "Szansa na Otrucie", en: "Poisoning Chance"},
+  13: {pl: "Szansa na Omdlenie", en: "Stun Chance"},
+  14: {pl: "Szansa na Spowolnienie", en: "Slow Chance"},
+  15: {pl: "Szansa na Cios Krytyczny", en: "Critical Hit"},
+  16: {pl: "Szansa na Przeszywający Cios", en: "Piercing Hit"},
+  17: {pl: "Silny przeciwko Półludziom", en: "Strong vs Half-Humans"},
+  18: {pl: "Silny przeciwko Zwierzętom", en: "Strong vs Animals"},
+  19: {pl: "Silny przeciwko Orkom", en: "Strong vs Orcs"},
+  20: {pl: "Silny przeciwko Mistykom", en: "Strong vs Esoterics"},
+  21: {pl: "Silny przeciwko Nieumarłym", en: "Strong vs Undead"},
+  22: {pl: "Silny przeciwko Diabłom", en: "Strong vs Devils"},
+  23: {pl: "Obrażenia absorbowane przez PŻ", en: "Damage absorbed by HP"},
+  24: {pl: "Obrażenia absorbowane przez PE", en: "Damage absorbed by MP"},
+  25: {pl: "Szansa na kradzież PE", en: "Chance to steal MP"},
+  27: {pl: "Szansa na Blok Ciosów", en: "Block Chance"},
+  28: {pl: "Szansa na Unik Strzał", en: "Dodge Arrows"},
+  29: {pl: "Odporność na Miecze", en: "Sword Defense"},
+  30: {pl: "Odporność na Broń Dwuręczną", en: "Two-Handed Defense"},
+  31: {pl: "Odporność na Sztylety", en: "Dagger Defense"},
+  32: {pl: "Odporność na Dzwony", en: "Bell Defense"},
+  33: {pl: "Odporność na Wachlarze", en: "Fan Defense"},
+  34: {pl: "Odporność na Strzały", en: "Arrow Resistance"},
+  35: {pl: "Odporność na Ogień", en: "Fire Resistance"},
+  36: {pl: "Odporność na Błyskawice", en: "Lightning Resistance"},
+  37: {pl: "Odporność na Magię", en: "Magic Resistance"},
+  38: {pl: "Odporność na Wiatr", en: "Wind Resistance"},
+  41: {pl: "Odporność na Trucizny", en: "Poison Resistance"},
+  43: {pl: "Bonus Doświadczenia", en: "EXP Bonus"},
+  44: {pl: "Szansa na podwójną ilość Yang", en: "Double Yang Drop"},
+  45: {pl: "Szansa na podwójną ilość Przedmiotów", en: "Double Item Drop"},
+  53: {pl: "Wartość Ataku", en: "Attack Value"},
+  54: {pl: "Obrona", en: "Defense"},
+  71: {pl: "Średnie Obrażenia", en: "Average Damage"},
+  72: {pl: "Obrażenia Umiejętności", en: "Skill Damage"}
+};
+
+function getItemIconUrl(vnum) {
+  var vStr = String(vnum);
+  var iconFile = (g_itemIcons && g_itemIcons[vStr]) ? g_itemIcons[vStr] : null;
+  if (!iconFile) {
+    // Default fallback calculation: 5 digits zero-padded
+    var padded = ('00000' + vnum).slice(-5);
+    iconFile = padded + '.png';
+  }
+  return '/static/icons/' + iconFile;
+}
+
+function showEquipTooltip(ev, el) {
+  var key = el.getAttribute('data-eqslot');
+  if (g_currentInvData && g_currentInvData.equipment && g_currentInvData.equipment[key]) {
+    showItemTooltip(ev, g_currentInvData.equipment[key]);
+  }
+}
+
+function showItemTooltip(ev, item) {
+  var tt = document.getElementById('m2ItemTooltip');
+  if (!tt || !item) return;
+
+  var lg = I18N.language || 'pl';
+  var def = (g_itemDefs && g_itemDefs[String(item.vnum)]) || {};
+  var name = item.name || def.name || ('Item #' + item.vnum);
+
+  var html = '<div class="m2-tt-name">' + name + '</div>';
+
+  if (def.level && def.level > 0) {
+    html += '<div style="color:#a1a1aa;font-size:10px">' + (lg === 'pl' ? 'Wymagany Poziom: ' : 'Required Level: ') + '<b style="color:#e5e7eb">' + def.level + '</b></div>';
+  }
+
+  // Combat Stats (Attack / Defense)
+  var hasStats = false;
+  var statHtml = '';
+  if (def.type === 1) { // Weapon
+    var minAtt = (def.value3 || 0) + (def.value5 || 0);
+    var maxAtt = (def.value4 || 0) + (def.value5 || 0);
+    if (minAtt > 0 || maxAtt > 0) {
+      statHtml += '<div class="m2-tt-stat">' + (lg === 'pl' ? 'Wartość Ataku: ' : 'Attack Value: ') + minAtt + ' - ' + maxAtt + '</div>';
+      hasStats = true;
+    }
+    var minMag = (def.value1 || 0) + (def.value5 || 0);
+    var maxMag = (def.value2 || 0) + (def.value5 || 0);
+    if (minMag > 0 || maxMag > 0) {
+      statHtml += '<div class="m2-tt-stat">' + (lg === 'pl' ? 'Wartość Magicznego Ataku: ' : 'Magic Attack Value: ') + minMag + ' - ' + maxMag + '</div>';
+      hasStats = true;
+    }
+    if (def.value0 > 0) {
+      statHtml += '<div class="m2-tt-stat">' + (lg === 'pl' ? 'Szybkość Ataku: +' : 'Attack Speed: +') + def.value0 + '%</div>';
+      hasStats = true;
+    }
+  } else if (def.type === 2) { // Armor / Equip
+    var defVal = 0;
+    if (def.subtype === 0) defVal = (def.value1 || 0) + (def.value5 || 0) * 2; // Body
+    else if (def.subtype === 1) defVal = (def.value1 || 0) + (def.value5 || 0); // Head
+    else if (def.subtype === 2) defVal = (def.value1 || 0) + (def.value5 || 0) * 2; // Shield
+    else if (def.subtype === 4) defVal = (def.value1 || 0) + (def.value5 || 0); // Boots
+
+    if (defVal > 0) {
+      statHtml += '<div class="m2-tt-stat">' + (lg === 'pl' ? 'Obrona: ' : 'Defense: ') + defVal + '</div>';
+      hasStats = true;
+    }
+    if (def.value0 > 0) {
+      statHtml += '<div class="m2-tt-stat">' + (lg === 'pl' ? 'Szybkość Ruchu: ' : 'Movement Speed: ') + (def.subtype === 0 ? '-' : '+') + def.value0 + '%</div>';
+      hasStats = true;
+    }
+  }
+
+  // Base Apply bonuses
+  if (def.apply && def.apply.length > 0) {
+    def.apply.forEach(function(ap) {
+      if (ap.type && ap.val) {
+        var apName = ATTR_NAMES[ap.type] ? (ATTR_NAMES[ap.type][lg] || ATTR_NAMES[ap.type].en) : ('Bonus #' + ap.type);
+        statHtml += '<div class="m2-tt-stat">' + apName + ': +' + ap.val + (ap.type === 1 || ap.type === 2 || ap.type === 53 || ap.type === 54 ? '' : '%') + '</div>';
+        hasStats = true;
+      }
+    });
+  }
+
+  if (hasStats) {
+    html += '<div class="m2-tt-divider"></div>' + statHtml;
+  }
+
+  // Bonuses (1-7)
+  if (item.attrs && item.attrs.length > 0) {
+    html += '<div class="m2-tt-divider"></div>';
+    item.attrs.forEach(function(a) {
+      var aName = ATTR_NAMES[a.type] ? (ATTR_NAMES[a.type][lg] || ATTR_NAMES[a.type].en) : ('Bonus #' + a.type);
+      var sign = a.val > 0 ? '+' : '';
+      var pct = (a.type === 1 || a.type === 2 || a.type === 53 || a.type === 54) ? '' : '%';
+      html += '<div class="m2-tt-bonus">' + aName + ' ' + sign + a.val + pct + '</div>';
+    });
+  }
+
+  // Sockets (Spirit Stones / KD)
+  if (item.sockets && item.sockets.length > 0) {
+    var hasSock = false;
+    var sockHtml = '<div class="m2-tt-divider"></div>';
+    item.sockets.forEach(function(sVal, sIdx) {
+      if (sVal === 0 && def.type !== 1 && def.type !== 2) return;
+      hasSock = true;
+      if (sVal === 0) {
+        sockHtml += '<div class="m2-tt-socket" style="color:#71717a">⚪ ' + (lg === 'pl' ? 'Pęknięty Kamień' : 'Broken Stone') + '</div>';
+      } else if (sVal === 1) {
+        sockHtml += '<div class="m2-tt-socket" style="color:#94a3b8">⚪ ' + (lg === 'pl' ? 'Czysty Slot' : 'Empty Socket') + '</div>';
+      } else if (sVal >= 28000 && sVal <= 28999) {
+        var sDef = (g_itemDefs && g_itemDefs[String(sVal)]) || {};
+        var sName = sDef.name || ('Kamień Duszy #' + sVal);
+        sockHtml += '<div class="m2-tt-socket" style="color:#38bdf8">💎 ' + sName + '</div>';
+      } else if (sVal > 1) {
+        sockHtml += '<div class="m2-tt-socket" style="color:#94a3b8">⚙️ #' + sVal + '</div>';
+      }
+    });
+    if (hasSock) html += sockHtml;
+  }
+
+  tt.innerHTML = html;
+  tt.style.display = 'block';
+  moveItemTooltip(ev);
+}
+
+function moveItemTooltip(ev) {
+  var tt = document.getElementById('m2ItemTooltip');
+  if (!tt || tt.style.display === 'none') return;
+  var x = ev.clientX + 14;
+  var y = ev.clientY + 14;
+  var maxX = window.innerWidth - tt.offsetWidth - 20;
+  var maxY = window.innerHeight - tt.offsetHeight - 20;
+  tt.style.left = Math.min(x, maxX) + 'px';
+  tt.style.top = Math.min(y, maxY) + 'px';
+}
+
+function hideItemTooltip() {
+  var tt = document.getElementById('m2ItemTooltip');
+  if (tt) tt.style.display = 'none';
+}
+
+function switchInvTab(tabIdx) {
+  g_currentInvTab = tabIdx;
+  document.querySelectorAll('.m2-tab-btn').forEach(function(b, idx) {
+    if (idx === tabIdx) b.classList.add('active');
+    else b.classList.remove('active');
+  });
+  if (g_currentInvData) {
+    renderInventoryGrid(g_currentInvData.inventory || []);
+  }
+}
+
+function renderInventoryGrid(invItems) {
+  var overlay = document.getElementById('m2InvItemOverlay');
+  if (!overlay) return;
+  overlay.innerHTML = '';
+
+  var basePos = g_currentInvTab * 45;
+  var endPos = basePos + 45;
+
+  invItems.forEach(function(it) {
+    if (it.pos < basePos || it.pos >= endPos) return;
+
+    var relPos = it.pos - basePos;
+    var col = relPos % 5;
+    var row = Math.floor(relPos / 5);
+
+    var def = (g_itemDefs && g_itemDefs[String(it.vnum)]) || {};
+    var size = def.size || 1;
+    if (size < 1) size = 1;
+    if (size > 3) size = 3;
+
+    var leftPx = col * 34;
+    var topPx = row * 34;
+    var widthPx = 34;
+    var heightPx = size * 34;
+
+    var el = document.createElement('div');
+    el.className = 'm2-item-entity';
+    el.style.left = leftPx + 'px';
+    el.style.top = topPx + 'px';
+    el.style.width = widthPx + 'px';
+    el.style.height = heightPx + 'px';
+
+    var iconUrl = getItemIconUrl(it.vnum);
+    var img = document.createElement('img');
+    img.src = iconUrl;
+    img.style.maxWidth = '32px';
+    img.style.maxHeight = (size * 32) + 'px';
+    img.style.imageRendering = 'pixelated';
+    img.draggable = false;
+    el.appendChild(img);
+
+    if (it.count > 1) {
+      var badge = document.createElement('span');
+      badge.className = 'm2-item-count';
+      badge.innerText = it.count;
+      el.appendChild(badge);
+    }
+
+    el.onmouseenter = function(ev) { showItemTooltip(ev, it); };
+    el.onmousemove = function(ev) { moveItemTooltip(ev); };
+    el.onmouseleave = function() { hideItemTooltip(); };
+
+    overlay.appendChild(el);
+  });
+}
+
 function openBotModal(pid) {
   var modal = document.getElementById('botModal');
   var content = document.getElementById('botModalContent');
@@ -4252,6 +4869,7 @@ function openBotModal(pid) {
         return;
       }
 
+      g_currentInvData = data;
       var p = data.player;
       var eq = data.equipment || {};
       var inv = data.inventory || [];
@@ -4261,10 +4879,14 @@ function openBotModal(pid) {
       var typeBadge = isBot ? '<span style="background:#2ecc71;color:#000;padding:2px 6px;border-radius:4px;font-size:11px;font-weight:700">BOT</span>'
                             : '<span style="background:#ef4444;color:#fff;padding:2px 6px;border-radius:4px;font-size:11px;font-weight:700">GRACZ</span>';
 
-      var html = '<div style="display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #332814;padding-bottom:10px;margin-bottom:12px">' +
-                 '<div><h3 style="margin:0;color:var(--gold2);font-size:18px">' + p.name + ' <span style="font-size:13px;color:#aaa">Lv ' + p.level + ' ' + p.job_name + '</span></h3></div>' +
-                 '<div>' + typeBadge + '</div>' +
-                 '</div>';
+      var html = '<div class="m2-modal-columns">';
+
+      // LEFT COLUMN: Character Details & Stats & Logs
+      html += '<div>';
+      html += '<div style="display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #332814;padding-bottom:10px;margin-bottom:12px">' +
+              '<div><h3 style="margin:0;color:var(--gold2);font-size:18px">' + escapeHtml(p.name) + ' <span style="font-size:13px;color:#aaa">Lv ' + p.level + ' ' + escapeHtml(p.job_name) + '</span></h3></div>' +
+              '<div>' + typeBadge + '</div>' +
+              '</div>';
 
       // GM Teleport bar
       var wx = Math.floor(p.x / 100);
@@ -4287,14 +4909,17 @@ function openBotModal(pid) {
               '<div><b>HP:</b> <span style="color:#ef4444">' + (p.hp || 0) + '</span> / <b>MP:</b> <span style="color:#38bdf8">' + (p.mp || 0) + '</span></div>' +
               '<div><b>Yang:</b> <span style="color:#eab308;font-weight:700">' + (p.gold || 0).toLocaleString() + '</span></div>' +
               '<div><b>' + I18N.position + ':</b> (' + p.x + ', ' + p.y + ')</div>' +
-              '<div><b>' + I18N.action + ':</b> <span style="color:#ffd700">' + (p.in_pt ? I18N.party_exp : I18N.solo_exp) + '</span></div>' +
+              '<div><b>' + I18N.personality + ':</b> <span style="color:#c084fc;font-weight:700">' + escapeHtml(p.personality) + '</span></div>' +
+              '<div><b>' + I18N.ambition + ':</b> <span style="color:#86efac;font-weight:700">' + escapeHtml(p.ambition) + '</span></div>' +
+              '<div style="grid-column:1 / -1"><b>' + I18N.current_goal + ':</b> <span style="color:#60a5fa;font-weight:700">' + escapeHtml(p.goal) + '</span></div>' +
+              '<div style="grid-column:1 / -1"><b>' + I18N.action + ':</b> <span style="color:#ffd700">' + escapeHtml(p.action) + '</span></div>' +
               '<div><b>' + I18N.horse + ':</b> <span style="color:#c084fc;font-weight:700">Lv ' + (p.horse_level || 0) + '</span></div>' +
               '<div><b>' + I18N.biologist + ':</b> <span style="color:#4ade80;font-weight:700">' + (p.biologist_completed || 0) + '/6</span></div>' +
               '<div style="grid-column:1 / -1"><b>' + I18N.bio_stage + ':</b> <span style="color:#86efac">' + (p.biologist_label || I18N.no_data) + '</span></div>' +
               '<div style="grid-column:1 / -1"><b>' + I18N.hunting + ':</b> <span style="color:#fb923c">' + (p.hunting_label || I18N.no_data) + '</span></div>' +
               '</div>';
 
-      // Character build: allocated attributes and the exact packed server skills.
+      // Character build: stats & skills
       html += '<div class="bot-build-grid">' +
               '<div class="bot-build-panel">' +
               '<h4 style="margin:0;color:var(--gold)">📊 ' + I18N.stats + '</h4>' +
@@ -4325,57 +4950,8 @@ function openBotModal(pid) {
       html += '<div class="muted" style="font-size:10px;margin-top:7px">' +
               I18N.unspent_skills.replace('{n}', p.skill_point || 0) + '</div></div></div>';
 
-      // Equipment Slots (8 core slots)
-      html += '<h4 style="margin:0 0 4px;color:var(--gold)">🛡️ ' + I18N.equipped + '</h4>';
-      html += '<div class="eq-grid">';
-
-      var slots = [
-        { key: 'weapon', name: I18N.weapon, icon: '🗡️' },
-        { key: 'body', name: I18N.armor, icon: '🛡️' },
-        { key: 'head', name: I18N.helmet, icon: '🪖' },
-        { key: 'shield', name: I18N.shield, icon: '🛡️' },
-        { key: 'wrist', name: I18N.bracelet, icon: '💍' },
-        { key: 'foots', name: I18N.boots, icon: '🥾' },
-        { key: 'neck', name: I18N.necklace, icon: '📿' },
-        { key: 'ear', name: I18N.earrings, icon: '👂' }
-      ];
-
-      slots.forEach(function(s) {
-        var it = eq[s.key];
-        if (it) {
-          html += '<div class="eq-slot filled">' +
-                  '<div class="eq-slot-icon">' + s.icon + '</div>' +
-                  '<div class="muted" style="font-size:10px">' + s.name + '</div>' +
-                  '<div class="eq-slot-name" title="' + it.name + '">' + it.name + '</div>' +
-                  '</div>';
-        } else {
-          html += '<div class="eq-slot">' +
-                  '<div class="eq-slot-icon" style="opacity:0.3">' + s.icon + '</div>' +
-                  '<div class="muted" style="font-size:10px">' + s.name + '</div>' +
-                  '<div class="muted" style="font-size:10px">' + I18N.empty + '</div>' +
-                  '</div>';
-        }
-      });
-      html += '</div>';
-
-      // Inventory Items
-      html += '<h4 style="margin:14px 0 4px;color:var(--gold)">🎒 ' + I18N.inventory + ' (' + inv.length + ' ' + I18N.items_count + ')</h4>';
-      if (inv.length === 0) {
-        html += '<p class="muted" style="font-size:12px;text-align:center;padding:10px">' + I18N.inventory_empty + '</p>';
-      } else {
-        html += '<div class="inv-grid">';
-        inv.forEach(function(it) {
-          var countStr = it.count > 1 ? ' <span style="color:#38bdf8;font-weight:700">x' + it.count + '</span>' : '';
-          html += '<div class="inv-item">' +
-                  '<div style="color:#ffd700;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="' + it.name + '">' + it.name + '</div>' +
-                  '<div class="muted" style="font-size:10px">' + I18N.quantity + ':' + countStr + '</div>' +
-                  '</div>';
-        });
-        html += '</div>';
-      }
-
       // Live Bot Logs section
-      html += '<div style="margin-top:16px;border-top:1px solid #332814;padding-top:12px">' +
+      html += '<div style="margin-top:14px;border-top:1px solid #332814;padding-top:10px">' +
               '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">' +
               '<h4 style="margin:0;color:var(--gold);font-size:13px">📜 ' + I18N.event_log + '</h4>' +
               '<div style="display:flex;gap:10px;align-items:center">' +
@@ -4385,12 +4961,81 @@ function openBotModal(pid) {
               '<button type="button" onclick="copyBotLogs()" style="padding:2px 8px;font-size:11px;background:#334155;color:#fff;border:none;border-radius:4px;cursor:pointer">📋 ' + I18N.copy_logs + '</button>' +
               '</div>' +
               '</div>' +
-              '<div id="botLogsConsole" style="background:#09090b;border:1px solid #27272a;border-radius:6px;padding:8px;max-height:160px;overflow-y:auto;font-family:monospace;font-size:10px;color:#a1a1aa;line-height:1.4">' +
+              '<div id="botLogsConsole" style="background:#09090b;border:1px solid #27272a;border-radius:6px;padding:8px;max-height:140px;overflow-y:auto;font-family:monospace;font-size:10px;color:#a1a1aa;line-height:1.4">' +
               I18N.loading_logs + ' ' + p.name + '...' +
               '</div>' +
               '</div>';
 
+      html += '</div>'; // End Left Column
+
+      // RIGHT COLUMN: Authentic Metin2 Inventory Window
+      html += '<div>';
+      html += '<div class="m2-inv-window">' +
+              '<div class="m2-window-title">⚔️ ' + (I18N.inventory || 'Ekwipunek') + '</div>';
+
+      // Equipment Section with Character Silhouette
+      html += '<div class="m2-equip-container">' +
+              '<div class="m2-equip-silhouette"></div>';
+
+      var equipCoords = {
+        weapon: { left: 10, top: 10, w: 34, h: 102, watermark: '🗡️' },
+        body:   { left: 54, top: 44, w: 34, h: 68,  watermark: '🛡️' },
+        head:   { left: 54, top: 6,  w: 34, h: 34,  watermark: '🪖' },
+        foots:  { left: 54, top: 116,w: 34, h: 34,  watermark: '🥾' },
+        ear:    { left: 98, top: 6,  w: 34, h: 34,  watermark: '👂' },
+        shield: { left: 98, top: 44, w: 34, h: 34,  watermark: '🛡️' },
+        wrist:  { left: 98, top: 80, w: 34, h: 34,  watermark: '💍' },
+        neck:   { left: 98, top: 116,w: 34, h: 34,  watermark: '📿' }
+      };
+
+      Object.keys(equipCoords).forEach(function(slotKey) {
+        var cfg = equipCoords[slotKey];
+        var it = eq[slotKey];
+        var inner = '';
+        var hoverAttr = '';
+        if (it) {
+          var iconUrl = getItemIconUrl(it.vnum);
+          var def = (g_itemDefs && g_itemDefs[String(it.vnum)]) || {};
+          var size = def.size || 1;
+          inner = '<img src="' + iconUrl + '" style="max-width:32px;max-height:' + (size*32) + 'px;image-rendering:pixelated" draggable="false">';
+          hoverAttr = ' data-eqslot="' + slotKey + '" onmouseenter="showEquipTooltip(event, this)" onmousemove="moveItemTooltip(event)" onmouseleave="hideItemTooltip()"';
+        } else {
+          inner = '<span class="m2-equip-watermark">' + cfg.watermark + '</span>';
+        }
+        html += '<div class="m2-equip-slot" style="left:' + cfg.left + 'px;top:' + cfg.top + 'px;width:' + cfg.w + 'px;height:' + cfg.h + 'px"' + hoverAttr + '>' + inner + '</div>';
+      });
+
+      html += '</div>'; // End Equipment Section
+
+      // Inventory Tabs (Tab I & Tab II)
+      html += '<div class="m2-inv-tabs">' +
+              '<button type="button" class="m2-tab-btn active" onclick="switchInvTab(0)">I</button>' +
+              '<button type="button" class="m2-tab-btn" onclick="switchInvTab(1)">II</button>' +
+              '</div>';
+
+      // 5x9 Inventory Grid Frame
+      html += '<div class="m2-grid-frame">' +
+              '<div class="m2-grid-bg">';
+      for (var c = 0; c < 45; c++) {
+        html += '<div class="m2-grid-cell"></div>';
+      }
+      html += '</div>' +
+              '<div id="m2InvItemOverlay" class="m2-item-overlay"></div>' +
+              '</div>';
+
+      // Yang display
+      html += '<div class="m2-yang-box">' +
+              '<span>💰 Yang:</span>' +
+              '<span class="m2-yang-val">' + (p.gold || 0).toLocaleString() + '</span>' +
+              '</div>';
+
+      html += '</div>'; // End m2-inv-window
+      html += '</div>'; // End Right Column
+
+      html += '</div>'; // End m2-modal-columns
+
       content.innerHTML = html;
+      renderInventoryGrid(inv);
       startLogTracking(p.name);
     })
     .catch(function(err) {
@@ -4613,6 +5258,7 @@ def api_bot_logs(bot_name):
 def api_bot_positions():
     language = lang()
     messages = map_i18n(language)
+    live_status = read_playerbot_live_status()
     map_bounds = {
         # base_x, base_y, width, height -- coordinates from the server atlas.
         21: (0, 102400, 102400, 128000),       # Joan (Chunjo M1)
@@ -4633,24 +5279,22 @@ def api_bot_positions():
             total_count = len(rows)
             for r in rows:
                 pid = r.get("id") or 0
+                live = live_status.get(int(pid))
+                live_labels = playerbot_live_labels(live, language)
                 name = r.get("name") or ""
                 level = r.get("level") or 1
                 job = r.get("job") or 0
-                gx = r.get("x") or 55000
-                gy = r.get("y") or 160000
-                hp = r.get("hp") or 0
+                gx = live.get("x") if live else (r.get("x") or 55000)
+                gy = live.get("y") if live else (r.get("y") or 160000)
+                hp = live.get("hp") if live else (r.get("hp") or 0)
                 gold = r.get("gold") or 0
-                map_index = int(r.get("map_index") or 21)
+                map_index = int(live.get("map_index") if live else (r.get("map_index") or 21))
                 base_x, base_y, width, height = map_bounds.get(map_index, map_bounds[21])
 
                 px = max(0.0, min(100.0, ((float(gx) - base_x) / width) * 100.0))
                 py = max(0.0, min(100.0, ((float(gy) - base_y) / height) * 100.0))
                 is_bot = name.startswith("bot")
-                in_pt = bot_in_party_cohort(pid)
-
-                action = "⚔️ " + (messages["party_exp"] if in_pt else messages["solo_exp"])
-                if level >= 10 and (pid % 5 == 0):
-                    action = "💎 " + messages["metin_hunt"]
+                in_pt = live.get("in_pt") if live else bot_in_party_cohort(pid)
 
                 bots.append({
                     "id": pid,
@@ -4666,7 +5310,11 @@ def api_bot_positions():
                     "gold": gold,
                     "in_pt": in_pt,
                     "is_bot": is_bot,
-                    "action": action
+                    "action": live_labels["action"],
+                    "personality": live_labels["personality"],
+                    "ambition": live_labels["ambition"],
+                    "goal": live_labels["goal"],
+                    "live": bool(live),
                 })
             return jsonify({"ok": True, "count": total_count, "bots": bots})
     except Exception as e:
@@ -4676,6 +5324,8 @@ def api_bot_positions():
 def api_bot_inventory(pid):
     language = lang()
     messages = map_i18n(language)
+    live = read_playerbot_live_status().get(int(pid))
+    live_labels = playerbot_live_labels(live, language)
     try:
         with db() as c, c.cursor() as cur:
             cur.execute("""
@@ -4690,7 +5340,16 @@ def api_bot_inventory(pid):
                 return jsonify({"ok": False, "error": messages["character_missing"]})
 
             player["job_name"] = localized_job_name(player.get("job", 0), language)
-            player["in_pt"] = bot_in_party_cohort(pid)
+            player["in_pt"] = live.get("in_pt") if live else bot_in_party_cohort(pid)
+            if live:
+                player["x"] = live.get("x", player.get("x"))
+                player["y"] = live.get("y", player.get("y"))
+                player["hp"] = live.get("hp", player.get("hp"))
+            player["action"] = live_labels["action"]
+            player["personality"] = live_labels["personality"]
+            player["ambition"] = live_labels["ambition"]
+            player["goal"] = live_labels["goal"]
+            player["live"] = bool(live)
             raw_skills = player.pop("skill_level", b"")
             profession_names = SKILL_GROUP_NAMES if language == "pl" else SKILL_GROUP_NAMES_EN
             player["profession_name"] = profession_names.get(
@@ -4758,7 +5417,9 @@ def api_bot_inventory(pid):
 
             cur.execute("""
                 SELECT id, `window`, pos, `count`, vnum, socket0, socket1, socket2,
-                       attrtype0, attrvalue0, attrtype1, attrvalue1
+                       attrtype0, attrvalue0, attrtype1, attrvalue1, attrtype2, attrvalue2,
+                       attrtype3, attrvalue3, attrtype4, attrvalue4, attrtype5, attrvalue5,
+                       attrtype6, attrvalue6
                 FROM player.item
                 WHERE owner_id = %s
                 ORDER BY `window` ASC, pos ASC
@@ -4773,7 +5434,7 @@ def api_bot_inventory(pid):
                 4: "weapon",     # Broń
                 5: "neck",       # Naszyjnik
                 6: "ear",        # Kolczyki
-                7: "shield"      # Tarcza
+                10: "shield"     # Tarcza (WEAR_SHIELD; slot 7 is WEAR_UNIQUE1)
             }
             equipment = {}
             inventory = []
@@ -4785,12 +5446,22 @@ def api_bot_inventory(pid):
                 pos = it.get("pos") or 0
                 win = it.get("window") or ""
 
+                sockets = [it.get("socket0") or 0, it.get("socket1") or 0, it.get("socket2") or 0]
+                attrs = []
+                for a_idx in range(7):
+                    atype = it.get(f"attrtype{a_idx}") or 0
+                    aval = it.get(f"attrvalue{a_idx}") or 0
+                    if atype != 0 and aval != 0:
+                        attrs.append({"type": atype, "val": aval})
+
                 item_obj = {
                     "id": it.get("id"),
                     "vnum": vnum,
                     "name": name,
                     "count": count,
-                    "pos": pos
+                    "pos": pos,
+                    "sockets": sockets,
+                    "attrs": attrs
                 }
 
                 if win == "EQUIPMENT" and pos in wear_map:
@@ -4824,6 +5495,27 @@ def api_bot_rankings():
                     FROM player.player
                     WHERE name LIKE 'bot%%'
                     ORDER BY gold DESC, level DESC
+                    LIMIT %s
+                """, (rank_limit,))
+            elif rtype == "weapon30":
+                cur.execute("""
+                    SELECT p.id, p.name, p.level, p.job, p.gold,
+                           i.vnum as weapon_vnum, i.window as item_window,
+                           i.attrtype0, i.attrvalue0, i.attrtype1, i.attrvalue1,
+                           i.attrtype2, i.attrvalue2, i.attrtype3, i.attrvalue3,
+                           i.attrtype4, i.attrvalue4, i.attrtype5, i.attrvalue5,
+                           i.attrtype6, i.attrvalue6
+                    FROM player.item i
+                    JOIN player.player p ON p.id = i.owner_id
+                    WHERE p.name LIKE 'bot%%' AND (
+                        (i.vnum BETWEEN 290 AND 299) OR
+                        (i.vnum BETWEEN 1170 AND 1179) OR
+                        (i.vnum BETWEEN 2150 AND 2159) OR
+                        (i.vnum BETWEEN 3210 AND 3219) OR
+                        (i.vnum BETWEEN 5110 AND 5119) OR
+                        (i.vnum BETWEEN 7160 AND 7169)
+                    )
+                    ORDER BY i.id DESC
                     LIMIT %s
                 """, (rank_limit,))
             elif rtype == "weapon":
@@ -4893,7 +5585,7 @@ def api_bot_rankings():
                     WHERE p.name LIKE 'bot%%'
                     GROUP BY p.id
                     ORDER BY hunting_complete DESC, hunting_current DESC,
-                             hunting_remain ASC, p.level DESC
+                              hunting_remain ASC, p.level DESC
                     LIMIT %s
                 """, (rank_limit,))
             else: # level
@@ -4912,6 +5604,15 @@ def api_bot_rankings():
                 av = r.get("armor_vnum")
                 w_name = localized_item_name(wv, language) if wv else ""
                 a_name = localized_item_name(av, language) if av else ""
+
+                sr = 0
+                um = 0
+                for a_idx in range(7):
+                    atype = r.get(f"attrtype{a_idx}")
+                    aval = r.get(f"attrvalue{a_idx}")
+                    if atype == 71: sr = int(aval or 0)
+                    if atype == 72: um = int(aval or 0)
+
                 bio_completed = max(0, min(len(BIOLOGIST_MISSIONS), int(r.get("biologist_completed") or 0)))
                 if bio_completed >= len(BIOLOGIST_MISSIONS):
                     bio_label = "%d/%d • %s" % (
@@ -4936,7 +5637,11 @@ def api_bot_rankings():
                     "level": r["level"],
                     "job": localized_job_name(r.get("job", 0), language),
                     "gold": r.get("gold", 0),
+                    "weapon_vnum": wv,
                     "weapon_name": w_name,
+                    "item_window": r.get("item_window", "INVENTORY"),
+                    "sr": sr,
+                    "um": um,
                     "armor_name": a_name,
                     "item_count": r.get("item_count", 0),
                     "horse_level": r.get("horse_level", 0),
@@ -4948,6 +5653,10 @@ def api_bot_rankings():
                     "hunting_label": hunting_label,
                     "in_pt": bot_in_party_cohort(r["id"])
                 })
+
+            if rtype == "weapon30":
+                rankings.sort(key=lambda x: (x["sr"], x["um"], x["level"]), reverse=True)
+
             return jsonify({"ok": True, "type": rtype, "limit": rank_limit,
                             "rankings": rankings})
     except Exception as e:

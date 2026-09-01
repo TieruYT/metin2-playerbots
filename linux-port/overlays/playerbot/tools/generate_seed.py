@@ -429,6 +429,14 @@ BEGIN NOT ATOMIC
         ON i.owner_id = s.pid AND i.window = 'INVENTORY' AND i.pos = 2
      WHERE i.id IS NULL;
 
+    -- The seed already supplied the starter chest above. Mark the stock login
+    -- reward as claimed so give_basic_weapon does not create a second chest and,
+    -- transitively, duplicate every later Apprentice/Expert chest.
+    INSERT INTO player.quest (dwPID, szName, szState, lValue)
+    SELECT q.pid, 'give_basic_weapon', 'basic_weapon', 1
+      FROM playerbot_seed_pending AS q
+    ON DUPLICATE KEY UPDATE lValue = GREATEST(lValue, VALUES(lValue));
+
     SELECT COUNT(*) INTO v_conflicts
       FROM playerbot_seed_pending AS q
      WHERE NOT EXISTS (

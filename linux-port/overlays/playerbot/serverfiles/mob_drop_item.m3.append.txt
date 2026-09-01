@@ -13,7 +13,7 @@ Group	playerbot_m3_cursed_alpha_level30
 	Kill_drop	400
 	Mob	128
 	Type	kill
-	1	2100	1	15	10
+	1	2150	1	15	10
 }
 Group	playerbot_m3_cursed_boar_level30
 {
@@ -49,7 +49,7 @@ Group	playerbot_m3_cursed_tiger_level30
 	Mob	135
 	Type	kill
 	1	1170	1	25	10
-	2	2100	1	25	10
+	2	2150	1	25	10
 	3	13020	1	20	10
 }
 Group	playerbot_m3_cursed_white_tiger_level30
