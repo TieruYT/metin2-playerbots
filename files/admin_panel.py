@@ -3778,7 +3778,7 @@ MAP_I18N = {
  "pl": {
   "title":"Mapa świata na żywo — Chunjo","live":"NA ŻYWO (1,5 s)","subtitle":"Interaktywny podgląd pozycji i rozwoju botów w czasie rzeczywistym",
   "player_panel":"Panel graczy","play_browser":"Graj w przeglądarce","show_bots":"Pokaż boty","names_levels":"Nicki i poziomy","pt_only":"Tylko w grupie (PT)",
-  "level":"Poziom","all":"Wszystkie","map":"Mapa","m1":"M1 — Joan","m2":"M2 — Bokjung","m3":"M3 — Waryong","monkey":"Łatwy Loch Małp","search":"🔍 Szukaj bota (np. botarek)...",
+  "level":"Poziom","all":"Wszystkie","map":"Mapa","m1":"M1 — Joan","m2":"M2 — Bokjung","m3":"M3 — Waryong","monkey":"Łatwy Loch Małp","orc":"Dolina Orków","desert":"Pustynia Yongbi","heat":"Mapa cieplna","heat_deaths":"Zgony botów","heat_metins":"Rozbite metiny","search":"🔍 Szukaj bota (np. botarek)...",
   "solo_bot":"Bot solo","party_bot":"W grupie (PT)","metin_fight":"Walka z Metinem","loading":"Ładowanie...","world_stats":"Statystyki świata","active_bots":"Aktywne boty",
   "in_parties":"W grupach (PT)","avg_level":"Średni poziom","max_level":"Maks. poziom","rankings":"Rankingi botów","rank_level":"Poziom","rank_weapon":"Broń","rank_armor":"Zbroja",
   "rank_weapon30":"Bronie 30 Lv","rank_items":"Przedmioty","rank_horse":"Koń","rank_biologist":"Biolog","rank_hunting":"Polowanie","rank_empty":"Brak danych rankingu.","rank_show":"Pokaż","rank_search":"Szukaj w rankingu...","none":"Brak","items_short":"przedm.",
@@ -3797,7 +3797,7 @@ MAP_I18N = {
  "en": {
   "title":"Live world map — Chunjo","live":"LIVE (1.5 s)","subtitle":"Interactive real-time view of bot positions and progression",
   "player_panel":"Player panel","play_browser":"Play in browser","show_bots":"Show bots","names_levels":"Names and levels","pt_only":"Party only (PT)",
-  "level":"Level","all":"All","map":"Map","m1":"M1 — Joan","m2":"M2 — Bokjung","m3":"M3 — Waryong","monkey":"Easy Monkey Dungeon","search":"🔍 Find a bot (e.g. botarek)...",
+  "level":"Level","all":"All","map":"Map","m1":"M1 — Joan","m2":"M2 — Bokjung","m3":"M3 — Waryong","monkey":"Easy Monkey Dungeon","orc":"Orc Valley","desert":"Yongbi Desert","heat":"Heatmap","heat_deaths":"Bot deaths","heat_metins":"Metins broken","search":"🔍 Find a bot (e.g. botarek)...",
   "solo_bot":"Solo bot","party_bot":"In party (PT)","metin_fight":"Fighting a Metin","loading":"Loading...","world_stats":"World statistics","active_bots":"Active bots",
   "in_parties":"In parties (PT)","avg_level":"Average level","max_level":"Max level","rankings":"Bot rankings","rank_level":"Level","rank_weapon":"Weapon","rank_armor":"Armour",
   "rank_weapon30":"Lv 30 Weapons","rank_items":"Items","rank_horse":"Horse","rank_biologist":"Biologist","rank_hunting":"Hunting","rank_empty":"No ranking data.","rank_show":"Show","rank_search":"Search ranking...","none":"None","items_short":"items",
@@ -3892,7 +3892,20 @@ TPL_LIVE_MAP = BASE.replace("__BODY__", """
         <select id="mapFilter" onchange="setMapFilter(this.value)" style="width:auto;padding:6px 9px;font-size:12px;margin:0">
           <option value="21">{{m.m1}}</option><option value="23">{{m.m2}}</option>
           <option value="24">{{m.m3}}</option><option value="25">{{m.monkey}}</option>
+          <option value="64">{{m.orc}}</option><option value="63">{{m.desert}}</option>
         </select>
+      </div>
+
+      <div style="display:flex;align-items:center;gap:6px">
+        <label style="display:flex;align-items:center;gap:5px;cursor:pointer">
+          <input type="checkbox" id="toggleHeat" onchange="loadHeatmap()">
+          <span class="muted" style="font-size:13px">🔥 {{m.heat}}</span>
+        </label>
+        <select id="heatKind" onchange="loadHeatmap()" style="width:auto;padding:6px 9px;font-size:12px;margin:0">
+          <option value="deaths">{{m.heat_deaths}}</option>
+          <option value="metins">{{m.heat_metins}}</option>
+        </select>
+        <span id="heatSummary" class="muted" style="font-size:12px"></span>
       </div>
 
       <!-- Search Box -->
@@ -3911,7 +3924,9 @@ TPL_LIVE_MAP = BASE.replace("__BODY__", """
     <div class="card" style="padding:8px;position:relative;background:#0a0805;border:2px solid #3d3522;border-radius:10px">
       <div id="mapViewport" style="position:relative;width:100%;height:680px;background:#0e0c08 radial-gradient(circle at center, #18130a 0%, #070604 100%);border-radius:6px;overflow:hidden;box-shadow:inset 0 0 30px rgba(0,0,0,0.95);border:1px solid #2e2617">
         <!-- Markers layer -->
-        <div id="markersLayer" style="position:absolute;inset:0"></div>
+        <!-- Heat layer sits under the markers so a bot is never hidden by it -->
+        <div id="heatLayer" style="position:absolute;inset:0;z-index:1"></div>
+        <div id="markersLayer" style="position:absolute;inset:0;z-index:2"></div>
         <!-- Tooltip -->
         <div id="mapTooltip" style="display:none;position:absolute;z-index:200;background:rgba(18,15,10,0.96);border:1px solid var(--gold);padding:10px 14px;border-radius:8px;box-shadow:0 8px 24px rgba(0,0,0,0.85);pointer-events:none;min-width:200px;font-size:12px;color:#fff;backdrop-filter:blur(6px)">
         </div>
@@ -3986,6 +4001,12 @@ TPL_LIVE_MAP = BASE.replace("__BODY__", """
 
 <style>
 .lvl-btn.active, .rank-tab.active { background: var(--gold) !important; color: #000 !important; font-weight: 700; }
+.heat-dot {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  pointer-events: none;
+}
 .bot-marker {
   position: absolute;
   transform: translate(-50%, -50%);
@@ -4379,6 +4400,58 @@ function setLevelFilter(lvl, btn) {
 function setMapFilter(mapIndex) {
   g_selectedMap = parseInt(mapIndex, 10) || 21;
   renderMap();
+  loadHeatmap();
+}
+
+var g_heatCells = [];
+var g_heatMax = 0;
+
+function heatEnabled() {
+  var el = document.getElementById('toggleHeat');
+  return !!(el && el.checked);
+}
+
+function loadHeatmap() {
+  var layer = document.getElementById('heatLayer');
+  if (!layer) return;
+  var summary = document.getElementById('heatSummary');
+  if (!heatEnabled()) {
+    g_heatCells = []; g_heatMax = 0; layer.innerHTML = '';
+    if (summary) summary.textContent = '';
+    return;
+  }
+  var kindEl = document.getElementById('heatKind');
+  var kind = kindEl ? kindEl.value : 'deaths';
+  fetch('/api/bot_heatmap?map=' + g_selectedMap + '&kind=' + encodeURIComponent(kind))
+    .then(function(r){ return r.json(); })
+    .then(function(d){
+      g_heatCells = (d && d.cells) ? d.cells : [];
+      g_heatMax = (d && d.max) ? d.max : 0;
+      renderHeat();
+      if (summary) summary.textContent = (d && d.total) ? ('∑ ' + d.total) : '—';
+    })
+    .catch(function(){ layer.innerHTML = ''; if (summary) summary.textContent = ''; });
+}
+
+function renderHeat() {
+  var layer = document.getElementById('heatLayer');
+  if (!layer) return;
+  if (!heatEnabled() || !g_heatCells.length || !g_heatMax) { layer.innerHTML = ''; return; }
+  var kindEl = document.getElementById('heatKind');
+  var rgb = (kindEl && kindEl.value === 'metins') ? '255,105,205' : '255,72,58';
+  var html = '';
+  for (var i = 0; i < g_heatCells.length; i++) {
+    var c = g_heatCells[i];
+    // Square root, so the visible area tracks the count instead of the radius --
+    // otherwise one busy cell swallows the whole map.
+    var w = Math.sqrt(c.n / g_heatMax);
+    var size = (16 + w * 52).toFixed(0);
+    var alpha = (0.16 + w * 0.58).toFixed(2);
+    html += '<div class="heat-dot" style="left:' + c.px + '%;top:' + c.py + '%;width:' + size +
+            'px;height:' + size + 'px;background:radial-gradient(circle,rgba(' + rgb + ',' + alpha +
+            ') 0%,rgba(' + rgb + ',0) 70%)"></div>';
+  }
+  layer.innerHTML = html;
 }
 
 function setRankCategory(cat, btn) {
@@ -5254,18 +5327,93 @@ def api_bot_logs(bot_name):
     except Exception as e:
         return jsonify({"ok": False, "error": str(e), "logs": []})
 
+# base_x, base_y, width, height -- read out of each map's Setting.txt
+# (BasePosition, and MapSize x 128 x 200 for the extent). Shared by the live
+# marker layer and the heatmap so the same world point lands in the same place
+# in both.
+PLAYERBOT_MAP_BOUNDS = {
+    21: (0, 102400, 102400, 128000),        # Joan (Chunjo M1)
+    23: (102400, 204800, 102400, 102400),   # Bokjung (Chunjo M2)
+    24: (179200, 0, 51200, 51200),          # Waryong (Chunjo M3)
+    25: (844800, 435200, 76800, 76800),     # Easy Monkey Dungeon
+    64: (256000, 665600, 153600, 153600),   # Orc Valley
+    63: (204800, 486400, 153600, 153600),   # Yongbi Desert
+}
+
+
+# The game core already writes every death and every destroyed Metin to
+# log.log with world coordinates, so the heatmap needs no extra bookkeeping in
+# the server. Rows carry no map index, but the maps occupy disjoint rectangles
+# of the world, so the bounding box identifies the map exactly.
+PLAYERBOT_HEATMAP_KINDS = {
+    "deaths": "DEAD_BY_NPC",
+    "metins": "STONE_KILL",
+}
+PLAYERBOT_HEATMAP_GRID = 44
+
+
+@app.route("/api/bot_heatmap")
+def api_bot_heatmap():
+    try:
+        map_index = int(request.args.get("map", 21))
+    except (TypeError, ValueError):
+        map_index = 21
+    kind = (request.args.get("kind") or "deaths").strip().lower()
+    how = PLAYERBOT_HEATMAP_KINDS.get(kind)
+    bounds = PLAYERBOT_MAP_BOUNDS.get(map_index)
+    if how is None or bounds is None:
+        return jsonify({"ok": False, "cells": [], "max": 0, "total": 0})
+
+    base_x, base_y, width, height = bounds
+    cell_w = max(1, width // PLAYERBOT_HEATMAP_GRID)
+    cell_h = max(1, height // PLAYERBOT_HEATMAP_GRID)
+    try:
+        with db() as c, c.cursor() as cur:
+            cur.execute(
+                """
+                SELECT FLOOR((l.x - %s) / %s) AS gx,
+                       FLOOR((l.y - %s) / %s) AS gy,
+                       COUNT(*) AS n
+                FROM log.log l
+                WHERE l.type = 'CHARACTER' AND l.how = %s
+                  AND l.x >= %s AND l.x < %s
+                  AND l.y >= %s AND l.y < %s
+                GROUP BY gx, gy
+                HAVING n > 0
+                """,
+                (base_x, cell_w, base_y, cell_h, how,
+                 base_x, base_x + width, base_y, base_y + height),
+            )
+            rows = cur.fetchall()
+    except Exception as e:
+        return jsonify({"ok": False, "error": str(e), "cells": [], "max": 0, "total": 0})
+
+    cells = []
+    peak = 0
+    total = 0
+    for r in rows:
+        n = int(r.get("n") or 0)
+        gx = int(r.get("gx") or 0)
+        gy = int(r.get("gy") or 0)
+        # Centre of the cell, as a percentage of the map, so the overlay lines
+        # up with the bot markers whatever the viewport size is.
+        px = ((gx + 0.5) * cell_w) / float(width) * 100.0
+        py = ((gy + 0.5) * cell_h) / float(height) * 100.0
+        if px < 0 or px > 100 or py < 0 or py > 100:
+            continue
+        cells.append({"px": round(px, 2), "py": round(py, 2), "n": n})
+        total += n
+        if n > peak:
+            peak = n
+    return jsonify({"ok": True, "cells": cells, "max": peak, "total": total, "kind": kind})
+
+
 @app.route("/api/bot_positions")
 def api_bot_positions():
     language = lang()
     messages = map_i18n(language)
     live_status = read_playerbot_live_status()
-    map_bounds = {
-        # base_x, base_y, width, height -- coordinates from the server atlas.
-        21: (0, 102400, 102400, 128000),       # Joan (Chunjo M1)
-        23: (102400, 204800, 102400, 102400),  # Bokjung (Chunjo M2)
-        24: (179200, 0, 51200, 51200),         # Waryong (Chunjo M3)
-        25: (844800, 435200, 76800, 76800),    # Easy Monkey Dungeon
-    }
+    map_bounds = PLAYERBOT_MAP_BOUNDS
     try:
         with db() as c, c.cursor() as cur:
             # A bot is defined by its canonical account (playerbot_NNN), not by
@@ -5277,7 +5425,7 @@ def api_bot_positions():
                 FROM player.player p
                 LEFT JOIN account.account a ON a.id = p.account_id
                 WHERE (LEFT(a.login, 10) = 'playerbot_' OR p.name LIKE 'bot%')
-                  AND p.map_index IN (21, 23, 24, 25)
+                  AND p.map_index IN (21, 23, 24, 25, 63, 64)
                 ORDER BY p.level DESC, p.id ASC
             """)
             rows = cur.fetchall()

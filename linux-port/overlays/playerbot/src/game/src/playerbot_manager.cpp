@@ -232,12 +232,17 @@ namespace
 	const long PLAYERBOT_MAP_ORC_VALLEY = 64;
 	const long PLAYERBOT_ORC_VALLEY_ARRIVAL_X = 270400;
 	const long PLAYERBOT_ORC_VALLEY_ARRIVAL_Y = 740900;
-	const long PLAYERBOT_ORC_VALLEY_EXIT_X = 336000;
-	const long PLAYERBOT_ORC_VALLEY_EXIT_Y = 755600;
 	const long PLAYERBOT_DESERT_ARRIVAL_X = 221900;
 	const long PLAYERBOT_DESERT_ARRIVAL_Y = 502700;
-	const long PLAYERBOT_DESERT_EXIT_X = 296800;
-	const long PLAYERBOT_DESERT_EXIT_Y = 547400;
+	// Leave through the Chunjo gate NPC beside the arrival point, not through the
+	// Teleporter in the middle of the map. The death heatmap showed almost every
+	// desert casualty within ~1500 units of that central Teleporter: a bot which
+	// had already run out of potions was crossing 75k units of hostile ground to
+	// reach it. These gates sit a few steps from where the bot arrived.
+	const long PLAYERBOT_ORC_VALLEY_EXIT_X = 269100;
+	const long PLAYERBOT_ORC_VALLEY_EXIT_Y = 740200;
+	const long PLAYERBOT_DESERT_EXIT_X = 219700;
+	const long PLAYERBOT_DESERT_EXIT_Y = 499900;
 	// Orc Valley spawns levels 18-25, the Desert 26-30 (group.txt resolved through
 	// mob_proto.txt).  A bot ignores monsters three or more levels below itself
 	// unless they are already within chain range, so each band has to end a couple
@@ -6699,13 +6704,55 @@ namespace
 		return 0;
 	}
 
+	// How far from town a personality is willing to play, in eighths. Personality
+	// used to decide only how far a bot would push a refine, so every character
+	// hunted in the same places; this is what makes the trait visible in-world.
+	BYTE GetPlayerBotFrontierAppetite(BYTE personality)
+	{
+		switch (personality)
+		{
+			case BOT_PERSONALITY_WANDERER:
+				return 7; // explorer: almost always out on the far maps
+			case BOT_PERSONALITY_METIN_BREAKER:
+				return 6; // both frontier maps carry their own Metin spawns
+			case BOT_PERSONALITY_GEAR_SPECIALIST:
+				return 6; // Orc Valley is where the level-30 weapons drop
+			case BOT_PERSONALITY_TEAM_COMPANION:
+				return 4; // stays near the party pool at least half the time
+			case BOT_PERSONALITY_CAREFUL_COLLECTOR:
+				return 2; // protects what it has earned, keeps a town run short
+			default:
+				return 5; // steady adventurer
+		}
+	}
+
 	bool ShouldPlayerBotLeaveForFrontier(LPCHARACTER ch)
 	{
 		if (!ch || GetPlayerBotFrontierMapForLevel(ch) == 0)
 			return false;
-		// Keep a third of every band in Bokjung. The town, its Bestials and the
-		// local party pool must not empty out the moment a cohort comes of age.
-		return (PlayerBotNavHash(ch->GetPlayerID() ^ 0x46524f4eU) % 3U) != 0;
+		TPlayerBotAIStateMap::const_iterator it =
+				s_mapPlayerBotAIStates.find(ch->GetPlayerID());
+		const BYTE personality = it != s_mapPlayerBotAIStates.end()
+				? it->second.bPersonality : BOT_PERSONALITY_STEADY_ADVENTURER;
+		// Bokjung must never empty out completely: even the keenest explorer
+		// leaves one bot in eight behind for the town, its Bestials and parties.
+		const DWORD appetite = GetPlayerBotFrontierAppetite(personality);
+		return (PlayerBotNavHash(ch->GetPlayerID() ^ 0x46524f4eU) % 8U) < appetite;
+	}
+
+	// A wanderer settles in for a long session; a careful collector treats the
+	// trip as an errand and heads back while it still has potions left.
+	DWORD GetPlayerBotFrontierVisitTime(BYTE personality)
+	{
+		switch (personality)
+		{
+			case BOT_PERSONALITY_WANDERER:
+				return PLAYERBOT_FRONTIER_MAX_VISIT_TIME * 2;
+			case BOT_PERSONALITY_CAREFUL_COLLECTOR:
+				return PLAYERBOT_FRONTIER_MAX_VISIT_TIME / 2;
+			default:
+				return PLAYERBOT_FRONTIER_MAX_VISIT_TIME;
+		}
 	}
 
 	bool ShouldPlayerBotVisitM3(LPCHARACTER ch)
@@ -7130,7 +7177,7 @@ namespace
 			if (state.dwFrontierEnteredTime == 0)
 				state.dwFrontierEnteredTime = dwNow;
 			const bool visitExpired = dwNow - state.dwFrontierEnteredTime >=
-					PLAYERBOT_FRONTIER_MAX_VISIT_TIME;
+					GetPlayerBotFrontierVisitTime(state.bPersonality);
 			// Outgrowing the map matters as much as running out of potions: neither
 			// Orc Valley nor the Desert has a merchant, a blacksmith or a trainer.
 			const bool outOfBand = GetPlayerBotFrontierMapForLevel(ch) != mapIndex;
