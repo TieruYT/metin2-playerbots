@@ -221,6 +221,34 @@ namespace
 	const long PLAYERBOT_M3_RETURN_PORTAL_Y = 8800;
 	const long PLAYERBOT_M2_FROM_M3_X = 145500;
 	const long PLAYERBOT_M2_FROM_M3_Y = 240000;
+	// Maps opened past Bokjung.  Every coordinate here was read out of
+	// locale/english/map/{index,Setting.txt,Town.txt,npc.txt}: the arrival points
+	// are the Chunjo entries of Town.txt, the exits are the Teleporter (NPC 9012)
+	// each map carries, and departure reuses Bokjung's own Teleporter.
+	// Joan's own Teleporter (NPC 9012 in metin2_map_b1/npc.txt).
+	const long PLAYERBOT_M1_TELEPORTER_X = 51900;
+	const long PLAYERBOT_M1_TELEPORTER_Y = 153600;
+	const long PLAYERBOT_MAP_DESERT = 63;
+	const long PLAYERBOT_MAP_ORC_VALLEY = 64;
+	const long PLAYERBOT_ORC_VALLEY_ARRIVAL_X = 270400;
+	const long PLAYERBOT_ORC_VALLEY_ARRIVAL_Y = 740900;
+	const long PLAYERBOT_ORC_VALLEY_EXIT_X = 336000;
+	const long PLAYERBOT_ORC_VALLEY_EXIT_Y = 755600;
+	const long PLAYERBOT_DESERT_ARRIVAL_X = 221900;
+	const long PLAYERBOT_DESERT_ARRIVAL_Y = 502700;
+	const long PLAYERBOT_DESERT_EXIT_X = 296800;
+	const long PLAYERBOT_DESERT_EXIT_Y = 547400;
+	// Orc Valley spawns levels 18-25, the Desert 26-30 (group.txt resolved through
+	// mob_proto.txt).  A bot ignores monsters three or more levels below itself
+	// unless they are already within chain range, so each band has to end a couple
+	// of levels above its map's strongest ordinary spawn or the bot would arrive
+	// somewhere it refuses to fight.
+	const BYTE PLAYERBOT_ORC_VALLEY_MIN_LEVEL = 20;
+	const BYTE PLAYERBOT_ORC_VALLEY_MAX_LEVEL = 27;
+	const BYTE PLAYERBOT_DESERT_MIN_LEVEL = 28;
+	const BYTE PLAYERBOT_DESERT_MAX_LEVEL = 33;
+	// Neither map sells anything, so a visit is bounded and ends in Bokjung.
+	const DWORD PLAYERBOT_FRONTIER_MAX_VISIT_TIME = 2400000;
 	const DWORD PLAYERBOT_HORSE_MEDAL_VNUM = 50050;
 	const BYTE PLAYERBOT_HORSE_REQUIRED_LEVEL = 25;
 	const char* PLAYERBOT_HORSE_MEDALS_FLAG = "playerbot.horse_medals_delivered";
@@ -456,6 +484,7 @@ namespace
 			dwNextRemoteRefineReturnTime(0),
 			dwDungeonEnteredTime(0),
 			dwM3EnteredTime(0),
+			dwFrontierEnteredTime(0),
 			dwMonkeyReversePortalBlockUntil(0),
 			dwNextLootPickupTime(0),
 			dwNextLootSearchTime(0),
@@ -582,6 +611,7 @@ namespace
 		DWORD dwNextRemoteRefineReturnTime;
 		DWORD dwDungeonEnteredTime;
 		DWORD dwM3EnteredTime;
+		DWORD dwFrontierEnteredTime;
 		DWORD dwMonkeyReversePortalBlockUntil;
 		DWORD dwNextLootPickupTime;
 		DWORD dwNextLootSearchTime;
@@ -1655,7 +1685,9 @@ namespace
 				if (mapIndex != PLAYERBOT_MAP_CHUNJO_M1 &&
 						mapIndex != PLAYERBOT_MAP_CHUNJO_M2 &&
 						mapIndex != PLAYERBOT_MAP_CHUNJO_M3 &&
-						mapIndex != PLAYERBOT_MAP_MONKEY_EASY)
+						mapIndex != PLAYERBOT_MAP_MONKEY_EASY &&
+						mapIndex != PLAYERBOT_MAP_ORC_VALLEY &&
+						mapIndex != PLAYERBOT_MAP_DESERT)
 					return false;
 
 				if (m_initialized && m_mapIndex == mapIndex)
@@ -6648,6 +6680,34 @@ namespace
 		return dwNow >= state.dwNextRemoteRefineReturnTime;
 	}
 
+	bool IsPlayerBotFrontierMap(long mapIndex)
+	{
+		return mapIndex == PLAYERBOT_MAP_ORC_VALLEY || mapIndex == PLAYERBOT_MAP_DESERT;
+	}
+
+	// The map whose ordinary spawns still sit inside this bot's useful level
+	// window, or 0 when Bokjung is still the right place for it.
+	long GetPlayerBotFrontierMapForLevel(LPCHARACTER ch)
+	{
+		if (!ch)
+			return 0;
+		const BYTE level = ch->GetLevel();
+		if (level >= PLAYERBOT_DESERT_MIN_LEVEL && level <= PLAYERBOT_DESERT_MAX_LEVEL)
+			return PLAYERBOT_MAP_DESERT;
+		if (level >= PLAYERBOT_ORC_VALLEY_MIN_LEVEL && level <= PLAYERBOT_ORC_VALLEY_MAX_LEVEL)
+			return PLAYERBOT_MAP_ORC_VALLEY;
+		return 0;
+	}
+
+	bool ShouldPlayerBotLeaveForFrontier(LPCHARACTER ch)
+	{
+		if (!ch || GetPlayerBotFrontierMapForLevel(ch) == 0)
+			return false;
+		// Keep a third of every band in Bokjung. The town, its Bestials and the
+		// local party pool must not empty out the moment a cohort comes of age.
+		return (PlayerBotNavHash(ch->GetPlayerID() ^ 0x46524f4eU) % 3U) != 0;
+	}
+
 	bool ShouldPlayerBotVisitM3(LPCHARACTER ch)
 	{
 		if (!HasPlayerBotM3ReadyEquipment(ch) || ch->GetLevel() > 24 ||
@@ -6777,6 +6837,7 @@ namespace
 		state.dwNextHorseRideCheckTime = dwNow + 1000;
 		state.dwDungeonEnteredTime = targetMap == PLAYERBOT_MAP_MONKEY_EASY ? dwNow : 0;
 		state.dwM3EnteredTime = targetMap == PLAYERBOT_MAP_CHUNJO_M3 ? dwNow : 0;
+		state.dwFrontierEnteredTime = IsPlayerBotFrontierMap(targetMap) ? dwNow : 0;
 		if (targetMap == PLAYERBOT_MAP_CHUNJO_M3)
 			state.dwNextRemoteRefineReturnTime = 0;
 		sys_log(0, "PLAYERBOT_WORLD: transitioned pid=%u name=%s from=%ld to=%ld pos=(%ld,%ld) reason=%s",
@@ -6921,6 +6982,29 @@ namespace
 			if (dwNow < state.dwNextWorldTravelTime)
 				return false;
 
+			// Joan has a Teleporter of its own, so a bot which has already outgrown
+			// Bokjung can leave for the frontier directly. Routing it through M2
+			// first would queue it behind every town errand in the village, which
+			// is what left Orc Valley empty while the Desert filled up from the
+			// bots that happened to already be in Bokjung.
+			if (!needsHorseExpedition && !wantsM3)
+			{
+				const long directMap = ShouldPlayerBotLeaveForFrontier(ch)
+						? GetPlayerBotFrontierMapForLevel(ch) : 0;
+				if (directMap != 0)
+				{
+					const bool toDesert = directMap == PLAYERBOT_MAP_DESERT;
+					SetPlayerBotGoal(ch, state, BOT_GOAL_LEVEL_UP, dwNow);
+					return MovePlayerBotToWorldPortal(ch, state,
+							PLAYERBOT_M1_TELEPORTER_X, PLAYERBOT_M1_TELEPORTER_Y,
+							directMap,
+							toDesert ? PLAYERBOT_DESERT_ARRIVAL_X : PLAYERBOT_ORC_VALLEY_ARRIVAL_X,
+							toDesert ? PLAYERBOT_DESERT_ARRIVAL_Y : PLAYERBOT_ORC_VALLEY_ARRIVAL_Y,
+							dwNow,
+							toDesert ? "m1_direct_to_desert" : "m1_direct_to_orc_valley");
+				}
+			}
+
 			SetPlayerBotGoal(ch, state, needsHorseExpedition ? BOT_GOAL_HORSE :
 					(wantsM3 ? BOT_GOAL_GET_EQUIPMENT : BOT_GOAL_LEVEL_UP), dwNow);
 			return MovePlayerBotToWorldPortal(ch, state,
@@ -6983,6 +7067,23 @@ namespace
 						PLAYERBOT_M3_ARRIVAL_Y, dwNow, "level30_weapon_to_m3");
 			}
 
+			// Bokjung's own spawns stop paying long before the M2 band ends. Bots
+			// which have outgrown them move on to Orc Valley and then the Desert
+			// instead of grinding monsters they would rather walk past.
+			const long frontierMap = ShouldPlayerBotLeaveForFrontier(ch)
+					? GetPlayerBotFrontierMapForLevel(ch) : 0;
+			if (frontierMap != 0)
+			{
+				const bool toDesert = frontierMap == PLAYERBOT_MAP_DESERT;
+				SetPlayerBotGoal(ch, state, BOT_GOAL_LEVEL_UP, dwNow);
+				return MovePlayerBotToWorldPortal(ch, state,
+						PLAYERBOT_M2_TO_M3_TELEPORTER_X, PLAYERBOT_M2_TO_M3_TELEPORTER_Y,
+						frontierMap,
+						toDesert ? PLAYERBOT_DESERT_ARRIVAL_X : PLAYERBOT_ORC_VALLEY_ARRIVAL_X,
+						toDesert ? PLAYERBOT_DESERT_ARRIVAL_Y : PLAYERBOT_ORC_VALLEY_ARRIVAL_Y,
+						dwNow, toDesert ? "level_to_desert" : "level_to_orc_valley");
+			}
+
 			if (!m2LevelingCohort)
 			{
 				SetPlayerBotGoal(ch, state, BOT_GOAL_LEVEL_UP, dwNow);
@@ -7022,6 +7123,34 @@ namespace
 					PLAYERBOT_M3_RETURN_PORTAL_X, PLAYERBOT_M3_RETURN_PORTAL_Y,
 					PLAYERBOT_MAP_CHUNJO_M2, PLAYERBOT_M2_FROM_M3_X,
 					PLAYERBOT_M2_FROM_M3_Y, dwNow, reason);
+		}
+
+		if (IsPlayerBotFrontierMap(mapIndex))
+		{
+			if (state.dwFrontierEnteredTime == 0)
+				state.dwFrontierEnteredTime = dwNow;
+			const bool visitExpired = dwNow - state.dwFrontierEnteredTime >=
+					PLAYERBOT_FRONTIER_MAX_VISIT_TIME;
+			// Outgrowing the map matters as much as running out of potions: neither
+			// Orc Valley nor the Desert has a merchant, a blacksmith or a trainer.
+			const bool outOfBand = GetPlayerBotFrontierMapForLevel(ch) != mapIndex;
+			const bool needsTown = needsCriticalTownServices || needsM1OnlyServices ||
+					needsEssentialWeaponSupply;
+			if (!visitExpired && !outOfBand && !needsTown)
+				return false;
+
+			SetPlayerBotGoal(ch, state, needsTown ? BOT_GOAL_RESTOCK : BOT_GOAL_LEVEL_UP, dwNow);
+			const char* reason = "frontier_visit_complete";
+			if (needsTown)
+				reason = "frontier_services_to_m2";
+			else if (outOfBand)
+				reason = "frontier_level_graduated";
+			const bool inDesert = mapIndex == PLAYERBOT_MAP_DESERT;
+			return MovePlayerBotToWorldPortal(ch, state,
+					inDesert ? PLAYERBOT_DESERT_EXIT_X : PLAYERBOT_ORC_VALLEY_EXIT_X,
+					inDesert ? PLAYERBOT_DESERT_EXIT_Y : PLAYERBOT_ORC_VALLEY_EXIT_Y,
+					PLAYERBOT_MAP_CHUNJO_M2, PLAYERBOT_M2_FROM_M3_X, PLAYERBOT_M2_FROM_M3_Y,
+					dwNow, reason);
 		}
 
 		if (mapIndex == PLAYERBOT_MAP_MONKEY_EASY)
@@ -8154,6 +8283,39 @@ namespace
 				++state.uMetinHotspotIndex;
 				targetX = ch->GetX() + number(-600, 600);
 				targetY = ch->GetY() + number(-600, 600);
+			}
+		}
+		else if (IsPlayerBotFrontierMap(ch->GetMapIndex()))
+		{
+			// Densest spawn clusters of each map, snapped onto a real regen.txt
+			// coordinate so a hub can never be planted inside an obstacle.
+			const TPlayerBotMapPoint orcValleyHubs[12] = {
+				{ 347800, 726700 }, { 317000, 726900 }, { 313100, 731700 },
+				{ 346400, 733700 }, { 319200, 734700 }, { 337000, 734800 },
+				{ 327200, 742300 }, { 332100, 749800 }, { 330800, 758100 },
+				{ 336300, 760100 }, { 348300, 797000 }, { 282100, 797600 }
+			};
+			const TPlayerBotMapPoint desertHubs[12] = {
+				{ 291300, 515700 }, { 237500, 525900 }, { 264600, 526100 },
+				{ 317900, 526100 }, { 336900, 534300 }, { 245100, 542500 },
+				{ 264500, 552300 }, { 327700, 552900 }, { 253900, 570100 },
+				{ 327800, 579500 }, { 321600, 582700 }, { 273800, 614900 }
+			};
+			const bool inDesert = ch->GetMapIndex() == PLAYERBOT_MAP_DESERT;
+			const TPlayerBotMapPoint* hubs = inDesert ? desertHubs : orcValleyHubs;
+			const DWORD pid = ch->GetPlayerID();
+			const size_t hubIndex = (pid + state.uMetinHotspotIndex) % 12;
+			long offsetX = 0, offsetY = 0;
+			GetPlayerBotStableOffset(pid,
+					(inDesert ? 0x44455348U : 0x4f524348U) + (DWORD)hubIndex,
+					150, 700, offsetX, offsetY);
+			targetX = hubs[hubIndex].x + offsetX;
+			targetY = hubs[hubIndex].y + offsetY;
+			if (DISTANCE_APPROX(ch->GetX() - targetX, ch->GetY() - targetY) < 1400)
+			{
+				++state.uMetinHotspotIndex;
+				targetX = ch->GetX() + number(-700, 700);
+				targetY = ch->GetY() + number(-700, 700);
 			}
 		}
 		else if (ch->GetMapIndex() == PLAYERBOT_MAP_MONKEY_EASY)
@@ -11046,7 +11208,8 @@ void CPlayerBotManager::Update()
 		if (ch->GetMapIndex() == PLAYERBOT_MAP_CHUNJO_M1 ||
 				ch->GetMapIndex() == PLAYERBOT_MAP_CHUNJO_M2 ||
 				ch->GetMapIndex() == PLAYERBOT_MAP_CHUNJO_M3 ||
-				ch->GetMapIndex() == PLAYERBOT_MAP_MONKEY_EASY)
+				ch->GetMapIndex() == PLAYERBOT_MAP_MONKEY_EASY ||
+				IsPlayerBotFrontierMap(ch->GetMapIndex()))
 		{
 			const long currentMap = ch->GetMapIndex();
 			CPlayerBotNavigation& navigation = CPlayerBotNavigation::instance(
@@ -11087,6 +11250,16 @@ void CPlayerBotManager::Update()
 					{
 						fallbackX = PLAYERBOT_MONKEY_EASY_ARRIVAL_X;
 						fallbackY = PLAYERBOT_MONKEY_EASY_ARRIVAL_Y;
+					}
+					else if (currentMap == PLAYERBOT_MAP_ORC_VALLEY)
+					{
+						fallbackX = PLAYERBOT_ORC_VALLEY_ARRIVAL_X;
+						fallbackY = PLAYERBOT_ORC_VALLEY_ARRIVAL_Y;
+					}
+					else if (currentMap == PLAYERBOT_MAP_DESERT)
+					{
+						fallbackX = PLAYERBOT_DESERT_ARRIVAL_X;
+						fallbackY = PLAYERBOT_DESERT_ARRIVAL_Y;
 					}
 					foundSafe = navigation.FindNearestWalkableWorld(
 							fallbackX, fallbackY, 30, safe, ch->GetPlayerID());
