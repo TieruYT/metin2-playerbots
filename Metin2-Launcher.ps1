@@ -485,16 +485,18 @@ function Create-Logs {
 
 function Send-Logs {
     $config = Get-Config
-    if (-not $config.supportUploadUrl) {
-        throw 'Nie ustawiono adresu pomocy. Utwórz ZIP akcją Logs i wyślij go ręcznie na Discordzie.'
+    $support = Get-M2SupportSettings -Config $config
+    if (-not $support.UploadUrl) {
+        throw "Kanał zgłoszeń jest teraz niedostępny. Utwórz ZIP akcją Logs i wyślij go ręcznie na Discordzie: $($support.ContactUrl)"
     }
     $bundle = Create-Logs
     Write-Host 'Paczka zawiera logi Dockera i konfigurację z usuniętymi hasłami.' -ForegroundColor Yellow
-    if (-not (Confirm-Operation "Wysłać $bundle do $($config.supportUploadUrl)?")) {
+    $target = if ($support.Source -eq 'manifest') { 'kanału zgłoszeń autora' } else { $support.UploadUrl }
+    if (-not (Confirm-Operation "Wysłać $bundle do $target?")) {
         Write-Host 'Nie wysłano. ZIP pozostał na dysku.' -ForegroundColor Yellow
         return
     }
-    $response = Send-M2SupportBundle -BundlePath $bundle -UploadUrl $config.supportUploadUrl
+    $response = Send-M2SupportBundle -BundlePath $bundle -UploadUrl $support.UploadUrl
     if ($response) { Write-Host "Wysłano. Odpowiedź serwera: $response" -ForegroundColor Green }
     else { Write-Host 'Wysłano paczkę diagnostyczną.' -ForegroundColor Green }
 }

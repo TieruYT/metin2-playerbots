@@ -7,5 +7,9 @@
     "version": "1.21.0",
     "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v1.21.0/metin2-server-update-1.21.0.zip",
     "sha256": "872C08D7DED8BC9297B62298FFEF294AD205AFA604047C93F24A89F2A04DF166"
+  },
+  "support": {
+    "contactUrl": "https://discord.gg/pt5tvnrN6",
+    "uploadUrl": ""
   }
 }

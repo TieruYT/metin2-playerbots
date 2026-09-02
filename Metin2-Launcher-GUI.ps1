@@ -213,6 +213,11 @@ function Refresh-Status {
 # of the on-screen box so the interesting lines stay readable.
 $script:M2_NOISY_BUILD = 'Get:\d|Unpacking |Selecting previously|Preparing to unpack|Reading database|Setting up |Suggested packages:|Recommended packages:|The following NEW packages|The following packages will be|debconf:'
 
+# Discord invite the ZIP button falls back to, and the once-per-session cache of
+# the support address read from the update manifest.
+$script:openContactAfterAction = ''
+$script:supportSettingsCache = $null
+
 function Read-SharedText {
     # The child process still holds these files open for writing.
     param([Parameter(Mandatory = $true)][string]$Path)
@@ -328,10 +333,12 @@ function Complete-LauncherAction {
     $action = $script:activeAction
     $launchClient = $script:launchClientAfterAction
     $openSupport = $script:openSupportAfterAction
+    $contactUrl = $script:openContactAfterAction
     $script:activeProcess.Dispose()
     $script:activeProcess = $null
     $script:launchClientAfterAction = $false
     $script:openSupportAfterAction = $false
+    $script:openContactAfterAction = ''
     $script:progress.Style = 'Blocks'
     $script:progress.Value = 0
     $script:actionStatus.Text = if ($exitCode -eq 0) { "Gotowe: $action" } else { "Błąd: $action (kod $exitCode)" }
@@ -351,7 +358,19 @@ function Complete-LauncherAction {
     if ($exitCode -eq 0 -and $launchClient) { Start-ConfiguredClient }
     if ($exitCode -eq 0 -and $openSupport -and (Test-Path $supportDirectory)) {
         Start-Process explorer.exe -ArgumentList ('"{0}"' -f $supportDirectory)
+        if ($contactUrl) { Start-Process $contactUrl }
     }
+}
+
+function Get-SupportSettings {
+    if ($null -eq $script:supportSettingsCache) {
+        try { $script:supportSettingsCache = Get-M2SupportSettings -Config (Get-LauncherConfig) }
+        catch {
+            Write-LocalLog "Nie udalo sie odczytac adresu zgloszen: $($_.Exception.Message)" -FileOnly
+            $script:supportSettingsCache = [pscustomobject]@{ UploadUrl = ''; ContactUrl = 'https://discord.gg/pt5tvnrN6'; Source = 'none' }
+        }
+    }
+    return $script:supportSettingsCache
 }
 
 function Get-BotCountFromEnv {
@@ -706,10 +725,10 @@ $updateButton.Add_Click({
 })
 $diagnosticsButton.Add_Click({ Start-LauncherAction -Action 'Diagnose' })
 $bundleButton.Add_Click({
-    # When a support channel is configured the ZIP can go straight to the
-    # author; otherwise fall back to writing it to disk and opening the folder.
-    $config = Get-LauncherConfig
-    if ([string]$config.supportUploadUrl) {
+    # The support address comes from the update manifest, so it is looked up
+    # once per session - a slow or missing network just falls back to the ZIP.
+    $support = Get-SupportSettings
+    if ($support.UploadUrl) {
         $answer = [Windows.Forms.MessageBox]::Show(
             "Spakowac logi i wyslac je od razu do autora projektu?`r`n`r`nPaczka zawiera logi Dockera i konfiguracje z usunietymi haslami.`r`n`r`nNIE = tylko zapisz ZIP na dysku.",
             'Wyslij logi', 'YesNoCancel', 'Question')
@@ -721,8 +740,9 @@ $bundleButton.Add_Click({
     }
     else {
         [Windows.Forms.MessageBox]::Show(
-            "Zapisze paczke ZIP z logami i otworze jej folder - dolacz ja na Discordzie.`r`n`r`nAby wysylac jednym kliknieciem, autor moze wpisac adres kanalu pomocy w konfiguracji launchera (supportUploadUrl).",
+            "Zapisze paczke ZIP z logami i otworze jej folder - dolacz ja na Discordzie.`r`n`r`nOtworze tez zaproszenie na serwer.",
             'Logi', 'OK', 'Information') | Out-Null
+        $script:openContactAfterAction = $support.ContactUrl
     }
     Start-LauncherAction -Action 'Logs' -OpenSupport
 })

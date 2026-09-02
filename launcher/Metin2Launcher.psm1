@@ -1,6 +1,9 @@
 ﻿Set-StrictMode -Version 2.0
 $ErrorActionPreference = 'Stop'
 
+# Fallback used when the manifest carries no support block (offline, or an old manifest).
+$script:M2_DEFAULT_SUPPORT_CONTACT = 'https://discord.gg/pt5tvnrN6'
+
 function Get-M2DefaultLauncherConfig {
     param([Parameter(Mandatory = $true)][string]$ServerRoot)
 
@@ -45,7 +48,10 @@ function Save-M2LauncherConfig {
 }
 
 function Get-M2UpdateManifest {
-    param([Parameter(Mandatory = $true)][string]$Source)
+    param(
+        [Parameter(Mandatory = $true)][string]$Source,
+        [int]$TimeoutSec = 30
+    )
 
     if (Test-Path -LiteralPath $Source -PathType Leaf) {
         return Get-Content -LiteralPath $Source -Raw -Encoding UTF8 | ConvertFrom-Json
@@ -56,7 +62,7 @@ function Get-M2UpdateManifest {
         throw 'Manifest musi być lokalnym plikiem albo adresem HTTPS.'
     }
     try {
-        return Invoke-RestMethod -Uri $uri -Method Get -UseBasicParsing -TimeoutSec 30
+        return Invoke-RestMethod -Uri $uri -Method Get -UseBasicParsing -TimeoutSec $TimeoutSec
     }
     catch {
         $statusCode = 0
@@ -399,6 +405,74 @@ function New-M2SupportBundle {
     }
 }
 
+function Test-M2SupportUploadUrl {
+    param([Parameter(Mandatory = $true)][string]$Url)
+
+    $uri = $null
+    if (-not [Uri]::TryCreate($Url, [UriKind]::Absolute, [ref]$uri)) { return $false }
+    if ($uri.Scheme -ne 'https') { return $false }
+    # discord.gg links are invitations, not webhooks - posting to one always fails.
+    if ($uri.Host -ieq 'discord.gg') { return $false }
+    if ($uri.Host -ieq 'discord.com' -or $uri.Host -ieq 'discordapp.com') {
+        return $uri.AbsolutePath.StartsWith('/api/webhooks/', [StringComparison]::OrdinalIgnoreCase)
+    }
+    return $true
+}
+
+function Get-M2SupportSettings {
+    param(
+        [Parameter(Mandatory = $true)]$Config,
+        [switch]$NoRemote
+    )
+
+    $result = [pscustomobject]@{
+        UploadUrl  = ''
+        ContactUrl = $script:M2_DEFAULT_SUPPORT_CONTACT
+        Source     = 'none'
+    }
+
+    # A local setting always wins, so a tester can redirect the button without
+    # touching the manifest everybody else reads.
+    $local = ''
+    if ($null -ne $Config.PSObject.Properties['supportUploadUrl']) { $local = [string]$Config.supportUploadUrl }
+    if ($local -and (Test-M2SupportUploadUrl -Url $local)) {
+        $result.UploadUrl = $local
+        $result.Source = 'config'
+        return $result
+    }
+
+    if ($NoRemote) { return $result }
+
+    # Otherwise read it from the update manifest. Keeping the address there means
+    # it can be rotated by editing one file on GitHub - no new release, no
+    # reinstall, and a leaked webhook can be revoked the same way.
+    $manifest = $null
+    try {
+        $source = ''
+        if ($null -ne $Config.PSObject.Properties['manifestUrl']) { $source = [string]$Config.manifestUrl }
+        if (-not $source) { return $result }
+        $manifest = Get-M2UpdateManifest -Source $source -TimeoutSec 10
+    }
+    catch { return $result }
+
+    if ($null -eq $manifest -or $null -eq $manifest.PSObject.Properties['support']) { return $result }
+    $support = $manifest.support
+    if ($null -eq $support) { return $result }
+
+    if ($null -ne $support.PSObject.Properties['contactUrl']) {
+        $contact = [string]$support.contactUrl
+        if ($contact) { $result.ContactUrl = $contact }
+    }
+    if ($null -ne $support.PSObject.Properties['uploadUrl']) {
+        $upload = [string]$support.uploadUrl
+        if ($upload -and (Test-M2SupportUploadUrl -Url $upload)) {
+            $result.UploadUrl = $upload
+            $result.Source = 'manifest'
+        }
+    }
+    return $result
+}
+
 function Send-M2SupportBundle {
     param(
         [Parameter(Mandatory = $true)][string]$BundlePath,
@@ -409,8 +483,24 @@ function Send-M2SupportBundle {
     if (-not [Uri]::TryCreate($UploadUrl, [UriKind]::Absolute, [ref]$uri) -or $uri.Scheme -ne 'https') {
         throw 'Adres wysyłki logów musi używać HTTPS.'
     }
+    if ($uri.Host -ieq 'discord.gg') {
+        throw 'To jest zaproszenie na serwer Discord, a nie webhook. Adres webhooka wygląda tak: https://discord.com/api/webhooks/...'
+    }
     if (-not (Test-Path -LiteralPath $BundlePath -PathType Leaf)) {
         throw "Nie znaleziono paczki: $BundlePath"
+    }
+
+    $isDiscordWebhook =
+        ($uri.Host -ieq 'discord.com' -or $uri.Host -ieq 'discordapp.com') -and
+        $uri.AbsolutePath.StartsWith('/api/webhooks/', [StringComparison]::OrdinalIgnoreCase)
+
+    if ($isDiscordWebhook) {
+        # Discord rejects attachments over 10 MB on servers without boosts, and it
+        # does so after the whole upload, so check before wasting the transfer.
+        $size = (Get-Item -LiteralPath $BundlePath).Length
+        if ($size -gt 10MB) {
+            throw ('Paczka ma {0:N1} MB, a Discord przyjmuje do 10 MB. Wyślij ZIP ręcznie albo usuń starsze logi z folderu i zbierz paczkę ponownie.' -f ($size / 1MB))
+        }
     }
 
     Add-Type -AssemblyName System.Net.Http
@@ -420,9 +510,6 @@ function Send-M2SupportBundle {
     try {
         $content = [Net.Http.StreamContent]::new($stream)
         $content.Headers.ContentType = [Net.Http.Headers.MediaTypeHeaderValue]::Parse('application/zip')
-        $isDiscordWebhook =
-            ($uri.Host -ieq 'discord.com' -or $uri.Host -ieq 'discordapp.com') -and
-            $uri.AbsolutePath.StartsWith('/api/webhooks/', [StringComparison]::OrdinalIgnoreCase)
         if ($isDiscordWebhook) {
             $payload = [Net.Http.StringContent]::new(
                 '{"content":"Paczka diagnostyczna Metin2 Playerbots (hasła automatycznie usunięte).","allowed_mentions":{"parse":[]}}',
@@ -738,6 +825,8 @@ Export-ModuleMember -Function @(
     'Invoke-M2PackageUpdate',
     'New-M2SupportBundle',
     'Send-M2SupportBundle',
+    'Get-M2SupportSettings',
+    'Test-M2SupportUploadUrl',
     'Get-M2DbDataVolumes',
     'Get-M2VolumeWorldStats',
     'Invoke-M2DatabaseImport',
