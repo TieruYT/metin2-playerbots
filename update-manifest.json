@@ -1,12 +1,12 @@
 {
   "schema": 1,
   "channel": "stable",
-  "publishedAt": "2026-09-02T18:55:00Z",
-  "statusMessage": "Aktualizacja 1.21.2: launcher prosi o restart po aktualizacji, import mówi wprost gdy Docker jest wyłączony, daty przy bazach.",
+  "publishedAt": "2026-09-02T21:10:00Z",
+  "statusMessage": "Aktualizacja 1.22.0: boty grają na Dolinie Orków i Pustyni, mapy cieplne w panelu. Uwaga: instalacja przebuduje obraz serwera (kilkanaście–kilkadziesiąt minut).",
   "server": {
-    "version": "1.21.2",
-    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v1.21.2/metin2-server-update-1.21.2.zip",
-    "sha256": "0432889F7F05D8E47124BA2FD8CCE6665191DF151D11EA963F52ED519BEA0C63"
+    "version": "1.22.0",
+    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v1.22.0/metin2-server-update-1.22.0.zip",
+    "sha256": "25F02367FE2265677FE38A390820BCD6ED6496F4AFBB0CA894D5FFD36C8CB4DA"
   },
   "support": {
     "contactUrl": "https://discord.gg/pt5tvnrN6",
