@@ -6637,6 +6637,21 @@ namespace
 		return occupiedGridCells * 100 >= INVENTORY_MAX_NUM * 45;
 	}
 
+	// A missing weapon or body armour, an empty potion belt, no arrows or a full
+	// inventory really do stop a bot from playing, and must outrank travelling.
+	// A missing helmet, boots or shield only make it a little weaker. Treating
+	// those as equally critical trapped a bot for good whenever the town could
+	// not sell it the missing piece: it always wanted to shop, so it was never
+	// allowed to travel, and it kept farming level-3 wolves in Joan at level 27.
+	bool BlocksPlayerBotTravel(LPCHARACTER ch)
+	{
+		if (!ch || !ch->IsItemLoaded())
+			return false;
+		return ch->GetWear(WEAR_WEAPON) == NULL || ch->GetWear(WEAR_BODY) == NULL ||
+				NeedsPlayerBotEmergencyPotions(ch) || NeedsPlayerBotArrows(ch) ||
+				ch->GetEmptyInventory(3) < 0;
+	}
+
 	bool NeedsPlayerBotM1OnlyServices(LPCHARACTER ch)
 	{
 		if (!ch)
@@ -7006,9 +7021,13 @@ namespace
 			const bool needsAnyRefine = HasPlayerBotRefineOpportunity(ch);
 			const bool needsTownPreparation = NeedsPlayerBotPotions(ch) ||
 					CountPlayerBotJunkItems(ch) >= 12 || needsAnyRefine;
-			if (hasMedal || needsCriticalTownServices || needsM1OnlyServices ||
+			// The soft needs get one town visit to be met. If the bot has just
+			// been shopping and still wants something, the town cannot supply it,
+			// and standing here is worse than moving on.
+			if (hasMedal || BlocksPlayerBotTravel(ch) || needsM1OnlyServices ||
 					HasPlayerBotExcessPotions(ch) ||
-					(needsTownPreparation && !townVisitRecentlyCompleted))
+					((needsTownPreparation || needsCriticalTownServices) &&
+					 !townVisitRecentlyCompleted))
 				return false;
 			if (!needsHorseExpedition && !m2LevelingCohort && !wantsM3)
 				return false;
@@ -7078,7 +7097,13 @@ namespace
 						PLAYERBOT_MAP_CHUNJO_M1, PLAYERBOT_M1_RETURN_X,
 						PLAYERBOT_M1_RETURN_Y, dwNow, "m1_only_service");
 			}
-			if (needsCriticalTownServices)
+			// Same rule in Bokjung: its own shops own this need, but only until a
+			// visit has actually happened. Otherwise a bot the town cannot equip
+			// would never reach the frontier maps either.
+			if (BlocksPlayerBotTravel(ch))
+				return false;
+			if (needsCriticalTownServices && (state.dwNextShopCheckTime == 0 ||
+					dwNow < state.dwNextShopCheckTime))
 				return false; // local M2 town visit owns this need
 
 			if (needsHorseExpedition)
@@ -7181,7 +7206,11 @@ namespace
 			// Outgrowing the map matters as much as running out of potions: neither
 			// Orc Valley nor the Desert has a merchant, a blacksmith or a trainer.
 			const bool outOfBand = GetPlayerBotFrontierMapForLevel(ch) != mapIndex;
-			const bool needsTown = needsCriticalTownServices || needsM1OnlyServices ||
+			// Only a need that actually stops the bot playing is worth the trip
+			// home. Sending it back for a helmet the town cannot sell turned the
+			// journey into a shuttle: it arrived, saw the same unmet need, and
+			// left again without ever fighting anything here.
+			const bool needsTown = BlocksPlayerBotTravel(ch) || needsM1OnlyServices ||
 					needsEssentialWeaponSupply;
 			if (!visitExpired && !outOfBand && !needsTown)
 				return false;
