@@ -1,11 +1,11 @@
 {
   "schema": 1,
   "channel": "stable",
-  "publishedAt": "2026-09-02T02:10:00Z",
-  "statusMessage": "Aktualizacja 1.20.0: naprawa startu serwera po imporcie bazy + przycisk NAPRAW DOSTĘP DO BAZY.",
+  "publishedAt": "2026-09-02T08:15:00Z",
+  "statusMessage": "Aktualizacja 1.21.0: ochrona bazy przy imporcie, suwak liczby botów (0–668), widoczny postęp uruchamiania.",
   "server": {
-    "version": "1.20.0",
-    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v1.20.0/metin2-server-update-1.20.0.zip",
-    "sha256": "F37F27DA910BE922A0827D656A33521D2AE94E1F2DCBF3084C2B814DACE064CF"
+    "version": "1.21.0",
+    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v1.21.0/metin2-server-update-1.21.0.zip",
+    "sha256": "872C08D7DED8BC9297B62298FFEF294AD205AFA604047C93F24A89F2A04DF166"
   }
 }
