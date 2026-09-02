@@ -439,6 +439,12 @@ function Restart-Launcher {
 }
 
 function Get-InstalledServerVersion {
+    # Same reasoning as Read-State in the text launcher: while a rebuild is
+    # outstanding the files on disk are ahead of the containers, so the version
+    # they claim must not be used to decide that nothing needs doing.
+    if (Test-Path -LiteralPath (Join-Path $root '.m2launcher-rebuild-pending') -PathType Leaf) {
+        return 'unknown'
+    }
     $statePath = Join-Path $root '.m2launcher-state.json'
     if (Test-Path -LiteralPath $statePath -PathType Leaf) {
         try {

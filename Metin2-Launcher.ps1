@@ -14,6 +14,10 @@ $modulePath = Join-Path $serverRoot 'launcher\Metin2Launcher.psm1'
 $diagnosticsModulePath = Join-Path $serverRoot 'launcher\Metin2Launcher.Diagnostics.psm1'
 $configPath = Join-Path $serverRoot '.m2launcher.json'
 $statePath = Join-Path $serverRoot '.m2launcher-state.json'
+# Written when new files are already on disk but Docker did not finish building
+# them. Until it is gone the installation is not really on the version its
+# VERSION file claims, and starting it would run the previous images.
+$rebuildMarkerPath = Join-Path $serverRoot '.m2launcher-rebuild-pending'
 
 foreach ($requiredModule in @($modulePath, $diagnosticsModulePath)) {
     if (-not (Test-Path -LiteralPath $requiredModule -PathType Leaf)) {
@@ -41,7 +45,18 @@ function Get-ManifestSource {
     return [string]$Config.manifestUrl
 }
 
+function Test-RebuildPending {
+    return (Test-Path -LiteralPath $rebuildMarkerPath -PathType Leaf)
+}
+
 function Read-State {
+    # An interrupted update leaves the new VERSION file on disk while the running
+    # containers are still the old ones. Reporting that version would make the
+    # update check answer "already up to date" and never rebuild, which is the
+    # state a player cannot get out of on their own.
+    if (Test-RebuildPending) {
+        return [pscustomobject]@{ schema = 1; server = 'unknown'; client = 'unknown' }
+    }
     if (Test-Path -LiteralPath $statePath -PathType Leaf) {
         return Get-Content -LiteralPath $statePath -Raw -Encoding UTF8 | ConvertFrom-Json
     }
@@ -111,6 +126,15 @@ function Assert-DockerPrerequisites {
 
 function Start-Server {
     Assert-DockerPrerequisites -CheckPanelPort
+    # start-server.ps1 brings the stack up from the images that already exist.
+    # After an interrupted update those are the old ones, so finish the build
+    # first - otherwise the player keeps running the previous server and the
+    # website keeps showing the previous panel.
+    if (Test-RebuildPending) {
+        Write-Host 'Poprzednia aktualizacja nie dokonczyla budowania. Dokancczam je teraz...' -ForegroundColor Yellow
+        Rebuild-Server
+        Write-Host 'Budowanie zakonczone.' -ForegroundColor Green
+    }
     $script = Join-Path $serverRoot 'start-server.ps1'
     if (-not (Test-Path -LiteralPath $script -PathType Leaf)) { throw 'Brakuje start-server.ps1.' }
     & $script
@@ -183,8 +207,10 @@ function Rebuild-Server {
     }
     finally { $ErrorActionPreference = $previousPreference }
     if ($buildExit -ne 0) {
-        throw 'Nowa wersja plików została zapisana, ale Docker nie zbudował serwera. Kopia plików jest w katalogu backups.'
+        Set-Content -LiteralPath $rebuildMarkerPath -Value ([DateTime]::UtcNow.ToString('o')) -Encoding UTF8
+        throw 'Nowa wersja plików została zapisana, ale Docker nie zbudował serwera. Kliknij GRAJ — launcher dokończy budowanie. Kopia plików jest w katalogu backups.'
     }
+    if (Test-RebuildPending) { Remove-Item -LiteralPath $rebuildMarkerPath -Force -ErrorAction SilentlyContinue }
 }
 
 function Show-UpdateStatus {
