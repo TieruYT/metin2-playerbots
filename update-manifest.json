@@ -1,12 +1,12 @@
 {
   "schema": 1,
   "channel": "stable",
-  "publishedAt": "2026-09-02T23:35:00Z",
-  "statusMessage": "Aktualizacja 1.22.1: naprawa przerwanej aktualizacji przy dużym świecie (to samo naprawia brakujące mapy na stronie) oraz odbijania się botów od Doliny Orków i Pustyni.",
+  "publishedAt": "2026-09-03T00:20:00Z",
+  "statusMessage": "Aktualizacja 1.22.2: boty kupują wreszcie hełm swojej klasy, a przerwana aktualizacja nie blokuje już serwera — jeśli strona nie pokazuje nowych map, ta wersja to naprawia.",
   "server": {
-    "version": "1.22.1",
-    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v1.22.1/metin2-server-update-1.22.1.zip",
-    "sha256": "385963670579F1A4907D5D9D3E7D1BDF7D6EF035BBB686415A1580C3EBC4813A"
+    "version": "1.22.2",
+    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v1.22.2/metin2-server-update-1.22.2.zip",
+    "sha256": "8C7711179FDB0214BE4CD7084237C0DDBAB0C8216161DE2B6B8070BDAF239456"
   },
   "support": {
     "contactUrl": "https://discord.gg/pt5tvnrN6",
