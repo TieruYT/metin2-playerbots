@@ -1,12 +1,12 @@
 {
   "schema": 1,
   "channel": "stable",
-  "publishedAt": "2026-09-02T17:40:00Z",
-  "statusMessage": "Aktualizacja 1.21.1: przycisk „ZBIERZ / WYŚLIJ LOGI” wysyła paczkę prosto na Discorda projektu.",
+  "publishedAt": "2026-09-02T18:55:00Z",
+  "statusMessage": "Aktualizacja 1.21.2: launcher prosi o restart po aktualizacji, import mówi wprost gdy Docker jest wyłączony, daty przy bazach.",
   "server": {
-    "version": "1.21.1",
-    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v1.21.1/metin2-server-update-1.21.1.zip",
-    "sha256": "CB850080184713B7ABD744811D9D58815E13149DB4F3986B9EE21DAABDD685C9"
+    "version": "1.21.2",
+    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v1.21.2/metin2-server-update-1.21.2.zip",
+    "sha256": "0432889F7F05D8E47124BA2FD8CCE6665191DF151D11EA963F52ED519BEA0C63"
   },
   "support": {
     "contactUrl": "https://discord.gg/pt5tvnrN6",
