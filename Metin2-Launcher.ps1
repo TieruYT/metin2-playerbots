@@ -362,6 +362,12 @@ function Get-CurrentInstallTargetVolume {
 }
 
 function Import-DatabaseAction {
+    if (-not (Test-M2DockerRunning)) {
+        Write-Host 'Silnik Dockera jest zatrzymany, więc nie widać żadnych baz.' -ForegroundColor Yellow
+        Write-Host 'Uruchom Docker (akcja StartDocker lub przycisk „URUCHOM DOCKER") i spróbuj ponownie.' -ForegroundColor Yellow
+        Write-Host 'Żadne dane nie zginęły — bazy są na dysku, tylko Docker ich teraz nie pokazuje.' -ForegroundColor Gray
+        return
+    }
     $target = Get-CurrentInstallTargetVolume
     if (-not $target) {
         Write-Host 'Nie można ustalić bazy tej instalacji. Uruchom najpierw serwer (GRAJ) choć raz, aby utworzyć tożsamość i wolumen.' -ForegroundColor Yellow
@@ -387,7 +393,11 @@ function Import-DatabaseAction {
     }
     else {
         Write-Host 'Dostępne bazy do importu:' -ForegroundColor Cyan
-        for ($i = 0; $i -lt $sources.Count; $i++) { Write-Host ("  [{0}] {1}" -f ($i + 1), $sources[$i].Project) }
+        for ($i = 0; $i -lt $sources.Count; $i++) {
+            $label = $sources[$i].Project
+            if ($sources[$i].CreatedAt) { $label = '{0}   (utworzona {1:yyyy-MM-dd HH:mm})' -f $label, $sources[$i].CreatedAt }
+            Write-Host ("  [{0}] {1}" -f ($i + 1), $label)
+        }
         $pick = Read-Host 'Wybierz numer źródła (Enter = anuluj)'
         if ($pick -notmatch '^\d+$') { Write-Host 'Anulowano.' -ForegroundColor Yellow; return }
         $idx = [int]$pick - 1
@@ -448,6 +458,12 @@ function Get-InstallDbCredentials {
 }
 
 function Repair-DatabaseAction {
+    if (-not (Test-M2DockerRunning)) {
+        Write-Host 'Silnik Dockera jest zatrzymany, więc nie widać żadnych baz.' -ForegroundColor Yellow
+        Write-Host 'Uruchom Docker (akcja StartDocker lub przycisk „URUCHOM DOCKER") i spróbuj ponownie.' -ForegroundColor Yellow
+        Write-Host 'Żadne dane nie zginęły — bazy są na dysku, tylko Docker ich teraz nie pokazuje.' -ForegroundColor Gray
+        return
+    }
     $target = Get-CurrentInstallTargetVolume
     if (-not $target) {
         Write-Host 'Nie można ustalić bazy tej instalacji. Uruchom najpierw serwer (GRAJ) choć raz.' -ForegroundColor Yellow

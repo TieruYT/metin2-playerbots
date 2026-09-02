@@ -355,11 +355,31 @@ function Complete-LauncherAction {
             'OK',
             'Warning') | Out-Null
     }
+    if ($exitCode -eq 0 -and $action -like 'Update*' -and (Get-LauncherFingerprint) -ne $script:launcherFingerprint) {
+        $answer = [Windows.Forms.MessageBox]::Show(
+            "Launcher zostal zaktualizowany.`r`n`r`nTo okno dziala jeszcze na starej wersji - nowe przyciski i poprawki pojawia sie dopiero po ponownym uruchomieniu.`r`n`r`nUruchomic launcher ponownie teraz?",
+            'Aktualizacja zainstalowana', 'YesNo', 'Information')
+        if ($answer -eq [Windows.Forms.DialogResult]::Yes) {
+            Restart-Launcher
+            return
+        }
+        $script:launcherFingerprint = Get-LauncherFingerprint
+    }
     if ($exitCode -eq 0 -and $launchClient) { Start-ConfiguredClient }
     if ($exitCode -eq 0 -and $openSupport -and (Test-Path $supportDirectory)) {
         Start-Process explorer.exe -ArgumentList ('"{0}"' -f $supportDirectory)
         if ($contactUrl) { Start-Process $contactUrl }
     }
+}
+
+function Confirm-DockerReady {
+    # Without this the docker CLI just returns nothing and the caller reports
+    # "no databases found", which reads as data loss rather than a stopped engine.
+    if (Test-M2DockerRunning) { return $true }
+    [Windows.Forms.MessageBox]::Show(
+        "Silnik Dockera jest zatrzymany, wiec nie widac zadnych baz.`r`n`r`nKliknij przycisk URUCHOM DOCKER, poczekaj az status u gory zmieni sie na - Docker: GOTOWY - i sprobuj ponownie.`r`n`r`nZadne dane nie zginely: bazy sa na dysku, tylko Docker ich teraz nie pokazuje.",
+        'Docker jest zatrzymany', 'OK', 'Warning') | Out-Null
+    return $false
 }
 
 function Get-SupportSettings {
@@ -380,6 +400,39 @@ function Get-BotCountFromEnv {
         if ($match.Success) { return [int]$match.Groups[1].Value }
     }
     return 350
+}
+
+function Get-LauncherFingerprint {
+    # An update replaces the launcher's own files, but this process already read
+    # them - the new buttons cannot appear until it restarts.
+    $stamps = New-Object System.Collections.Generic.List[string]
+    foreach ($file in @($PSCommandPath, $cliLauncher, $modulePath, $diagnosticsModulePath)) {
+        if (Test-Path -LiteralPath $file -PathType Leaf) {
+            $stamps.Add(((Get-Item -LiteralPath $file).LastWriteTimeUtc.Ticks).ToString())
+        }
+    }
+    return ($stamps -join '|')
+}
+
+function Restart-Launcher {
+    $batch = Join-Path $root 'Metin2-Launcher-GUI.bat'
+    try {
+        if (Test-Path -LiteralPath $batch -PathType Leaf) {
+            Start-Process -FilePath $batch -WorkingDirectory $root
+        }
+        else {
+            # -STA matters: WinForms will not start without it.
+            Start-Process -FilePath 'powershell.exe' -WorkingDirectory $root -ArgumentList @(
+                '-NoProfile', '-STA', '-ExecutionPolicy', 'Bypass', '-File', $PSCommandPath)
+        }
+        Write-LocalLog 'Uruchamiam launcher ponownie po aktualizacji.'
+        $script:form.Close()
+    }
+    catch {
+        [Windows.Forms.MessageBox]::Show(
+            ("Nie udalo sie uruchomic launchera ponownie: {0}`r`n`r`nZamknij to okno i uruchom launcher recznie." -f $_.Exception.Message),
+            'Restart launchera', 'OK', 'Warning') | Out-Null
+    }
 }
 
 function Get-InstalledServerVersion {
@@ -579,6 +632,8 @@ function Install-Or-Prepare {
         'Gotowe', 'OK', 'Information') | Out-Null
 }
 
+$script:launcherFingerprint = Get-LauncherFingerprint
+
 $script:form = [Windows.Forms.Form]::new()
 $script:form.Text = 'Metin2 Singleplayer Playerbots — All in One'
 $script:form.Size = [Drawing.Size]::new(780, 732)
@@ -770,6 +825,7 @@ $botCountButton.Add_Click({
     }
 })
 $importDbButton.Add_Click({
+    if (-not (Confirm-DockerReady)) { return }
     $target = Get-GuiTargetVolume
     $sources = @()
     try { $sources = @(Get-M2DbDataVolumes | Where-Object { $_.Name -ne $target }) } catch { $sources = @() }
@@ -792,7 +848,13 @@ $importDbButton.Add_Click({
     $list = [Windows.Forms.ListBox]::new()
     $list.Location = [Drawing.Point]::new(12, 58)
     $list.Size = [Drawing.Size]::new(430, 170)
-    foreach ($item in $sources) { [void]$list.Items.Add($item.Project) }
+    # The project names are opaque hashes, so the creation date is the only thing
+    # that tells one install from another.
+    foreach ($item in $sources) {
+        $label = $item.Project
+        if ($item.CreatedAt) { $label = '{0}   (utworzona {1:yyyy-MM-dd HH:mm})' -f $item.Project, $item.CreatedAt }
+        [void]$list.Items.Add($label)
+    }
     $list.SelectedIndex = 0
     $dlg.Controls.Add($list)
     $okButton = [Windows.Forms.Button]::new()
@@ -810,7 +872,8 @@ $importDbButton.Add_Click({
     $dlg.AcceptButton = $okButton
     $dlg.CancelButton = $cancelButton
     $result = $dlg.ShowDialog()
-    $picked = [string]$list.SelectedItem
+    $picked = ''
+    if ($list.SelectedIndex -ge 0) { $picked = [string]$sources[$list.SelectedIndex].Project }
     $dlg.Dispose()
     if ($result -ne [Windows.Forms.DialogResult]::OK -or -not $picked) { return }
     $confirm = [Windows.Forms.MessageBox]::Show(
@@ -820,6 +883,7 @@ $importDbButton.Add_Click({
     Start-LauncherAction -Action 'ImportDb' -Yes -ExtraArgs @('-ImportSource', "$picked")
 })
 $repairDbButton.Add_Click({
+    if (-not (Confirm-DockerReady)) { return }
     $answer = [Windows.Forms.MessageBox]::Show(
         "Naprawić dostęp do bazy?`r`n`r`nUżyj tego, gdy po imporcie serwer nie startuje (playerbot-migrate kończy się błędem). Odtwarza tylko techniczne konto bazy — postacie, przedmioty i boty pozostają BEZ ZMIAN. Serwer zostanie zatrzymany na czas naprawy.",
         'Napraw dostęp do bazy', 'YesNo', 'Question')

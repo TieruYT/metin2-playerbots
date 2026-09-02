@@ -548,6 +548,18 @@ function Send-M2SupportBundle {
 $script:M2_DB_IMAGE = 'mariadb:10.11'
 $script:M2_DB_LIST = @('account', 'common', 'player', 'log', 'hotbackup')
 
+function Test-M2DockerRunning {
+    # docker volume ls and friends fail with an unhelpful pipe/socket error when
+    # the engine is down, so callers ask this first and say something useful.
+    $previous = $ErrorActionPreference; $ErrorActionPreference = 'Continue'
+    try {
+        & docker info --format '{{.ServerVersion}}' 1>$null 2>$null
+        return ($LASTEXITCODE -eq 0)
+    }
+    catch { return $false }
+    finally { $ErrorActionPreference = $previous }
+}
+
 function Get-M2DbDataVolumes {
     $previous = $ErrorActionPreference; $ErrorActionPreference = 'Continue'
     try {
@@ -560,10 +572,32 @@ function Get-M2DbDataVolumes {
         if ($LASTEXITCODE -eq 0 -and $all) {
             foreach ($n in @($all -split '\r?\n' | Where-Object { $_ -match '_db-data$' })) { if (-not $names.Contains($n)) { $names.Add($n) } }
         }
+        # Creation dates in one call - the list is short, but one docker
+        # invocation per volume is still a visible stall on a cold engine.
+        $created = @{}
+        if ($names.Count -gt 0) {
+            $inspected = & docker volume inspect --format '{{.Name}}|{{.CreatedAt}}' @($names) 2>$null
+            if ($LASTEXITCODE -eq 0 -and $inspected) {
+                foreach ($line in @($inspected -split '\r?\n' | Where-Object { $_ })) {
+                    $parts = $line -split '\|', 2
+                    if ($parts.Count -eq 2) {
+                        # Docker prints an RFC 3339 stamp with an offset.
+                        try {
+                            $stamp = [DateTimeOffset]::Parse($parts[1], [Globalization.CultureInfo]::InvariantCulture)
+                            $created[$parts[0]] = $stamp.LocalDateTime
+                        }
+                        catch { }
+                    }
+                }
+            }
+        }
+
         $result = New-Object System.Collections.Generic.List[object]
         foreach ($name in $names) {
             $project = if ($name -match '^(.*)_db-data$') { $Matches[1] } else { $name }
-            $result.Add([pscustomobject]@{ Name = $name; Project = $project })
+            $stamp = $null
+            if ($created.ContainsKey($name)) { $stamp = $created[$name] }
+            $result.Add([pscustomobject]@{ Name = $name; Project = $project; CreatedAt = $stamp })
         }
         return $result.ToArray()
     }
@@ -831,5 +865,6 @@ Export-ModuleMember -Function @(
     'Get-M2VolumeWorldStats',
     'Invoke-M2DatabaseImport',
     'Repair-M2GameDbUser',
-    'Test-M2VolumeInitialized'
+    'Test-M2VolumeInitialized',
+    'Test-M2DockerRunning'
 )
