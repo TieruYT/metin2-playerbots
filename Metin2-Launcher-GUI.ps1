@@ -209,9 +209,12 @@ function Refresh-Status {
     $script:serverStatus.ForeColor = if ($serverRunning) { [Drawing.Color]::LightGreen } else { [Drawing.Color]::Silver }
 }
 
-# apt/dpkg chatter from a first image build. Kept in the session log, kept out
-# of the on-screen box so the interesting lines stay readable.
-$script:M2_NOISY_BUILD = 'Get:\d|Unpacking |Selecting previously|Preparing to unpack|Reading database|Setting up |Suggested packages:|Recommended packages:|The following NEW packages|The following packages will be|debconf:'
+# apt/dpkg chatter from a first image build, plus Docker's note about the data
+# volume it did not create itself. Both are harmless, but players read the
+# word "warning" next to their database and reach for `down -v`, which is the
+# one command that would actually destroy the world. Kept in the session log,
+# kept out of the on-screen box so the interesting lines stay readable.
+$script:M2_NOISY_BUILD = 'already exists but was not created by Docker Compose|Get:\d|Unpacking |Selecting previously|Preparing to unpack|Reading database|Setting up |Suggested packages:|Recommended packages:|The following NEW packages|The following packages will be|debconf:'
 
 # Discord invite the ZIP button falls back to, and the once-per-session cache of
 # the support address read from the update manifest.

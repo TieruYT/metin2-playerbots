@@ -3,6 +3,9 @@ files/admin_panel.py
 linux-port/docker/docker-compose.yml
 linux-port/docker/.env.example
 linux-port/docker/mariadb/initdb.d/10-import-dumps.sh
+# Waits for the database before seeding. Its timeout decides whether a slow
+# recovery fails the whole compose "up".
+linux-port/docker/mariadb/playerbot/apply.sh
 linux-port/docker/panel/app/admin_panel.py
 linux-port/overlays/playerbot/serverfiles/mob_drop_item.m3.append.txt
 linux-port/overlays/playerbot/sql/playerbots_seed.sql

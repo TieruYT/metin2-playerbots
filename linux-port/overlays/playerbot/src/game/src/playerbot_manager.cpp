@@ -254,6 +254,12 @@ namespace
 	const BYTE PLAYERBOT_DESERT_MAX_LEVEL = 33;
 	// Neither map sells anything, so a visit is bounded and ends in Bokjung.
 	const DWORD PLAYERBOT_FRONTIER_MAX_VISIT_TIME = 2400000;
+	// ...but it also has to start. Without a floor the bot re-evaluated its needs
+	// on the very first tick after arriving, decided it wanted a shop, and turned
+	// straight back around: 271 arrivals on the Desert produced 269 departures,
+	// several of them within six seconds, and both maps looked empty because
+	// every bot on them was mid-bounce.
+	const DWORD PLAYERBOT_FRONTIER_MIN_VISIT_TIME = 120000;
 	const DWORD PLAYERBOT_HORSE_MEDAL_VNUM = 50050;
 	const BYTE PLAYERBOT_HORSE_REQUIRED_LEVEL = 25;
 	const char* PLAYERBOT_HORSE_MEDALS_FLAG = "playerbot.horse_medals_delivered";
@@ -6611,7 +6617,14 @@ namespace
 		const bool isMage = ch->GetJob() == JOB_SHAMAN || ch->GetJob() == JOB_SURA;
 		// Normal restocking happens at 50/30 (or 10) units. Cross-map travel is
 		// justified only by a genuinely short combat reserve, not by one consumed pot.
-		return redCount < 10 || (isMage ? blueCount < 8 : blueCount == 0);
+		//
+		// Blue potions restore SP, so an empty belt is an emergency for a caster
+		// and nothing at all for a warrior. Treating "no blue potions" as critical
+		// for everybody put 210 of 442 warriors and ninjas into a permanent fake
+		// emergency: they were always considered one step from being unable to
+		// fight, so they abandoned every trip the moment their items finished
+		// loading and shuttled straight back to town.
+		return redCount < 10 || (isMage && blueCount < 8);
 	}
 
 	bool NeedsPlayerBotCriticalTownServices(LPCHARACTER ch)
@@ -6939,8 +6952,12 @@ namespace
 		const bool pursuesHorseExpedition =
 				ShouldPlayerBotPursueHorseExpedition(ch, dwNow);
 		const bool needsHorseExpedition = pursuesHorseExpedition && !hasMedal;
-		const bool needsEssentialWeaponSupply = ch->GetWear(WEAR_WEAPON) == NULL ||
-				NeedsPlayerBotArrows(ch);
+		// GetWear answers NULL for every slot until the item cache has loaded,
+		// which is exactly the state a character is in for the first seconds after
+		// a map change. Trusting it there made a bot believe it had lost its
+		// weapon the moment it arrived somewhere.
+		const bool needsEssentialWeaponSupply = ch->IsItemLoaded() &&
+				(ch->GetWear(WEAR_WEAPON) == NULL || NeedsPlayerBotArrows(ch));
 		const bool m2LevelingCohort = IsPlayerBotM2LevelingCohort(ch);
 		const bool wantsM3 = ShouldPlayerBotVisitM3(ch);
 		const bool needsCriticalTownServices = NeedsPlayerBotCriticalTownServices(ch);
@@ -7201,8 +7218,12 @@ namespace
 		{
 			if (state.dwFrontierEnteredTime == 0)
 				state.dwFrontierEnteredTime = dwNow;
-			const bool visitExpired = dwNow - state.dwFrontierEnteredTime >=
+			const DWORD stayed = dwNow - state.dwFrontierEnteredTime;
+			const bool visitExpired = stayed >=
 					GetPlayerBotFrontierVisitTime(state.bPersonality);
+			// Two minutes of actually playing here before anything but a real
+			// emergency may send the bot home again.
+			const bool settledIn = stayed >= PLAYERBOT_FRONTIER_MIN_VISIT_TIME;
 			// Outgrowing the map matters as much as running out of potions: neither
 			// Orc Valley nor the Desert has a merchant, a blacksmith or a trainer.
 			const bool outOfBand = GetPlayerBotFrontierMapForLevel(ch) != mapIndex;
@@ -7210,8 +7231,12 @@ namespace
 			// home. Sending it back for a helmet the town cannot sell turned the
 			// journey into a shuttle: it arrived, saw the same unmet need, and
 			// left again without ever fighting anything here.
-			const bool needsTown = BlocksPlayerBotTravel(ch) || needsM1OnlyServices ||
-					needsEssentialWeaponSupply;
+			// A blocking need still wins immediately - a bot with no weapon left
+			// cannot wait out a timer. Everything else waits until the bot has
+			// been here long enough for the trip to have been worth making.
+			const bool blocked = BlocksPlayerBotTravel(ch);
+			const bool needsTown = blocked ||
+					(settledIn && (needsM1OnlyServices || needsEssentialWeaponSupply));
 			if (!visitExpired && !outOfBand && !needsTown)
 				return false;
 
@@ -7232,6 +7257,18 @@ namespace
 		if (mapIndex == PLAYERBOT_MAP_MONKEY_EASY)
 			return false; // stay and fight; departure was handled before victim yielding
 
+		// Anything else means the bot was moved somewhere no branch above owns:
+		// the frontier maps carry real warp NPCs of their own, and walking inside
+		// one's trigger radius hands the character to a map the AI has no plan
+		// for. Nothing would ever bring it back, so it would sit there for good.
+		SetPlayerBotGoal(ch, state, BOT_GOAL_LEVEL_UP, dwNow);
+		if (TransitionPlayerBotMap(ch, state, PLAYERBOT_MAP_CHUNJO_M2,
+				PLAYERBOT_M2_FROM_M3_X, PLAYERBOT_M2_FROM_M3_Y, dwNow, "stranded_recovery"))
+		{
+			sys_log(0, "PLAYERBOT_WORLD: recovered pid=%u name=%s from unmanaged map=%ld",
+					ch->GetPlayerID(), ch->GetName(), mapIndex);
+			return true;
+		}
 		return false;
 	}
 

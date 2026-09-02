@@ -50,6 +50,10 @@ echo "[playerbot-migrate] waiting for the complete r40250 schema"
 attempt=0
 while :; do
     attempt=$((attempt + 1))
+    # Keep the error instead of discarding it. A refused login looks exactly
+    # like a schema that has not finished importing, and silently waiting five
+    # minutes for a permissions problem to fix itself helps nobody.
+    probe_err=/tmp/playerbot-probe.err
     ready=$(db -e "
         SELECT COUNT(*)
           FROM information_schema.tables
@@ -58,14 +62,32 @@ while :; do
             OR (table_schema='player'  AND table_name IN
                 ('player','player_index','item','item_proto','string'))
             OR (table_schema='log'     AND table_name='speed_hack');
-    " 2>/dev/null || true)
+    " 2>"$probe_err" || true)
+    if [ -s "$probe_err" ] && [ "$attempt" -eq 3 ]; then
+        echo "[playerbot-migrate] the database is not answering yet:" >&2
+        head -3 "$probe_err" >&2
+        if grep -qi "access denied" "$probe_err"; then
+            echo "[playerbot-migrate] this is a login failure, not a slow import." >&2
+            echo "[playerbot-migrate] use the launcher button NAPRAW DOSTEP DO BAZY." >&2
+        fi
+    fi
     if [ "$ready" = "8" ]; then
         protos=$(db -e "SELECT COUNT(*) FROM player.item_proto;" 2>/dev/null || true)
         [ -n "$protos" ] && [ "$protos" -gt 0 ] 2>/dev/null && break
     fi
-    if [ "$attempt" -ge 150 ]; then
-        echo "[playerbot-migrate] FATAL: database import was not ready after 300 seconds" >&2
+    # A large world that was not shut down cleanly can spend many minutes in
+    # InnoDB recovery while the image's healthcheck already answers. Five
+    # minutes was not enough for it, and because compose treats this container
+    # as a hard dependency, the whole "up" failed and the launcher reported
+    # that Docker had not built the server -- while starting it again by hand a
+    # minute later worked. Wait far longer, and say what is happening.
+    if [ "$attempt" -ge 900 ]; then
+        echo "[playerbot-migrate] FATAL: database not ready after 30 minutes" >&2
+        echo "[playerbot-migrate] the server is probably still recovering a large world; start it again" >&2
         exit 1
+    fi
+    if [ $((attempt % 30)) -eq 0 ]; then
+        echo "[playerbot-migrate] still waiting for the database ($((attempt * 2))s) - a large world can take a while to recover"
     fi
     sleep 2
 done
