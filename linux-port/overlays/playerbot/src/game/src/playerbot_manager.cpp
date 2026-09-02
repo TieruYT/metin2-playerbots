@@ -243,15 +243,16 @@ namespace
 	const long PLAYERBOT_ORC_VALLEY_EXIT_Y = 740200;
 	const long PLAYERBOT_DESERT_EXIT_X = 219700;
 	const long PLAYERBOT_DESERT_EXIT_Y = 499900;
-	// Orc Valley spawns levels 18-25, the Desert 26-30 (group.txt resolved through
-	// mob_proto.txt).  A bot ignores monsters three or more levels below itself
-	// unless they are already within chain range, so each band has to end a couple
-	// of levels above its map's strongest ordinary spawn or the bot would arrive
-	// somewhere it refuses to fight.
-	const BYTE PLAYERBOT_ORC_VALLEY_MIN_LEVEL = 20;
-	const BYTE PLAYERBOT_ORC_VALLEY_MAX_LEVEL = 27;
-	const BYTE PLAYERBOT_DESERT_MIN_LEVEL = 28;
-	const BYTE PLAYERBOT_DESERT_MAX_LEVEL = 33;
+	// Ordinary spawns are levels 18-25 in Orc Valley and 26-30 in the Desert, but
+	// the Metins tell a different story: 40/45/50 in the Desert and 45/48/50 in
+	// Orc Valley. A stone is only worth breaking between stoneLevel-9 and
+	// stoneLevel+10, so Orc Valley starts paying at level 36 and not before -
+	// which is why it belongs to the high band even though its monsters do not.
+	// Bokjung keeps everyone up to 29.
+	const BYTE PLAYERBOT_DESERT_MIN_LEVEL = 30;
+	const BYTE PLAYERBOT_DESERT_MAX_LEVEL = 36;
+	const BYTE PLAYERBOT_ORC_VALLEY_MIN_LEVEL = 36;
+	const BYTE PLAYERBOT_ORC_VALLEY_MAX_LEVEL = 55;
 	// Neither map sells anything, so a visit is bounded and ends in Bokjung.
 	const DWORD PLAYERBOT_FRONTIER_MAX_VISIT_TIME = 2400000;
 	// ...but it also has to start. Without a floor the bot re-evaluated its needs
@@ -4056,12 +4057,21 @@ namespace
 		}
 
 		DWORD bestVnum = familyBase;
+		int bestLevel = -1;
 		for (int tier = 0; tier < 8; ++tier)
 		{
 			const DWORD candidateVnum = familyBase + tier * 10;
 			TItemTable* proto = ITEM_MANAGER::instance().GetTable(candidateVnum);
-			if (proto && GetPlayerBotProtoLevelLimit(proto) <= ch->GetLevel())
+			if (!proto)
+				continue;
+			const int reqLevel = GetPlayerBotProtoLevelLimit(proto);
+			// Strictly higher, so a level-0 starter belonging to the next class
+			// can never displace a piece this character actually qualifies for.
+			if (reqLevel <= (int)ch->GetLevel() && reqLevel > bestLevel)
+			{
 				bestVnum = candidateVnum;
+				bestLevel = reqLevel;
+			}
 		}
 		return bestVnum;
 	}
@@ -4080,12 +4090,21 @@ namespace
 			default: break;
 		}
 		DWORD bestVnum = baseVnum;
+		int bestLevel = -1;
 		for (int tier = 0; tier < 8; ++tier)
 		{
 			const DWORD candidateVnum = baseVnum + tier * 10;
 			TItemTable* proto = ITEM_MANAGER::instance().GetTable(candidateVnum);
-			if (proto && GetPlayerBotProtoLevelLimit(proto) <= ch->GetLevel())
+			if (!proto)
+				continue;
+			const int reqLevel = GetPlayerBotProtoLevelLimit(proto);
+			// Strictly higher, so a level-0 starter belonging to the next class
+			// can never displace a piece this character actually qualifies for.
+			if (reqLevel <= (int)ch->GetLevel() && reqLevel > bestLevel)
+			{
 				bestVnum = candidateVnum;
+				bestLevel = reqLevel;
+			}
 		}
 		return bestVnum;
 	}
@@ -4095,12 +4114,21 @@ namespace
 		if (!ch)
 			return 0;
 		DWORD bestVnum = 13000;
+		int bestLevel = -1;
 		for (int tier = 0; tier < 8; ++tier)
 		{
 			const DWORD candidateVnum = 13000 + tier * 20;
 			TItemTable* proto = ITEM_MANAGER::instance().GetTable(candidateVnum);
-			if (proto && GetPlayerBotProtoLevelLimit(proto) <= ch->GetLevel())
+			if (!proto)
+				continue;
+			const int reqLevel = GetPlayerBotProtoLevelLimit(proto);
+			// Strictly higher, so a level-0 starter belonging to the next class
+			// can never displace a piece this character actually qualifies for.
+			if (reqLevel <= (int)ch->GetLevel() && reqLevel > bestLevel)
+			{
 				bestVnum = candidateVnum;
+				bestLevel = reqLevel;
+			}
 		}
 		return bestVnum;
 	}
@@ -4118,12 +4146,21 @@ namespace
 			default: break;
 		}
 		DWORD bestVnum = baseVnum;
+		int bestLevel = -1;
 		for (int tier = 0; tier < 8; ++tier)
 		{
 			const DWORD candidateVnum = baseVnum + tier * 20;
 			TItemTable* proto = ITEM_MANAGER::instance().GetTable(candidateVnum);
-			if (proto && GetPlayerBotProtoLevelLimit(proto) <= ch->GetLevel())
+			if (!proto)
+				continue;
+			const int reqLevel = GetPlayerBotProtoLevelLimit(proto);
+			// Strictly higher, so a level-0 starter belonging to the next class
+			// can never displace a piece this character actually qualifies for.
+			if (reqLevel <= (int)ch->GetLevel() && reqLevel > bestLevel)
+			{
 				bestVnum = candidateVnum;
+				bestLevel = reqLevel;
+			}
 		}
 		return bestVnum;
 	}
@@ -4133,12 +4170,21 @@ namespace
 		if (!ch)
 			return 0;
 		DWORD bestVnum = 15000;
+		int bestLevel = -1;
 		for (int tier = 0; tier < 12; ++tier)
 		{
 			const DWORD candidateVnum = 15000 + tier * 20;
 			TItemTable* proto = ITEM_MANAGER::instance().GetTable(candidateVnum);
-			if (proto && GetPlayerBotProtoLevelLimit(proto) <= ch->GetLevel())
+			if (!proto)
+				continue;
+			const int reqLevel = GetPlayerBotProtoLevelLimit(proto);
+			// Strictly higher, so a level-0 starter belonging to the next class
+			// can never displace a piece this character actually qualifies for.
+			if (reqLevel <= (int)ch->GetLevel() && reqLevel > bestLevel)
+			{
 				bestVnum = candidateVnum;
+				bestLevel = reqLevel;
+			}
 		}
 		return bestVnum;
 	}
@@ -6451,7 +6497,7 @@ namespace
 				ch->PointChange(POINT_GOLD, -960);
 				ch->AutoGiveItem(27005, 30); // Blue Potion (M) 30x
 			}
-			else if (!isMage && blueCount < 10 && ch->GetGold() >= 1200)
+			else if (!isMage && blueCount < 20 && ch->GetGold() >= 1200)
 			{
 				ch->PointChange(POINT_GOLD, -480);
 				ch->AutoGiveItem(27005, 10); // Blue Potion (M) 10x
@@ -6725,10 +6771,10 @@ namespace
 		if (!ch)
 			return 0;
 		const BYTE level = ch->GetLevel();
-		if (level >= PLAYERBOT_DESERT_MIN_LEVEL && level <= PLAYERBOT_DESERT_MAX_LEVEL)
-			return PLAYERBOT_MAP_DESERT;
 		if (level >= PLAYERBOT_ORC_VALLEY_MIN_LEVEL && level <= PLAYERBOT_ORC_VALLEY_MAX_LEVEL)
 			return PLAYERBOT_MAP_ORC_VALLEY;
+		if (level >= PLAYERBOT_DESERT_MIN_LEVEL && level <= PLAYERBOT_DESERT_MAX_LEVEL)
+			return PLAYERBOT_MAP_DESERT;
 		return 0;
 	}
 
