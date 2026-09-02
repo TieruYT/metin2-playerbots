@@ -1,11 +1,11 @@
 {
   "schema": 1,
   "channel": "stable",
-  "publishedAt": "2026-09-01T22:10:00Z",
-  "statusMessage": "Aktualizacja 1.19.0: dostęp do bazy (Navicat), import świata, liczba botów i poprawki launchera.",
+  "publishedAt": "2026-09-02T02:10:00Z",
+  "statusMessage": "Aktualizacja 1.20.0: naprawa startu serwera po imporcie bazy + przycisk NAPRAW DOSTĘP DO BAZY.",
   "server": {
-    "version": "1.19.0",
-    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v1.19.0/metin2-server-update-1.19.0.zip",
-    "sha256": "487667B4C2C5430677F3810D21EB360BAE8996B235D4BF01E8739AEC40FEB00F"
+    "version": "1.20.0",
+    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v1.20.0/metin2-server-update-1.20.0.zip",
+    "sha256": "F37F27DA910BE922A0827D656A33521D2AE94E1F2DCBF3084C2B814DACE064CF"
   }
 }
