@@ -2588,11 +2588,14 @@ JOB_NAME  = {0:"Warrior",4:"Warrior",5:"Ninja",1:"Ninja",2:"Sura",6:"Sura",7:"Sh
 GOLD_PRESETS = [("💰 1 Million", 1_000_000), ("💰 10 Million", 10_000_000),
                 ("💰 100 Million", 100_000_000), ("👑 1 Billion", 1_000_000_000)]
 WARP_LOC = [  # (emoji, {lang:name}, coords)
-  ("🏯", {"en":"Shinsoo City","de":"Shinsoo-Stadt","tr":"Shinsoo Şehri"}, "474300 954800"),
-  ("🏮", {"en":"Chunjo City","de":"Chunjo-Stadt","tr":"Chunjo Şehri"}, "65900 155600"),
-  ("⛩️", {"en":"Jinno City","de":"Jinno-Stadt","tr":"Jinno Şehri"}, "963500 279700"),
-  ("🏜️", {"en":"Desert","de":"Wüste","tr":"Çöl"}, "2178000 632900"),
-  ("🔥", {"en":"Fireland","de":"Feuerland","tr":"Ateş Ülkesi"}, "1932800 2402700"),
+  ("🏯", {"en":"Shinsoo City","pl":"Miasto Shinsoo","de":"Shinsoo-Stadt","tr":"Shinsoo Şehri"}, "474300 954800"),
+  ("🏮", {"en":"Chunjo City","pl":"Miasto Chunjo","de":"Chunjo-Stadt","tr":"Chunjo Şehri"}, "65900 155600"),
+  ("⛩️", {"en":"Jinno City","pl":"Miasto Jinno","de":"Jinno-Stadt","tr":"Jinno Şehri"}, "963500 279700"),
+  ("🏘️", {"en":"Bokjung (M2)","pl":"Bokjung (M2)","de":"Bokjung (M2)","tr":"Bokjung (M2)"}, "145500 240000"),
+  ("⚔️", {"en":"Orc Valley","pl":"Dolina Orków","de":"Orktal","tr":"Ork Vadisi"}, "270400 739900"),
+  ("🏜️", {"en":"Yongbi Desert","pl":"Pustynia Yongbi","de":"Yongbi-Wüste","tr":"Yongbi Çölü"}, "221900 502700"),
+  ("❄️", {"en":"Mount Sohan","pl":"Góra Sohan","de":"Sohan-Berg","tr":"Sohan Dağı"}, "375200 174900"),
+  ("🔥", {"en":"Fireland","pl":"Ognista Ziemia","de":"Feuerland","tr":"Ateş Ülkesi"}, "597800 622200"),
 ]
 SPEED_LOC = [
   ("🚶", {"en":"Normal (reset)","de":"Normal (zurücksetzen)","tr":"Normal (sıfırla)"}, 0),
