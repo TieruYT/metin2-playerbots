@@ -420,3 +420,55 @@ allowlisty), Release `v1.20.0` + zaktualizowany `update-manifest.json`.
 `Metin2-Launcher-GUI.ps1`, `launcher/server-update-files.txt`, `VERSION`,
 `CHANGELOG.md`, `update-manifest.json`.
 
+
+### Sesja: guard wolumenu + UI aktualizacji (2026-09-02, ósma tura)
+
+**KRYTYCZNE — import mógł trwale zniszczyć instalację.** Zgłoszenie (Kordyl13):
+„przy imporcie czy instalacji baza była pusta na kontenerze, można było się
+zalogować rootem bez hasła, brakowało schematów metina; musiałem usunąć wszystkie
+volumeny". Przyczyna: `Start-M2ThrowawayDb` montowało wolumen z
+`MARIADB_ALLOW_EMPTY_ROOT_PASSWORD=1` BEZ sprawdzenia, czy wolumen istnieje.
+Docker po cichu tworzy brakujący wolumen, a MariaDB inicjalizuje go bez hasła i
+bez schematów gry. Wolumen przestaje być pusty, więc `initdb.d` compose'a już
+nigdy nie odpala — instalacja jest trwale zepsuta.
+
+Naprawa: nowa `Test-M2VolumeInitialized` (sprawdza istnienie przez `docker volume
+inspect` + obecność katalogu `mysql` przez sondę montowaną read-only, z
+`--entrypoint sh`, bo entrypoint obrazu połknąłby polecenie). `Start-M2ThrowawayDb`
+odmawia, gdy wolumen nie jest zainicjalizowany, i nie przekazuje już
+`MARIADB_ALLOW_EMPTY_ROOT_PASSWORD` (obrona w głąb: pusty wolumen = kontener nie
+wstaje, zamiast po cichu tworzyć bazę bez hasła). `Import-DatabaseAction` ma
+przyjazny pre-check: „najpierw uruchom GRAJ, potem importuj".
+Zweryfikowane przy działającym Dockerze: nieistniejący wolumen → odmowa i NIE
+zostaje utworzony; istniejący → OK (statystyki 669/60 nadal działają).
+
+**Podpowiedź przy błędzie migrate.** Nowa reguła `DB_USER_BROKEN` w diagnostyce
+łapie `playerbot-migrate ... didn't complete successfully`, `database import was
+not ready after` oraz `user: 'unauthenticated'` i kieruje wprost do przycisku
+„NAPRAW DOSTĘP DO BAZY". Zweryfikowane na realnych tekstach z logów.
+
+**UI (prośby użytkownika):**
+- Suwak liczby botów 0–668 (`Show-BotCountDialog`, TrackBar) zamiast wpisywania
+  liczby; handler używa `$this.FindForm()`, więc nie zależy od domknięć.
+- Postęp na żywo: `Update-ActionStream` doczytuje przyrostowo pliki out/err
+  akcji (współdzielony odczyt), `Update-ActionPhase` parsuje markery BuildKit
+  `#N [stage a/b]` oraz `transferring context`, a `Update-ActionStatusText`
+  pokazuje czas i procent; pasek przełącza się z marquee na konkretną wartość.
+  Hałas apt idzie do pliku (`Write-LocalLog -FileOnly`), okno logu jest
+  ograniczone do ~600 linii.
+- Jeden przycisk aktualizacji: usunięto „ZAINSTALUJ AKTUALIZACJE"; „SPRAWDŹ
+  AKTUALIZACJE" pobiera manifest w procesie GUI i pyta TAK/NIE tylko wtedy, gdy
+  jest realnie nowsza wersja (404 → komunikat „kanał nieopublikowany").
+- „ZBIERZ / WYŚLIJ LOGI" proponuje natychmiastową wysyłkę, gdy ustawiono
+  `supportUploadUrl` (kanał pomocy, np. webhook Discorda). Świadomie NIE wpisano
+  adresu e-mail autora: klient nie ma serwera SMTP ani poświadczeń, a adres w
+  publicznej paczce trafiłby do spamu.
+
+**Uwaga o Dockerze:** błąd „rename ... sailor-ingest.sock ... .stale: The file
+cannot be accessed by the system" to znany problem zawieszonych gniazd AF_UNIX.
+Procedura `Repair-DockerDesktopSocketState` w `start-server.ps1` naprawia go
+(rotuje `%LOCALAPPDATA%\Docker\run`) — potwierdzone dziś: po ręcznym ubiciu
+Dockera „URUCHOM DOCKER" postawił silnik z powrotem.
+
+**Pliki:** `launcher/Metin2Launcher.psm1`, `launcher/Metin2Launcher.Diagnostics.psm1`,
+`Metin2-Launcher.ps1`, `Metin2-Launcher-GUI.ps1`, `VERSION`, `CHANGELOG.md`.

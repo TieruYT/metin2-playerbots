@@ -105,6 +105,15 @@ function Get-M2LauncherErrorGuidance {
         }
     }
 
+    if ($value -match "(?i)playerbot-migrate.+didn.t complete successfully|database import was not ready after|user: 'unauthenticated'") {
+        return [pscustomobject]@{
+            Code = 'DB_USER_BROKEN'
+            Title = 'Serwer nie może zalogować się do własnej bazy'
+            Message = 'Baza działa, ale techniczne konto, którym łączy się serwer, nie jest rozpoznawane. Dlatego krok „playerbot-migrate” nie kończy się poprawnie, a gra i panel nie wstają. Twoje postacie, przedmioty i boty są bezpieczne.'
+            Remedy = 'W launcherze kliknij „NAPRAW DOSTĘP DO BAZY”, poczekaj na komunikat „Gotowe”, a potem kliknij „GRAJ”. Nie usuwaj wolumenów i nie używaj docker compose down -v.'
+        }
+    }
+
     if ($value -match '(?i)\b404\b|not found.+update-manifest|update-manifest.+not found') {
         return [pscustomobject]@{
             Code = 'UPDATE_CHANNEL_UNPUBLISHED'

@@ -309,7 +309,7 @@ function Set-PlayerbotCount {
 
 function Set-BotCountAction {
     $current = Get-PlayerbotCount
-    Write-Host "Aktualnie gra: $current botów (limit = liczba zaseedowanych botów, w kanonicznej paczce 350)." -ForegroundColor Gray
+    Write-Host "Aktualnie gra: $current botów (efektywny limit = liczba botów w Twoim świecie; kanoniczna paczka ma 350)." -ForegroundColor Gray
 
     # -BotCount passed (from the GUI or scripting) is non-interactive: never call
     # Read-Host, because the GUI runs this in a hidden, non-interactive console.
@@ -328,7 +328,7 @@ function Set-BotCountAction {
         return
     }
 
-    $answer = Read-Host 'Ilu botów ma grać (0-350)'
+    $answer = Read-Host 'Ilu botów ma grać (0-668)'
     if ($answer -notmatch '^\d+$') { Write-Host 'Anulowano: to nie jest liczba.' -ForegroundColor Yellow; return }
     $applied = Set-PlayerbotCount -Count ([int]$answer)
     Write-Host "Zapisano: $applied grających botów." -ForegroundColor Green
@@ -368,6 +368,12 @@ function Import-DatabaseAction {
         return
     }
     Write-Host "Baza docelowa (ta instalacja): $target" -ForegroundColor Gray
+    if (-not (Test-M2VolumeInitialized -Volume $target)) {
+        Write-Host 'Ta instalacja nie ma jeszcze gotowej bazy danych.' -ForegroundColor Yellow
+        Write-Host 'Najpierw kliknij GRAJ i pozwól serwerowi wystartować choć raz (utworzy bazę ze schematami gry),' -ForegroundColor Yellow
+        Write-Host 'a dopiero potem importuj świat. Import na pustą bazę zostawiłby instalację bez schematów.' -ForegroundColor Yellow
+        return
+    }
     $sources = @(Get-M2DbDataVolumes | Where-Object { $_.Name -ne $target })
     if ($sources.Count -eq 0) {
         Write-Host 'Nie znaleziono innej bazy Docker do importu na tym komputerze.' -ForegroundColor Yellow
@@ -547,7 +553,7 @@ function Show-Menu {
         Write-Host ' 10. Utwórz paczkę diagnostyczną ZIP'
         Write-Host ' 11. Utwórz i wyślij logi (po potwierdzeniu)'
         Write-Host ' 12. Konfiguracja launchera'
-        Write-Host ' 13. Ustaw liczbę grających botów (0-350)'
+        Write-Host ' 13. Ustaw liczbę grających botów (0-668)'
         Write-Host ' 14. Importuj bazę z innej instalacji (wyższe postacie)'
         Write-Host ' 15. Napraw dostęp do bazy (gdy migrate/serwer nie startuje)'
         Write-Host '  0. Wyjście'

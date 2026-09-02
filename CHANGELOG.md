@@ -17,6 +17,23 @@ every version here.
 
 ---
 
+## 1.21.0 — 2026-09-02
+
+### Fixed
+
+- **Import nie potrafi już zniszczyć bazy.** Jeśli baza tej instalacji jeszcze nie istniała, import montował nieistniejący wolumen — Docker tworzył go pustego, a MariaDB inicjalizowała bazę **bez hasła i bez schematów gry**. Ponieważ wolumen przestawał być pusty, właściwa inicjalizacja nigdy się już nie uruchamiała i instalacja zostawała trwale zepsuta (trzeba było kasować wolumeny). Teraz launcher odmawia i mówi wprost: najpierw uruchom serwer („GRAJ"), dopiero potem importuj.
+- **Czytelna podpowiedź przy błędzie startu.** Gdy `playerbot-migrate` nie może zalogować się do bazy, launcher pokazuje konkretną instrukcję: kliknij „NAPRAW DOSTĘP DO BAZY", zamiast surowego błędu Dockera.
+
+### Added
+
+- **Suwak liczby botów (0–668).** Zamiast wpisywania liczby — suwak z podglądem wartości. Efektywny limit to liczba botów w Twoim świecie (kanoniczna paczka ma 350).
+- **Widoczny postęp podczas uruchamiania.** Log w launcherze pokazuje teraz przebieg **na żywo**, a pasek postępu i status podają upływający czas oraz etap budowy (np. `game deps 4/6 (67%)`). Koniec z ciszą przez kilka minut i pytaniem „czy to się zawiesiło?". Przy pierwszym budowaniu launcher wprost uprzedza, że potrwa to kilkanaście–kilkadziesiąt minut.
+
+### Changed
+
+- **Jeden przycisk aktualizacji.** Zamiast osobnych „SPRAWDŹ" i „ZAINSTALUJ" jest teraz samo **SPRAWDŹ AKTUALIZACJE**: launcher sprawdza kanał i — jeśli faktycznie jest nowsza wersja — pyta „Znaleziono nową wersję. Zainstalować teraz?" (TAK/NIE). Gdy nic nowego nie ma, mówi to wprost, zamiast cokolwiek instalować.
+- **Szybsze zgłaszanie problemów.** Przycisk „ZBIERZ / WYŚLIJ LOGI" potrafi od razu wysłać paczkę logów do autora, jeśli w konfiguracji ustawiono kanał pomocy; w przeciwnym razie zapisuje ZIP i otwiera folder do załączenia na Discordzie. Hasła są z logów usuwane.
+
 ## 1.20.0 — 2026-09-02
 
 ### Fixed

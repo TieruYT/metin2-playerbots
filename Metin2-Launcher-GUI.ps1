@@ -53,11 +53,20 @@ if ($SelfTest) {
 [Windows.Forms.Application]::EnableVisualStyles()
 
 function Write-LocalLog {
-    param([Parameter(Mandatory = $true)][string]$Message)
+    # -FileOnly keeps very chatty build output (apt, unpacking) in the session
+    # log without flooding the small on-screen box.
+    param(
+        [Parameter(Mandatory = $true)][string]$Message,
+        [switch]$FileOnly
+    )
     $line = '{0}  {1}' -f (Get-Date -Format 'yyyy-MM-dd HH:mm:ss'), $Message
     [IO.File]::AppendAllText($sessionLog, $line + [Environment]::NewLine, [Text.UTF8Encoding]::new($false))
-    if ($script:logBox -and -not $script:logBox.IsDisposed) {
+    if (-not $FileOnly -and $script:logBox -and -not $script:logBox.IsDisposed) {
         $script:logBox.AppendText($line + [Environment]::NewLine)
+        # Keep the box bounded so a long build cannot grow it without limit.
+        if ($script:logBox.Lines.Count -gt 600) {
+            $script:logBox.Lines = $script:logBox.Lines[-400..-1]
+        }
         $script:logBox.SelectionStart = $script:logBox.TextLength
         $script:logBox.ScrollToCaret()
     }
@@ -200,23 +209,121 @@ function Refresh-Status {
     $script:serverStatus.ForeColor = if ($serverRunning) { [Drawing.Color]::LightGreen } else { [Drawing.Color]::Silver }
 }
 
+# apt/dpkg chatter from a first image build. Kept in the session log, kept out
+# of the on-screen box so the interesting lines stay readable.
+$script:M2_NOISY_BUILD = 'Get:\d|Unpacking |Selecting previously|Preparing to unpack|Reading database|Setting up |Suggested packages:|Recommended packages:|The following NEW packages|The following packages will be|debconf:'
+
+function Read-SharedText {
+    # The child process still holds these files open for writing.
+    param([Parameter(Mandatory = $true)][string]$Path)
+    try {
+        $stream = [IO.File]::Open($Path, [IO.FileMode]::Open, [IO.FileAccess]::Read, [IO.FileShare]::ReadWrite)
+        try {
+            $reader = New-Object IO.StreamReader($stream, [Text.Encoding]::UTF8)
+            try { return $reader.ReadToEnd() } finally { $reader.Dispose() }
+        }
+        finally { $stream.Dispose() }
+    }
+    catch { return $null }
+}
+
+function Update-ActionPhase {
+    # Turn BuildKit / Compose chatter into a phase name and a step count, so the
+    # progress bar and the status line can show real movement during the long
+    # first build instead of an endless marquee.
+    param([Parameter(Mandatory = $true)][string]$Line)
+    $step = [Regex]::Match($Line, '^\s*#\d+\s+\[([^\]]+?)\s+(\d+)/(\d+)\]')
+    if ($step.Success) {
+        $script:activePhase = $step.Groups[1].Value
+        $script:activePhaseStep = [int]$step.Groups[2].Value
+        $script:activePhaseTotal = [int]$step.Groups[3].Value
+        if (-not $script:activeBuildNoticed) {
+            $script:activeBuildNoticed = $true
+            Write-LocalLog 'Trwa budowanie obrazów serwera. Przy pierwszym uruchomieniu to normalnie kilkanaście–kilkadziesiąt minut — nie przerywaj.'
+        }
+        return
+    }
+    if ($Line -match 'transferring context:\s*([\d.]+\s*[kKMG]?B)') {
+        $script:activePhase = "przesyłanie plików do budowy ($($Matches[1]))"
+        $script:activePhaseStep = 0; $script:activePhaseTotal = 0
+        return
+    }
+    $container = [Regex]::Match($Line, 'Container\s+(\S+)\s+(Creating|Created|Starting|Started|Waiting|Healthy|Recreate|Stopping|Stopped)')
+    if ($container.Success) {
+        $script:activePhase = "$($container.Groups[1].Value): $($container.Groups[2].Value)"
+        $script:activePhaseStep = 0; $script:activePhaseTotal = 0
+    }
+}
+
+function Update-ActionStatusText {
+    if (-not $script:activeProcess -or -not $script:actionStatus) { return }
+    $elapsed = (Get-Date) - $script:activeStarted
+    $text = 'Trwa: {0}...  {1:mm\:ss}' -f $script:activeAction, $elapsed
+    if ($script:activePhaseTotal -gt 0) {
+        $pct = [int](100 * $script:activePhaseStep / $script:activePhaseTotal)
+        $pct = [Math]::Max(0, [Math]::Min(100, $pct))
+        $text += '   —   {0} {1}/{2} ({3}%)' -f $script:activePhase, $script:activePhaseStep, $script:activePhaseTotal, $pct
+        if ($script:progress.Style -ne 'Blocks') { $script:progress.Style = 'Blocks' }
+        $script:progress.Value = $pct
+    }
+    elseif ($script:activePhase) {
+        $text += '   —   {0}' -f $script:activePhase
+    }
+    $script:actionStatus.Text = $text
+}
+
+function Update-ActionStream {
+    # Tail the running action's output into the log while it runs, so a long
+    # start does not look like a frozen window.
+    if (-not $script:activeProcess) { return }
+    foreach ($key in @('out', 'err')) {
+        $path = if ($key -eq 'out') { $script:activeOut } else { $script:activeErr }
+        if (-not $path -or -not (Test-Path -LiteralPath $path -PathType Leaf)) { continue }
+        $content = Read-SharedText -Path $path
+        if ($null -eq $content) { continue }
+        $offset = if ($key -eq 'out') { $script:activeOutOffset } else { $script:activeErrOffset }
+        if ($content.Length -le $offset) { continue }
+        $fresh = $content.Substring($offset)
+        $lastBreak = $fresh.LastIndexOf("`n")
+        if ($lastBreak -lt 0) { continue }
+        $complete = $fresh.Substring(0, $lastBreak + 1)
+        if ($key -eq 'out') { $script:activeOutOffset = $offset + $complete.Length }
+        else { $script:activeErrOffset = $offset + $complete.Length }
+        $script:activeOutputAll += $complete
+        foreach ($line in ($complete -split '\r?\n')) {
+            if (-not $line.Trim()) { continue }
+            Update-ActionPhase -Line $line
+            if ($line -match $script:M2_NOISY_BUILD) { Write-LocalLog $line -FileOnly }
+            else { Write-LocalLog $line }
+        }
+    }
+    Update-ActionStatusText
+}
+
 function Complete-LauncherAction {
     if (-not $script:activeProcess) { return }
     try { $script:activeProcess.Refresh() } catch {}
     if (-not $script:activeProcess.HasExited) { return }
 
     $exitCode = $script:activeProcess.ExitCode
-    $output = ''
-    foreach ($path in @($script:activeOut, $script:activeErr)) {
-        if (Test-Path -LiteralPath $path -PathType Leaf) {
-            $output += Get-Content -LiteralPath $path -Raw -ErrorAction SilentlyContinue
+    # Flush whatever the action wrote between the last tick and its exit.
+    Update-ActionStream
+    foreach ($key in @('out', 'err')) {
+        $path = if ($key -eq 'out') { $script:activeOut } else { $script:activeErr }
+        if (-not $path -or -not (Test-Path -LiteralPath $path -PathType Leaf)) { continue }
+        $content = Read-SharedText -Path $path
+        if ($null -eq $content) { continue }
+        $offset = if ($key -eq 'out') { $script:activeOutOffset } else { $script:activeErrOffset }
+        if ($content.Length -le $offset) { continue }
+        $tail = $content.Substring($offset)
+        if ($key -eq 'out') { $script:activeOutOffset = $content.Length } else { $script:activeErrOffset = $content.Length }
+        $script:activeOutputAll += $tail
+        foreach ($line in ($tail -split '\r?\n')) {
+            if (-not $line.Trim()) { continue }
+            if ($line -match $script:M2_NOISY_BUILD) { Write-LocalLog $line -FileOnly } else { Write-LocalLog $line }
         }
     }
-    if ($output) {
-        foreach ($line in ($output -split '\r?\n')) {
-            if ($line) { Write-LocalLog $line }
-        }
-    }
+    $output = $script:activeOutputAll
 
     $action = $script:activeAction
     $launchClient = $script:launchClientAfterAction
@@ -254,6 +361,92 @@ function Get-BotCountFromEnv {
         if ($match.Success) { return [int]$match.Groups[1].Value }
     }
     return 350
+}
+
+function Get-InstalledServerVersion {
+    $statePath = Join-Path $root '.m2launcher-state.json'
+    if (Test-Path -LiteralPath $statePath -PathType Leaf) {
+        try {
+            $state = Get-Content -LiteralPath $statePath -Raw -Encoding UTF8 | ConvertFrom-Json
+            if ([string]$state.server) { return ([string]$state.server).Trim() }
+        }
+        catch { }
+    }
+    $versionFile = Join-Path $root 'VERSION'
+    if (Test-Path -LiteralPath $versionFile -PathType Leaf) {
+        return (Get-Content -LiteralPath $versionFile -Raw).Trim()
+    }
+    return 'unknown'
+}
+
+function Show-BotCountDialog {
+    # Slider instead of a typed number: the range is a property of the world, and
+    # dragging is far friendlier than guessing a value. 668 matches the largest
+    # cohort the panel recognises (PID 4..671).
+    param([int]$Current = 350)
+    $dialog = [Windows.Forms.Form]::new()
+    $dialog.Text = 'Liczba grających botów'
+    $dialog.Size = [Drawing.Size]::new(480, 260)
+    $dialog.StartPosition = 'CenterParent'
+    $dialog.FormBorderStyle = 'FixedDialog'
+    $dialog.MaximizeBox = $false
+    $dialog.MinimizeBox = $false
+
+    $info = [Windows.Forms.Label]::new()
+    $info.Text = "Ilu botów ma grać jednocześnie?`r`nEfektywny limit to liczba botów w Twoim świecie (kanoniczna paczka ma 350).`r`nZmiana wymaga restartu serwera."
+    $info.Location = [Drawing.Point]::new(14, 12)
+    $info.Size = [Drawing.Size]::new(440, 54)
+    $dialog.Controls.Add($info)
+
+    $valueLabel = [Windows.Forms.Label]::new()
+    $valueLabel.Name = 'valueLabel'
+    $valueLabel.Font = [Drawing.Font]::new('Segoe UI Semibold', 15)
+    $valueLabel.Location = [Drawing.Point]::new(14, 70)
+    $valueLabel.Size = [Drawing.Size]::new(440, 32)
+    $dialog.Controls.Add($valueLabel)
+
+    $bar = [Windows.Forms.TrackBar]::new()
+    $bar.Name = 'botBar'
+    $bar.Minimum = 0
+    $bar.Maximum = 668
+    $bar.TickFrequency = 50
+    $bar.SmallChange = 1
+    $bar.LargeChange = 25
+    $bar.Location = [Drawing.Point]::new(12, 104)
+    $bar.Size = [Drawing.Size]::new(442, 45)
+    $bar.Value = [Math]::Max(0, [Math]::Min(668, $Current))
+    $dialog.Controls.Add($bar)
+    $valueLabel.Text = "Boty: $($bar.Value)"
+    # $this/FindForm keeps the handler independent of captured locals.
+    $bar.Add_ValueChanged({
+            $form = $this.FindForm()
+            if ($form) {
+                $label = $form.Controls['valueLabel']
+                if ($label) { $label.Text = "Boty: $($this.Value)" }
+            }
+        })
+
+    $okButton = [Windows.Forms.Button]::new()
+    $okButton.Text = 'Zastosuj'
+    $okButton.Location = [Drawing.Point]::new(252, 168)
+    $okButton.Size = [Drawing.Size]::new(100, 32)
+    $okButton.DialogResult = [Windows.Forms.DialogResult]::OK
+    $dialog.Controls.Add($okButton)
+
+    $cancelButton = [Windows.Forms.Button]::new()
+    $cancelButton.Text = 'Anuluj'
+    $cancelButton.Location = [Drawing.Point]::new(358, 168)
+    $cancelButton.Size = [Drawing.Size]::new(96, 32)
+    $cancelButton.DialogResult = [Windows.Forms.DialogResult]::Cancel
+    $dialog.Controls.Add($cancelButton)
+    $dialog.AcceptButton = $okButton
+    $dialog.CancelButton = $cancelButton
+
+    $result = $dialog.ShowDialog()
+    $chosen = $bar.Value
+    $dialog.Dispose()
+    if ($result -ne [Windows.Forms.DialogResult]::OK) { return $null }
+    return [int]$chosen
 }
 
 function Get-GuiTargetVolume {
@@ -298,6 +491,15 @@ function Start-LauncherAction {
     $script:activeAction = $Action
     $script:launchClientAfterAction = [bool]$LaunchClient
     $script:openSupportAfterAction = [bool]$OpenSupport
+    # Live-progress state for this run.
+    $script:activeOutOffset = 0
+    $script:activeErrOffset = 0
+    $script:activeOutputAll = ''
+    $script:activeStarted = Get-Date
+    $script:activePhase = ''
+    $script:activePhaseStep = 0
+    $script:activePhaseTotal = 0
+    $script:activeBuildNoticed = $false
     $script:actionStatus.Text = "Trwa: $Action..."
     $script:actionStatus.ForeColor = [Drawing.Color]::Gold
     $script:progress.Style = 'Marquee'
@@ -401,16 +603,15 @@ $stopButton = New-Button 'ZATRZYMAJ I ZAPISZ' 268 202 218 50 ([Drawing.Color]::F
 $panelButton = New-Button 'OTWÓRZ PANEL WWW' 508 202 218 50 ([Drawing.Color]::FromArgb(180, 125, 35))
 $clientButton = New-Button 'WYBIERZ KLIENTA' 28 266 218 48 ([Drawing.Color]::FromArgb(75, 90, 120))
 $updateButton = New-Button 'SPRAWDŹ AKTUALIZACJE' 268 266 218 48 ([Drawing.Color]::FromArgb(75, 90, 120))
-$bundleButton = New-Button 'ZBIERZ LOGI (ZIP)' 508 266 218 48 ([Drawing.Color]::FromArgb(75, 90, 120))
-$installUpdateButton = New-Button 'ZAINSTALUJ AKTUALIZACJE' 28 328 158 45 ([Drawing.Color]::FromArgb(88, 82, 160))
-$diagnosticsButton = New-Button 'DIAGNOSTYKA' 204 328 158 45 ([Drawing.Color]::FromArgb(45, 110, 190))
-$openLogButton = New-Button 'OTWÓRZ LOG' 380 328 158 45 ([Drawing.Color]::FromArgb(58, 62, 72))
-$folderButton = New-Button 'FOLDER LOGÓW' 556 328 170 45 ([Drawing.Color]::FromArgb(58, 62, 72))
-$botCountButton = New-Button 'LICZBA BOTÓW (0–350)' 28 380 218 32 ([Drawing.Color]::FromArgb(120, 95, 40))
+$bundleButton = New-Button 'ZBIERZ / WYŚLIJ LOGI' 508 266 218 48 ([Drawing.Color]::FromArgb(75, 90, 120))
+$diagnosticsButton = New-Button 'DIAGNOSTYKA' 28 328 218 45 ([Drawing.Color]::FromArgb(45, 110, 190))
+$openLogButton = New-Button 'OTWÓRZ LOG' 262 328 218 45 ([Drawing.Color]::FromArgb(58, 62, 72))
+$folderButton = New-Button 'FOLDER LOGÓW' 496 328 230 45 ([Drawing.Color]::FromArgb(58, 62, 72))
+$botCountButton = New-Button 'LICZBA BOTÓW (0–668)' 28 380 218 32 ([Drawing.Color]::FromArgb(120, 95, 40))
 $importDbButton = New-Button 'IMPORTUJ BAZĘ' 262 380 218 32 ([Drawing.Color]::FromArgb(70, 120, 90))
 $repairDbButton = New-Button 'NAPRAW DOSTĘP DO BAZY' 496 380 230 32 ([Drawing.Color]::FromArgb(150, 90, 55))
 
-foreach ($button in @($installButton, $playButton, $dockerButton, $stopButton, $panelButton, $clientButton, $updateButton, $bundleButton, $installUpdateButton, $diagnosticsButton, $openLogButton, $folderButton, $botCountButton, $importDbButton, $repairDbButton)) {
+foreach ($button in @($installButton, $playButton, $dockerButton, $stopButton, $panelButton, $clientButton, $updateButton, $bundleButton, $diagnosticsButton, $openLogButton, $folderButton, $botCountButton, $importDbButton, $repairDbButton)) {
     $script:form.Controls.Add($button)
 }
 
@@ -460,15 +661,71 @@ $stopButton.Add_Click({
 })
 $panelButton.Add_Click({ Start-Process 'http://127.0.0.1:7788/map' })
 $clientButton.Add_Click({ [void](Select-ClientExecutable) })
-$updateButton.Add_Click({ Start-LauncherAction -Action 'Check' })
-$installUpdateButton.Add_Click({
+$updateButton.Add_Click({
+    # One button for the whole flow: check in-process, and only offer to install
+    # when there really is something newer.
+    $installed = Get-InstalledServerVersion
+    Write-LocalLog "Sprawdzam aktualizacje (zainstalowana wersja: $installed)..."
+    $manifest = $null
+    try {
+        $config = Get-M2LauncherConfig -ServerRoot $root -ConfigPath $configPath
+        $manifest = Get-M2UpdateManifest -Source ([string]$config.manifestUrl)
+    }
+    catch {
+        Write-LocalLog "Nie udało się sprawdzić aktualizacji: $($_.Exception.Message)"
+        [Windows.Forms.MessageBox]::Show(
+            "Nie udało się sprawdzić aktualizacji.`r`n`r`n$($_.Exception.Message)",
+            'Sprawdzanie aktualizacji', 'OK', 'Warning') | Out-Null
+        return
+    }
+    $server = $null
+    $serverProperty = $manifest.PSObject.Properties['server']
+    if ($serverProperty -and $serverProperty.Value) { $server = $serverProperty.Value }
+    if (-not $server -or -not [string]$server.version) {
+        $message = 'Kanał aktualizacji nie ma obecnie nowej wersji serwera. Twoja instalacja pozostaje bez zmian.'
+        $statusProperty = $manifest.PSObject.Properties['statusMessage']
+        if ($statusProperty -and [string]$statusProperty.Value) { $message = [string]$statusProperty.Value }
+        Write-LocalLog $message
+        [Windows.Forms.MessageBox]::Show($message, 'Brak aktualizacji', 'OK', 'Information') | Out-Null
+        return
+    }
+    $available = ([string]$server.version).Trim()
+    Write-LocalLog "Dostępna wersja serwera: $available"
+    if ($installed -and $installed -ne 'unknown' -and $installed.Equals($available, [StringComparison]::OrdinalIgnoreCase)) {
+        [Windows.Forms.MessageBox]::Show("Masz już najnowszą wersję ($available).", 'Aktualizacje', 'OK', 'Information') | Out-Null
+        return
+    }
     $answer = [Windows.Forms.MessageBox]::Show(
-        'Pobrać i zainstalować dostępne aktualizacje serwera oraz klienta? Zmieniane pliki otrzymają kopię zapasową, a baza postaci pozostanie bez zmian.',
-        'Instalacja aktualizacji', 'YesNo', 'Question')
-    if ($answer -eq [Windows.Forms.DialogResult]::Yes) { Start-LauncherAction -Action 'UpdateAll' -Yes }
+        "Znaleziono nową wersję serwera: $available`r`n(zainstalowana: $installed)`r`n`r`nZainstalować teraz?`r`n`r`nTwoje postacie, przedmioty i boty pozostaną bez zmian. Aktualizacja przebudowuje serwer lokalnie — przy pierwszym razie może to potrwać kilkanaście–kilkadziesiąt minut. Postęp zobaczysz w logu poniżej.",
+        'Dostępna aktualizacja', 'YesNo', 'Question')
+    if ($answer -ne [Windows.Forms.DialogResult]::Yes) {
+        Write-LocalLog 'Aktualizacja odłożona na później.'
+        return
+    }
+    Start-LauncherAction -Action 'UpdateAll' -Yes
 })
 $diagnosticsButton.Add_Click({ Start-LauncherAction -Action 'Diagnose' })
-$bundleButton.Add_Click({ Start-LauncherAction -Action 'Logs' -OpenSupport })
+$bundleButton.Add_Click({
+    # When a support channel is configured the ZIP can go straight to the
+    # author; otherwise fall back to writing it to disk and opening the folder.
+    $config = Get-LauncherConfig
+    if ([string]$config.supportUploadUrl) {
+        $answer = [Windows.Forms.MessageBox]::Show(
+            "Spakowac logi i wyslac je od razu do autora projektu?`r`n`r`nPaczka zawiera logi Dockera i konfiguracje z usunietymi haslami.`r`n`r`nNIE = tylko zapisz ZIP na dysku.",
+            'Wyslij logi', 'YesNoCancel', 'Question')
+        if ($answer -eq [Windows.Forms.DialogResult]::Cancel) { return }
+        if ($answer -eq [Windows.Forms.DialogResult]::Yes) {
+            Start-LauncherAction -Action 'SendLogs' -Yes
+            return
+        }
+    }
+    else {
+        [Windows.Forms.MessageBox]::Show(
+            "Zapisze paczke ZIP z logami i otworze jej folder - dolacz ja na Discordzie.`r`n`r`nAby wysylac jednym kliknieciem, autor moze wpisac adres kanalu pomocy w konfiguracji launchera (supportUploadUrl).",
+            'Logi', 'OK', 'Information') | Out-Null
+    }
+    Start-LauncherAction -Action 'Logs' -OpenSupport
+})
 $openLogButton.Add_Click({
     if (-not (Test-Path -LiteralPath $sessionLog -PathType Leaf)) { Write-LocalLog 'Utworzono dziennik launchera.' }
     Start-Process notepad.exe -ArgumentList ('"{0}"' -f $sessionLog)
@@ -479,18 +736,8 @@ $folderButton.Add_Click({
 })
 $botCountButton.Add_Click({
     $current = Get-BotCountFromEnv
-    $entered = [Microsoft.VisualBasic.Interaction]::InputBox(
-        "Ilu botów ma grać? (0-350; limit = liczba zaseedowanych botów)`r`nZmiana wymaga restartu serwera, aby zadziałała.",
-        'Liczba grających botów', "$current")
-    if ([string]::IsNullOrWhiteSpace($entered)) { return }
-    if ($entered -notmatch '^\d+$') {
-        [Windows.Forms.MessageBox]::Show('Podaj liczbę całkowitą (np. 150).', 'Nieprawidłowa wartość', 'OK', 'Warning') | Out-Null
-        return
-    }
-    $count = [int]$entered
-    if ($count -gt 350) {
-        [Windows.Forms.MessageBox]::Show("Kanoniczna paczka ma 350 zaseedowanych botów, więc grać będzie najwyżej 350. Ustawię $count, ale efektywnie pojawi się maksymalnie tyle, ile jest zaseedowanych.", 'Uwaga', 'OK', 'Information') | Out-Null
-    }
+    $count = Show-BotCountDialog -Current $current
+    if ($null -eq $count) { return }
     $answer = [Windows.Forms.MessageBox]::Show(
         "Ustawić $count grających botów i zrestartować serwer teraz, aby zastosować? Baza i postęp botów pozostaną bez zmian.",
         'Liczba botów', 'YesNoCancel', 'Question')
@@ -562,7 +809,7 @@ $repairDbButton.Add_Click({
 
 $timer = [Windows.Forms.Timer]::new()
 $timer.Interval = 1200
-$timer.Add_Tick({ Complete-LauncherAction })
+$timer.Add_Tick({ Update-ActionStream; Complete-LauncherAction })
 $timer.Start()
 
 $statusTimer = [Windows.Forms.Timer]::new()

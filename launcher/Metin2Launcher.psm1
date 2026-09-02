@@ -483,12 +483,42 @@ function Get-M2DbDataVolumes {
     finally { $ErrorActionPreference = $previous }
 }
 
+function Test-M2VolumeInitialized {
+    # True only when the volume already exists AND holds an initialized MariaDB
+    # data directory. Never creates anything: `docker volume inspect' does not
+    # create, and the content probe mounts read-only.
+    param([Parameter(Mandatory = $true)][string]$Volume)
+    $previous = $ErrorActionPreference; $ErrorActionPreference = 'Continue'
+    try {
+        & docker volume inspect $Volume 1>$null 2>$null
+        if ($LASTEXITCODE -ne 0) { return $false }
+        # --entrypoint sh is required: the mariadb image's own entrypoint would
+        # otherwise swallow the probe command.
+        & docker run --rm --entrypoint sh -v "${Volume}:/v:ro" $script:M2_DB_IMAGE -c 'test -d /v/mysql' 1>$null 2>$null
+        return ($LASTEXITCODE -eq 0)
+    }
+    finally { $ErrorActionPreference = $previous }
+}
+
 function Start-M2ThrowawayDb {
     param([Parameter(Mandatory = $true)][string]$Volume)
     $previous = $ErrorActionPreference; $ErrorActionPreference = 'Continue'
     try {
+        # Refuse to touch a volume that is missing or not an initialized
+        # database. Docker silently CREATES a named volume that does not exist,
+        # and MariaDB would then initialize it as an empty, password-less server
+        # with no game schema. Because the volume is no longer empty afterwards,
+        # the compose entrypoint never runs initdb.d again and the install is
+        # permanently broken. Fail loudly instead.
+        if (-not (Test-M2VolumeInitialized -Volume $Volume)) {
+            throw "Baza '$Volume' nie istnieje albo nie jest jeszcze zainicjalizowana. Uruchom najpierw serwer (GRAJ) choć raz, aby baza powstała poprawnie, i dopiero potem użyj tej funkcji."
+        }
         $container = 'm2dbimp-' + [Guid]::NewGuid().ToString('N').Substring(0, 8)
-        $null = & docker run -d --name $container -e MARIADB_ALLOW_EMPTY_ROOT_PASSWORD=1 -v "${Volume}:/var/lib/mysql" $script:M2_DB_IMAGE --skip-grant-tables 2>$null
+        # No MARIADB_ALLOW_EMPTY_ROOT_PASSWORD: on an initialized volume the
+        # entrypoint skips setup entirely, and without it a surprise empty volume
+        # makes the container refuse to start rather than silently create a
+        # password-less database.
+        $null = & docker run -d --name $container -v "${Volume}:/var/lib/mysql" $script:M2_DB_IMAGE --skip-grant-tables 2>$null
         if ($LASTEXITCODE -ne 0) { throw "Nie udało się uruchomić kontenera bazy dla wolumenu '$Volume' (czy jest zajęty przez działający serwer?)." }
         $deadline = (Get-Date).AddSeconds(120)
         do {
@@ -711,5 +741,6 @@ Export-ModuleMember -Function @(
     'Get-M2DbDataVolumes',
     'Get-M2VolumeWorldStats',
     'Invoke-M2DatabaseImport',
-    'Repair-M2GameDbUser'
+    'Repair-M2GameDbUser',
+    'Test-M2VolumeInitialized'
 )
