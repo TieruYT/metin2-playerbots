@@ -17,6 +17,26 @@ every version here.
 
 ---
 
+## 1.22.0 — 2026-09-02
+
+### Added
+
+- **Boty wychodzą wreszcie poza Bokjung — na Dolinę Orków i Pustynię Yongbi.** Progresja kończyła się na M2, którego moby przestają się opłacać koło 27 poziomu, więc bot, który je przerósł, był odsyłany do Joan bić wilki na 3 poziomie. Dolina Orków (moby 18–25) obsługuje poziomy 20–27, Pustynia (moby 26–30) poziomy 28–33. Boty podróżują przez Teleportera, którego każda wioska ma naprawdę, i wracają bramką kilka kroków od miejsca, w którym się pojawiły.
+- **Obie mapy na stronie.** Selektor na `/map` ma teraz sześć pozycji, więc widać boty także na nowych mapach. Teleport do bota działa tam bez zmian.
+- **Mapy cieplne.** Nowy przełącznik pokazuje, **gdzie boty giną** i **gdzie rozbijają metiny** — na podstawie zdarzeń, które serwer i tak zapisuje. Wielkość plamy skaluje się pierwiastkiem z liczby zdarzeń, więc jedno gorące miejsce nie zalewa całej mapy.
+
+### Fixed
+
+- **Brakujący hełm nie przykuwa już bota do jednej mapy.** Brak dowolnej części EQ liczył się jako krytyczna potrzeba miasta, a ta blokowała podróż bezterminowo. Bot zawsze chciał na zakupy, więc nigdy nie wolno mu było wyjść — i bił wilki na 3 poziomie mając 27 poziom i ponad milion yang. Teraz blokują tylko braki, które faktycznie uniemożliwiają grę (broń, zbroja, mikstury, strzały, pełny plecak); reszta dostaje jedną wizytę w mieście i jeśli miasto nie ma czym pomóc, bot rusza dalej.
+- **Poprawione przyciski teleportacji w panelu.** „Pustynia" i „Ognista Ziemia" wskazywały współrzędne spoza świata gry, więc nigdy nie działały. Wszystkie miejsca celują teraz w punkt odrodzenia Chunjo danej mapy; doszły też Bokjung, Dolina Orków, Pustynia i Góra Sohan.
+
+### Changed
+
+- **Osobowość bota wpływa teraz na to, gdzie gra**, a nie tylko na to, jak ryzykownie ulepsza. Wędrowiec wyrusza na dalekie mapy 7 razy na 8 i zostaje tam dwa razy dłużej, ostrożny kolekcjoner 2 na 8 i wraca szybciej. Około 38% każdego pasma zostaje w Bokjung, żeby miasto, bestie i pula na drużyny nie pustoszały.
+- Mapa 64 przeniesiona na rdzeń `game1`. Bot serwerowy nie ma klienta, który przełączyłby się między rdzeniami, więc cała jego trasa musi być na jednym — mapa 303 poszła w drugą stronę dla zachowania balansu.
+
+---
+
 ## 1.21.2 — 2026-09-02
 
 ### Fixed

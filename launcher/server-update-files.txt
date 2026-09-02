@@ -10,6 +10,9 @@ linux-port/overlays/playerbot/src/game/src/playerbot_manager.cpp
 linux-port/overlays/playerbot/patches/0001-core-integration.patch
 linux-port/overlays/playerbot/tools/generate_seed.py
 linux-port/docker/game/src/server/game/src/playerbot_manager.cpp
+# Assigns maps to game cores. The bots' route now includes Orc Valley, and
+# a server-side bot cannot cross between cores, so this must ship with it.
+linux-port/docker/game/bin/m2-render-config
 PACZKA_INFO.txt
 CHANGELOG.md
 VERSION
