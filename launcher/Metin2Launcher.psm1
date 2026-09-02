@@ -506,7 +506,17 @@ function Stop-M2ThrowawayDb {
     param([string]$Container)
     if ($Container) {
         $previous = $ErrorActionPreference; $ErrorActionPreference = 'Continue'
-        try { & docker rm -f $Container 1>$null 2>$null } finally { $ErrorActionPreference = $previous }
+        try {
+            # Graceful stop so mysqld flushes and shuts down cleanly. A hard
+            # `docker rm -f' (SIGKILL) leaves the volume needing InnoDB crash
+            # recovery on the next start, which could bring the post-import
+            # MariaDB up in a state where the game DB user failed to authenticate
+            # ("unauthenticated"), stalling playerbot-migrate and blocking the
+            # game and panel.
+            & docker stop -t 40 $Container 1>$null 2>$null
+            & docker rm -f $Container 1>$null 2>$null
+        }
+        finally { $ErrorActionPreference = $previous }
     }
 }
 
@@ -562,11 +572,52 @@ function Invoke-M2SqlFile {
     finally { $ErrorActionPreference = $previous }
 }
 
+function Repair-M2GameDbUser {
+    # Recreate the game DB user and its grants on an existing db-data volume.
+    # For installs that swapped the world (import) before the graceful-shutdown
+    # fix and were left with a MariaDB the migrator could not authenticate to.
+    # Only mysql.* (the technical DB account) is touched; player data is not.
+    param(
+        [Parameter(Mandatory = $true)][string]$Volume,
+        [Parameter(Mandatory = $true)][string]$DbUser,
+        [Parameter(Mandatory = $true)][string]$DbPassword
+    )
+    $previous = $ErrorActionPreference; $ErrorActionPreference = 'Continue'
+    $work = Join-Path ([IO.Path]::GetTempPath()) ('m2repair-' + [Guid]::NewGuid().ToString('N').Substring(0, 8))
+    New-Item -ItemType Directory -Path $work -Force | Out-Null
+    $container = $null
+    try {
+        $container = Start-M2ThrowawayDb -Volume $Volume
+        $safeUser = ($DbUser -replace '[^A-Za-z0-9_]', '')
+        if (-not $safeUser) { $safeUser = 'metin2' }
+        $pwEsc = $DbPassword.Replace('\', '\\').Replace("'", "''")
+        $gb = New-Object System.Text.StringBuilder
+        [void]$gb.AppendLine('FLUSH PRIVILEGES;')
+        [void]$gb.AppendLine("CREATE USER IF NOT EXISTS '$safeUser'@'%' IDENTIFIED BY '$pwEsc';")
+        [void]$gb.AppendLine("ALTER USER '$safeUser'@'%' IDENTIFIED BY '$pwEsc';")
+        foreach ($db in $script:M2_DB_LIST) {
+            [void]$gb.AppendLine("GRANT ALL PRIVILEGES ON $db.* TO '$safeUser'@'%';")
+        }
+        [void]$gb.AppendLine('FLUSH PRIVILEGES;')
+        $repairFile = Join-Path $work 'repair.sql'
+        [IO.File]::WriteAllText($repairFile, $gb.ToString(), [Text.UTF8Encoding]::new($false))
+        Invoke-M2SqlFile -Container $container -Database '' -InFile $repairFile
+        return $true
+    }
+    finally {
+        if ($container) { Stop-M2ThrowawayDb -Container $container }
+        if (Test-Path -LiteralPath $work) { Remove-Item -LiteralPath $work -Recurse -Force -ErrorAction SilentlyContinue }
+        $ErrorActionPreference = $previous
+    }
+}
+
 function Invoke-M2DatabaseImport {
     param(
         [Parameter(Mandatory = $true)][string]$SourceVolume,
         [Parameter(Mandatory = $true)][string]$TargetVolume,
-        [Parameter(Mandatory = $true)][string]$BackupRoot
+        [Parameter(Mandatory = $true)][string]$BackupRoot,
+        [string]$DbUser = 'metin2',
+        [string]$DbPassword = ''
     )
     if ($SourceVolume -eq $TargetVolume) { throw 'Źródło i cel to ten sam wolumen.' }
     $previous = $ErrorActionPreference; $ErrorActionPreference = 'Continue'
@@ -607,7 +658,34 @@ function Invoke-M2DatabaseImport {
         foreach ($db in $script:M2_DB_LIST) {
             Invoke-M2SqlFile -Container $tgtC -Database $db -InFile (Join-Path $work "source\$db.sql")
         }
+
         $stats = & docker exec $tgtC sh -c "mariadb -uroot -N -B -e 'SELECT COUNT(*), IFNULL(MAX(level),0) FROM player.player'" 2>$null
+
+        # Re-establish the game DB user and its grants so the game core and the
+        # playerbot migrator can always authenticate after an import, regardless
+        # of what the imported schema left behind. Done LAST, because FLUSH
+        # PRIVILEGES turns the privilege system back on inside the
+        # --skip-grant-tables container -- the -uroot socket queries above rely on
+        # privileges being off. The standard initdb grants are (re)applied;
+        # mysql.* is otherwise untouched, so player logins, characters, items and
+        # bots are not altered.
+        if ($DbPassword) {
+            $safeUser = ($DbUser -replace '[^A-Za-z0-9_]', '')
+            if (-not $safeUser) { $safeUser = 'metin2' }
+            $pwEsc = $DbPassword.Replace('\', '\\').Replace("'", "''")
+            $gb = New-Object System.Text.StringBuilder
+            [void]$gb.AppendLine('FLUSH PRIVILEGES;')
+            [void]$gb.AppendLine("CREATE USER IF NOT EXISTS '$safeUser'@'%' IDENTIFIED BY '$pwEsc';")
+            [void]$gb.AppendLine("ALTER USER '$safeUser'@'%' IDENTIFIED BY '$pwEsc';")
+            foreach ($db in $script:M2_DB_LIST) {
+                [void]$gb.AppendLine("GRANT ALL PRIVILEGES ON $db.* TO '$safeUser'@'%';")
+            }
+            [void]$gb.AppendLine('FLUSH PRIVILEGES;')
+            $grantFile = Join-Path $work 'grant.sql'
+            [IO.File]::WriteAllText($grantFile, $gb.ToString(), [Text.UTF8Encoding]::new($false))
+            Invoke-M2SqlFile -Container $tgtC -Database '' -InFile $grantFile
+        }
+
         Stop-M2ThrowawayDb -Container $tgtC; $tgtC = $null
 
         $players = 0; $maxLevel = 0
@@ -632,5 +710,6 @@ Export-ModuleMember -Function @(
     'Send-M2SupportBundle',
     'Get-M2DbDataVolumes',
     'Get-M2VolumeWorldStats',
-    'Invoke-M2DatabaseImport'
+    'Invoke-M2DatabaseImport',
+    'Repair-M2GameDbUser'
 )

@@ -406,10 +406,11 @@ $installUpdateButton = New-Button 'ZAINSTALUJ AKTUALIZACJE' 28 328 158 45 ([Draw
 $diagnosticsButton = New-Button 'DIAGNOSTYKA' 204 328 158 45 ([Drawing.Color]::FromArgb(45, 110, 190))
 $openLogButton = New-Button 'OTWÓRZ LOG' 380 328 158 45 ([Drawing.Color]::FromArgb(58, 62, 72))
 $folderButton = New-Button 'FOLDER LOGÓW' 556 328 170 45 ([Drawing.Color]::FromArgb(58, 62, 72))
-$botCountButton = New-Button 'USTAW LICZBĘ BOTÓW (0–350)' 28 380 338 32 ([Drawing.Color]::FromArgb(120, 95, 40))
-$importDbButton = New-Button 'IMPORTUJ BAZĘ (WYŻSZE POSTACIE)' 388 380 338 32 ([Drawing.Color]::FromArgb(70, 120, 90))
+$botCountButton = New-Button 'LICZBA BOTÓW (0–350)' 28 380 218 32 ([Drawing.Color]::FromArgb(120, 95, 40))
+$importDbButton = New-Button 'IMPORTUJ BAZĘ' 262 380 218 32 ([Drawing.Color]::FromArgb(70, 120, 90))
+$repairDbButton = New-Button 'NAPRAW DOSTĘP DO BAZY' 496 380 230 32 ([Drawing.Color]::FromArgb(150, 90, 55))
 
-foreach ($button in @($installButton, $playButton, $dockerButton, $stopButton, $panelButton, $clientButton, $updateButton, $bundleButton, $installUpdateButton, $diagnosticsButton, $openLogButton, $folderButton, $botCountButton, $importDbButton)) {
+foreach ($button in @($installButton, $playButton, $dockerButton, $stopButton, $panelButton, $clientButton, $updateButton, $bundleButton, $installUpdateButton, $diagnosticsButton, $openLogButton, $folderButton, $botCountButton, $importDbButton, $repairDbButton)) {
     $script:form.Controls.Add($button)
 }
 
@@ -550,6 +551,13 @@ $importDbButton.Add_Click({
         'Potwierdź import bazy', 'YesNo', 'Warning')
     if ($confirm -ne [Windows.Forms.DialogResult]::Yes) { return }
     Start-LauncherAction -Action 'ImportDb' -Yes -ExtraArgs @('-ImportSource', "$picked")
+})
+$repairDbButton.Add_Click({
+    $answer = [Windows.Forms.MessageBox]::Show(
+        "Naprawić dostęp do bazy?`r`n`r`nUżyj tego, gdy po imporcie serwer nie startuje (playerbot-migrate kończy się błędem). Odtwarza tylko techniczne konto bazy — postacie, przedmioty i boty pozostają BEZ ZMIAN. Serwer zostanie zatrzymany na czas naprawy.",
+        'Napraw dostęp do bazy', 'YesNo', 'Question')
+    if ($answer -ne [Windows.Forms.DialogResult]::Yes) { return }
+    Start-LauncherAction -Action 'RepairDb'
 })
 
 $timer = [Windows.Forms.Timer]::new()

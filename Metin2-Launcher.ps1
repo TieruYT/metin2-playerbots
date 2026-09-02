@@ -1,6 +1,6 @@
 ﻿[CmdletBinding()]
 param(
-    [ValidateSet('Menu', 'Start', 'Stop', 'StartDocker', 'StopAll', 'Check', 'UpdateServer', 'UpdateClient', 'UpdateAll', 'Diagnose', 'Logs', 'SendLogs', 'Configure', 'SetBots', 'ImportDb')]
+    [ValidateSet('Menu', 'Start', 'Stop', 'StartDocker', 'StopAll', 'Check', 'UpdateServer', 'UpdateClient', 'UpdateAll', 'Diagnose', 'Logs', 'SendLogs', 'Configure', 'SetBots', 'ImportDb', 'RepairDb')]
     [string]$Action = 'Menu',
     [string]$Manifest = '',
     [int]$BotCount = -1,
@@ -405,14 +405,63 @@ function Import-DatabaseAction {
     Write-Host "Źródło pozostaje nietknięte. Obecny świat trafi do kopii w 'backups' przed nadpisaniem." -ForegroundColor Yellow
     if (-not (Confirm-Operation "Kontynuować import z '$($chosen.Project)'?")) { Write-Host 'Anulowano.' -ForegroundColor Yellow; return }
 
+    # Read this install's game DB user/password so the import can re-apply the
+    # user and grants afterwards (guards against the migrator failing to
+    # authenticate after a swap).
+    $dbUser = 'metin2'; $dbPass = ''
+    $importEnvPath = Join-Path $serverRoot 'linux-port\docker\.env'
+    if (Test-Path -LiteralPath $importEnvPath -PathType Leaf) {
+        $importEnvText = [IO.File]::ReadAllText($importEnvPath)
+        $userMatch = [Regex]::Match($importEnvText, '(?m)^M2_DB_USER=(.+?)\s*$')
+        if ($userMatch.Success) { $dbUser = $userMatch.Groups[1].Value }
+        $passMatch = [Regex]::Match($importEnvText, '(?m)^M2_DB_PASSWORD=(.+?)\s*$')
+        if ($passMatch.Success) { $dbPass = $passMatch.Groups[1].Value }
+    }
+
     Write-Host 'Zatrzymuję serwer, aby zwolnić bazę docelową...' -ForegroundColor Cyan
     Stop-Server
 
     Write-Host 'Importuję bazę (to może potrwać chwilę)...' -ForegroundColor Cyan
-    $result = Invoke-M2DatabaseImport -SourceVolume $chosen.Name -TargetVolume $target -BackupRoot (Join-Path $serverRoot 'backups')
+    $result = Invoke-M2DatabaseImport -SourceVolume $chosen.Name -TargetVolume $target -BackupRoot (Join-Path $serverRoot 'backups') -DbUser $dbUser -DbPassword $dbPass
     Write-Host ("Gotowe. Zaimportowany świat: {0} postaci, najwyższy poziom {1}." -f $result.Players, $result.MaxLevel) -ForegroundColor Green
     Write-Host ("Kopia poprzedniego świata: {0}" -f $result.Backup) -ForegroundColor Gray
     Write-Host 'Kliknij GRAJ (lub akcja Start), aby uruchomić serwer z zaimportowanym światem.' -ForegroundColor Green
+}
+
+function Get-InstallDbCredentials {
+    $result = [pscustomobject]@{ User = 'metin2'; Password = '' }
+    $envPath = Join-Path $serverRoot 'linux-port\docker\.env'
+    if (Test-Path -LiteralPath $envPath -PathType Leaf) {
+        $text = [IO.File]::ReadAllText($envPath)
+        $userMatch = [Regex]::Match($text, '(?m)^M2_DB_USER=(.+?)\s*$')
+        if ($userMatch.Success) { $result.User = $userMatch.Groups[1].Value }
+        $passMatch = [Regex]::Match($text, '(?m)^M2_DB_PASSWORD=(.+?)\s*$')
+        if ($passMatch.Success) { $result.Password = $passMatch.Groups[1].Value }
+    }
+    return $result
+}
+
+function Repair-DatabaseAction {
+    $target = Get-CurrentInstallTargetVolume
+    if (-not $target) {
+        Write-Host 'Nie można ustalić bazy tej instalacji. Uruchom najpierw serwer (GRAJ) choć raz.' -ForegroundColor Yellow
+        return
+    }
+    $creds = Get-InstallDbCredentials
+    if (-not $creds.Password) {
+        Write-Host 'Brak M2_DB_PASSWORD w linux-port\docker\.env — nie mam czego przywrócić.' -ForegroundColor Red
+        return
+    }
+    Write-Host "Naprawiam konto techniczne bazy dla instalacji: $target" -ForegroundColor Cyan
+    Write-Host 'To odtwarza wyłącznie użytkownika i uprawnienia bazy. Postacie, przedmioty i boty pozostają bez zmian.' -ForegroundColor Gray
+    Write-Host 'Zatrzymuję serwer, aby zwolnić bazę...' -ForegroundColor Cyan
+    Stop-Server
+    if (Repair-M2GameDbUser -Volume $target -DbUser $creds.User -DbPassword $creds.Password) {
+        Write-Host 'Gotowe. Konto i uprawnienia bazy odtworzone. Kliknij GRAJ, aby uruchomić serwer.' -ForegroundColor Green
+    }
+    else {
+        Write-Host 'Naprawa nie powiodła się. Zbierz logi (ZIP) i zgłoś problem.' -ForegroundColor Red
+    }
 }
 
 function Create-Logs {
@@ -478,6 +527,7 @@ function Invoke-Action {
         'Configure' { Configure-Launcher }
         'SetBots' { Set-BotCountAction }
         'ImportDb' { Import-DatabaseAction }
+        'RepairDb' { Repair-DatabaseAction }
         default { throw "Nieznana akcja: $SelectedAction" }
     }
 }
@@ -499,6 +549,7 @@ function Show-Menu {
         Write-Host ' 12. Konfiguracja launchera'
         Write-Host ' 13. Ustaw liczbę grających botów (0-350)'
         Write-Host ' 14. Importuj bazę z innej instalacji (wyższe postacie)'
+        Write-Host ' 15. Napraw dostęp do bazy (gdy migrate/serwer nie startuje)'
         Write-Host '  0. Wyjście'
         Write-Host ''
         $choice = Read-Host 'Wybierz opcję'
@@ -508,6 +559,7 @@ function Show-Menu {
             '8' { 'UpdateAll' } '9' { 'Diagnose' } '10' { 'Logs' } '11' { 'SendLogs' } '12' { 'Configure' }
             '13' { 'SetBots' }
             '14' { 'ImportDb' }
+            '15' { 'RepairDb' }
             '0' { return }
             default { '' }
         }

@@ -380,3 +380,43 @@ launchera (są w allowliście), więc kolejne poprawki launchera dojdą tą drog
 `linux-port/docker/.env.example`, `launcher/Metin2Launcher.psm1`,
 `Metin2-Launcher.ps1`, `VERSION`, `update-manifest.json` (nowy).
 
+### Sesja: naprawa migrate po imporcie + RepairDb (2026-09-02, siódma tura)
+
+Zgłoszenie (tudyk): po „IMPORTUJ BAZĘ" (metin2 → m2fresh) serwer nie startował —
+`playerbot-migrate` exit 1, `game`/`panel` nie wstawały. Z pełnych logów
+(support bundle): `[Warning] ... user: 'unauthenticated' ... closed normally
+without authentication` co 2 s → `FATAL: database import was not ready after 300
+seconds`. Do tego `InnoDB: Starting crash recovery` przy starcie db.
+
+**Root cause:** import kończył throwaway mariadb przez `docker rm -f` (SIGKILL) →
+nieczyste zamknięcie → crash recovery przy następnym starcie → po odzysku konto
+`metin2` bywało niedostępne dla migratora (auth padał). Sam import w izolacji
+zachowywał usera (potwierdzone lokalnie), więc winna była kombinacja force-kill +
+recovery.
+
+**Naprawa (import):**
+- `Stop-M2ThrowawayDb`: łagodne `docker stop -t 40` przed `rm` — brak crash
+  recovery.
+- `Invoke-M2DatabaseImport`: po podmianie świata, jako OSTATNI krok, `FLUSH
+  PRIVILEGES` + `CREATE/ALTER USER` + `GRANT` dla konta gry (przekazywane z `.env`
+  przez `Import-DatabaseAction`). Gwarantuje auth niezależnie od stanu. `mysql.*`
+  poza tym nietknięte — dane graczy/botów bez zmian.
+  Zweryfikowane: import → migrate exit 0 (SUCCESS), statystyki 669/60.
+
+**Odzysk istniejących zepsutych instalacji (RepairDb):**
+- `Repair-M2GameDbUser` (moduł) + akcja `-Action RepairDb` + pozycja 15 w menu +
+  przycisk GUI „NAPRAW DOSTĘP DO BAZY". Odtwarza konto+granty na wolumenie
+  bieżącej instalacji (bez re-importu). Dla tudyka i każdego, kto importował
+  starszą wersją. Zweryfikowane: repair → metin2 auth OK (item_proto 5743).
+
+**Uwaga:** ostrzeżenie `volume "..._db-data" already exists but was not created by
+Docker Compose` jest nieszkodliwe (wolumen tworzą throwaway kontenery importu) —
+ignorować, NIE robić `down -v`.
+
+**Publikacja:** VERSION 1.19.0 → 1.20.0, wpis w `CHANGELOG.md` (+ dodany do
+allowlisty), Release `v1.20.0` + zaktualizowany `update-manifest.json`.
+
+**Pliki dotknięte:** `launcher/Metin2Launcher.psm1`, `Metin2-Launcher.ps1`,
+`Metin2-Launcher-GUI.ps1`, `launcher/server-update-files.txt`, `VERSION`,
+`CHANGELOG.md`, `update-manifest.json`.
+

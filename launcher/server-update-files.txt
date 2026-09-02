@@ -11,6 +11,7 @@ linux-port/overlays/playerbot/patches/0001-core-integration.patch
 linux-port/overlays/playerbot/tools/generate_seed.py
 linux-port/docker/game/src/server/game/src/playerbot_manager.cpp
 PACZKA_INFO.txt
+CHANGELOG.md
 VERSION
 start-server.ps1
 start.bat
