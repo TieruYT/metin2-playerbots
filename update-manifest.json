@@ -1,12 +1,12 @@
 {
   "schema": 1,
   "channel": "stable",
-  "publishedAt": "2026-09-02T08:15:00Z",
-  "statusMessage": "Aktualizacja 1.21.0: ochrona bazy przy imporcie, suwak liczby botów (0–668), widoczny postęp uruchamiania.",
+  "publishedAt": "2026-09-02T17:40:00Z",
+  "statusMessage": "Aktualizacja 1.21.1: przycisk „ZBIERZ / WYŚLIJ LOGI” wysyła paczkę prosto na Discorda projektu.",
   "server": {
-    "version": "1.21.0",
-    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v1.21.0/metin2-server-update-1.21.0.zip",
-    "sha256": "872C08D7DED8BC9297B62298FFEF294AD205AFA604047C93F24A89F2A04DF166"
+    "version": "1.21.1",
+    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v1.21.1/metin2-server-update-1.21.1.zip",
+    "sha256": "CB850080184713B7ABD744811D9D58815E13149DB4F3986B9EE21DAABDD685C9"
   },
   "support": {
     "contactUrl": "https://discord.gg/pt5tvnrN6",
