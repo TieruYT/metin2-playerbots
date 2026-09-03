@@ -1,4 +1,4 @@
-[CmdletBinding()]
+﻿[CmdletBinding()]
 param(
     [Parameter(Mandatory = $true)][ValidateSet('server', 'client')][string]$Type,
     [Parameter(Mandatory = $true)][string]$Version,
@@ -31,16 +31,19 @@ try {
         if ($relative -ieq 'linux-port\docker\.env' -or $relative.StartsWith('.git\')) {
             throw "Protected file cannot be published in an update: $relative"
         }
-        $input = [IO.Path]::GetFullPath((Join-Path $source $relative))
-        if (-not $input.StartsWith($source + '\', [StringComparison]::OrdinalIgnoreCase)) {
+        # PowerShell's automatic pipeline-enumerator variable used to be
+        # reused here as an ordinary name. Handing it to a cmdlet made
+        # packaging hang at random, with the process sitting fully idle.
+        $sourceFile = [IO.Path]::GetFullPath((Join-Path $source $relative))
+        if (-not $sourceFile.StartsWith($source + '\', [StringComparison]::OrdinalIgnoreCase)) {
             throw "Path leaves source root: $relative"
         }
-        if (-not (Test-Path -LiteralPath $input -PathType Leaf)) {
+        if (-not (Test-Path -LiteralPath $sourceFile -PathType Leaf)) {
             throw "Listed file does not exist: $relative"
         }
         $destination = Join-Path $temp $relative
         New-Item -ItemType Directory -Path (Split-Path -Parent $destination) -Force | Out-Null
-        Copy-Item -LiteralPath $input -Destination $destination -Force
+        Copy-Item -LiteralPath $sourceFile -Destination $destination -Force
     }
 
     $safeVersion = $Version -replace '[^A-Za-z0-9._-]', '-'
