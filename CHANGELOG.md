@@ -17,6 +17,14 @@ every version here.
 
 ---
 
+## 1.22.4 — 2026-09-03
+
+### Changed
+
+- **Boty idą po mikstury dopiero wtedy, gdy są na wykończeniu.** Poprzednia wersja wysyłała je do handlarki już przy połowie pasa, co kosztowało dobry spot za zakup, którego nie potrzebowały. Wyprawa po zakupy to teraz próg **150 czerwonych / 100 niebieskich**. Uzupełnianie **do pełna** (800/600) zostaje bez zmian, ale dzieje się przy okazji — gdy bot i tak stoi u handlarki, dokupienie nic nie kosztuje.
+
+---
+
 ## 1.22.3 — 2026-09-03
 
 ### Fixed

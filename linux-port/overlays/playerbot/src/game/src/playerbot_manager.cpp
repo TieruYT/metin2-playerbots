@@ -6498,10 +6498,12 @@ namespace
 			const DWORD BLUE_TARGET = 600;
 			const DWORD RED_UNIT = 20;
 			const DWORD BLUE_UNIT = 32;
-			// Top up while there is still a belt left rather than once it is empty,
-			// and never spend more than half the purse, so shopping can't leave the
+			// Standing at the merchant already: fill the belt right up whatever the
+			// level, because this costs nothing extra. The decision to make the
+			// trip at all lives in NeedsPlayerBotPotions and is far stricter.
+			// Never spend more than half the purse, so shopping can't leave the
 			// bot unable to afford a refine.
-			if (redCount < RED_TARGET / 2 && ch->GetGold() >= 1200)
+			if (redCount < RED_TARGET && ch->GetGold() >= 1200)
 			{
 				const DWORD want = (DWORD)(RED_TARGET - redCount);
 				const DWORD affordable = (DWORD)(ch->GetGold() / 2 / RED_UNIT);
@@ -6514,7 +6516,7 @@ namespace
 			}
 			// Skills spend SP continuously, so a warrior wants a reserve too. It
 			// simply must never be the thing that forbids travelling.
-			if (blueCount < BLUE_TARGET / 2 && ch->GetGold() >= 1200)
+			if (blueCount < BLUE_TARGET && ch->GetGold() >= 1200)
 			{
 				const DWORD want = (DWORD)(BLUE_TARGET - blueCount);
 				const DWORD affordable = (DWORD)(ch->GetGold() / 2 / BLUE_UNIT);
@@ -6672,9 +6674,11 @@ namespace
 		if (ch->GetLevel() <= 10)
 			return (redCount < 30 && ch->GetGold() >= 300) ||
 					(isMage && blueCount < 20 && ch->GetGold() >= 400);
-		// Half a belt is the restock point, matching the targets in the merchant.
-		return (redCount < 400 && ch->GetGold() >= 1200) ||
-				(blueCount < 300 && ch->GetGold() >= 1200);
+		// Only a belt that is nearly out is worth crossing a map for. A bot with
+		// half its potions left has no business walking away from a good spot -
+		// it will fill up anyway the next time something else brings it to town.
+		return (redCount < 150 && ch->GetGold() >= 1200) ||
+				(blueCount < 100 && ch->GetGold() >= 1200);
 	}
 
 	bool NeedsPlayerBotEmergencyPotions(LPCHARACTER ch)
