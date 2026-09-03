@@ -10,6 +10,7 @@
 #include "desc_manager.h"
 #include "db.h"
 #include "event.h"
+#include "fishing.h"
 #include "input.h"
 #include "item.h"
 #include "item_manager.h"
@@ -287,11 +288,56 @@ namespace
 	const char* PLAYERBOT_HORSE_LAST_LOOT_MAP_FLAG = "playerbot.horse_last_loot_map";
 	const char* PLAYERBOT_HORSE_LAST_LOOT_TIME_FLAG = "playerbot.horse_last_loot_time";
 	const char* PLAYERBOT_HORSE_LAST_DELIVERY_TIME_FLAG = "playerbot.horse_last_delivery_time";
+	// Fishing, matched to what the r40250 engine actually does:  the rod occupies
+	// WEAR_WEAPON, the bait lives in the rod's socket 2 rather than in the pouch,
+	// a cast bites after 10-40 s and then leaves a 6 s window to pull.
+	const DWORD PLAYERBOT_FISHING_ROD_VNUM = 27400;   // Wedka+1
+	const DWORD PLAYERBOT_FISHING_BAIT_VNUM = 27801;  // Robak
+	const DWORD PLAYERBOT_SHELLFISH_VNUM = 27987;     // Malz
+	// What a shell can hold: Biala / Niebieska / Krwawa Perla.
+	const DWORD PLAYERBOT_PEARL_FIRST_VNUM = 27992;
+	const DWORD PLAYERBOT_PEARL_LAST_VNUM = 27994;
+	const int PLAYERBOT_FISHING_BAIT_BUNDLE = 20;
+	const int PLAYERBOT_FISHING_BAIT_RESTOCK = 5;
+	// The Rybak (9009) himself, from map_b1 npc.txt cell (675,539) against
+	// BasePosition (0,102400). Tackle is bought here.
+	const long PLAYERBOT_FISHERMAN_X = 67500;
+	const long PLAYERBOT_FISHERMAN_Y = 156300;
+	// The bank the bots actually fish from, a short walk downstream of him. The
+	// shoreline here runs north-south with the river to the east, so anglers queue
+	// along Y and all face +X. This band -- x 67250..67450, y 156900..157350 --
+	// was read out of map_b1's server_attr: every cell in it is standable, and
+	// open water starts a little east of it (tools/decode_server_attr.py).
+	const long PLAYERBOT_FISHING_BANK_X = 67250;
+	const long PLAYERBOT_FISHING_BANK_Y = 156900;
+	// A point well inside the river, used only to turn the bot to face the water.
+	const long PLAYERBOT_FISHING_WATER_X = 68000;
+	const int PLAYERBOT_FISHING_ARRIVE = 200;
+	// fishing::Compute() peaks at time step 15 -- about 3.0 s after the bite for
+	// the normal and easy tables.  Pulling in a small band around that catches
+	// fish reliably without looking frame-perfect.
+	const DWORD PLAYERBOT_FISHING_PULL_MIN_DELAY = 2700;
+	const DWORD PLAYERBOT_FISHING_PULL_MAX_DELAY = 3300;
+	// A cast that never reports a bite (the engine waits 10-40 s) is abandoned so
+	// one wedged event cannot park a bot at the water forever.
+	const DWORD PLAYERBOT_FISHING_CAST_TIMEOUT = 60000;
+	const DWORD PLAYERBOT_FISHING_SESSION_MIN = 900000;    // 15 min
+	const DWORD PLAYERBOT_FISHING_SESSION_MAX = 2400000;   // 40 min
+	const DWORD PLAYERBOT_FISHING_REST_MIN = 2700000;      // 45 min
+	const DWORD PLAYERBOT_FISHING_REST_MAX = 7200000;      // 2 h
 	const int PLAYERBOT_HORSE_MOUNT_DISTANCE = 1800;
 	const int PLAYERBOT_HORSE_DISMOUNT_DISTANCE = 1000;
 	const DWORD PLAYERBOT_HORSE_RIDE_RETRY_INTERVAL = 10000;
 	const DWORD PLAYERBOT_HORSE_TRAVEL_MIN_DELAY = 30000;
 	const DWORD PLAYERBOT_HORSE_TRAVEL_MAX_DELAY = 300000;
+	// Holding a target defers world travel, but only for so long. Where the
+	// respawn is dense a bot re-acquires one before the next tick, so an
+	// unbounded deferral meant the routing code never ran and an arrival area
+	// became somewhere a bot could enter but not leave (issue #10).
+	const DWORD PLAYERBOT_TRAVEL_FIGHT_GRACE = 30000;
+	// What counts as being in the fight rather than merely locked on to it.
+	const DWORD PLAYERBOT_TRAVEL_ENGAGED_WINDOW = 5000;
+	const int PLAYERBOT_TRAVEL_ENGAGED_RANGE = 800;
 	const DWORD PLAYERBOT_WORLD_TRAVEL_MIN_DELAY = 60000;
 	const DWORD PLAYERBOT_WORLD_TRAVEL_MAX_DELAY = 360000;
 	// Level 22 is past M1's useful experience range.  These bots still leave in a
@@ -428,7 +474,8 @@ namespace
 		BOT_GOAL_PARTY_CHALLENGE,
 		BOT_GOAL_BIOLOGIST,
 		BOT_GOAL_HUNTING,
-		BOT_GOAL_HORSE
+		BOT_GOAL_HORSE,
+		BOT_GOAL_FISHING
 	};
 
 	enum EPlayerBotCurrentAction
@@ -445,7 +492,8 @@ namespace
 		BOT_ACTION_SOCKET_STONE,
 		BOT_ACTION_PARTY_ASSEMBLE,
 		BOT_ACTION_BIOLOGIST,
-		BOT_ACTION_STABLE
+		BOT_ACTION_STABLE,
+		BOT_ACTION_FISHING
 	};
 
 	enum EPlayerBotPersonality
@@ -511,7 +559,12 @@ namespace
 			dwNextHorseCheckTime(0),
 			dwNextHorseActionTime(0),
 			dwNextHorseRideCheckTime(0),
+			dwNextFishingCheckTime(0),
+			dwNextFishingActionTime(0),
+			dwFishingCastTime(0),
+			dwFishingSessionEndTime(0),
 			dwNextWorldTravelTime(0),
+			dwTravelBlockedSince(0),
 			dwNextRemoteRefineReturnTime(0),
 			dwDungeonEnteredTime(0),
 			dwM3EnteredTime(0),
@@ -571,6 +624,8 @@ namespace
 			bTownNeedTrainer(false),
 			bVisitingBiologist(false),
 			bVisitingStable(false),
+			bFishingSession(false),
+			bIsFishing(false),
 			bTownVisitPhase(BOT_TOWN_PHASE_NONE),
 			bComboMotion(MOTION_COMBO_ATTACK_1),
 			bStuckCounter(0),
@@ -642,7 +697,15 @@ namespace
 		DWORD dwNextHorseCheckTime;
 		DWORD dwNextHorseActionTime;
 		DWORD dwNextHorseRideCheckTime;
+		DWORD dwNextFishingCheckTime;
+		DWORD dwNextFishingActionTime;
+		// When the current line went into the water, so a cast that never reports
+		// a bite can be given up on instead of parking the bot at the bank.
+		DWORD dwFishingCastTime;
+		DWORD dwFishingSessionEndTime;
 		DWORD dwNextWorldTravelTime;
+		// Since when a live target has been holding world travel back.
+		DWORD dwTravelBlockedSince;
 		DWORD dwNextRemoteRefineReturnTime;
 		DWORD dwDungeonEnteredTime;
 		DWORD dwM3EnteredTime;
@@ -702,6 +765,11 @@ namespace
 		bool bTownNeedTrainer;
 		bool bVisitingBiologist;
 		bool bVisitingStable;
+		// The bot has committed to a fishing trip: it carries a rod in the weapon
+		// slot and skips combat and gear swaps until the session ends.
+		bool bFishingSession;
+		// A line is currently in the water (the engine holds a fishing event).
+		bool bIsFishing;
 		BYTE bTownVisitPhase;
 		BYTE bComboMotion;
 		BYTE bStuckCounter;
@@ -3385,11 +3453,48 @@ namespace
 		return true;
 	}
 
+	// A battle horse (level 11+) lets its rider strike from the saddle. Bots that
+	// own one should ride into a fight instead of dismounting on the approach, but
+	// only when the weapon and target actually make mounted combat sensible.
+	bool CanPlayerBotFightOnHorse(LPCHARACTER ch, LPCHARACTER target)
+	{
+		if (!ch || ch->GetHorseLevel() < 11)
+			return false;
+
+		LPITEM weapon = ch->GetWear(WEAR_WEAPON);
+		if (!weapon || weapon->GetType() != ITEM_WEAPON ||
+				weapon->GetSubType() == WEAPON_BOW)
+			return false;
+
+		// Against Metins a battle horse is priority #1: the rider keeps hacking the
+		// stone from the saddle rather than climbing down for every spot.
+		if (target && target->IsStone())
+			return true;
+
+		// Warriors and Suras clear mob spots (multi-pull / valour cloak packs) from
+		// horseback; ranged and caster jobs still fight on foot.
+		if (ch->GetJob() == JOB_WARRIOR || ch->GetJob() == JOB_SURA)
+			return true;
+
+		return false;
+	}
+
 	void UpdatePlayerBotTravelMount(LPCHARACTER ch, TPlayerBotAIState& state,
-			long destX, long destY, bool allowHorse, DWORD dwNow)
+			long destX, long destY, bool allowHorse, DWORD dwNow,
+			bool fightOnHorse = false)
 	{
 		if (!ch)
 			return;
+
+		// Mounted combat overrides the travel dismount: the bot is closing on a
+		// target it may legitimately hit from the saddle, so keep (or take) the
+		// horse regardless of how near the destination is. SetPlayerBotRidingForTravel
+		// still refuses gracefully when the horse is spent, leaving the bot on foot.
+		if (fightOnHorse)
+		{
+			SetPlayerBotRidingForTravel(ch, state, true, dwNow, "mounted_combat");
+			return;
+		}
 
 		const int distance = DISTANCE_APPROX(ch->GetX() - destX, ch->GetY() - destY);
 		if (!allowHorse || distance <= PLAYERBOT_HORSE_DISMOUNT_DISTANCE)
@@ -3418,7 +3523,7 @@ namespace
 
 	bool MovePlayerBot(LPCHARACTER ch, long destX, long destY, DWORD dwNow,
 			int targetSnapRadius = 4, bool flexibleTargetSnap = false,
-			bool allowHorse = false)
+			bool allowHorse = false, bool fightOnHorse = false)
 	{
 		if (!ch)
 			return false;
@@ -3474,7 +3579,7 @@ namespace
 		if (newGoal)
 			state.bRouteAllowsHorse = allowHorse;
 		UpdatePlayerBotTravelMount(ch, state, destX, destY,
-				state.bRouteAllowsHorse, dwNow);
+				state.bRouteAllowsHorse, dwNow, fightOnHorse);
 		if (newGoal)
 		{
 			ClearPlayerBotRoute(state, false);
@@ -5324,6 +5429,392 @@ namespace
 		return true;
 	}
 
+	// A small, stable slice of the M1 population fishes. Careful collectors are the
+	// natural anglers -- pearls are a collector's prize -- but a few other
+	// personalities join them so the bank is never one archetype deep. The roll is
+	// derived from the player id, so a bot keeps the same hobby across restarts.
+	bool IsPlayerBotAngler(LPCHARACTER ch, const TPlayerBotAIState& state)
+	{
+		if (!ch || ch->GetLevel() < 10)
+			return false;
+		const DWORD roll = PlayerBotNavHash(ch->GetPlayerID() ^ 0x46495348U) % 100U;
+		return state.bPersonality == BOT_PERSONALITY_CAREFUL_COLLECTOR
+				? roll < 20U : roll < 2U;
+	}
+
+	// Anglers spread out along the shoreline rather than stacking on one tile.
+	// The band is walked along Y because that is the way this stretch of bank
+	// runs; every resulting point is inside the verified standable rectangle.
+	void GetPlayerBotFishingStand(DWORD playerID, long& standX, long& standY)
+	{
+		const DWORD hash = PlayerBotNavHash(playerID ^ 0x42414e4bU);
+		standX = PLAYERBOT_FISHING_BANK_X + (long)(hash % 5U) * 50;
+		standY = PLAYERBOT_FISHING_BANK_Y + (long)((hash / 5U) % 10U) * 50;
+	}
+
+	bool IsPlayerBotHoldingRod(LPCHARACTER ch)
+	{
+		LPITEM rod = ch ? ch->GetWear(WEAR_WEAPON) : NULL;
+		return rod && rod->GetType() == ITEM_ROD;
+	}
+
+	bool EquipPlayerBotRod(LPCHARACTER ch)
+	{
+		if (!ch)
+			return false;
+		if (IsPlayerBotHoldingRod(ch))
+			return true;
+
+		for (WORD cell = 0; cell < INVENTORY_MAX_NUM; ++cell)
+		{
+			LPITEM item = ch->GetInventoryItem(cell);
+			if (!item || item->GetType() != ITEM_ROD)
+				continue;
+
+			LPITEM worn = ch->GetWear(WEAR_WEAPON);
+			if (worn && !ch->UnequipItem(worn))
+				return false;
+			if (ch->EquipItem(item))
+			{
+				sys_log(0, "PLAYERBOT_FISHING: rod equipped pid=%u name=%s vnum=%u",
+						ch->GetPlayerID(), ch->GetName(), item->GetVnum());
+				return true;
+			}
+		}
+		return false;
+	}
+
+	// The rod is worthless in a fight, so a finished session always puts the real
+	// weapon back before the bot rejoins the grind.
+	void StowPlayerBotRod(LPCHARACTER ch)
+	{
+		if (!ch)
+			return;
+		LPITEM rod = ch->GetWear(WEAR_WEAPON);
+		if (!rod || rod->GetType() != ITEM_ROD)
+			return;
+		if (!ch->UnequipItem(rod))
+			return;
+		EquipFirstAvailablePlayerBotWeapon(ch);
+	}
+
+	// Bait does not sit in the pouch while fishing: using it moves its value into
+	// the rod's socket 2, which is what the engine actually checks before a cast.
+	bool BaitPlayerBotRod(LPCHARACTER ch)
+	{
+		LPITEM rod = ch ? ch->GetWear(WEAR_WEAPON) : NULL;
+		if (!rod || rod->GetType() != ITEM_ROD)
+			return false;
+		if (rod->GetSocket(2) != 0)
+			return true;
+
+		for (WORD cell = 0; cell < INVENTORY_MAX_NUM; ++cell)
+		{
+			LPITEM item = ch->GetInventoryItem(cell);
+			if (!item || item->GetVnum() != PLAYERBOT_FISHING_BAIT_VNUM)
+				continue;
+			ch->UseItem(TItemPos(INVENTORY, cell));
+			return rod->GetSocket(2) != 0;
+		}
+		return false;
+	}
+
+	// One item per pass. Gutting a fish and prying a shell open both run through
+	// UseItem, which frees the very inventory slot being iterated over.
+	bool ProcessPlayerBotCatch(LPCHARACTER ch)
+	{
+		if (!ch)
+			return false;
+
+		for (WORD cell = 0; cell < INVENTORY_MAX_NUM; ++cell)
+		{
+			LPITEM item = ch->GetInventoryItem(cell);
+			if (!item)
+				continue;
+
+			const DWORD vnum = item->GetVnum();
+			const bool aliveFish = item->GetType() == ITEM_FISH &&
+					item->GetSubType() == FISH_ALIVE;
+			if (!aliveFish && vnum != PLAYERBOT_SHELLFISH_VNUM)
+				continue;
+			if (!ch->UseItem(TItemPos(INVENTORY, cell)))
+				continue;
+
+			sys_log(0, "PLAYERBOT_FISHING: processed catch pid=%u name=%s vnum=%u kind=%s",
+					ch->GetPlayerID(), ch->GetName(), vnum,
+					aliveFish ? "fish" : "shellfish");
+			return true;
+		}
+		return false;
+	}
+
+	bool EndPlayerBotFishingSession(LPCHARACTER ch, TPlayerBotAIState& state,
+			DWORD dwNow, const char* reason)
+	{
+		if (ch && ch->m_pkFishingEvent)
+			ch->fishing_take();
+
+		state.bFishingSession = false;
+		state.bIsFishing = false;
+		state.dwFishingCastTime = 0;
+		state.dwFishingSessionEndTime = 0;
+		state.dwNextFishingActionTime = 0;
+		state.dwNextFishingCheckTime = dwNow +
+				number(PLAYERBOT_FISHING_REST_MIN, PLAYERBOT_FISHING_REST_MAX);
+		StowPlayerBotRod(ch);
+		ClearPlayerBotRoute(state, true);
+		if (ch)
+			sys_log(0, "PLAYERBOT_FISHING: session over pid=%u name=%s pearls=%d/%d/%d reason=%s",
+					ch->GetPlayerID(), ch->GetName(),
+					ch->CountSpecifyItem(PLAYERBOT_PEARL_FIRST_VNUM),
+					ch->CountSpecifyItem(PLAYERBOT_PEARL_FIRST_VNUM + 1),
+					ch->CountSpecifyItem(PLAYERBOT_PEARL_LAST_VNUM),
+					reason ? reason : "?");
+		return false;
+	}
+
+	// Rod and bait both come from the Rybak, who stands on the bank the bots fish
+	// from, so restocking and fishing share one walk.
+	bool RestockPlayerBotTackle(LPCHARACTER ch, TPlayerBotAIState& state, DWORD dwNow)
+	{
+		if (!ch)
+			return false;
+
+		bool bought = false;
+		if (!IsPlayerBotHoldingRod(ch) && ch->CountSpecifyItem(PLAYERBOT_FISHING_ROD_VNUM) <= 0)
+		{
+			TItemTable* proto = ITEM_MANAGER::instance().GetTable(PLAYERBOT_FISHING_ROD_VNUM);
+			if (!proto)
+				return false;
+			const long long price = GetPlayerBotNpcPurchasePrice(proto, 1);
+			if (ch->GetGold() < price)
+				RaisePlayerBotEmergencyGold(ch, price, "fishing_rod");
+			if (price <= 0 || ch->GetGold() < price)
+				return false;
+			if (!ch->AutoGiveItem(PLAYERBOT_FISHING_ROD_VNUM, 1, -1, false))
+				return false;
+			ch->PointChange(POINT_GOLD, -price);
+			bought = true;
+			sys_log(0, "PLAYERBOT_FISHING: bought rod pid=%u name=%s vnum=%u price=%lld",
+					ch->GetPlayerID(), ch->GetName(), PLAYERBOT_FISHING_ROD_VNUM, price);
+		}
+
+		if (ch->CountSpecifyItem(PLAYERBOT_FISHING_BAIT_VNUM) < PLAYERBOT_FISHING_BAIT_RESTOCK)
+		{
+			TItemTable* proto = ITEM_MANAGER::instance().GetTable(PLAYERBOT_FISHING_BAIT_VNUM);
+			if (!proto)
+				return bought;
+			const long long price = GetPlayerBotNpcPurchasePrice(proto, PLAYERBOT_FISHING_BAIT_BUNDLE);
+			if (ch->GetGold() < price)
+				RaisePlayerBotEmergencyGold(ch, price, "fishing_bait");
+			if (price <= 0 || ch->GetGold() < price)
+				return bought;
+			if (!ch->AutoGiveItem(PLAYERBOT_FISHING_BAIT_VNUM, PLAYERBOT_FISHING_BAIT_BUNDLE, -1, false))
+				return bought;
+			ch->PointChange(POINT_GOLD, -price);
+			bought = true;
+			sys_log(0, "PLAYERBOT_FISHING: bought bait pid=%u name=%s vnum=%u count=%d price=%lld",
+					ch->GetPlayerID(), ch->GetName(), PLAYERBOT_FISHING_BAIT_VNUM,
+					PLAYERBOT_FISHING_BAIT_BUNDLE, price);
+		}
+		return bought;
+	}
+
+	bool ManagePlayerBotFishing(LPCHARACTER ch, TPlayerBotAIState& state, DWORD dwNow)
+	{
+		if (!ch || ch->IsDead())
+			return false;
+		if (ch->GetMapIndex() != PLAYERBOT_MAP_CHUNJO_M1)
+		{
+			// The rod must not travel to a hunting map in the weapon slot.
+			if (state.bFishingSession)
+				EndPlayerBotFishingSession(ch, state, dwNow, "left_m1");
+			return false;
+		}
+		if (state.bVisitingShop || state.bVisitingBiologist || state.bVisitingStable ||
+				state.bRecoveringAfterDeath || state.bTacticalRetreat ||
+				state.bMultiPullActive)
+		{
+			if (state.bFishingSession)
+				EndPlayerBotFishingSession(ch, state, dwNow, "town_errand");
+			return false;
+		}
+
+		if (!state.bFishingSession)
+		{
+			if (dwNow < state.dwNextFishingCheckTime || !IsPlayerBotAngler(ch, state))
+				return false;
+			// Never walk off mid-fight; finish the pack first.
+			LPCHARACTER victim = state.dwTargetVID != 0
+					? CHARACTER_MANAGER::instance().Find(state.dwTargetVID) : NULL;
+			if (victim && !victim->IsDead())
+				return false;
+
+			state.bFishingSession = true;
+			state.bIsFishing = false;
+			state.dwFishingCastTime = 0;
+			state.dwNextFishingActionTime = 0;
+			state.dwFishingSessionEndTime = dwNow +
+					number(PLAYERBOT_FISHING_SESSION_MIN, PLAYERBOT_FISHING_SESSION_MAX);
+			state.dwTargetVID = 0;
+			ch->SetVictim(NULL);
+			ch->Stop();
+			ClearPlayerBotRoute(state, true);
+			sys_log(0, "PLAYERBOT_FISHING: heading for the bank pid=%u name=%s level=%u personality=%u",
+					ch->GetPlayerID(), ch->GetName(), ch->GetLevel(),
+					(unsigned int)state.bPersonality);
+		}
+
+		// A session only ends between casts, so a fish already on the hook is
+		// still landed.
+		if (dwNow >= state.dwFishingSessionEndTime && !state.bIsFishing)
+			return EndPlayerBotFishingSession(ch, state, dwNow, "session_finished");
+
+		SetPlayerBotGoal(ch, state, BOT_GOAL_FISHING, dwNow);
+		SetPlayerBotAction(state, BOT_ACTION_FISHING, dwNow);
+		state.dwTargetVID = 0;
+		ch->SetVictim(NULL);
+
+		// Rod first, then worms: both come from the Rybak, who stands a short walk
+		// upstream of the bank. Running out of bait sends the bot back to him.
+		const bool needsTackle =
+				(!IsPlayerBotHoldingRod(ch) &&
+					ch->CountSpecifyItem(PLAYERBOT_FISHING_ROD_VNUM) <= 0) ||
+				ch->CountSpecifyItem(PLAYERBOT_FISHING_BAIT_VNUM) <
+					PLAYERBOT_FISHING_BAIT_RESTOCK;
+
+		long destX = 0, destY = 0;
+		if (needsTackle)
+			GetPlayerBotNpcApproach(ch->GetPlayerID(), PLAYERBOT_FISHERMAN_X,
+					PLAYERBOT_FISHERMAN_Y, 0x46495348U, destX, destY);
+		else
+			GetPlayerBotFishingStand(ch->GetPlayerID(), destX, destY);
+
+		if (DISTANCE_APPROX(ch->GetX() - destX, ch->GetY() - destY) >
+				PLAYERBOT_FISHING_ARRIVE)
+		{
+			// Riding there is fine; the line simply cannot go in from a saddle.
+			if (!MovePlayerBot(ch, destX, destY, dwNow, 16, true, true) &&
+					state.bStuckCounter >= 6)
+			{
+				sys_err("PLAYERBOT_FISHING: route failed pid=%u name=%s from=(%ld,%ld) to=(%ld,%ld)",
+						ch->GetPlayerID(), ch->GetName(), ch->GetX(), ch->GetY(),
+						destX, destY);
+				return EndPlayerBotFishingSession(ch, state, dwNow, "route_failed");
+			}
+			return true;
+		}
+
+		SetPlayerBotRidingForTravel(ch, state, false, dwNow, "fishing");
+		if (ch->IsStateMove())
+			ch->Stop();
+		ch->SetPosition(POS_STANDING);
+
+		if (needsTackle)
+		{
+			if (!RestockPlayerBotTackle(ch, state, dwNow))
+				return EndPlayerBotFishingSession(ch, state, dwNow, "cannot_afford_tackle");
+			return true;
+		}
+		if (!EquipPlayerBotRod(ch))
+			return EndPlayerBotFishingSession(ch, state, dwNow, "rod_not_equippable");
+
+		if (dwNow < state.dwNextFishingActionTime)
+			return true;
+
+		LPITEM rod = ch->GetWear(WEAR_WEAPON);
+		if (!state.bIsFishing && rod && rod->GetSocket(2) == 0 && !BaitPlayerBotRod(ch))
+		{
+			// The pouch ran dry between passes; the walk back to the Rybak is
+			// picked up by the tackle check at the top of the next pass.
+			state.dwNextFishingActionTime = dwNow + number(1000, 2000);
+			return true;
+		}
+
+		// The engine holds the whole cast in one event: step 0 is the line in the
+		// water, step 1 means a fish is on and starts the 6 s window to pull.
+		fishing::fishing_event_info* info = ch->m_pkFishingEvent
+				? dynamic_cast<fishing::fishing_event_info*>(ch->m_pkFishingEvent->info)
+				: NULL;
+
+		if (!state.bIsFishing || !info)
+		{
+			if (info)
+			{
+				// A cast survived from an earlier pass; adopt it rather than
+				// stacking a second one.
+				state.bIsFishing = true;
+				state.dwFishingCastTime = dwNow;
+				return true;
+			}
+			if (state.bIsFishing)
+			{
+				// The event ended on its own -- the bite window elapsed. The engine
+				// already cleared the bait, so the next pass re-baits and recasts.
+				state.bIsFishing = false;
+				state.dwNextFishingActionTime = dwNow + number(2000, 4000);
+				ProcessPlayerBotCatch(ch);
+				return true;
+			}
+
+			// CHARACTER::fishing() dereferences the sectree map and the tile under
+			// the bot without checking either, so never call it blind.
+			if (!ch->GetSectree() ||
+					!SECTREE_MANAGER::instance().GetMap(ch->GetMapIndex()))
+			{
+				state.dwNextFishingActionTime = dwNow + number(4000, 8000);
+				return true;
+			}
+
+			// Face straight across at the river rather than along the bank: the
+			// water lies due east of this stretch.
+			ch->SetRotationToXY(PLAYERBOT_FISHING_WATER_X, ch->GetY());
+			ch->fishing();
+			if (!ch->m_pkFishingEvent)
+			{
+				// Blocked tile or missing bait; step away and try again shortly.
+				state.dwNextFishingActionTime = dwNow + number(4000, 8000);
+				return true;
+			}
+			state.bIsFishing = true;
+			state.dwFishingCastTime = dwNow;
+			return true;
+		}
+
+		if (info->step < 1)
+		{
+			// Still waiting for a bite. The engine takes 10-40 s; anything past a
+			// minute means the event is wedged.
+			if (dwNow - state.dwFishingCastTime > PLAYERBOT_FISHING_CAST_TIMEOUT)
+			{
+				ch->fishing_take();
+				state.bIsFishing = false;
+				state.dwNextFishingActionTime = dwNow + number(2000, 4000);
+				sys_log(0, "PLAYERBOT_FISHING: cast timed out pid=%u name=%s",
+						ch->GetPlayerID(), ch->GetName());
+			}
+			return true;
+		}
+
+		// A fish is on. fishing::Compute() peaks around 3 s after the bite, so wait
+		// out that band before pulling instead of yanking the rod instantly.
+		const DWORD hooked = get_dword_time() - info->hang_time;
+		const DWORD pullAt = PLAYERBOT_FISHING_PULL_MIN_DELAY +
+				PlayerBotNavHash(ch->GetPlayerID() ^ info->hang_time) %
+				(PLAYERBOT_FISHING_PULL_MAX_DELAY - PLAYERBOT_FISHING_PULL_MIN_DELAY + 1U);
+		if (hooked < pullAt)
+			return true;
+
+		ch->fishing_take();
+		state.bIsFishing = false;
+		state.dwNextFishingActionTime = dwNow + number(2000, 4000);
+		state.dwLastMeaningfulActivityTime = dwNow;
+		ProcessPlayerBotCatch(ch);
+		sys_log(0, "PLAYERBOT_FISHING: pulled pid=%u name=%s hooked_ms=%u fish=%d",
+				ch->GetPlayerID(), ch->GetName(), (unsigned int)hooked, info->fish_id);
+		return true;
+	}
+
 	bool AllocatePlayerBotStat(LPCHARACTER ch, BYTE statType)
 	{
 		if (!ch || ch->GetRealPoint(statType) >= 90 || ch->GetPoint(POINT_STAT) <= 0)
@@ -6234,6 +6725,15 @@ namespace
 		// Medals used to look like ordinary miscellaneous loot and could be sold
 		// before the world-travel state machine returned the bot to the Stable Boy.
 		if (vnum == PLAYERBOT_HORSE_MEDAL_VNUM || (vnum >= 50701 && vnum <= 50706))
+			return false;
+
+		// Fishing tackle and the catch worth keeping. Pearls are the entire point
+		// of a fishing trip -- they are what carries equipment to +7/+8/+9 -- and a
+		// vendored rod would simply have to be bought again for the next session.
+		// Ordinary fish and bones stay sellable: that is the angler's pocket money.
+		if (item->GetType() == ITEM_ROD || vnum == PLAYERBOT_FISHING_BAIT_VNUM ||
+				vnum == PLAYERBOT_SHELLFISH_VNUM ||
+				(vnum >= PLAYERBOT_PEARL_FIRST_VNUM && vnum <= PLAYERBOT_PEARL_LAST_VNUM))
 			return false;
 
 		// Arrows are ammunition, not a primary weapon/equipment candidate. Keep all
@@ -7158,6 +7658,24 @@ namespace
 		return true;
 	}
 
+	// Being in a fight is not the same as having something selected. A bot is in
+	// the fight when blows are being exchanged, when the monster is coming for
+	// it, or when it already stands within reach. A mob picked out across the
+	// field is none of those and must not postpone a decision to leave the map.
+	bool IsPlayerBotEngagedWith(LPCHARACTER ch, LPCHARACTER victim,
+			const TPlayerBotAIState& state, DWORD dwNow)
+	{
+		if (!ch || !victim)
+			return false;
+		if (victim->GetVictim() == ch)
+			return true;
+		if (state.dwLastCombatActionTime != 0 &&
+				dwNow - state.dwLastCombatActionTime <= PLAYERBOT_TRAVEL_ENGAGED_WINDOW)
+			return true;
+		return DISTANCE_APPROX(ch->GetX() - victim->GetX(),
+				ch->GetY() - victim->GetY()) <= PLAYERBOT_TRAVEL_ENGAGED_RANGE;
+	}
+
 	bool ManagePlayerBotWorldTravel(LPCHARACTER ch, TPlayerBotAIState& state, DWORD dwNow)
 	{
 		if (!ch || state.bVisitingShop || state.bVisitingBiologist ||
@@ -7196,6 +7714,7 @@ namespace
 			const int medalCount = ch->CountSpecifyItem(PLAYERBOT_HORSE_MEDAL_VNUM);
 			playerbot_world_rules::TMonkeyVisitContext context;
 			context.needsEssentialSupply = needsEssentialWeaponSupply;
+			context.needsPotions = NeedsPlayerBotEmergencyPotions(ch);
 			context.medalCount = medalCount;
 			context.desiredMedalCount = GetPlayerBotDesiredHorseMedalStock(ch);
 			context.visitExpired = visitExpired;
@@ -7239,10 +7758,31 @@ namespace
 					PLAYERBOT_M2_FROM_M3_Y, dwNow, "m3_level_graduated");
 		}
 
+		// A bot should not walk away from a fight -- but "holds a target" was
+		// standing in for "is fighting", and in a dense respawn those are not the
+		// same thing at all. Something is always in range, so this check used to
+		// return before the routing below had ever been consulted, and the
+		// arrival areas of frontier maps quietly became one-way (issue #10).
+		//
+		// Three cases now. A Metin already under the hammer is always finished
+		// first; ShouldPlayerBotAbandonStone releases a stalled one. A live fight
+		// holds travel back, but only for a bounded grace period, so an endless
+		// chain of packs can no longer outrank the decision to leave. A target
+		// merely selected across the field does not delay anything.
 		LPCHARACTER victim = state.dwTargetVID != 0
 				? CHARACTER_MANAGER::instance().Find(state.dwTargetVID) : NULL;
-		if (victim && !victim->IsDead())
-			return false;
+		if (!victim || victim->IsDead())
+			state.dwTravelBlockedSince = 0;
+		else
+		{
+			if (state.dwTravelBlockedSince == 0)
+				state.dwTravelBlockedSince = dwNow;
+			const bool graceLeft = dwNow - state.dwTravelBlockedSince <
+					PLAYERBOT_TRAVEL_FIGHT_GRACE;
+			if (victim->IsStone() ||
+					(graceLeft && IsPlayerBotEngagedWith(ch, victim, state, dwNow)))
+				return false;
+		}
 
 		if (mapIndex == PLAYERBOT_MAP_CHUNJO_M1)
 		{
@@ -10762,7 +11302,11 @@ namespace
 				ch->GetY() - target->GetY());
 		if (distance > PLAYERBOT_MELEE_RANGE)
 		{
-			MovePlayerBot(ch, target->GetX(), target->GetY(), dwNow);
+			// A warrior/sura with a battle horse gathers the valour-cloak spot from
+			// the saddle instead of climbing down between packs.
+			const bool fightOnHorse = CanPlayerBotFightOnHorse(ch, target);
+			MovePlayerBot(ch, target->GetX(), target->GetY(), dwNow, 4, false,
+					fightOnHorse, fightOnHorse);
 			return true;
 		}
 
@@ -10903,6 +11447,7 @@ namespace
 			case BOT_GOAL_BIOLOGIST: return "Biolog";
 			case BOT_GOAL_HUNTING: return "Polowanie";
 			case BOT_GOAL_HORSE: return "rozwoj konia";
+			case BOT_GOAL_FISHING: return "lowienie ryb";
 			default: return "poziom";
 		}
 	}
@@ -11083,6 +11628,18 @@ namespace
 				else
 					snprintf(status, statusSize, "%sOddaje medal konny (%u/21)", prefix,
 							(unsigned int)ch->GetHorseLevel());
+				break;
+			case BOT_ACTION_FISHING:
+				if (ch->CountSpecifyItem(PLAYERBOT_FISHING_BAIT_VNUM) <
+						PLAYERBOT_FISHING_BAIT_RESTOCK)
+					snprintf(status, statusSize, "%sIde do Rybaka po przynete", prefix);
+				else if (DISTANCE_APPROX(ch->GetX() - PLAYERBOT_FISHING_BANK_X,
+						ch->GetY() - PLAYERBOT_FISHING_BANK_Y) > 850)
+					snprintf(status, statusSize, "%sIde nad rzeke lowic ryby", prefix);
+				else if (state.bIsFishing)
+					snprintf(status, statusSize, "%sLowie ryby - czekam na branie", prefix);
+				else
+					snprintf(status, statusSize, "%sZakladam przynete na wedke", prefix);
 				break;
 			case BOT_ACTION_TRAVEL:
 				if (ch->GetMapIndex() == PLAYERBOT_MAP_CHUNJO_M1 &&
@@ -11402,7 +11959,9 @@ namespace
 				dwNow - state.dwLastCombatActionTime <= 10000;
 		const bool castRecently = state.dwLastBotSkillTime != 0 &&
 				dwNow - state.dwLastBotSkillTime <= 10000;
-		if (moved || foughtRecently || castRecently)
+		// An angler stands still on purpose: a single cast can wait 40 s for the
+		// bite alone, so stillness at the bank is the activity, not a symptom.
+		if (moved || foughtRecently || castRecently || state.bFishingSession)
 		{
 			state.dwLastMeaningfulActivityTime = dwNow;
 			state.lLastX = ch->GetX();
@@ -11946,6 +12505,13 @@ void CPlayerBotManager::Update()
 				ManagePlayerBotHorse(ch, state, dwNow))
 			continue;
 
+		// A handful of M1 bots fish the riverbank instead of grinding. This owns
+		// the whole tick: the rod sits in the weapon slot, so combat and the gear
+		// pass below must not run while a session is live.
+		if (!state.bMultiPullActive && !bFightingMetin &&
+				ManagePlayerBotFishing(ch, state, dwNow))
+			continue;
+
 		// Move between the real Chunjo portals in controlled, staggered waves.
 		// M2, M3 and the empire-specific easy Monkey Dungeon share this core, so
 		// map changes remain visible to native desktop clients.
@@ -12187,10 +12753,15 @@ void CPlayerBotManager::Update()
 		LPITEM equippedWeapon = ch->GetWear(WEAR_WEAPON);
 		const bool isBow = (equippedWeapon && equippedWeapon->GetType() == ITEM_WEAPON && equippedWeapon->GetSubType() == WEAPON_BOW);
 		const int combatRange = isBow ? 800 : 280;
+		// A battle-horse rider closes on Metins (and, for warriors/suras, mob spots)
+		// without dismounting so the fight happens from the saddle. Everyone else
+		// keeps the previous on-foot approach.
+		const bool fightOnHorse = CanPlayerBotFightOnHorse(ch, target);
 
 		if (distance > combatRange)
 		{
-			if (!MovePlayerBot(ch, target->GetX(), target->GetY(), dwNow))
+			if (!MovePlayerBot(ch, target->GetX(), target->GetY(), dwNow, 4, false,
+					fightOnHorse, fightOnHorse))
 			{
 				const DWORD failedVID = (DWORD)target->GetVID();
 				if (state.dwNavFailedTargetVID == failedVID)

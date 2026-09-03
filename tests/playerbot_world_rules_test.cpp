@@ -5,13 +5,23 @@ using namespace playerbot_world_rules;
 
 int main()
 {
-	TMonkeyVisitContext context = { false, 0, 2, false, true };
+	// needsEssentialSupply, needsPotions, medalCount, desiredMedalCount,
+	// visitExpired, canAdvanceHorse
+	TMonkeyVisitContext context = { false, false, 0, 2, false, true };
 	assert(DecideMonkeyExit(context) == MONKEY_STAY);
 
 	context.needsEssentialSupply = true;
 	assert(DecideMonkeyExit(context) == MONKEY_EXIT_RESTOCK);
-
 	context.needsEssentialSupply = false;
+
+	// Running dry on red potions has to end the visit too. Without this the
+	// dungeon was the one map a potionless bot never left: it stayed and died in
+	// a loop until the medal, the 30-minute timeout or a lost weapon released it.
+	context.needsPotions = true;
+	assert(DecideMonkeyExit(context) == MONKEY_EXIT_RESTOCK);
+	context.needsPotions = false;
+	assert(DecideMonkeyExit(context) == MONKEY_STAY);
+
 	context.medalCount = 2;
 	assert(DecideMonkeyExit(context) == MONKEY_EXIT_MEDAL_READY);
 

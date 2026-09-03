@@ -18,6 +18,10 @@ namespace playerbot_world_rules
 	struct TMonkeyVisitContext
 	{
 		bool needsEssentialSupply;
+		// Running out of red potions is just as much a reason to leave as losing
+		// a weapon. Every other map reaches this through BlocksPlayerBotTravel;
+		// the dungeon has its own rules, so it needs its own copy of the fact.
+		bool needsPotions;
 		int medalCount;
 		int desiredMedalCount;
 		bool visitExpired;
@@ -26,7 +30,7 @@ namespace playerbot_world_rules
 
 	inline EMonkeyExitDecision DecideMonkeyExit(const TMonkeyVisitContext& context)
 	{
-		if (context.needsEssentialSupply)
+		if (context.needsEssentialSupply || context.needsPotions)
 			return MONKEY_EXIT_RESTOCK;
 		if (!context.canAdvanceHorse)
 			return MONKEY_EXIT_HORSE_COMPLETE;
