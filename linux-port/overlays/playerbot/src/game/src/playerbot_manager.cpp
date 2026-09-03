@@ -7947,7 +7947,15 @@ namespace
 		// for an idle moment that never arrives.
 		const bool justFinishedInTown = state.dwNextShopCheckTime != 0 &&
 				dwNow < state.dwNextShopCheckTime;
-		if (!justFinishedInTown)
+		// A keeper already standing on the market strip counts too. A server
+		// restart drops every shop - they live only in memory - and leaves its
+		// keeper parked exactly where the stall was, with no errand to bring it
+		// back to town and therefore no way to ever reopen.
+		const bool alreadyAtPitch = ch->GetMapIndex() == PLAYERBOT_MAP_CHUNJO_M2 &&
+				DISTANCE_APPROX(ch->GetX() - PLAYERBOT_M2_MARKET_X,
+						ch->GetY() - PLAYERBOT_M2_MARKET_Y) <=
+					PLAYERBOT_MARKET_SPREAD + PLAYERBOT_MARKET_ARRIVE;
+		if (!justFinishedInTown && !alreadyAtPitch)
 			return false;
 
 		WORD cell = 0;
