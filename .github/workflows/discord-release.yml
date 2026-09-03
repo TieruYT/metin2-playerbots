@@ -1,0 +1,75 @@
+name: Announce release on Discord
+
+# Fires when a release is published, and can be run by hand to re-announce the
+# latest one (useful after fixing the webhook, or to test without cutting a
+# throwaway release).
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  announce:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Read the release to announce
+        id: release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          EVENT_TAG: ${{ github.event.release.tag_name }}
+        run: |
+          set -euo pipefail
+          if [ -n "${EVENT_TAG:-}" ]; then
+            tag="$EVENT_TAG"
+          else
+            tag=$(gh release view --repo "$GITHUB_REPOSITORY" --json tagName --jq .tagName)
+          fi
+          gh release view "$tag" --repo "$GITHUB_REPOSITORY" \
+            --json tagName,name,url,body,publishedAt > release.json
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+
+      - name: Post it to Discord
+        env:
+          # The webhook is a secret: anyone holding it can post to the channel.
+          # It lives in repository secrets, never in this file - the repository
+          # is public, and a URL committed here would be readable by everyone.
+          WEBHOOK: ${{ secrets.DISCORD_RELEASE_WEBHOOK }}
+        run: |
+          set -euo pipefail
+          if [ -z "${WEBHOOK:-}" ]; then
+            echo "::warning::DISCORD_RELEASE_WEBHOOK is not set - nothing was announced."
+            exit 0
+          fi
+
+          # Release notes are never interpolated into the command line. They
+          # contain backticks, quotes and $ signs, which a shell would happily
+          # execute instead of printing; jq reads the file directly instead.
+          payload=$(jq '
+            {
+              embeds: [
+                {
+                  title: ("🚀 " + (.name // .tagName)),
+                  url: .url,
+                  description: (
+                    (.body // "")
+                    | if length > 3800
+                      then .[0:3800] + "\n\n…pełny opis na GitHubie"
+                      else . end
+                  ),
+                  color: 3066993,
+                  footer: {
+                    text: (.tagName + " • " + (.publishedAt | split("T")[0]) + " • Metin2 Singleplayer Playerbots")
+                  }
+                }
+              ]
+            }' release.json)
+
+          # -f so an HTTP error fails the job instead of passing silently.
+          curl -sS -f -X POST \
+            -H "Content-Type: application/json" \
+            -d "$payload" \
+            "$WEBHOOK"
+          echo "Ogłoszono ${{ steps.release.outputs.tag }} na Discordzie."

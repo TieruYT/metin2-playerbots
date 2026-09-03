@@ -5433,10 +5433,23 @@ def api_bot_positions():
             """)
             rows = cur.fetchall()
             bots = []
-            total_count = len(rows)
+            # The map is the live world, not the roster. Only a fraction of the
+            # characters spawn (350 of 668 here), and the rest keep whatever
+            # position they were last saved at - which used to draw 223 bots
+            # standing in Joan while the game held two. A row with no live entry
+            # is a bot that is not in the world, so it does not belong on a map
+            # of the world.
+            #
+            # If the status file is missing entirely the server is not running,
+            # and falling back to saved positions is better than an empty map.
+            trust_live = len(live_status) > 0
+            total_count = 0
             for r in rows:
                 pid = r.get("id") or 0
                 live = live_status.get(int(pid))
+                if trust_live and not live:
+                    continue
+                total_count += 1
                 live_labels = playerbot_live_labels(live, language)
                 name = r.get("name") or ""
                 level = r.get("level") or 1
