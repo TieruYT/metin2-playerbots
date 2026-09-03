@@ -1,12 +1,12 @@
 {
   "schema": 1,
   "channel": "stable",
-  "publishedAt": "2026-09-03T21:30:00Z",
-  "statusMessage": "Aktualizacja 1.23.0: boty prowadzą stragany w Bokjung (możesz u nich kupować), walczą z siodła i łowią ryby. Instalacja przebuduje obraz serwera.",
+  "publishedAt": "2026-09-03T22:00:00Z",
+  "statusMessage": "Aktualizacja 1.23.1: boty, które utknęły bez sektora lub na nieobsługiwanej mapie, wracają do gry. Mniej śmieci w dzienniku.",
   "server": {
-    "version": "1.23.0",
-    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v1.23.0/metin2-server-update-1.23.0.zip",
-    "sha256": "CD46E0BF734CD40898EFF6A6EBDDB2A04887A2CBAB800F27A730FDE4C87B036D"
+    "version": "1.23.1",
+    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v1.23.1/metin2-server-update-1.23.1.zip",
+    "sha256": "D58F56AAB40CFC6BB6BC39258CC6D58E03258E280C42C5FF0DCCCD86881A14ED"
   },
   "support": {
     "contactUrl": "https://discord.gg/pt5tvnrN6",
