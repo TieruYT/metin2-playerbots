@@ -1,12 +1,12 @@
 {
   "schema": 1,
   "channel": "stable",
-  "publishedAt": "2026-09-03T00:20:00Z",
-  "statusMessage": "Aktualizacja 1.22.2: boty kupują wreszcie hełm swojej klasy, a przerwana aktualizacja nie blokuje już serwera — jeśli strona nie pokazuje nowych map, ta wersja to naprawia.",
+  "publishedAt": "2026-09-03T07:30:00Z",
+  "statusMessage": "Aktualizacja 1.22.3: boty powyżej 35 poziomu wychodzą wreszcie z Joan (koniec z biciem psów na wysokim poziomie) i noszą 800 czerwonych oraz 600 niebieskich mikstur.",
   "server": {
-    "version": "1.22.2",
-    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v1.22.2/metin2-server-update-1.22.2.zip",
-    "sha256": "8C7711179FDB0214BE4CD7084237C0DDBAB0C8216161DE2B6B8070BDAF239456"
+    "version": "1.22.3",
+    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v1.22.3/metin2-server-update-1.22.3.zip",
+    "sha256": "D76170F3249B7BA6ABED85DD17C321ACFEC3E6ED244672ADA63F7E6F0CF4954A"
   },
   "support": {
     "contactUrl": "https://discord.gg/pt5tvnrN6",
