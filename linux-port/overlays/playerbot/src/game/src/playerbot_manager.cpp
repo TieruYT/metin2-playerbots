@@ -4487,8 +4487,13 @@ namespace
 		const bool mage = ch && (ch->GetJob() == JOB_SHAMAN || ch->GetJob() == JOB_SURA);
 		switch (supply)
 		{
-			case PLAYERBOT_POTION_SUPPLY_HP:     return lowLevel ? 160 : 300;
-			case PLAYERBOT_POTION_SUPPLY_SP:     return lowLevel ? (mage ? 100 : 50) : (mage ? 200 : 80);
+			// A bot with yang in the bank should carry a real belt, not a token
+			// one: potions are cheap next to what it earns, and running dry is
+			// what sends it home in the middle of a good spot. These are also the
+			// limits the excess-potion sale trims down to, so they have to move
+			// together with the purchase below.
+			case PLAYERBOT_POTION_SUPPLY_HP:     return lowLevel ? 160 : 800;
+			case PLAYERBOT_POTION_SUPPLY_SP:     return lowLevel ? (mage ? 100 : 50) : 600;
 			case PLAYERBOT_POTION_SUPPLY_GREEN:  return 30;
 			case PLAYERBOT_POTION_SUPPLY_PURPLE: return 30;
 			default: return 0;
@@ -6487,20 +6492,38 @@ namespace
 		}
 		else
 		{
-			if (redCount < 50 && ch->GetGold() >= 1200)
+			// Unit prices are the ones the old fixed purchases implied: 20 yang for
+			// a Red Potion (M), 32 for a Blue Potion (M).
+			const DWORD RED_TARGET = 800;
+			const DWORD BLUE_TARGET = 600;
+			const DWORD RED_UNIT = 20;
+			const DWORD BLUE_UNIT = 32;
+			// Top up while there is still a belt left rather than once it is empty,
+			// and never spend more than half the purse, so shopping can't leave the
+			// bot unable to afford a refine.
+			if (redCount < RED_TARGET / 2 && ch->GetGold() >= 1200)
 			{
-				ch->PointChange(POINT_GOLD, -1000);
-				ch->AutoGiveItem(27002, 50); // Red Potion (M) 50x
+				const DWORD want = (DWORD)(RED_TARGET - redCount);
+				const DWORD affordable = (DWORD)(ch->GetGold() / 2 / RED_UNIT);
+				const DWORD buy = want < affordable ? want : affordable;
+				if (buy > 0)
+				{
+					ch->PointChange(POINT_GOLD, -(int)(buy * RED_UNIT));
+					ch->AutoGiveItem(27002, buy);
+				}
 			}
-			if (isMage && blueCount < 30 && ch->GetGold() >= 1200)
+			// Skills spend SP continuously, so a warrior wants a reserve too. It
+			// simply must never be the thing that forbids travelling.
+			if (blueCount < BLUE_TARGET / 2 && ch->GetGold() >= 1200)
 			{
-				ch->PointChange(POINT_GOLD, -960);
-				ch->AutoGiveItem(27005, 30); // Blue Potion (M) 30x
-			}
-			else if (!isMage && blueCount < 20 && ch->GetGold() >= 1200)
-			{
-				ch->PointChange(POINT_GOLD, -480);
-				ch->AutoGiveItem(27005, 10); // Blue Potion (M) 10x
+				const DWORD want = (DWORD)(BLUE_TARGET - blueCount);
+				const DWORD affordable = (DWORD)(ch->GetGold() / 2 / BLUE_UNIT);
+				const DWORD buy = want < affordable ? want : affordable;
+				if (buy > 0)
+				{
+					ch->PointChange(POINT_GOLD, -(int)(buy * BLUE_UNIT));
+					ch->AutoGiveItem(27005, buy);
+				}
 			}
 		}
 
@@ -6649,9 +6672,9 @@ namespace
 		if (ch->GetLevel() <= 10)
 			return (redCount < 30 && ch->GetGold() >= 300) ||
 					(isMage && blueCount < 20 && ch->GetGold() >= 400);
-		return (redCount < 50 && ch->GetGold() >= 1200) ||
-				(isMage && blueCount < 30 && ch->GetGold() >= 1200) ||
-				(!isMage && blueCount < 10 && ch->GetGold() >= 1200);
+		// Half a belt is the restock point, matching the targets in the merchant.
+		return (redCount < 400 && ch->GetGold() >= 1200) ||
+				(blueCount < 300 && ch->GetGold() >= 1200);
 	}
 
 	bool NeedsPlayerBotEmergencyPotions(LPCHARACTER ch)
@@ -6731,9 +6754,19 @@ namespace
 		return remaining > 0 && ch->CountSpecifyItem(mission->itemVnum) >= remaining;
 	}
 
+	// Above this level Bokjung has nothing left to offer, so nothing there is
+	// worth keeping a bot for either.
+	const BYTE PLAYERBOT_M2_COHORT_MAX_LEVEL = 35;
+
+	bool IsPlayerBotPastM2Ceiling(LPCHARACTER ch)
+	{
+		return ch && ch->GetLevel() > PLAYERBOT_M2_COHORT_MAX_LEVEL;
+	}
+
 	bool IsPlayerBotM2LevelingCohort(LPCHARACTER ch)
 	{
-		if (!ch || ch->GetLevel() < 20 || ch->GetLevel() > 35)
+		if (!ch || ch->GetLevel() < 20 ||
+				ch->GetLevel() > PLAYERBOT_M2_COHORT_MAX_LEVEL)
 			return false;
 		// Levels 20-21 still have a little useful M1 progression, so retain a small
 		// stable minority there. At level 22 every ordinary leveler graduates to M2.
@@ -6808,8 +6841,13 @@ namespace
 				s_mapPlayerBotAIStates.find(ch->GetPlayerID());
 		const BYTE personality = it != s_mapPlayerBotAIStates.end()
 				? it->second.bPersonality : BOT_PERSONALITY_STEADY_ADVENTURER;
-		// Bokjung must never empty out completely: even the keenest explorer
-		// leaves one bot in eight behind for the town, its Bestials and parties.
+		// Above the Bokjung ceiling there is nothing there left to stay behind
+		// for, so the reserve rule has nothing to protect and only strands bots.
+		if (IsPlayerBotPastM2Ceiling(ch))
+			return true;
+		// Below it Bokjung must never empty out completely: even the keenest
+		// explorer leaves one bot in eight behind for the town, its Bestials
+		// and the local party pool.
 		const DWORD appetite = GetPlayerBotFrontierAppetite(personality);
 		return (PlayerBotNavHash(ch->GetPlayerID() ^ 0x46524f4eU) % 8U) < appetite;
 	}
@@ -7092,7 +7130,14 @@ namespace
 					((needsTownPreparation || needsCriticalTownServices) &&
 					 !townVisitRecentlyCompleted))
 				return false;
-			if (!needsHorseExpedition && !m2LevelingCohort && !wantsM3)
+			// The M2 cohort ends at 35, but the frontier maps begin at 30 and run
+			// far past it. Testing only the cohort here meant a level 36+ bot fell
+			// out of this gate on every tick and stayed in Joan for good, hunting
+			// level-3 wolves - which is the "boty bija psy" the Discord keeps
+			// reporting. Anything with somewhere better to be gets through.
+			if (!needsHorseExpedition && !m2LevelingCohort && !wantsM3 &&
+					GetPlayerBotFrontierMapForLevel(ch) == 0 &&
+					!IsPlayerBotPastM2Ceiling(ch))
 				return false;
 			if (state.dwNextWorldTravelTime == 0)
 			{
@@ -7219,7 +7264,11 @@ namespace
 						dwNow, toDesert ? "level_to_desert" : "level_to_orc_valley");
 			}
 
-			if (!m2LevelingCohort)
+			// Sending a bot back to Joan is only right when it has outgrown
+			// nothing yet. Doing it above the ceiling produced an M1 <-> M2 loop:
+			// Joan let it leave, Bokjung refused to keep it, and neither ever
+			// hunted anything.
+			if (!m2LevelingCohort && !IsPlayerBotPastM2Ceiling(ch))
 			{
 				SetPlayerBotGoal(ch, state, BOT_GOAL_LEVEL_UP, dwNow);
 				const bool moving = MovePlayerBotToWorldPortal(ch, state,
