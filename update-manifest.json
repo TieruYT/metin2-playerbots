@@ -1,12 +1,12 @@
 {
   "schema": 1,
   "channel": "stable",
-  "publishedAt": "2026-09-03T22:00:00Z",
-  "statusMessage": "Aktualizacja 1.23.1: boty, które utknęły bez sektora lub na nieobsługiwanej mapie, wracają do gry. Mniej śmieci w dzienniku.",
+  "publishedAt": "2026-09-04T00:20:00Z",
+  "statusMessage": "Aktualizacja 1.23.2: suwak do 1000 botów (rejestr powiększony — istniejący świat zachowuje swoją obsadę) oraz naprawa łowienia.",
   "server": {
-    "version": "1.23.1",
-    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v1.23.1/metin2-server-update-1.23.1.zip",
-    "sha256": "D58F56AAB40CFC6BB6BC39258CC6D58E03258E280C42C5FF0DCCCD86881A14ED"
+    "version": "1.23.2",
+    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v1.23.2/metin2-server-update-1.23.2.zip",
+    "sha256": "002C03D42AC47B1A7E2E33A6D3A9A8B74445E0AFCCC80EE7C65FA160E5E98ED9"
   },
   "support": {
     "contactUrl": "https://discord.gg/pt5tvnrN6",
