@@ -17,6 +17,21 @@ every version here.
 
 ---
 
+## 1.23.2 — 2026-09-04
+
+### Changed
+
+- **Suwak liczby botów sięga teraz 1000, a nie 668 — i ta liczba wreszcie coś znaczy.** Sedno problemu nie było w suwaku: spawnować mogą się **wyłącznie boty z rejestru nasion**, a ten miał **350 pozycji**. Dlatego gracz przesuwał suwak wyżej i dostawał 350. Rejestr obejmuje teraz 1000 postaci (PID 4..1003).
+  - **Uwaga: istniejący świat zachowuje swoją obsadę.** Migracja celowo nie nadpisuje świata, który ma już własne boty — wypisuje ostrzeżenie i pomija nasiona. Nowy limit dostaną **świeże instalacje**; przeniesienie istniejącego świata na większą obsadę to osobna, świadoma operacja na bazie.
+
+### Fixed
+
+- **Bot wysyłał się na ryby, mimo że nie mógł unieść wędki.** Wędkarzem mógł zostać bot od 10 poziomu, a wędka wymaga 30 — więc bot kupował sprzęt, którego nigdy nie założy, i próbował w kółko. Zgłosił to `OskarPWA`, widząc bota na 13 poziomie zablokowanego przy Rybaku. Teraz o tym, kto może łowić, decyduje **wymagany poziom samej wędki**, odczytany z danych przedmiotu — więc zmiana wędki nie rozjedzie się z kodem.
+- **Łowienie w ogóle nie mogło się odbyć.** Rzeka jest w Joan, a każdy bot dość wysoki, by unieść wędkę, dawno stamtąd wyszedł — więc warunek „łowimy tylko w M1" nie mógł być nigdy spełniony. Wyprawa na ryby jest teraz **prawdziwym celem podróży**: bot wraca do Joan, łowi i dopiero potem wraca do polowania.
+- **Sesja łowienia ma twardy limit czasu.** Bot, który nie dotrze nad wodę, kończy sesję z wpisem w dzienniku, zamiast w nieskończoność chodzić tą samą nieudaną trasą.
+
+---
+
 ## 1.23.1 — 2026-09-03
 
 ### Fixed

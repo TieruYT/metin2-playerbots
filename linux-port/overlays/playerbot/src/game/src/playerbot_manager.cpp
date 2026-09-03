@@ -4667,9 +4667,23 @@ namespace
 	// natural anglers -- pearls are a collector's prize -- but a few other
 	// personalities join them so the bank is never one archetype deep. The roll is
 	// derived from the player id, so a bot keeps the same hobby across restarts.
+	// The rod is a weapon and carries a level limit like any other. Asking the
+	// item what it needs keeps this honest: the hand-picked level 10 was below
+	// the rod's real requirement of 30, so a level-13 bot bought tackle it could
+	// never equip and then retried the same failing step for good.
+	bool CanPlayerBotUseFishingRod(LPCHARACTER ch)
+	{
+		if (!ch)
+			return false;
+		TItemTable* proto = ITEM_MANAGER::instance().GetTable(PLAYERBOT_FISHING_ROD_VNUM);
+		if (!proto)
+			return false;
+		return GetPlayerBotProtoLevelLimit(proto) <= (int)ch->GetLevel();
+	}
+
 	bool IsPlayerBotAngler(LPCHARACTER ch, const TPlayerBotAIState& state)
 	{
-		if (!ch || ch->GetLevel() < 10)
+		if (!CanPlayerBotUseFishingRod(ch))
 			return false;
 		const DWORD roll = PlayerBotNavHash(ch->GetPlayerID() ^ 0x46495348U) % 100U;
 		return state.bPersonality == BOT_PERSONALITY_CAREFUL_COLLECTOR
@@ -4923,6 +4937,20 @@ namespace
 					PLAYERBOT_FISHERMAN_Y, 0x46495348U, destX, destY);
 		else
 			GetPlayerBotFishingStand(ch->GetPlayerID(), destX, destY);
+
+		// A session that never reaches the water is the worst of both worlds: the
+		// bot has paid for tackle, stopped hunting, and walks the same failing
+		// approach for as long as the server runs. Observed on a live world - a
+		// level-34 bot stood at the Rybak with a rod in its bag and never cast.
+		// Give up out loud instead, so the log says which leg failed.
+		if (state.dwFishingSessionEndTime != 0 && !state.bIsFishing &&
+				dwNow >= state.dwFishingSessionEndTime)
+		{
+			sys_err("PLAYERBOT_FISHING: never reached the water pid=%u name=%s pos=(%ld,%ld) dest=(%ld,%ld) tackle=%d",
+					ch->GetPlayerID(), ch->GetName(), ch->GetX(), ch->GetY(),
+					destX, destY, needsTackle ? 1 : 0);
+			return EndPlayerBotFishingSession(ch, state, dwNow, "never_reached_water");
+		}
 
 		if (DISTANCE_APPROX(ch->GetX() - destX, ch->GetY() - destY) >
 				PLAYERBOT_FISHING_ARRIVE)
@@ -6700,6 +6728,14 @@ namespace
 		}
 	}
 
+	// Due for a fishing trip: old enough for the rod, and its cooldown is up.
+	bool WantsPlayerBotFishingTrip(LPCHARACTER ch, const TPlayerBotAIState& state, DWORD dwNow)
+	{
+		if (!IsPlayerBotAngler(ch, state))
+			return false;
+		return state.dwNextFishingCheckTime == 0 || dwNow >= state.dwNextFishingCheckTime;
+	}
+
 	bool ShouldPlayerBotLeaveForFrontier(LPCHARACTER ch)
 	{
 		if (!ch || GetPlayerBotFrontierMapForLevel(ch) == 0)
@@ -7068,6 +7104,10 @@ namespace
 			// first would queue it behind every town errand in the village, which
 			// is what left Orc Valley empty while the Desert filled up from the
 			// bots that happened to already be in Bokjung.
+			// Let it fish before it is handed the next hunting destination.
+			if (WantsPlayerBotFishingTrip(ch, state, dwNow))
+				return false;
+
 			if (!needsHorseExpedition && !wantsM3)
 			{
 				const long directMap = ShouldPlayerBotLeaveForFrontier(ch)
@@ -7152,6 +7192,19 @@ namespace
 						PLAYERBOT_M2_TO_M3_TELEPORTER_X, PLAYERBOT_M2_TO_M3_TELEPORTER_Y,
 						PLAYERBOT_MAP_CHUNJO_M3, PLAYERBOT_M3_ARRIVAL_X,
 						PLAYERBOT_M3_ARRIVAL_Y, dwNow, "level30_weapon_to_m3");
+			}
+
+			// The river is in Joan, and every bot old enough to hold a rod has long
+			// since left it - so fishing only ever happens if the trip is a real
+			// destination. Ranked above the frontier maps: a session is short, and
+			// the pearls it brings back are worth more than the hunting it skips.
+			if (WantsPlayerBotFishingTrip(ch, state, dwNow))
+			{
+				SetPlayerBotGoal(ch, state, BOT_GOAL_HUNTING, dwNow);
+				return MovePlayerBotToWorldPortal(ch, state,
+						PLAYERBOT_M2_TO_M1_PORTAL_X, PLAYERBOT_M2_TO_M1_PORTAL_Y,
+						PLAYERBOT_MAP_CHUNJO_M1, PLAYERBOT_M1_RETURN_X,
+						PLAYERBOT_M1_RETURN_Y, dwNow, "fishing_to_m1");
 			}
 
 			// Bokjung's own spawns stop paying long before the M2 band ends. Bots

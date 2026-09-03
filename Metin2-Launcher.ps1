@@ -354,7 +354,7 @@ function Set-BotCountAction {
         return
     }
 
-    $answer = Read-Host 'Ilu botów ma grać (0-668)'
+    $answer = Read-Host 'Ilu botów ma grać (0-1000)'
     if ($answer -notmatch '^\d+$') { Write-Host 'Anulowano: to nie jest liczba.' -ForegroundColor Yellow; return }
     $applied = Set-PlayerbotCount -Count ([int]$answer)
     Write-Host "Zapisano: $applied grających botów." -ForegroundColor Green
@@ -597,7 +597,7 @@ function Show-Menu {
         Write-Host ' 10. Utwórz paczkę diagnostyczną ZIP'
         Write-Host ' 11. Utwórz i wyślij logi (po potwierdzeniu)'
         Write-Host ' 12. Konfiguracja launchera'
-        Write-Host ' 13. Ustaw liczbę grających botów (0-668)'
+        Write-Host ' 13. Ustaw liczbę grających botów (0-1000)'
         Write-Host ' 14. Importuj bazę z innej instalacji (wyższe postacie)'
         Write-Host ' 15. Napraw dostęp do bazy (gdy migrate/serwer nie startuje)'
         Write-Host '  0. Wyjście'
