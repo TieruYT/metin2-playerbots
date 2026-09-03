@@ -17,6 +17,25 @@ every version here.
 
 ---
 
+## 1.23.0 — 2026-09-03
+
+### Added
+
+- **Boty prowadzą stragany w Bokjung.** Stała dziesiąta część botów po załatwieniu spraw w mieście idzie na rynek, zsiada z konia i wystawia jeden przedmiot na 20–60 minut: materiał albo naprawdę zbędną broń czy zbroję, w cenie liczonej z kursu NPC. Zapasy, noszony sprzęt i rzeczy, których gra zabrania sprzedawać, nie trafiają nigdy. **Możesz u nich normalnie kupować.**
+- **Walka z siodła.** Koń bojowy (11+ poziom) jedzie teraz do walki, zamiast zostawać na podejściu. Metiny bije z siodła każdy, kto takiego konia ma; wojownicy i sury tłuką konno także zwykłe spoty. Łucznicy i zwykłe konie nadal walczą pieszo. Blokadą nie był dystans zsiadania, tylko podejście do walki wołające ruch bez zgody na konia — bot zsiadał za każdym razem.
+- **Wędkowanie.** Część botów w M1 kupuje wędkę u Rybaka i łowi na brzegu poniżej niego. Zrobione pod to, co silnik faktycznie robi, a nie pod opis: przynęta siedzi w gnieździe 2 wędki, branie przychodzi po 10–40 s i daje 6 sekund okna, a szczyt wypada około 3 s po braniu — więc bot czeka na właściwy moment, zamiast szarpać. Połów jest patroszony, a małże otwierane, co wprowadza do gospodarki **perły**. Pas brzegu i kierunek odczytane z `server_attr` mapy, nie zgadnięte.
+- **Ogłoszenia u kowala na Wołaj.** Udane ulepszenie na +7 i wyżej ma szansę trafić na czat, najwyżej raz na trzy minuty w skali świata. **Przy zaatakowaniu, w PvP i po zabiciu boty milczą.**
+- **Pamięć ras map.** Populacja zapamiętuje, z czego składa się każda mapa, i waży tym bonusy rasowe — „silny przeciw orkom" liczy się bardziej tam, gdzie orki naprawdę są. Mapa musi mieć 200 obserwacji i wyraźną większość, zanim cokolwiek zostanie uznane za jej rasę.
+
+### Fixed
+
+- **Prywatnego sklepu nie mógł otworzyć nikt w zbroi — także Ty.** `OpenMyShop` zaczynał się od `GetPart(PART_MAIN) > 2`, a silnik trzyma w `PART_MAIN` numer noszonej zbroi, więc warunek odrzucał każdą ubraną postać. Miał chronić przed otwieraniem sklepu w transformacji i teraz pyta o to wprost. Zmiana idzie jako osobna łatka rdzenia.
+- **Bot trzymający cel nie sprawdzał już podróży** ([#10](https://github.com/TieruYT/metin2-playerbots/issues/10)), przez co gęste spoty potrafiły go uwięzić.
+- **Loch Małp nie pytał o mikstury** ([#11](https://github.com/TieruYT/metin2-playerbots/issues/11)) — bot bez mikstur zostawał i ginął w kółko. Zgłoszone razem z poprawką przez `sentydeploy`.
+- **Paczka aktualizacji nie zawierała trzech plików**, bez których przebudowa u gracza kończy się błędem kompilacji: `playerbot_world_rules.h` (zyskał nowe pole), nowy `playerbot_types.h` oraz `prepare-context.sh`, który jako jedyny kopiuje pliki overlaya do budowania.
+
+---
+
 ## 1.22.4 — 2026-09-03
 
 ### Changed
