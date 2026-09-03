@@ -96,6 +96,7 @@ command -v python3 >/dev/null 2>&1 || die "python3 is needed to verify the deter
 for p in \
   "$PLAYERBOT_SRC/playerbot_manager.cpp" \
   "$PLAYERBOT_SRC/playerbot_manager.h" \
+  "$PLAYERBOT_SRC/playerbot_types.h" \
   "$PLAYERBOT_SRC/playerbot_world_rules.h" \
   "$PLAYERBOT_CORE_PATCH" \
   "$PLAYERBOT_ECONOMY_PATCH" \
@@ -182,9 +183,11 @@ fi
 
 cp -a "$PLAYERBOT_SRC/playerbot_manager.cpp" "$GAME_CTX/server/game/src/playerbot_manager.cpp"
 cp -a "$PLAYERBOT_SRC/playerbot_manager.h" "$GAME_CTX/server/game/src/playerbot_manager.h"
+cp -a "$PLAYERBOT_SRC/playerbot_types.h" "$GAME_CTX/server/game/src/playerbot_types.h"
 cp -a "$PLAYERBOT_SRC/playerbot_world_rules.h" "$GAME_CTX/server/game/src/playerbot_world_rules.h"
 chmod 0644 "$GAME_CTX/server/game/src/playerbot_manager.cpp" \
            "$GAME_CTX/server/game/src/playerbot_manager.h" \
+           "$GAME_CTX/server/game/src/playerbot_types.h" \
            "$GAME_CTX/server/game/src/playerbot_world_rules.h"
 
 grep -q 'CPPFILE += playerbot_manager.cpp' "$GAME_CTX/server/game/src/Makefile" \
@@ -199,6 +202,8 @@ cmp -s "$PLAYERBOT_SRC/playerbot_manager.cpp" "$GAME_CTX/server/game/src/playerb
   || die "Playerbot overlay validation failed: manager source copy differs"
 cmp -s "$PLAYERBOT_SRC/playerbot_manager.h" "$GAME_CTX/server/game/src/playerbot_manager.h" \
   || die "Playerbot overlay validation failed: manager header copy differs"
+cmp -s "$PLAYERBOT_SRC/playerbot_types.h" "$GAME_CTX/server/game/src/playerbot_types.h" \
+  || die "Playerbot overlay validation failed: types header copy differs"
 cmp -s "$PLAYERBOT_SRC/playerbot_world_rules.h" "$GAME_CTX/server/game/src/playerbot_world_rules.h" \
   || die "Playerbot overlay validation failed: world-rules header copy differs"
 
@@ -208,6 +213,7 @@ cmp -s "$PLAYERBOT_SRC/playerbot_world_rules.h" "$GAME_CTX/server/game/src/playe
   printf 'log_patch=%s\n' "$(git hash-object "$PLAYERBOT_LOG_PATCH")"
   printf 'manager_cpp=%s\n' "$(git hash-object "$PLAYERBOT_SRC/playerbot_manager.cpp")"
   printf 'manager_h=%s\n' "$(git hash-object "$PLAYERBOT_SRC/playerbot_manager.h")"
+  printf 'types_h=%s\n' "$(git hash-object "$PLAYERBOT_SRC/playerbot_types.h")"
   printf 'world_rules_h=%s\n' "$(git hash-object "$PLAYERBOT_SRC/playerbot_world_rules.h")"
   printf 'seed_generator=%s\n' "$(git hash-object "$PLAYERBOT_SEED_GENERATOR")"
   printf 'seed_sql=%s\n' "$(git hash-object "$PLAYERBOT_SEED")"
