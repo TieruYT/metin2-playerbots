@@ -62,6 +62,7 @@ PLAYERBOT_SRC="$PLAYERBOT_OVERLAY/src/game/src"
 PLAYERBOT_CORE_PATCH="$PLAYERBOT_OVERLAY/patches/0001-core-integration.patch"
 PLAYERBOT_ECONOMY_PATCH="$PLAYERBOT_OVERLAY/patches/0002-economy-yang-x5.patch"
 PLAYERBOT_LOG_PATCH="$PLAYERBOT_OVERLAY/patches/0003-suppress-refine-find-log.patch"
+PLAYERBOT_SHOP_PATCH="$PLAYERBOT_OVERLAY/patches/0004-private-shop-guard.patch"
 PLAYERBOT_SEED_GENERATOR="$PLAYERBOT_OVERLAY/tools/generate_seed.py"
 PLAYERBOT_SEED="$PLAYERBOT_OVERLAY/sql/playerbots_seed.sql"
 PLAYERBOT_MIGRATOR="$HERE/mariadb/playerbot/apply.sh"
@@ -99,6 +100,7 @@ for p in \
   "$PLAYERBOT_CORE_PATCH" \
   "$PLAYERBOT_ECONOMY_PATCH" \
   "$PLAYERBOT_LOG_PATCH" \
+  "$PLAYERBOT_SHOP_PATCH" \
   "$PLAYERBOT_SEED_GENERATOR" \
   "$PLAYERBOT_SEED" \
   "$PLAYERBOT_MIGRATOR" \
@@ -167,10 +169,15 @@ if ! (cd "$GAME_CTX/server" && \
       patch --batch --forward --fuzz=0 -p1 --dry-run < "$PLAYERBOT_LOG_PATCH"); then
   die "the Playerbot log-noise patch does not apply cleanly to the staged port source"
 fi
+if ! (cd "$GAME_CTX/server" && \
+      patch --batch --forward --fuzz=0 -p1 --dry-run < "$PLAYERBOT_SHOP_PATCH"); then
+  die "the private-shop guard patch does not apply cleanly to the staged port source"
+fi
 (cd "$GAME_CTX/server" && \
   patch --batch --forward --fuzz=0 -p1 < "$PLAYERBOT_CORE_PATCH" && \
   patch --batch --forward --fuzz=0 -p1 < "$PLAYERBOT_ECONOMY_PATCH" && \
-  patch --batch --forward --fuzz=0 -p1 < "$PLAYERBOT_LOG_PATCH") \
+  patch --batch --forward --fuzz=0 -p1 < "$PLAYERBOT_LOG_PATCH" && \
+  patch --batch --forward --fuzz=0 -p1 < "$PLAYERBOT_SHOP_PATCH") \
   || die "the Playerbot source overlay could not be applied"
 
 cp -a "$PLAYERBOT_SRC/playerbot_manager.cpp" "$GAME_CTX/server/game/src/playerbot_manager.cpp"

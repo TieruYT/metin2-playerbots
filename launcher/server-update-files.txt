@@ -11,6 +11,9 @@ linux-port/overlays/playerbot/serverfiles/mob_drop_item.m3.append.txt
 linux-port/overlays/playerbot/sql/playerbots_seed.sql
 linux-port/overlays/playerbot/src/game/src/playerbot_manager.cpp
 linux-port/overlays/playerbot/patches/0001-core-integration.patch
+# Lets a character wearing armour open a private shop, which the stock
+# guard rejected outright - bots and players alike.
+linux-port/overlays/playerbot/patches/0004-private-shop-guard.patch
 linux-port/overlays/playerbot/tools/generate_seed.py
 linux-port/docker/game/src/server/game/src/playerbot_manager.cpp
 # Assigns maps to game cores. The bots' route now includes Orc Valley, and

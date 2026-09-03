@@ -35,6 +35,8 @@
 
 extern int passes_per_sec;
 
+extern void SendShout(const char* szText, BYTE bEmpire);
+
 namespace
 {
 	const int PLAYERBOT_SEARCH_RANGE = 6000;
@@ -274,6 +276,8 @@ namespace
 	// A stall stands for a while and then the bot goes back to playing.
 	const DWORD PLAYERBOT_SHOP_MIN_DURATION = 1200000;   // 20 min
 	const DWORD PLAYERBOT_SHOP_MAX_DURATION = 3600000;   // 60 min
+	// What a bot pays itself for the stall it sets up.
+	const DWORD PLAYERBOT_SHOP_BUNDLE_PRICE = 2000;
 	const DWORD PLAYERBOT_SHOP_REST_MIN = 1800000;
 	const DWORD PLAYERBOT_SHOP_REST_MAX = 5400000;
 	const DWORD PLAYERBOT_HORSE_MEDAL_VNUM = 50050;
@@ -1591,6 +1595,84 @@ namespace
 		PLAYERBOT_NAV_PLAN_DEFERRED,
 		PLAYERBOT_NAV_PLAN_UNREACHABLE
 	};
+
+	// Declared in input_p2p.cpp. ChatPacket would be useless here - a bot has no
+	// client descriptor of its own to send to.
+
+	// Defined further down, next to the market-stall code; the refine routine
+	// above needs it.
+	enum EPlayerBotRaceSlot
+	{
+		PLAYERBOT_RACE_ANIMAL = 0,
+		PLAYERBOT_RACE_UNDEAD,
+		PLAYERBOT_RACE_DEVIL,
+		PLAYERBOT_RACE_ORC,
+		PLAYERBOT_RACE_MILGYO,
+		PLAYERBOT_RACE_SLOTS,
+		PLAYERBOT_RACE_NONE = -1
+	};
+
+	void BroadcastPlayerBotRefineSuccess(LPCHARACTER ch, LPITEM item, int newPlus);
+
+	// What the population has learned about each map: which kind of monster
+	// actually lives there. Shared across every bot, because it is a fact about
+	// the world rather than about any one character. Feeds equipment scoring, so
+	// a race-attack bonus is worth more where that race is what you fight.
+	struct TPlayerBotMapRaces
+	{
+		DWORD dwSamples;
+		DWORD dwByRace[PLAYERBOT_RACE_SLOTS];
+		TPlayerBotMapRaces() : dwSamples(0) { memset(dwByRace, 0, sizeof(dwByRace)); }
+	};
+	typedef std::map<long, TPlayerBotMapRaces> TPlayerBotMapRaceMap;
+	TPlayerBotMapRaceMap s_mapRaceMemory;
+
+	void RememberPlayerBotMapRace(LPCHARACTER ch, LPCHARACTER target)
+	{
+		if (!ch || !target || !target->IsMonster())
+			return;
+		TPlayerBotMapRaces& mem = s_mapRaceMemory[ch->GetMapIndex()];
+		++mem.dwSamples;
+		if (target->IsRaceFlag(RACE_FLAG_ANIMAL)) ++mem.dwByRace[PLAYERBOT_RACE_ANIMAL];
+		if (target->IsRaceFlag(RACE_FLAG_UNDEAD)) ++mem.dwByRace[PLAYERBOT_RACE_UNDEAD];
+		if (target->IsRaceFlag(RACE_FLAG_DEVIL))  ++mem.dwByRace[PLAYERBOT_RACE_DEVIL];
+		if (target->IsRaceFlag(RACE_FLAG_ORC))    ++mem.dwByRace[PLAYERBOT_RACE_ORC];
+		if (target->IsRaceFlag(RACE_FLAG_MILGYO)) ++mem.dwByRace[PLAYERBOT_RACE_MILGYO];
+	}
+
+	BYTE GetPlayerBotRaceApplyType(int race)
+	{
+		switch (race)
+		{
+			case PLAYERBOT_RACE_ANIMAL: return APPLY_ATTBONUS_ANIMAL;
+			case PLAYERBOT_RACE_UNDEAD: return APPLY_ATTBONUS_UNDEAD;
+			case PLAYERBOT_RACE_DEVIL:  return APPLY_ATTBONUS_DEVIL;
+			case PLAYERBOT_RACE_ORC:    return APPLY_ATTBONUS_ORC;
+			case PLAYERBOT_RACE_MILGYO: return APPLY_ATTBONUS_MILGYO;
+			default: return APPLY_NONE;
+		}
+	}
+
+	// The race a map is made of, or PLAYERBOT_RACE_NONE while the sample is too
+	// small or too mixed to call. A guess made from ten kills is worse than none.
+	int GetPlayerBotDominantRace(long mapIndex)
+	{
+		TPlayerBotMapRaceMap::const_iterator it = s_mapRaceMemory.find(mapIndex);
+		if (it == s_mapRaceMemory.end() || it->second.dwSamples < 200)
+			return PLAYERBOT_RACE_NONE;
+		int best = PLAYERBOT_RACE_NONE;
+		DWORD bestCount = 0;
+		for (int race = 0; race < PLAYERBOT_RACE_SLOTS; ++race)
+		{
+			if (it->second.dwByRace[race] > bestCount)
+			{
+				bestCount = it->second.dwByRace[race];
+				best = race;
+			}
+		}
+		// Half the encounters have to agree before this counts as "the" race.
+		return (bestCount * 2 >= it->second.dwSamples) ? best : PLAYERBOT_RACE_NONE;
+	}
 
 	DWORD PlayerBotNavHash(DWORD value)
 	{
@@ -3783,6 +3865,29 @@ namespace
 
 		if (item->GetImmuneFlag() != 0)
 			score += 1000;
+
+		// A race-attack bonus is only worth carrying where that race is what you
+		// actually fight. The population learns which monsters live on each map,
+		// so "strong against orcs" counts for far more in Orc Valley than in a
+		// place where nothing orcish ever spawns.
+		if (ch)
+		{
+			const int dominant = GetPlayerBotDominantRace(ch->GetMapIndex());
+			if (dominant != PLAYERBOT_RACE_NONE)
+			{
+				const BYTE wanted = GetPlayerBotRaceApplyType(dominant);
+				for (int i = 0; i < ITEM_ATTRIBUTE_MAX_NUM; ++i)
+				{
+					if (item->GetAttributeType(i) == wanted)
+						score += (long long)item->GetAttributeValue(i) * 600;
+				}
+				for (int i = 0; i < ITEM_APPLY_MAX_NUM; ++i)
+				{
+					if (item->GetProto()->aApplies[i].bType == wanted)
+						score += (long long)item->GetProto()->aApplies[i].lValue * 600;
+				}
+			}
+		}
 
 		return score;
 	}
@@ -6448,6 +6553,7 @@ namespace
 			if (ch->DoRefine(item, false))
 			{
 				const bool success = ch->CountSpecifyItem(nextVnum) > resultCountBefore;
+				BroadcastPlayerBotRefineSuccess(ch, item, (int)plusLevel + 1);
 				sys_log(0, "PLAYERBOT_AI: refine %s pid=%u name=%s old_vnum=%u new_vnum=%u plus=%u",
 						success ? "SUCCESS" : "FAILED_BURNED", ch->GetPlayerID(), ch->GetName(),
 						oldVnum, nextVnum, plusLevel + 1);
@@ -7746,6 +7852,59 @@ namespace
 		return NULL;
 	}
 
+	// A good refine is the one moment worth breaking the bots' silence for. They
+	// say nothing when attacked, nothing during PvP, and nothing on a kill -
+	// only the blacksmith gets a reaction, and even then rarely.
+	void BroadcastPlayerBotRefineSuccess(LPCHARACTER ch, LPITEM item, int newPlus)
+	{
+		if (!ch || !item || newPlus < 7)
+			return;
+
+		static DWORD s_dwLastShoutTime = 0;
+		const DWORD dwNow = get_dword_time();
+		// One announcement every few minutes for the whole world: the chat should
+		// feel inhabited, not flooded.
+		if (s_dwLastShoutTime != 0 && dwNow < s_dwLastShoutTime + 180000)
+			return;
+		if (number(1, 100) > 45)
+			return;
+
+		static const char* kPlus7[] = {
+			"%s poszedl na +7, kowal dzis laskawy",
+			"no i mam +7 na %s, moglo byc gorzej",
+			"+7 na %s siadlo za pierwszym razem",
+			"udalo sie, %s na +7"
+		};
+		static const char* kPlus8[] = {
+			"%s na +8! rece mi sie trzesly",
+			"jest +8 na %s, teraz sie zastanawiam czy pchac dalej",
+			"+8 na %s, chyba mam dzis szczescie",
+			"weszlo na +8, %s gotowy do roboty"
+		};
+		static const char* kPlus9[] = {
+			"%s NA +9!!! nie wierze",
+			"+9 na %s, kto by pomyslal",
+			"dziewiatka na %s, dzis stawiam :D",
+			"%s +9, chyba wystarczy tych probek na dzis"
+		};
+
+		const char** pool = kPlus7;
+		if (newPlus >= 9)
+			pool = kPlus9;
+		else if (newPlus == 8)
+			pool = kPlus8;
+
+		char msg[CHAT_MAX_LEN + 1];
+		char body[CHAT_MAX_LEN + 1];
+		snprintf(body, sizeof(body), pool[number(0, 3)], item->GetName());
+		snprintf(msg, sizeof(msg), "%s : %s", ch->GetName(), body);
+
+		s_dwLastShoutTime = dwNow;
+		SendShout(msg, ch->GetEmpire());
+		sys_log(0, "PLAYERBOT_SHOUT: pid=%u plus=%d text=%s",
+				ch->GetPlayerID(), newPlus, msg);
+	}
+
 	bool ManagePlayerBotPrivateShop(LPCHARACTER ch, TPlayerBotAIState& state, DWORD dwNow)
 	{
 		if (!ch || !ch->IsItemLoaded())
@@ -7775,19 +7934,6 @@ namespace
 		if (ch->GetMapIndex() != PLAYERBOT_MAP_CHUNJO_M2)
 			return false;
 
-		// One line a minute per keeper, naming whichever gate is holding the stall
-		// shut. Without it the feature can only be observed by its absence.
-		if (state.dwNextShopDebugTime == 0 || dwNow >= state.dwNextShopDebugTime)
-		{
-			state.dwNextShopDebugTime = dwNow + 60000;
-			sys_log(0, "PLAYERBOT_SHOP: gate pid=%u visiting=%d/%d/%d rest=%d town=%d",
-					ch->GetPlayerID(),
-					state.bVisitingShop ? 1 : 0,
-					state.bVisitingBiologist ? 1 : 0,
-					state.bVisitingStable ? 1 : 0,
-					(state.dwNextShopKeepTime != 0 && dwNow < state.dwNextShopKeepTime) ? 1 : 0,
-					(state.dwNextShopCheckTime != 0 && dwNow < state.dwNextShopCheckTime) ? 1 : 0);
-		}
 		// Errands still come first - a stall opened mid-visit would be abandoned
 		// on the next tick.
 		if (state.bVisitingShop || state.bVisitingBiologist || state.bVisitingStable)
@@ -7851,15 +7997,34 @@ namespace
 		char sign[SHOP_SIGN_MAX_LEN + 1];
 		snprintf(sign, sizeof(sign), "%s", ch->GetName());
 
+		// Opening a stall costs a shop bundle, exactly as it does for a player:
+		// OpenMyShop consumes one 50200 and refuses outright without it. The other
+		// accepted item, the permanent 71049, takes a branch that writes through
+		// GetDesc() - a bot has no client descriptor, so that path must be avoided.
+		if (ch->CountSpecifyItem(71049) > 0)
+			return false;
+		if (ch->CountSpecifyItem(50200) == 0)
+		{
+			// The bot buys its stall like anything else it carries.
+			if (ch->GetGold() >= PLAYERBOT_SHOP_BUNDLE_PRICE)
+				ch->PointChange(POINT_GOLD, -(int)PLAYERBOT_SHOP_BUNDLE_PRICE);
+			ch->AutoGiveItem(50200, 1);
+		}
+
 		ch->OpenMyShop(sign, &table, 1);
 		if (!ch->GetMyShop())
 		{
 			// OpenMyShop refuses silently. Report which of its own guards said no,
 			// otherwise this is indistinguishable from the stall never being tried.
 			quest::PC* pc = quest::CQuestManager::instance().GetPCForce(ch->GetPlayerID());
-			sys_log(0, "PLAYERBOT_SHOP: refused pid=%u name=%s part=%d questRunning=%d vnum=%u",
-					ch->GetPlayerID(), ch->GetName(), (int)ch->GetPart(PART_MAIN),
-					(pc && pc->IsRunning()) ? 1 : 0, item->GetVnum());
+			const TItemTable* rp = item->GetProto();
+			LPITEM viaPos = ch->GetItem(table.pos);
+			sys_log(0, "PLAYERBOT_SHOP: refused pid=%u poly=%d quest=%d vnum=%u anti=%u equipped=%d locked=%d viaPos=%d sign=%d gold=%d",
+					ch->GetPlayerID(), ch->IsPolymorphed() ? 1 : 0,
+					(pc && pc->IsRunning()) ? 1 : 0, item->GetVnum(),
+					rp ? rp->dwAntiFlags : 0, item->IsEquipped() ? 1 : 0,
+					item->isLocked() ? 1 : 0, viaPos ? 1 : 0,
+					(int)strlen(sign), (int)(ch->GetGold() / 1000));
 			state.dwNextShopKeepTime = dwNow + number(60000, 180000);
 			return false;
 		}
@@ -10561,6 +10726,7 @@ namespace
 
 		SetPlayerBotAction(state, BOT_ACTION_FIGHT, dwNow);
 		state.dwTargetVID = target->GetVID();
+		RememberPlayerBotMapRace(ch, target);
 		ch->SetVictim(target);
 		// Aggressive packs often wake up as soon as the bot enters their radius. In
 		// that case running on is the authentic pull action; attacking would stop to

@@ -1,0 +1,16 @@
+diff --git a/game/src/char.cpp b/game/src/char.cpp
+--- a/game/src/char.cpp
++++ b/game/src/char.cpp
+@@ -583,7 +583,11 @@
+ 
+ void CHARACTER::OpenMyShop(const char * c_pszSign, TShopItemTable * pTable, BYTE bItemCount)
+ {
+-	if (GetPart(PART_MAIN) > 2)
++	// Was "GetPart(PART_MAIN) > 2". The intent is to stop a transformed character
++	// from opening a shop, but item.cpp stores the vnum of the worn body armour in
++	// PART_MAIN, so the test rejected anyone wearing armour at all - a human
++	// player included. Ask about the polymorph state directly instead.
++	if (IsPolymorphed())
+ 	{
+ 		ChatPacket(CHAT_TYPE_INFO, LC_TEXT("갑옷을 벗어야 개인 상점을 열 수 있습니다."));
+ 		return;
