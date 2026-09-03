@@ -261,6 +261,21 @@ namespace
 	// several of them within six seconds, and both maps looked empty because
 	// every bot on them was mid-bounce.
 	const DWORD PLAYERBOT_FRONTIER_MIN_VISIT_TIME = 120000;
+	// Bokjung's market strip. Anchored on the coordinate the return-from-M3 leg
+	// already uses, so it is known walkable; each keeper gets a stable offset so
+	// the stalls line up instead of stacking on one pixel.
+	const long PLAYERBOT_M2_MARKET_X = 145500;
+	const long PLAYERBOT_M2_MARKET_Y = 240000;
+	const int PLAYERBOT_MARKET_SPREAD = 300;
+	// Town legs stop when they are close enough, not on the exact pixel. 220 was
+	// tight enough that keepers kept walking around their pitch without ever
+	// counting as arrived.
+	const int PLAYERBOT_MARKET_ARRIVE = 450;
+	// A stall stands for a while and then the bot goes back to playing.
+	const DWORD PLAYERBOT_SHOP_MIN_DURATION = 1200000;   // 20 min
+	const DWORD PLAYERBOT_SHOP_MAX_DURATION = 3600000;   // 60 min
+	const DWORD PLAYERBOT_SHOP_REST_MIN = 1800000;
+	const DWORD PLAYERBOT_SHOP_REST_MAX = 5400000;
 	const DWORD PLAYERBOT_HORSE_MEDAL_VNUM = 50050;
 	const BYTE PLAYERBOT_HORSE_REQUIRED_LEVEL = 25;
 	const char* PLAYERBOT_HORSE_MEDALS_FLAG = "playerbot.horse_medals_delivered";
@@ -497,6 +512,10 @@ namespace
 			dwDungeonEnteredTime(0),
 			dwM3EnteredTime(0),
 			dwFrontierEnteredTime(0),
+			dwShopOpenedTime(0),
+			dwShopCloseTime(0),
+			dwNextShopKeepTime(0),
+			dwNextShopDebugTime(0),
 			dwMonkeyReversePortalBlockUntil(0),
 			dwNextLootPickupTime(0),
 			dwNextLootSearchTime(0),
@@ -624,6 +643,10 @@ namespace
 		DWORD dwDungeonEnteredTime;
 		DWORD dwM3EnteredTime;
 		DWORD dwFrontierEnteredTime;
+		DWORD dwShopOpenedTime;
+		DWORD dwShopCloseTime;
+		DWORD dwNextShopKeepTime;
+		DWORD dwNextShopDebugTime;
 		DWORD dwMonkeyReversePortalBlockUntil;
 		DWORD dwNextLootPickupTime;
 		DWORD dwNextLootSearchTime;
@@ -7666,6 +7689,191 @@ namespace
 	}
 
 	bool MovePlayerBotTownLeg(LPCHARACTER ch, TPlayerBotAIState& state, DWORD dwNow,
+			long goalX, long goalY, int arrivalDistance);
+
+	// A stable tenth of the population runs a market stall - always the same
+	// bots, so the market does not move around between restarts. Keeping a shop
+	// means not hunting, which is why it stays a minority; and since a keeper
+	// only opens when it happens to be in Bokjung with no errand outstanding,
+	// the share actually standing at any moment is smaller again.
+	bool ShouldPlayerBotKeepShop(LPCHARACTER ch)
+	{
+		if (!ch || ch->GetLevel() < 20)
+			return false;
+		return (PlayerBotNavHash(ch->GetPlayerID() ^ 0x53484f50U) % 10U) == 0;
+	}
+
+	// The first inventory item the bot can legitimately part with. OpenMyShop
+	// refuses equipped, locked and ANTI_GIVE/ANTI_MYSHOP items outright, so the
+	// same rules are applied here rather than letting the call fail silently.
+	LPITEM FindPlayerBotShopItem(LPCHARACTER ch, WORD& cellOut)
+	{
+		if (!ch || !ch->IsItemLoaded())
+			return NULL;
+		for (WORD cell = 0; cell < INVENTORY_MAX_NUM; ++cell)
+		{
+			LPITEM item = ch->GetInventoryItem(cell);
+			if (!item || item->IsEquipped() || item->isLocked())
+				continue;
+			const TItemTable* proto = item->GetProto();
+			if (!proto || IS_SET(proto->dwAntiFlags,
+					ITEM_ANTIFLAG_GIVE | ITEM_ANTIFLAG_MYSHOP))
+				continue;
+			// Not the vendor-trash rule: a stall should carry something a player
+			// might actually want. Materials and spare loot qualify; the bot's own
+			// supplies, weapons and armour do not, so it can never sell the gear
+			// or the potions it needs to keep playing.
+			const DWORD vnum = item->GetVnum();
+			if (vnum == 27001 || vnum == 27002 || vnum == 27003 || vnum == 27051 ||
+					vnum == 27004 || vnum == 27005 || vnum == 27006 || vnum == 27052)
+				continue;
+			if (vnum == PLAYERBOT_HORSE_MEDAL_VNUM || (vnum >= 50701 && vnum <= 50706))
+				continue;
+			// Spare gear is the most interesting thing a stall can offer, but the
+			// bot must never put up the only weapon or armour it owns for a slot
+			// it is still walking around empty. Something already worn there means
+			// what it carries is genuinely a spare.
+			const BYTE type = item->GetType();
+			if (type == ITEM_WEAPON || type == ITEM_ARMOR)
+			{
+				const int wearCell = item->FindEquipCell(ch);
+				if (wearCell < 0 || ch->GetWear((BYTE)wearCell) == NULL)
+					continue;
+			}
+			cellOut = cell;
+			return item;
+		}
+		return NULL;
+	}
+
+	bool ManagePlayerBotPrivateShop(LPCHARACTER ch, TPlayerBotAIState& state, DWORD dwNow)
+	{
+		if (!ch || !ch->IsItemLoaded())
+			return false;
+
+		// Already trading: hold the pitch until the stall's time is up. Returning
+		// true keeps every other system off this bot, so it stands still like a
+		// real shop instead of wandering off mid-sale.
+		if (ch->GetMyShop())
+		{
+			if (state.dwShopCloseTime != 0 && dwNow >= state.dwShopCloseTime)
+			{
+				ch->CloseMyShop();
+				state.dwShopOpenedTime = 0;
+				state.dwShopCloseTime = 0;
+				state.dwNextShopKeepTime = dwNow +
+						number(PLAYERBOT_SHOP_REST_MIN, PLAYERBOT_SHOP_REST_MAX);
+				sys_log(0, "PLAYERBOT_SHOP: closed pid=%u name=%s",
+						ch->GetPlayerID(), ch->GetName());
+				return false;
+			}
+			return true;
+		}
+
+		if (!ShouldPlayerBotKeepShop(ch))
+			return false;
+		if (ch->GetMapIndex() != PLAYERBOT_MAP_CHUNJO_M2)
+			return false;
+
+		// One line a minute per keeper, naming whichever gate is holding the stall
+		// shut. Without it the feature can only be observed by its absence.
+		if (state.dwNextShopDebugTime == 0 || dwNow >= state.dwNextShopDebugTime)
+		{
+			state.dwNextShopDebugTime = dwNow + 60000;
+			sys_log(0, "PLAYERBOT_SHOP: gate pid=%u visiting=%d/%d/%d rest=%d town=%d",
+					ch->GetPlayerID(),
+					state.bVisitingShop ? 1 : 0,
+					state.bVisitingBiologist ? 1 : 0,
+					state.bVisitingStable ? 1 : 0,
+					(state.dwNextShopKeepTime != 0 && dwNow < state.dwNextShopKeepTime) ? 1 : 0,
+					(state.dwNextShopCheckTime != 0 && dwNow < state.dwNextShopCheckTime) ? 1 : 0);
+		}
+		// Errands still come first - a stall opened mid-visit would be abandoned
+		// on the next tick.
+		if (state.bVisitingShop || state.bVisitingBiologist || state.bVisitingStable)
+			return false;
+		if (state.dwNextShopKeepTime != 0 && dwNow < state.dwNextShopKeepTime)
+			return false;
+		// ...but "in town with nothing to do" is a state that barely exists: a bot
+		// comes to Bokjung *because* it has an errand, and leaves the moment the
+		// errand is done. The stall therefore opens right after a completed town
+		// visit, while the bot is still standing in the village, instead of waiting
+		// for an idle moment that never arrives.
+		const bool justFinishedInTown = state.dwNextShopCheckTime != 0 &&
+				dwNow < state.dwNextShopCheckTime;
+		if (!justFinishedInTown)
+			return false;
+
+		WORD cell = 0;
+		LPITEM item = FindPlayerBotShopItem(ch, cell);
+		if (!item)
+		{
+			// Nothing worth a stall right now; look again after a hunt rather than
+			// re-scanning the whole inventory every tick.
+			state.dwNextShopKeepTime = dwNow + number(300000, 600000);
+			sys_log(0, "PLAYERBOT_SHOP: nothing to sell pid=%u name=%s",
+					ch->GetPlayerID(), ch->GetName());
+			return false;
+		}
+
+		long offsetX = 0, offsetY = 0;
+		GetPlayerBotStableOffset(ch->GetPlayerID(), 0x4d4b5450U,
+				120, PLAYERBOT_MARKET_SPREAD, offsetX, offsetY);
+		const long stallX = PLAYERBOT_M2_MARKET_X + offsetX;
+		const long stallY = PLAYERBOT_M2_MARKET_Y + offsetY;
+
+		SetPlayerBotAction(state, BOT_ACTION_TRAVEL, dwNow);
+		if (!MovePlayerBotTownLeg(ch, state, dwNow, stallX, stallY,
+				PLAYERBOT_MARKET_ARRIVE))
+			return true; // still walking to the pitch
+
+		// OpenMyShop refuses a character whose main part is not its own body, so
+		// the horse has to go before the stall can be set up.
+		if (ch->IsRiding())
+			ch->StopRiding();
+		ch->HorseSummon(false);
+		ch->SetVictim(NULL);
+		ch->Stop();
+
+		const DWORD unit = GetPlayerBotNpcSellUnitPrice(item);
+		DWORD price = unit * (DWORD)item->GetCount() * 3U;
+		if (price == 0)
+			price = 1;
+
+		TShopItemTable table;
+		memset(&table, 0, sizeof(table));
+		table.vnum = item->GetVnum();
+		table.count = item->GetCount();
+		table.pos = TItemPos(INVENTORY, cell);
+		table.price = price;
+		table.display_pos = 0;
+
+		char sign[SHOP_SIGN_MAX_LEN + 1];
+		snprintf(sign, sizeof(sign), "%s", ch->GetName());
+
+		ch->OpenMyShop(sign, &table, 1);
+		if (!ch->GetMyShop())
+		{
+			// OpenMyShop refuses silently. Report which of its own guards said no,
+			// otherwise this is indistinguishable from the stall never being tried.
+			quest::PC* pc = quest::CQuestManager::instance().GetPCForce(ch->GetPlayerID());
+			sys_log(0, "PLAYERBOT_SHOP: refused pid=%u name=%s part=%d questRunning=%d vnum=%u",
+					ch->GetPlayerID(), ch->GetName(), (int)ch->GetPart(PART_MAIN),
+					(pc && pc->IsRunning()) ? 1 : 0, item->GetVnum());
+			state.dwNextShopKeepTime = dwNow + number(60000, 180000);
+			return false;
+		}
+
+		state.dwShopOpenedTime = dwNow;
+		state.dwShopCloseTime = dwNow +
+				number(PLAYERBOT_SHOP_MIN_DURATION, PLAYERBOT_SHOP_MAX_DURATION);
+		sys_log(0, "PLAYERBOT_SHOP: opened pid=%u name=%s vnum=%u count=%d price=%u pos=(%ld,%ld)",
+				ch->GetPlayerID(), ch->GetName(), item->GetVnum(),
+				(int)item->GetCount(), price, ch->GetX(), ch->GetY());
+		return true;
+	}
+
+	bool MovePlayerBotTownLeg(LPCHARACTER ch, TPlayerBotAIState& state, DWORD dwNow,
 			long goalX, long goalY, int arrivalDistance)
 	{
 		if (DISTANCE_APPROX(ch->GetX() - goalX, ch->GetY() - goalY) <= arrivalDistance)
@@ -11497,6 +11705,9 @@ void CPlayerBotManager::Update()
 
 		ManagePlayerBotStats(ch, state, dwNow);
 		ManagePlayerBotSkills(ch, state, dwNow);
+		if (ManagePlayerBotPrivateShop(ch, state, dwNow))
+			continue;
+
 		ManagePlayerBotSkillBooks(ch, state, dwNow);
 		ManagePlayerBotSpiritStones(ch, state, dwNow);
 		ManagePlayerBotParty(ch, state, dwNow);
