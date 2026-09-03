@@ -6,10 +6,18 @@ linux-port/docker/mariadb/initdb.d/10-import-dumps.sh
 # Waits for the database before seeding. Its timeout decides whether a slow
 # recovery fails the whole compose "up".
 linux-port/docker/mariadb/playerbot/apply.sh
+# Copies the overlay sources into the build context and names each file
+# explicitly, so a new header only reaches the compiler through this.
+linux-port/docker/prepare-context.sh
 linux-port/docker/panel/app/admin_panel.py
 linux-port/overlays/playerbot/serverfiles/mob_drop_item.m3.append.txt
 linux-port/overlays/playerbot/sql/playerbots_seed.sql
 linux-port/overlays/playerbot/src/game/src/playerbot_manager.cpp
+# playerbot_manager.cpp includes both of these. They are not optional extras:
+# an update that ships the manager without them cannot compile on a machine
+# that does not already have the matching versions.
+linux-port/overlays/playerbot/src/game/src/playerbot_world_rules.h
+linux-port/overlays/playerbot/src/game/src/playerbot_types.h
 linux-port/overlays/playerbot/patches/0001-core-integration.patch
 # Lets a character wearing armour open a private shop, which the stock
 # guard rejected outright - bots and players alike.

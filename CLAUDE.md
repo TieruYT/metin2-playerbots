@@ -56,15 +56,18 @@ running ~350 bots. Say plainly what was compiled versus what was observed.
 
 ### Adding a source file
 
-Headers are cheap; a new `.cpp` is not. Three places name the overlay sources
-explicitly, and all three must agree:
+Every overlay source is named explicitly, so adding one means editing a list.
+`prepare-context.sh` alone names each file in **five** places — the existence
+check, the `cp -a`, the `chmod`, the `cmp` copy verification and the
+`.playerbot-overlay` fingerprint. Miss the fingerprint and a changed file will
+not invalidate a stale build.
 
-1. `linux-port/docker/prepare-context.sh` — validation list and the `cp -a` block
-2. the engine `Makefile`, `CPPFILE += playerbot_manager.cpp` — an explicit list,
-   not a wildcard, added by `overlays/playerbot/patches/0001-core-integration.patch`
-3. the overlay directory itself
+A new **header** needs those five plus the `#include`. A new **`.cpp`** also
+needs `CPPFILE +=` in the engine `Makefile`, which is an explicit list rather
+than a wildcard and lives in
+`overlays/playerbot/patches/0001-core-integration.patch`.
 
-This asymmetry is why `playerbot_manager.cpp` grew as far as it did: adding a
+That asymmetry is why `playerbot_manager.cpp` grew as far as it did: adding a
 function costs nothing, adding a file costs a patch edit.
 
 ## playerbot_manager.cpp
