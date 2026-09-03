@@ -17,6 +17,17 @@ every version here.
 
 ---
 
+## 1.23.1 — 2026-09-03
+
+### Fixed
+
+- **Boty, które utknęły bez sektora, wracają do gry.** Postać bez sektora nie może się ruszyć **w ogóle**, a kod tylko zapisywał błąd i próbował ponownie w następnym takcie. W logach z jednego dnia dało to **35 tysięcy takich wpisów od 45 botów**, które nie zrobiły już ani kroku, plus 7900 bezskutecznych resetów watchdoga. Teraz taki bot jest przenoszony na punkt wejścia swojej mapy.
+- **Boty zapisane na mapie, której serwer nie prowadzi, nigdy się nie pojawiały.** Wczytanie postaci pytało o pozycję, nie dostawało odpowiedzi i się poddawało — te same dwa boty przepadały przy każdym z 17 startów w ciągu dnia, bez możliwości odzyskania, bo pętla AI widzi tylko boty, które się pojawiły. Migracja przy starcie przenosi je teraz do Bokjung. **U mnie odzyskała 4 boty.**
+- **Koniec zalewania dziennika przy starcie.** Zabezpieczenie przed przejęciem cudzego konta zapisywało błąd dla każdego niezarejestrowanego numeru — 170 linii przy każdym uruchomieniu za coś, co działa dokładnie tak, jak ma działać. Teraz jest to jedna zbiorcza linia.
+- **Paczka diagnostyczna zbierana przy wyłączonym Dockerze** była oznaczana jako udana, choć zamiast logów kontenerów zawierała same błędy połączenia. Teraz na górze pliku jest wyraźne **PACZKA NIEPEŁNA** z informacją, co zrobić.
+
+---
+
 ## 1.23.0 — 2026-09-03
 
 ### Added

@@ -570,6 +570,7 @@ namespace
 			dwNextNavPlanTime(0),
 			dwNextNavProgressTime(0),
 			dwNextNavErrorLogTime(0),
+			dwNextSectreeRescueTime(0),
 			dwNavFailedTargetVID(0),
 			dwNextGoalPlanTime(0),
 			dwGoalStartedTime(0),
@@ -711,6 +712,7 @@ namespace
 		DWORD dwNextNavPlanTime;
 		DWORD dwNextNavProgressTime;
 		DWORD dwNextNavErrorLogTime;
+		DWORD dwNextSectreeRescueTime;
 		DWORD dwNavFailedTargetVID;
 		DWORD dwNextGoalPlanTime;
 		DWORD dwGoalStartedTime;

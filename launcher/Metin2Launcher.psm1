@@ -350,13 +350,30 @@ function New-M2SupportBundle {
     New-Item -ItemType Directory -Path $work -Force | Out-Null
 
     try {
+        # A bundle collected after Docker Desktop has been shut down contains
+        # nothing but connection errors where the container logs should be, and
+        # used to be reported as a success. Say so at the top of the file instead,
+        # so nobody spends an evening reading an empty report.
+        $dockerUp = Test-M2DockerRunning
         $summary = @(
             'Metin2 Playerbots - pakiet diagnostyczny',
             "Utworzono: $([DateTime]::Now.ToString('s'))",
             "PowerShell: $($PSVersionTable.PSVersion)",
             "Windows: $([Environment]::OSVersion.VersionString)",
-            "Folder serwera: $([IO.Path]::GetFileName($root))"
-        ) -join [Environment]::NewLine
+            "Folder serwera: $([IO.Path]::GetFileName($root))",
+            "Silnik Dockera: $(if ($dockerUp) { 'dziala' } else { 'ZATRZYMANY' })"
+        )
+        if (-not $dockerUp) {
+            $summary += @(
+                '',
+                'PACZKA NIEPELNA. Docker byl wylaczony, wiec nie ma w niej logow',
+                'kontenerow ani stanu uslug - a to zwykle jedyne miejsce, gdzie',
+                'widac przyczyne problemu.',
+                'Uruchom Docker (przycisk URUCHOM DOCKER), odtworz problem',
+                'i zbierz paczke ponownie.'
+            )
+        }
+        $summary = $summary -join [Environment]::NewLine
         [IO.File]::WriteAllText((Join-Path $work 'summary.txt'), $summary, [Text.UTF8Encoding]::new($false))
 
         $versionFile = Join-Path $root 'VERSION'

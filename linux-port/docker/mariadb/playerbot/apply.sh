@@ -110,6 +110,30 @@ if [ "$expected_existing_bots" -gt 0 ]; then
     echo "[playerbot-migrate] persistent-world guard satisfied: $existing_bot_count bots present (minimum $expected_existing_bots)"
 fi
 
+# A bot whose saved map is not one this server hosts can never be spawned: the
+# character load asks the sectree manager for the position, gets nothing, and
+# gives up - the same two bots failed on all seventeen starts of one day, with
+# no way to recover because the AI tick only ever sees bots that did spawn.
+# Put them back on Bokjung's arrival point before the game core starts.
+echo "[playerbot-migrate] checking for bots parked on maps this server does not host"
+stranded=$(db -e "
+    SELECT COUNT(*)
+      FROM player.player p
+      JOIN account.account a ON a.id = p.account_id
+     WHERE LEFT(a.login, 10) = 'playerbot_'
+       AND p.map_index NOT IN (21, 23, 24, 25, 63, 64);
+")
+if [ -n "$stranded" ] && [ "$stranded" -gt 0 ] 2>/dev/null; then
+    db -e "
+        UPDATE player.player p
+          JOIN account.account a ON a.id = p.account_id
+           SET p.map_index = 23, p.x = 145500, p.y = 240000
+         WHERE LEFT(a.login, 10) = 'playerbot_'
+           AND p.map_index NOT IN (21, 23, 24, 25, 63, 64);
+    "
+    echo "[playerbot-migrate] moved $stranded bot(s) back to Bokjung"
+fi
+
 echo "[playerbot-migrate] applying deterministic 350-bot seed"
 result=/tmp/playerbot-seed.out
 trap 'rm -f "$result"' EXIT HUP INT TERM

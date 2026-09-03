@@ -7679,6 +7679,57 @@ namespace
 				ch->GetPlayerID(), newPlus, msg);
 	}
 
+	// Where a bot belongs on each map we manage: the point that map is entered
+	// by, and Bokjung for anything else.
+	void GetPlayerBotHomePoint(long mapIndex, long& outMap, long& outX, long& outY)
+	{
+		outMap = PLAYERBOT_MAP_CHUNJO_M2;
+		outX = PLAYERBOT_M2_FROM_M3_X;
+		outY = PLAYERBOT_M2_FROM_M3_Y;
+		switch (mapIndex)
+		{
+			case PLAYERBOT_MAP_CHUNJO_M1:
+				outMap = mapIndex; outX = PLAYERBOT_M1_RETURN_X; outY = PLAYERBOT_M1_RETURN_Y; break;
+			case PLAYERBOT_MAP_CHUNJO_M2:
+				outMap = mapIndex; outX = PLAYERBOT_M2_ARRIVAL_X; outY = PLAYERBOT_M2_ARRIVAL_Y; break;
+			case PLAYERBOT_MAP_CHUNJO_M3:
+				outMap = mapIndex; outX = PLAYERBOT_M3_ARRIVAL_X; outY = PLAYERBOT_M3_ARRIVAL_Y; break;
+			case PLAYERBOT_MAP_MONKEY_EASY:
+				outMap = mapIndex; outX = PLAYERBOT_MONKEY_EASY_ARRIVAL_X; outY = PLAYERBOT_MONKEY_EASY_ARRIVAL_Y; break;
+			case PLAYERBOT_MAP_ORC_VALLEY:
+				outMap = mapIndex; outX = PLAYERBOT_ORC_VALLEY_ARRIVAL_X; outY = PLAYERBOT_ORC_VALLEY_ARRIVAL_Y; break;
+			case PLAYERBOT_MAP_DESERT:
+				outMap = mapIndex; outX = PLAYERBOT_DESERT_ARRIVAL_X; outY = PLAYERBOT_DESERT_ARRIVAL_Y; break;
+			default: break;
+		}
+	}
+
+	// A character with no sector, or one standing on a map this core does not
+	// host, cannot move at all - and nothing else in the tick can put it back.
+	// It is asked again on the next tick and answers the same way, for as long as
+	// the server runs: a day of logs held 35k such lines from 45 bots that never
+	// took another step, plus the watchdog resetting them 8k times to no effect.
+	bool RescuePlayerBotWithoutSectree(LPCHARACTER ch, TPlayerBotAIState& state, DWORD dwNow)
+	{
+		if (!ch)
+			return false;
+		const long mapIndex = ch->GetMapIndex();
+		if (ch->GetSectree() && SECTREE_MANAGER::instance().GetMap(mapIndex) != NULL)
+			return false;
+		if (state.dwNextSectreeRescueTime != 0 && dwNow < state.dwNextSectreeRescueTime)
+			return true; // already tried recently; do not spin
+		state.dwNextSectreeRescueTime = dwNow + 30000;
+
+		long homeMap = 0, homeX = 0, homeY = 0;
+		GetPlayerBotHomePoint(mapIndex, homeMap, homeX, homeY);
+		if (TransitionPlayerBotMap(ch, state, homeMap, homeX, homeY, dwNow, "sectree_rescue"))
+		{
+			sys_log(0, "PLAYERBOT_RESCUE: pid=%u name=%s had no sectree on map=%ld, moved to map=%ld (%ld,%ld)",
+					ch->GetPlayerID(), ch->GetName(), mapIndex, homeMap, homeX, homeY);
+		}
+		return true;
+	}
+
 	bool ManagePlayerBotPrivateShop(LPCHARACTER ch, TPlayerBotAIState& state, DWORD dwNow)
 	{
 		if (!ch || !ch->IsItemLoaded())
@@ -11291,8 +11342,19 @@ bool CPlayerBotManager::Spawn(DWORD dwPlayerID, BYTE bEmpire)
 	// immutable cohort written by playerbots_seed.sql may use this load path.
 	if (!IsRegistered(dwPlayerID))
 	{
-		sys_err("PLAYERBOT_AUTH: rejected unregistered spawn pid=%u empire=%u",
-				dwPlayerID, bEmpire);
+		// Expected, not exceptional: every start walks the whole pid range and most
+		// of it is not seeded. Writing a SYSERR per pid put 170 lines into every
+		// boot for a guard that is working exactly as intended.
+		static DWORD s_dwRejectedSpawns = 0;
+		static DWORD s_dwNextRejectLog = 0;
+		++s_dwRejectedSpawns;
+		const DWORD dwRejectNow = get_dword_time();
+		if (dwRejectNow >= s_dwNextRejectLog)
+		{
+			s_dwNextRejectLog = dwRejectNow + 60000;
+			sys_log(0, "PLAYERBOT_AUTH: refused %u unregistered spawns so far (last pid=%u empire=%u)",
+					s_dwRejectedSpawns, dwPlayerID, bEmpire);
+		}
 		return false;
 	}
 
@@ -11672,6 +11734,9 @@ void CPlayerBotManager::Update()
 
 		ManagePlayerBotStats(ch, state, dwNow);
 		ManagePlayerBotSkills(ch, state, dwNow);
+		if (RescuePlayerBotWithoutSectree(ch, state, dwNow))
+			continue;
+
 		if (ManagePlayerBotPrivateShop(ch, state, dwNow))
 			continue;
 
