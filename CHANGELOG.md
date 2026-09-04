@@ -17,6 +17,34 @@ every version here.
 
 ---
 
+## 1.23.7 — 2026-09-04
+
+### Changed
+
+- **Kod botów podzielony na podsystemy — wydanie bez zmian w zachowaniu.** `playerbot_manager.cpp` miał rano **12 527 linii**; ma **4 001**. Nic nie zostało przepisane, wszystko to przeniesienia.
+
+  | Plik | Co |
+  |---|---|
+  | `playerbot_navigation.h` | Gdzie bot może stanąć i czy dwa punkty się łączą |
+  | `playerbot_world_memory.h` | Czego populacja nauczyła się o świecie |
+  | `playerbot_movement.h` | Jazda trasą: koń, waypointy, portale, rejestr metinów |
+  | `playerbot_gear.h` | Co bot nosi i dźwiga |
+  | `playerbot_activities.h` | Koń i łowienie |
+  | `playerbot_missions.h` | Biolog i polowanie na poziom, bez okna zadania |
+  | `playerbot_skills.h` | Karta postaci: punkty, kolejność umiejętności, bufy |
+  | `playerbot_combat.h` | Sama walka: pakiety ciosu i zaklęcia, umiejętności ataku |
+  | `playerbot_economy.h` | Pieniądze i plecak: śmieci, handlarze, kowal, bonusy, stragany |
+  | `playerbot_travel.h` | Gdzie bot powinien być i jak przechodzi między mapami |
+  | `playerbot_town.h` | Wizyta w mieście od bramy do ostatniej sprawy |
+
+  Lista `#include` na górze menedżera jest teraz **kolejnością zależności całego systemu**, czytaną z góry na dół. W jednej jednostce kompilacji i jednej anonimowej przestrzeni nazw kolejność definicji *jest* kolejnością zależności, więc plik, który idzie pierwszy, to ten, który nie woła niczego.
+
+  W menedżerze została pętla walki (wybór celu, rezerwacja go przed innymi botami, atak, multi-pull, łup, drużyna, wędrówka), tekst statusu i sam takt.
+
+---
+
+**Weryfikacja:** kontrola `-m32` w gcc:13 po każdym cięciu — zero błędów, te same dwanaście ostrzeżeń przez cały czas, test jednostkowy przechodzi. Na koniec obraz zbudowany i uruchomiony: rejestr 1012 tożsamości, boty piją mikstury, ulepszają, kupują sprzęt, chodzą do kowala i handlarza, rozdają punkty.
+
 ## 1.23.6 — 2026-09-04
 
 ### Fixed
