@@ -1,12 +1,12 @@
 {
   "schema": 1,
   "channel": "stable",
-  "publishedAt": "2026-09-04T06:30:00Z",
-  "statusMessage": "Aktualizacja 1.23.3: naprawa budowania serwera po aktualizacji (to ona blokowała 1.23.2), zamykanie sklepów botów oraz automatyczne dokładanie brakujących postaci do bazy.",
+  "publishedAt": "2026-09-04T07:10:00Z",
+  "statusMessage": "Aktualizacja 1.23.4: boty poprawiają bonusy na swoim sprzęcie u kowala, wędkarz nie zawiesza się już przy brzegu, a panel nazywa wszystkie bonusy zamiast pokazywać „Bonus #63\".",
   "server": {
-    "version": "1.23.3",
-    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v1.23.3/metin2-server-update-1.23.3.zip",
-    "sha256": "D97B4E9E451049DE67C507F7CD8D3A670C3365054E07C0D20227EA1F17E988A3"
+    "version": "1.23.4",
+    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v1.23.4/metin2-server-update-1.23.4.zip",
+    "sha256": "671995E7830EB37BD89D70751F88EC606B88AA091009B0BAEA97D84C6D7797BF"
   },
   "support": {
     "contactUrl": "https://discord.gg/pt5tvnrN6",
