@@ -1,12 +1,12 @@
 {
   "schema": 1,
   "channel": "stable",
-  "publishedAt": "2026-09-04T20:49:47Z",
-  "statusMessage": "Aktualizacja 1.24.4: stragany stoja teraz w kole - w Joan wokol Straznika Wsi, w Bokjung na rynku. Przy kazdym wystawieniu bot losuje miasto: 90 procent na Joan. Zawiera tez 1.24.3, ktore w ogole wlacza stragany.",
+  "publishedAt": "2026-09-04T21:15:49Z",
+  "statusMessage": "Aktualizacja 1.24.5: trzy nowe rankingi na stronie - otwarte sklepy, umiejetnosci i przedmiot +9. Zawiera tez 1.24.3 i 1.24.4, czyli dzialajace stragany i ich ustawienie w kolo przy Strazniku Wsi w Joan.",
   "server": {
-    "version": "1.24.4",
-    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v1.24.4/metin2-server-update-1.24.4.zip",
-    "sha256": "1F02D5C1E7A2973A65E1990E5B75A847FA1954776893BB5F7FF627C6D79262BF"
+    "version": "1.24.5",
+    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v1.24.5/metin2-server-update-1.24.5.zip",
+    "sha256": "8C901D02A353AC8CB3F48FB803E7D5231C98A1C1BFED453CF0468401B86D5267"
   },
   "support": {
     "contactUrl": "https://discord.gg/pt5tvnrN6",
