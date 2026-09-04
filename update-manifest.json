@@ -1,12 +1,12 @@
 {
   "schema": 1,
   "channel": "stable",
-  "publishedAt": "2026-09-04T20:28:43Z",
-  "statusMessage": "Aktualizacja 1.24.3: prywatne stragany wreszcie dzialaja - botow i graczy. Latka silnika byla dowozona w kazdej paczce i nigdy nakladana, wiec sklep odrzucalo kazdemu, kto ma na sobie zbroje.",
+  "publishedAt": "2026-09-04T20:49:47Z",
+  "statusMessage": "Aktualizacja 1.24.4: stragany stoja teraz w kole - w Joan wokol Straznika Wsi, w Bokjung na rynku. Przy kazdym wystawieniu bot losuje miasto: 90 procent na Joan. Zawiera tez 1.24.3, ktore w ogole wlacza stragany.",
   "server": {
-    "version": "1.24.3",
-    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v1.24.3/metin2-server-update-1.24.3.zip",
-    "sha256": "2BB0B95CC2330D33909EE7A753C9D4DB7F22BD6966F2111798C1BF9C0A430D5D"
+    "version": "1.24.4",
+    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v1.24.4/metin2-server-update-1.24.4.zip",
+    "sha256": "1F02D5C1E7A2973A65E1990E5B75A847FA1954776893BB5F7FF627C6D79262BF"
   },
   "support": {
     "contactUrl": "https://discord.gg/pt5tvnrN6",
