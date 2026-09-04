@@ -134,6 +134,32 @@ if [ -n "$stranded" ] && [ "$stranded" -gt 0 ] 2>/dev/null; then
     echo "[playerbot-migrate] moved $stranded bot(s) back to Bokjung"
 fi
 
+# Orc Valley's entrance used to be the map's Chunjo spawn point, which is walled
+# off from the hunting grounds: a bot that went there could reach 17 of 532 spawn
+# groups and could not walk back to the new exit either. Put anyone still sitting
+# in that corner into the region the map is actually played in, before the game
+# core loads them.
+echo "[playerbot-migrate] checking for bots stranded in the old Orc Valley corner"
+stranded_orc=$(db -e "
+    SELECT COUNT(*)
+      FROM player.player p
+      JOIN account.account a ON a.id = p.account_id
+     WHERE LEFT(a.login, 10) = 'playerbot_'
+       AND p.map_index = 64
+       AND (p.x < 306200 OR p.x > 360050 OR p.y < 721100 OR p.y > 767550);
+")
+if [ -n "$stranded_orc" ] && [ "$stranded_orc" -gt 0 ] 2>/dev/null; then
+    db -e "
+        UPDATE player.player p
+          JOIN account.account a ON a.id = p.account_id
+           SET p.x = 327200, p.y = 742300
+         WHERE LEFT(a.login, 10) = 'playerbot_'
+           AND p.map_index = 64
+           AND (p.x < 306200 OR p.x > 360050 OR p.y < 721100 OR p.y > 767550);
+    "
+    echo "[playerbot-migrate] moved $stranded_orc bot(s) into the Orc Valley hunting grounds"
+fi
+
 # The registry's own size is written into the seed, so the wrapper never has to
 # be edited in step with it. Hardcoding 350 here survived the move to a
 # 1000-character cohort only because the old range happened to be a prefix of

@@ -14,6 +14,42 @@
 
 namespace
 {
+	// A hub is only worth walking to if the navigation can actually get there.
+	//
+	// Orc Valley's entrance opens into a strip that is cut off from most of the
+	// map. All twelve of its hand-picked hubs sit outside that strip, so a bot
+	// planned an impossible route, gave up after three tries, advanced to the
+	// next hub and planned another impossible route - twelve times, then round
+	// again. Twelve bots on that one map produced 7812 of the 8259 "unreachable"
+	// lines in a session, and never reached a hunting ground.
+	//
+	// Asking first costs a component lookup; the alternative costs a full A*
+	// that is guaranteed to fail.
+	size_t PickReachablePlayerBotHub(LPCHARACTER ch, const TPlayerBotMapPoint* hubs,
+			size_t hubCount, size_t firstIndex, bool& bFoundOut)
+	{
+		bFoundOut = false;
+		if (!ch || !hubs || hubCount == 0)
+			return firstIndex;
+
+		CPlayerBotNavigation& navigation =
+				CPlayerBotNavigation::instance(ch->GetMapIndex());
+		if (!navigation.Init(ch->GetMapIndex()))
+			return firstIndex;
+
+		for (size_t step = 0; step < hubCount; ++step)
+		{
+			const size_t index = (firstIndex + step) % hubCount;
+			if (navigation.CanReach(ch->GetX(), ch->GetY(),
+					hubs[index].x, hubs[index].y))
+			{
+				bFoundOut = true;
+				return index;
+			}
+		}
+		return firstIndex;
+	}
+
 	void ManagePlayerBotWandering(LPCHARACTER ch, TPlayerBotAIState& state, DWORD dwNow)
 	{
 		if (!ch)
@@ -294,18 +330,33 @@ namespace
 			const bool inDesert = ch->GetMapIndex() == PLAYERBOT_MAP_DESERT;
 			const TPlayerBotMapPoint* hubs = inDesert ? desertHubs : orcValleyHubs;
 			const DWORD pid = ch->GetPlayerID();
-			const size_t hubIndex = (pid + state.uMetinHotspotIndex) % 12;
-			long offsetX = 0, offsetY = 0;
-			GetPlayerBotStableOffset(pid,
-					(inDesert ? 0x44455348U : 0x4f524348U) + (DWORD)hubIndex,
-					150, 700, offsetX, offsetY);
-			targetX = hubs[hubIndex].x + offsetX;
-			targetY = hubs[hubIndex].y + offsetY;
-			if (DISTANCE_APPROX(ch->GetX() - targetX, ch->GetY() - targetY) < 1400)
+			bool bHubReachable = false;
+			const size_t hubIndex = PickReachablePlayerBotHub(ch, hubs, 12,
+					(pid + state.uMetinHotspotIndex) % 12, bHubReachable);
+			if (!bHubReachable)
 			{
-				++state.uMetinHotspotIndex;
-				targetX = ch->GetX() + number(-700, 700);
-				targetY = ch->GetY() + number(-700, 700);
+				// Nothing on the list can be reached from where this bot is. Work
+				// the ground it is standing on instead of replanning routes that
+				// cannot exist - the map still has monsters on this side of the
+				// wall, and a bot hunting them looks far better than one walking
+				// into it.
+				targetX = ch->GetX() + number(-1200, 1200);
+				targetY = ch->GetY() + number(-1200, 1200);
+			}
+			else
+			{
+				long offsetX = 0, offsetY = 0;
+				GetPlayerBotStableOffset(pid,
+						(inDesert ? 0x44455348U : 0x4f524348U) + (DWORD)hubIndex,
+						150, 700, offsetX, offsetY);
+				targetX = hubs[hubIndex].x + offsetX;
+				targetY = hubs[hubIndex].y + offsetY;
+				if (DISTANCE_APPROX(ch->GetX() - targetX, ch->GetY() - targetY) < 1400)
+				{
+					++state.uMetinHotspotIndex;
+					targetX = ch->GetX() + number(-700, 700);
+					targetY = ch->GetY() + number(-700, 700);
+				}
 			}
 		}
 		else if (ch->GetMapIndex() == PLAYERBOT_MAP_MONKEY_EASY)
@@ -318,17 +369,29 @@ namespace
 				{ 860800, 496600 }, { 898600, 443100 }
 			};
 			const DWORD pid = ch->GetPlayerID();
-			const size_t roomIndex = (pid + state.uMetinHotspotIndex) % 8;
-			long offsetX = 0, offsetY = 0;
-			GetPlayerBotStableOffset(pid, 0x4d4f4e4bU + (DWORD)roomIndex,
-					50, 250, offsetX, offsetY);
-			targetX = rooms[roomIndex].x + offsetX;
-			targetY = rooms[roomIndex].y + offsetY;
-			if (DISTANCE_APPROX(ch->GetX() - targetX, ch->GetY() - targetY) < 900)
+			bool bRoomReachable = false;
+			const size_t roomIndex = PickReachablePlayerBotHub(ch, rooms, 8,
+					(pid + state.uMetinHotspotIndex) % 8, bRoomReachable);
+			if (!bRoomReachable)
 			{
-				++state.uMetinHotspotIndex;
+				// A closed door or a corridor the grid does not join. Same answer
+				// as on the frontier: hunt where you are.
 				targetX = ch->GetX() + number(-450, 450);
 				targetY = ch->GetY() + number(-450, 450);
+			}
+			else
+			{
+				long offsetX = 0, offsetY = 0;
+				GetPlayerBotStableOffset(pid, 0x4d4f4e4bU + (DWORD)roomIndex,
+						50, 250, offsetX, offsetY);
+				targetX = rooms[roomIndex].x + offsetX;
+				targetY = rooms[roomIndex].y + offsetY;
+				if (DISTANCE_APPROX(ch->GetX() - targetX, ch->GetY() - targetY) < 900)
+				{
+					++state.uMetinHotspotIndex;
+					targetX = ch->GetX() + number(-450, 450);
+					targetY = ch->GetY() + number(-450, 450);
+				}
 			}
 		}
 		else

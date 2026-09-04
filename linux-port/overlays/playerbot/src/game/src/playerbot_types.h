@@ -224,8 +224,18 @@ namespace
 	const long PLAYERBOT_M1_TELEPORTER_Y = 153600;
 	const long PLAYERBOT_MAP_DESERT = 63;
 	const long PLAYERBOT_MAP_ORC_VALLEY = 64;
-	const long PLAYERBOT_ORC_VALLEY_ARRIVAL_X = 270400;
-	const long PLAYERBOT_ORC_VALLEY_ARRIVAL_Y = 740900;
+	// Not the map's own empire spawn point, which is where this used to be.
+	// map_n_threeway is a three-empire border map and each corner is walled off:
+	// from the Chunjo spawn a bot can reach 17 of the map's 532 spawn groups, and
+	// none of the twelve hunting hubs. Thirteen bots sat there at exactly the
+	// entry level, never advancing, while planning routes that could not exist -
+	// 7812 of 8259 "unreachable" lines in one session came from that corner.
+	//
+	// These two are hub coordinates from regen.txt, so they are standable, and
+	// they are inside the map's largest connected region: 161 spawn groups, the
+	// whole main hunting ground. Verified with tools/analyse_map_reach.py.
+	const long PLAYERBOT_ORC_VALLEY_ARRIVAL_X = 327200;
+	const long PLAYERBOT_ORC_VALLEY_ARRIVAL_Y = 742300;
 	const long PLAYERBOT_DESERT_ARRIVAL_X = 221900;
 	const long PLAYERBOT_DESERT_ARRIVAL_Y = 502700;
 	// Leave through the Chunjo gate NPC beside the arrival point, not through the
@@ -233,8 +243,11 @@ namespace
 	// desert casualty within ~1500 units of that central Teleporter: a bot which
 	// had already run out of potions was crossing 75k units of hostile ground to
 	// reach it. These gates sit a few steps from where the bot arrived.
-	const long PLAYERBOT_ORC_VALLEY_EXIT_X = 269100;
-	const long PLAYERBOT_ORC_VALLEY_EXIT_Y = 740200;
+	// The bot walks to the exit before it is warped out, so this has to be in the
+	// same region as the arrival - an exit on the far side of a wall would strand
+	// every bot that ever entered.
+	const long PLAYERBOT_ORC_VALLEY_EXIT_X = 319200;
+	const long PLAYERBOT_ORC_VALLEY_EXIT_Y = 734700;
 	const long PLAYERBOT_DESERT_EXIT_X = 219700;
 	const long PLAYERBOT_DESERT_EXIT_Y = 499900;
 	// Ordinary spawns are levels 18-25 in Orc Valley and 26-30 in the Desert, but
