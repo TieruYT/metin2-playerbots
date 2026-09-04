@@ -1,6 +1,12 @@
 # Files copied into a server update ZIP. Keep .env and databases out.
 # A line may use a wildcard in its last segment; it expands to what is there.
 files/admin_panel.py
+# The panel's skill icons. Two copies for the same reason admin_panel.py has
+# two: files/ is the source and linux-port/docker/panel/app/ is the build
+# context the image is actually made from, and an update that refreshed only
+# one of them would leave the running panel behind the sources.
+files/static/skill_icons/*.png
+linux-port/docker/panel/app/static/skill_icons/*.png
 linux-port/docker/docker-compose.yml
 linux-port/docker/.env.example
 linux-port/docker/mariadb/initdb.d/10-import-dumps.sh

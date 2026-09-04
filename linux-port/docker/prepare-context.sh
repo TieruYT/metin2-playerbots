@@ -308,6 +308,15 @@ cp -a "$PANEL_SRC/admin_panel.py" "$HERE/panel/app/"
 for f in items.json favicon.png; do
   [ -f "$PANEL_SRC/$f" ] && cp -a "$PANEL_SRC/$f" "$HERE/panel/app/" && info "$f"
 done
+# Whatever the panel serves from /static. Copied as a directory rather than by
+# name so that adding an icon set is only ever a matter of putting it there --
+# the same rule the playerbot sources follow. Note the rm -rf above: anything
+# under panel/app that is not reproduced from PANEL_SRC does not survive a run
+# of this script, so /static content has to live in the source tree to be safe.
+if [ -d "$PANEL_SRC/static" ]; then
+  cp -a "$PANEL_SRC/static" "$HERE/panel/app/"
+  info "static/ ($(find "$PANEL_SRC/static" -type f | wc -l | tr -d ' ') files)"
+fi
 # The live map's Polish mode uses the complete server locale rather than a
 # partial hand-maintained dictionary.  Keep this optional for custom source
 # trees that genuinely do not ship Polish, in which case the panel falls back
