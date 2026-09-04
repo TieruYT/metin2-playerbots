@@ -5279,7 +5279,10 @@ function warpMeToBot(x, y) {
   fetch('/api/admin/warp_me', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ x: x, y: y, player_name: 'tieru' })
+    // 'auto' lets the server pick the character that actually played last.
+    // This used to send a hardcoded name, so the button teleported that one
+    // player on every installation and silently did nothing for everyone else.
+    body: JSON.stringify({ x: x, y: y, player_name: 'auto' })
   })
   .then(function(res) { return res.json(); })
   .then(function(data) {
@@ -5342,17 +5345,19 @@ def api_admin_warp_me():
         data = request.get_json(force=True, silent=True) or {}
         target_x = int(data.get("x", 0))
         target_y = int(data.get("y", 0))
-        gm_name = data.get("player_name", "tieru")
+        gm_name = data.get("player_name") or "auto"
 
         # Fallback to the latest active human player
-        if not gm_name or gm_name == "auto":
+        if gm_name == "auto":
             with db() as c, c.cursor() as cur:
                 cur.execute("SELECT name FROM player.player WHERE name NOT LIKE 'bot%' ORDER BY last_play DESC LIMIT 1")
                 r = cur.fetchone()
-                if r:
-                    gm_name = r["name"]
-                else:
-                    gm_name = "tieru"
+                if not r:
+                    # Naming a character that may not exist would queue a command
+                    # nothing ever answers, and the caller would be told the
+                    # teleport succeeded. Say what is actually wrong instead.
+                    return jsonify({"ok": False, "error": "no_human_player"}), 404
+                gm_name = r["name"]
 
         st, qid = queue_and_wait(gm_name, "WARP", target_x, target_y, wait=5.0)
         return jsonify({"ok": True, "status": st, "name": gm_name, "x": target_x, "y": target_y})

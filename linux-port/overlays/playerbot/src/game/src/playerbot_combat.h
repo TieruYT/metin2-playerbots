@@ -131,8 +131,17 @@ namespace
 		if (!ch || ch->GetSkillGroup() == 0 || dwNow < state.dwNextBuffCheckTime)
 			return false;
 
-		// Do not cast combat buffs if visiting shop or without an active combat target / victim
-		if (state.bVisitingShop || (state.dwTargetVID == 0 && ch->GetVictim() == NULL))
+		// These used to be cast only once a target had been acquired, which is
+		// why a bot was hardly ever seen with its aura up: it walked into every
+		// fight unbuffed, spent the first five-second window casting instead of
+		// hitting, and stood there bare again as soon as the fight ended. The
+		// self-buffs are what these builds are built around, so they are kept up
+		// out in the world too - just not during a town errand, a retreat or a
+		// pull, each of which owns the tick and would be interrupted by a cast
+		// claiming it.
+		if (state.bVisitingShop || state.bVisitingBiologist || state.bVisitingStable ||
+				state.bRecoveringAfterDeath || state.bTacticalRetreat ||
+				state.bMultiPullActive || state.bFishingSession)
 			return false;
 
 		if (ch->GetMapIndex() == 21)

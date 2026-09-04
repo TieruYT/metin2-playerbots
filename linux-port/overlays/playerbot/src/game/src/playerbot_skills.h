@@ -205,9 +205,16 @@ namespace
 			{
 				build.bSkillCount = 6;
 				build.dwSkills[0] = 61; build.dwSkills[1] = 62; build.dwSkills[2] = 63; build.dwSkills[3] = 64; build.dwSkills[4] = 65; build.dwSkills[5] = 66;
+				// 63 Enchanted Blade, 65 Enchanted Armor, 64 Fear - the numbers
+				// from skill.h. What stood here was 63/64/66 under the labels
+				// Blade/Armor/Fear, so Enchanted Armor was never buffed at all
+				// and 66 was cast in its place every cycle. 66 is not a buff: it
+				// is Dispel, which strips good affects from its target, and the
+				// target here is the caster - so the one buff a weapon Sura is
+				// built around kept taking its own Dispel off itself.
 				build.dwBuffSkills[0] = 63; // Enchanted Blade
-				build.dwBuffSkills[1] = 64; // Enchanted Armor
-				build.dwBuffSkills[2] = 66; // Fear
+				build.dwBuffSkills[1] = 65; // Enchanted Armor
+				build.dwBuffSkills[2] = 64; // Fear
 				build.dwOffensiveSkills[0] = 62; // Dragon Swirl
 				build.dwOffensiveSkills[1] = 61; // Finger Strike
 				build.dwPrimaryMaxSkill = 63; // Enchanted Blade
@@ -271,14 +278,23 @@ namespace
 		// 1. Affect flags (standard Metin2 toggle and buff flags)
 		switch (buffVnum)
 		{
-			case 3:   if (ch->IsAffectFlag(AFF_GEOMGYEONG)) return true; break; // Aura of Sword
-			case 4:   if (ch->IsAffectFlag(AFF_JEONGWIHON)) return true; break; // Berserk
+			// skill.h names these after the affects they grant, so the pairing is
+			// not a guess: SKILL_JEONGWI is 3 and AFF_JEONGWIHON carries the same
+			// Korean name, SKILL_GEOMKYUNG is 4 and pairs with AFF_GEOMGYEONG.
+			// They were crossed here, and the damage was the false positive
+			// rather than the false negative: a warrior with its aura up made
+			// this return true for Berserk as well, so Berserk was never cast at
+			// all. (The reverse case fell through to FindAffect below and still
+			// worked, which is why only half the problem was ever visible.)
+			case 3:   if (ch->IsAffectFlag(AFF_JEONGWIHON)) return true; break; // Berserk
+			case 4:   if (ch->IsAffectFlag(AFF_GEOMGYEONG)) return true; break; // Aura of Sword
 			case 19:  if (ch->IsAffectFlag(AFF_CHEONGEUN))  return true; break; // Strong Body
 			case 34:  if (ch->IsAffectFlag(AFF_EUNHYUNG))   return true; break; // Stealth
 			case 49:  if (ch->IsAffectFlag(AFF_GYEONGGONG)) return true; break; // Feather Walk
 			case 63:  if (ch->IsAffectFlag(AFF_GWIGUM))     return true; break; // Enchanted Blade toggle
-			case 64:  if (ch->IsAffectFlag(AFF_JUMAGAP))    return true; break; // Enchanted Armor
-			case 65:  if (ch->IsAffectFlag(AFF_TERROR))     return true; break; // Fear
+			// Crossed the same way: SKILL_TERROR is 64, SKILL_JUMAGAP is 65.
+			case 64:  if (ch->IsAffectFlag(AFF_TERROR))     return true; break; // Fear
+			case 65:  if (ch->IsAffectFlag(AFF_JUMAGAP))    return true; break; // Enchanted Armor
 			case 78:  if (ch->IsAffectFlag(AFF_MUYEONG))    return true; break; // Flame Spirit toggle
 			case 79:  if (ch->IsAffectFlag(AFF_MANASHIELD)) return true; break; // Dark Protection toggle
 			case 94:  if (ch->IsAffectFlag(AFF_BOHO))       return true; break; // Blessing
