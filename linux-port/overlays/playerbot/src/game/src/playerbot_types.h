@@ -104,6 +104,10 @@ namespace
 	// happened to be carrying an axe +9 as well - the "keep only the best spare
 	// per slot" rule had no idea what it was throwing away. Anything at this
 	// refine goes on a stall instead, where another bot can pay properly.
+	// How long after its last swing a bot still counts as hunting. A session is
+	// a string of fights with gaps for walking and looting between them, so the
+	// window has to outlast a gap without outlasting the walk back to town.
+	const DWORD PLAYERBOT_BUFF_COMBAT_WINDOW = 60000;
 	const BYTE PLAYERBOT_PRECIOUS_REFINE = 7;
 	// What a bot asks for a spare. Invented rather than derived: the item tables
 	// carry no price for a refined weapon, and these are meant to be affordable

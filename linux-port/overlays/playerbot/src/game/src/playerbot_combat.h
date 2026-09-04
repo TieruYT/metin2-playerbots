@@ -126,6 +126,20 @@ namespace
 				ch->GetSkillMasterType(skillVnum));
 	}
 
+	// Not everything in a build's buff list is for fighting. Feather Walk and
+	// Swiftness make a bot move faster, and moving is what it spends most of its
+	// time doing - it walks a kilometre to its hunting ground. Cure is not a buff
+	// at all: it is a heal, already gated on the bot's own health, and a wounded
+	// Shaman limping back to town has more reason to cast it than one in a fight.
+	// These stay available whenever the bot is out in the world; everything else
+	// waits until there is something to fight.
+	bool IsPlayerBotOutOfCombatBuff(DWORD buffVnum)
+	{
+		return buffVnum == 49 ||    // Bezszelestny Chod  (Ninja)
+				buffVnum == 110 ||  // Zwinnosc           (Szaman)
+				buffVnum == 109;    // Leczenie           (Szaman)
+	}
+
 	bool ManagePlayerBotCombatBuffs(LPCHARACTER ch, TPlayerBotAIState& state, DWORD dwNow)
 	{
 		if (!ch || ch->GetSkillGroup() == 0 || dwNow < state.dwNextBuffCheckTime)
@@ -166,11 +180,22 @@ namespace
 
 		state.dwNextBuffCheckTime = dwNow + 5000;
 
+		// 1.24.2 dropped the requirement to hold a target, because bots were
+		// entering every fight bare. It went too far the other way: they stood in
+		// town casting an aura they would lose long before reaching the monsters a
+		// kilometre away. "Hunting" is the middle ground - in a fight, or recently
+		// enough in one that another is coming.
+		const bool inCombat = state.dwTargetVID != 0 || ch->GetVictim() != NULL ||
+				(state.dwLastCombatActionTime != 0 &&
+				 dwNow - state.dwLastCombatActionTime < PLAYERBOT_BUFF_COMBAT_WINDOW);
+
 		const TJobSkillBuild build = GetPlayerBotSkillBuild(ch->GetJob(), ch->GetSkillGroup(), ch->GetPlayerID());
 		for (size_t i = 0; i < sizeof(build.dwBuffSkills) / sizeof(build.dwBuffSkills[0]); ++i)
 		{
 			const DWORD buffVnum = build.dwBuffSkills[i];
 			if (buffVnum == 0 || ch->GetSkillLevel(buffVnum) == 0)
+				continue;
+			if (!inCombat && !IsPlayerBotOutOfCombatBuff(buffVnum))
 				continue;
 
 			// Check if buff is currently active (including toggle skills like Enchanted Blade / Flame Spirit)

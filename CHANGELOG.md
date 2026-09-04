@@ -17,6 +17,16 @@ every version here.
 
 ---
 
+## 1.24.6 — 2026-09-04
+
+### Naprawione
+
+- **Boty przestały rzucać buffy bojowe poza walką.** Wersja 1.24.2 zdjęła wymóg posiadania celu, bo boty wchodziły do każdej walki bez niczego — ale poszła za daleko w drugą stronę: stały w mieście, rzucając aurę, silne ciało czy czarowane ostrze, które i tak wygasały, zanim dotarły do potworów kilometr dalej. Teraz buff bojowy wchodzi tylko wtedy, gdy bot jest w walce albo był w niej na tyle niedawno, że zaraz będzie w następnej (okno 60 sekund — dłuższe niż przerwa na dobiegnięcie do kolejnego potwora i podniesienie łupu, krótsze niż droga do miasta).
+- **Umiejętności przydatne w drodze działają bez zmian, wszędzie.** To **Bezszelestny Chód** ninja i **Zwinność** szamana — obie przyspieszają ruch, a chodzenie jest tym, co bot robi najczęściej.
+- **Leczenie szamana też zostało poza tą blokadą.** To nie buff, tylko leczenie zależne od własnego zdrowia, a ranny bot wracający do miasta ma więcej powodów, żeby je rzucić, niż ten w walce.
+
+---
+
 ## 1.24.5 — 2026-09-04
 
 ### Dodane
