@@ -1,12 +1,12 @@
 {
   "schema": 1,
   "channel": "stable",
-  "publishedAt": "2026-09-04T18:06:32Z",
-  "statusMessage": "Aktualizacja 1.24.2: aktualizowanie przestalo konczyc sie bledem Dockera, boty maja wreszcie wlaczone swoje najwazniejsze umiejetnosci, a bonusy na przedmiotach sa podpisane tak jak w grze. Do tego magazyn bota i ikony umiejetnosci na stronie.",
+  "publishedAt": "2026-09-04T20:28:43Z",
+  "statusMessage": "Aktualizacja 1.24.3: prywatne stragany wreszcie dzialaja - botow i graczy. Latka silnika byla dowozona w kazdej paczce i nigdy nakladana, wiec sklep odrzucalo kazdemu, kto ma na sobie zbroje.",
   "server": {
-    "version": "1.24.2",
-    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v1.24.2/metin2-server-update-1.24.2.zip",
-    "sha256": "F5036266FDBC6FCB34D35810ACABAF3EFBF3FCB196DC690217BAB8BEBB5DE04F"
+    "version": "1.24.3",
+    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v1.24.3/metin2-server-update-1.24.3.zip",
+    "sha256": "2BB0B95CC2330D33909EE7A753C9D4DB7F22BD6966F2111798C1BF9C0A430D5D"
   },
   "support": {
     "contactUrl": "https://discord.gg/pt5tvnrN6",
