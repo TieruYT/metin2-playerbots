@@ -297,8 +297,12 @@ namespace
 			case 65:  if (ch->IsAffectFlag(AFF_JUMAGAP))    return true; break; // Enchanted Armor
 			case 78:  if (ch->IsAffectFlag(AFF_MUYEONG))    return true; break; // Flame Spirit toggle
 			case 79:  if (ch->IsAffectFlag(AFF_MANASHIELD)) return true; break; // Dark Protection toggle
-			case 94:  if (ch->IsAffectFlag(AFF_BOHO))       return true; break; // Blessing
-			case 95:  if (ch->IsAffectFlag(AFF_HOSIN))      return true; break; // Reflect
+			// Crossed as well; skill_proto has 94 setAffectFlag=HOSIN and 95=BOHO.
+			// The shaman buffs all three of 96/94/95, so this pair suppressed
+			// each other: whichever went up first made the other read as active
+			// and it was never cast for the rest of the bot's life.
+			case 94:  if (ch->IsAffectFlag(AFF_HOSIN))      return true; break; // Blessing
+			case 95:  if (ch->IsAffectFlag(AFF_BOHO))       return true; break; // Reflect
 			case 96:  if (ch->IsAffectFlag(AFF_GICHEON))    return true; break; // Dragon Aid
 			case 110: if (ch->IsAffectFlag(AFF_KWAESOK))    return true; break; // Swiftness
 			case 111: if (ch->IsAffectFlag(AFF_JEUNGRYEOK)) return true; break; // Attack Up
