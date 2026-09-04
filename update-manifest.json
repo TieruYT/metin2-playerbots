@@ -1,12 +1,12 @@
 {
   "schema": 1,
   "channel": "stable",
-  "publishedAt": "2026-09-04T10:35:00Z",
-  "statusMessage": "Aktualizacja 1.23.5: powiększona obsada botów wreszcie naprawdę dociera do bazy (dotąd każda instalacja stosowała ziarno z 23 sierpnia), plus podział kodu botów na moduły. Sprawdzone na działającym serwerze z 1000 botami.",
+  "publishedAt": "2026-09-04T11:35:00Z",
+  "statusMessage": "Aktualizacja 1.23.6: sufit liczby botów podniesiony naprawdę. Rejestr po cichu odrzucał każdego bota od PID 1003 w górę; obsada powiększona do 1500. Zmierzone na serwerze: 180 → 511 → 750 grających botów.",
   "server": {
-    "version": "1.23.5",
-    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v1.23.5/metin2-server-update-1.23.5.zip",
-    "sha256": "F3F1AE6EA2065AAC208CD2411AA530C1DFE06F5B5BEEDB73D6114B8E7F035361"
+    "version": "1.23.6",
+    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v1.23.6/metin2-server-update-1.23.6.zip",
+    "sha256": "A7920EE63A664EA67E727FDC9AE83B807F865B7D1C723444BA647CC2601667D9"
   },
   "support": {
     "contactUrl": "https://discord.gg/pt5tvnrN6",
