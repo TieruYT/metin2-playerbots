@@ -23,6 +23,32 @@ try {
         Where-Object { $_ -and -not $_.StartsWith('#') })
     if ($entries.Count -eq 0) { throw 'The file list is empty.' }
 
+    # A line may name a directory with a wildcard - "…/src/playerbot_*" - and it
+    # expands to whatever is there. Splitting a source file used to mean editing
+    # this list too, and forgetting to is what shipped a manager without its own
+    # headers twice. A pattern that matches nothing is still an error: it means
+    # the tree moved and the package would be silently short.
+    $expanded = @()
+    foreach ($entry in $entries) {
+        if ($entry -notmatch '[\*\?]') { $expanded += $entry; continue }
+        $relativePattern = $entry.Replace('/', '\').TrimStart('\')
+        if ([IO.Path]::IsPathRooted($relativePattern) -or
+            $relativePattern.Split('\') -contains '..') {
+            throw "Unsafe pattern: $entry"
+        }
+        $directory = Split-Path -Parent $relativePattern
+        $leaf = Split-Path -Leaf $relativePattern
+        $searchRoot = Join-Path $source $directory
+        if (-not (Test-Path -LiteralPath $searchRoot -PathType Container)) {
+            throw "Pattern directory does not exist: $directory"
+        }
+        $matched = @(Get-ChildItem -LiteralPath $searchRoot -File -Filter $leaf |
+            Sort-Object Name | ForEach-Object { (Join-Path $directory $_.Name) })
+        if ($matched.Count -eq 0) { throw "Pattern matched no files: $entry" }
+        $expanded += $matched
+    }
+    $entries = @($expanded | Select-Object -Unique)
+
 
     # The overlay sources and the staged build context are two copies of the
     # same files, and a package that carries one without the other is what took

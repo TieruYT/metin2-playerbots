@@ -1,4 +1,5 @@
 # Files copied into a server update ZIP. Keep .env and databases out.
+# A line may use a wildcard in its last segment; it expands to what is there.
 files/admin_panel.py
 linux-port/docker/docker-compose.yml
 linux-port/docker/.env.example
@@ -6,32 +7,23 @@ linux-port/docker/mariadb/initdb.d/10-import-dumps.sh
 # Waits for the database before seeding. Its timeout decides whether a slow
 # recovery fails the whole compose "up".
 linux-port/docker/mariadb/playerbot/apply.sh
-# Copies the overlay sources into the build context and names each file
-# explicitly, so a new header only reaches the compiler through this.
+# Discovers the overlay sources and copies them into the build context.
 linux-port/docker/prepare-context.sh
 linux-port/docker/panel/app/admin_panel.py
 linux-port/overlays/playerbot/serverfiles/mob_drop_item.m3.append.txt
 linux-port/overlays/playerbot/sql/playerbots_seed.sql
-linux-port/overlays/playerbot/src/game/src/playerbot_manager.cpp
-linux-port/overlays/playerbot/src/game/src/playerbot_manager.h
-# playerbot_manager.cpp includes both of these. They are not optional extras:
-# an update that ships the manager without them cannot compile on a machine
-# that does not already have the matching versions.
-linux-port/overlays/playerbot/src/game/src/playerbot_world_rules.h
-linux-port/overlays/playerbot/src/game/src/playerbot_types.h
+linux-port/overlays/playerbot/tools/generate_seed.py
+# The overlay sources, and the staged build context they are compiled from.
+# Wildcards, not lists: splitting a source file must not require editing this
+# file, and forgetting to is what shipped a manager without its own headers in
+# 1.22.4 and again in 1.23.2. The packager refuses a package in which the two
+# sides disagree.
+linux-port/overlays/playerbot/src/game/src/playerbot_*
+linux-port/docker/game/src/server/game/src/playerbot_*
 linux-port/overlays/playerbot/patches/0001-core-integration.patch
 # Lets a character wearing armour open a private shop, which the stock
 # guard rejected outright - bots and players alike.
 linux-port/overlays/playerbot/patches/0004-private-shop-guard.patch
-linux-port/overlays/playerbot/tools/generate_seed.py
-# The staged build context. Players never run prepare-context.sh - it needs the
-# pristine engine tree, which the distribution does not contain - so these are
-# the copies the compiler actually sees. Shipping the manager without its own
-# headers is what broke 1.23.2 on every machine that applied it.
-linux-port/docker/game/src/server/game/src/playerbot_manager.cpp
-linux-port/docker/game/src/server/game/src/playerbot_manager.h
-linux-port/docker/game/src/server/game/src/playerbot_types.h
-linux-port/docker/game/src/server/game/src/playerbot_world_rules.h
 # Assigns maps to game cores. The bots' route now includes Orc Valley, and
 # a server-side bot cannot cross between cores, so this must ship with it.
 linux-port/docker/game/bin/m2-render-config

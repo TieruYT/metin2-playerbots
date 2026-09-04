@@ -93,11 +93,22 @@ done
 command -v patch >/dev/null 2>&1 || die "GNU patch is needed to apply the Playerbot source overlay"
 command -v git >/dev/null 2>&1 || die "git is needed to fingerprint the Playerbot source overlay"
 command -v python3 >/dev/null 2>&1 || die "python3 is needed to verify the deterministic Playerbot seed"
+# The overlay sources are discovered, never listed. Naming each file here (and
+# in the copy, the chmod, the verification and the fingerprint below) meant that
+# adding one source file cost five edits in this script alone - which is exactly
+# why the manager grew to twelve thousand lines instead of being split up.
+PLAYERBOT_SOURCES=""
+for f in "$PLAYERBOT_SRC"/playerbot_*.h "$PLAYERBOT_SRC"/playerbot_*.cpp; do
+  [ -e "$f" ] || continue
+  PLAYERBOT_SOURCES="$PLAYERBOT_SOURCES $f"
+done
+[ -n "$PLAYERBOT_SOURCES" ] || die "no Playerbot overlay sources found in $PLAYERBOT_SRC"
+# playerbot_manager.cpp is the one file the integration patch cannot work
+# without, so its absence is a different failure from "the directory is empty".
+[ -s "$PLAYERBOT_SRC/playerbot_manager.cpp" ] || die "Playerbot overlay input is missing or empty: $PLAYERBOT_SRC/playerbot_manager.cpp"
+
 for p in \
-  "$PLAYERBOT_SRC/playerbot_manager.cpp" \
-  "$PLAYERBOT_SRC/playerbot_manager.h" \
-  "$PLAYERBOT_SRC/playerbot_types.h" \
-  "$PLAYERBOT_SRC/playerbot_world_rules.h" \
+  $PLAYERBOT_SOURCES \
   "$PLAYERBOT_CORE_PATCH" \
   "$PLAYERBOT_ECONOMY_PATCH" \
   "$PLAYERBOT_LOG_PATCH" \
@@ -181,40 +192,46 @@ fi
   patch --batch --forward --fuzz=0 -p1 < "$PLAYERBOT_SHOP_PATCH") \
   || die "the Playerbot source overlay could not be applied"
 
-cp -a "$PLAYERBOT_SRC/playerbot_manager.cpp" "$GAME_CTX/server/game/src/playerbot_manager.cpp"
-cp -a "$PLAYERBOT_SRC/playerbot_manager.h" "$GAME_CTX/server/game/src/playerbot_manager.h"
-cp -a "$PLAYERBOT_SRC/playerbot_types.h" "$GAME_CTX/server/game/src/playerbot_types.h"
-cp -a "$PLAYERBOT_SRC/playerbot_world_rules.h" "$GAME_CTX/server/game/src/playerbot_world_rules.h"
-chmod 0644 "$GAME_CTX/server/game/src/playerbot_manager.cpp" \
-           "$GAME_CTX/server/game/src/playerbot_manager.h" \
-           "$GAME_CTX/server/game/src/playerbot_types.h" \
-           "$GAME_CTX/server/game/src/playerbot_world_rules.h"
+for f in $PLAYERBOT_SOURCES; do
+  cp -a "$f" "$GAME_CTX/server/game/src/$(basename "$f")"
+  chmod 0644 "$GAME_CTX/server/game/src/$(basename "$f")"
+done
 
-grep -q 'CPPFILE += playerbot_manager.cpp' "$GAME_CTX/server/game/src/Makefile" \
-  || die "Playerbot overlay validation failed: game Makefile has no manager source"
+# A source removed from the overlay has to disappear from the build context too.
+# The Makefile now compiles every playerbot_*.cpp it finds there, so a file left
+# behind by a previous run would still be built - against headers that no longer
+# describe it.
+for f in "$GAME_CTX/server/game/src"/playerbot_*.h "$GAME_CTX/server/game/src"/playerbot_*.cpp; do
+  [ -e "$f" ] || continue
+  [ -e "$PLAYERBOT_SRC/$(basename "$f")" ] || {
+    info "removing stale overlay source $(basename "$f")"
+    rm -f "$f"
+  }
+done
+
+grep -q 'CPPFILE += $(wildcard playerbot_\*.cpp)' "$GAME_CTX/server/game/src/Makefile" \
+  || die "Playerbot overlay validation failed: game Makefile does not pick up the overlay sources"
 grep -q 'HEADER_GD_BOT_PLAYER_LOAD' "$GAME_CTX/server/common/tables.h" \
   || die "Playerbot overlay validation failed: DB protocol header is missing"
 grep -q 'CPlayerBotManager::instance().OnPlayerLoaded' "$GAME_CTX/server/game/src/input_db.cpp" \
   || die "Playerbot overlay validation failed: player-load hook is missing"
 grep -q 'iGold \*= 5;' "$GAME_CTX/server/game/src/char_battle.cpp" \
   || die "Playerbot overlay validation failed: economy adjustment is missing"
-cmp -s "$PLAYERBOT_SRC/playerbot_manager.cpp" "$GAME_CTX/server/game/src/playerbot_manager.cpp" \
-  || die "Playerbot overlay validation failed: manager source copy differs"
-cmp -s "$PLAYERBOT_SRC/playerbot_manager.h" "$GAME_CTX/server/game/src/playerbot_manager.h" \
-  || die "Playerbot overlay validation failed: manager header copy differs"
-cmp -s "$PLAYERBOT_SRC/playerbot_types.h" "$GAME_CTX/server/game/src/playerbot_types.h" \
-  || die "Playerbot overlay validation failed: types header copy differs"
-cmp -s "$PLAYERBOT_SRC/playerbot_world_rules.h" "$GAME_CTX/server/game/src/playerbot_world_rules.h" \
-  || die "Playerbot overlay validation failed: world-rules header copy differs"
+for f in $PLAYERBOT_SOURCES; do
+  cmp -s "$f" "$GAME_CTX/server/game/src/$(basename "$f")" \
+    || die "Playerbot overlay validation failed: $(basename "$f") copy differs"
+done
 
 {
   printf 'core_patch=%s\n' "$(git hash-object "$PLAYERBOT_CORE_PATCH")"
   printf 'economy_patch=%s\n' "$(git hash-object "$PLAYERBOT_ECONOMY_PATCH")"
   printf 'log_patch=%s\n' "$(git hash-object "$PLAYERBOT_LOG_PATCH")"
-  printf 'manager_cpp=%s\n' "$(git hash-object "$PLAYERBOT_SRC/playerbot_manager.cpp")"
-  printf 'manager_h=%s\n' "$(git hash-object "$PLAYERBOT_SRC/playerbot_manager.h")"
-  printf 'types_h=%s\n' "$(git hash-object "$PLAYERBOT_SRC/playerbot_types.h")"
-  printf 'world_rules_h=%s\n' "$(git hash-object "$PLAYERBOT_SRC/playerbot_world_rules.h")"
+  # Every overlay source, sorted, so a changed or added file always invalidates
+  # a stale build. Missing one here is the failure that does not announce
+  # itself: the context looks fine and the image is simply not rebuilt.
+  for f in $PLAYERBOT_SOURCES; do
+    printf 'src_%s=%s\n' "$(basename "$f")" "$(git hash-object "$f")"
+  done
   printf 'seed_generator=%s\n' "$(git hash-object "$PLAYERBOT_SEED_GENERATOR")"
   printf 'seed_sql=%s\n' "$(git hash-object "$PLAYERBOT_SEED")"
 } > "$GAME_CTX/.playerbot-overlay"

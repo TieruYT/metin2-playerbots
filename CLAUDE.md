@@ -10,7 +10,7 @@ The engine source is **not in this repository** and never will be — see
 
 | Path | What |
 |---|---|
-| `linux-port/overlays/playerbot/src/game/src/playerbot_manager.cpp` | The playerbot AI. ~12.9k lines, one anonymous namespace of ~217 functions plus `CPlayerBotManager`. |
+| `linux-port/overlays/playerbot/src/game/src/` | The playerbot AI, split into implementation fragments (see below). `playerbot_manager.cpp` is the tick and whatever has not been lifted out yet. |
 | `linux-port/overlays/playerbot/src/game/src/playerbot_world_rules.h` | Pure travel policy, no engine types. Unit-tested. The model for extracting logic. |
 | `linux-port/patches/` | Patches applied to the pristine engine source. |
 | `linux-port/docker/panel/app/admin_panel.py` | Flask admin panel. |
@@ -56,40 +56,65 @@ running ~350 bots. Say plainly what was compiled versus what was observed.
 
 ### Adding a source file
 
-Every overlay source is named explicitly, so adding one means editing a list.
-`prepare-context.sh` alone names each file in **five** places — the existence
-check, the `cp -a`, the `chmod`, the `cmp` copy verification and the
-`.playerbot-overlay` fingerprint. Miss the fingerprint and a changed file will
-not invalidate a stale build.
+Nothing to do. Drop a `playerbot_*.h` or `playerbot_*.cpp` into
+`overlays/playerbot/src/game/src/` and every step finds it: `prepare-context.sh`
+discovers the directory, the engine `Makefile` takes `$(wildcard
+playerbot_*.cpp)`, the update packager expands `playerbot_*` in
+`server-update-files.txt`, and the launcher copies the whole directory into the
+build context before each build.
 
-A new **header** needs those five plus the `#include`. A new **`.cpp`** also
-needs `CPPFILE +=` in the engine `Makefile`, which is an explicit list rather
-than a wildcard and lives in
-`overlays/playerbot/patches/0001-core-integration.patch`.
+This used to cost five edits in `prepare-context.sh` alone plus a patch edit,
+which is exactly why the manager grew to twelve thousand lines instead of being
+split up -- and why 1.22.4 and 1.23.2 both shipped a manager without its own
+headers and would not compile on any player's machine. If you add a step that
+handles these files, make it discover them too. Never write another list.
 
-That asymmetry is why `playerbot_manager.cpp` grew as far as it did: adding a
-function costs nothing, adding a file costs a patch edit.
+## The playerbot sources
 
-## playerbot_manager.cpp
+Everything shares **one translation unit and one anonymous namespace**, so
+definition order *is* dependency order: a helper must appear above its callers.
+The split is therefore a sequence of implementation fragments, included in
+dependency order at the top of `playerbot_manager.cpp`:
 
-Everything lives in one anonymous namespace, so definition order *is* the
-dependency order — a helper must appear above its callers. Find a subsystem by
-its entry point rather than by line number:
+| File | What |
+|---|---|
+| `playerbot_types.h` | Tuning constants, enums, `TPlayerBotAIState` and the state map. |
+| `playerbot_world_rules.h` | Pure travel policy. No engine types, unit-tested. |
+| `playerbot_navigation.h` | Where a bot may stand and how it gets there. Answers questions about the world only; calls nothing above it. |
+| `playerbot_world_memory.h` | What the population has learned about the world, as opposed to about itself. Written by one subsystem, read by another. |
+| `playerbot_gear.h` | What a bot wears and carries: equipment scoring, the progression ladder, arrows, potions. |
+| `playerbot_manager.cpp` | The tick, plus every subsystem not yet lifted out. |
+
+These are fragments, not normal headers: each defines objects, relies on the
+engine headers the manager includes above it, and reopens the same anonymous
+namespace. Include each exactly once, from `playerbot_manager.cpp`, in an order
+that respects what it calls. A fragment that needs something from a later
+subsystem forward-declares it rather than pulling it in -- `playerbot_gear.h`
+does this for `GetPlayerBotNpcApproach`.
+
+Still in `playerbot_manager.cpp`, and the obvious next cuts: movement
+(`ClearPlayerBotRoute` through `MovePlayerBot`), the activities (horse, fishing,
+biologist, hunting missions), combat, and the town/merchant economy.
+
+Find a subsystem by its entry point rather than by line number:
 
 - Navigation/travel: `MovePlayerBot`, `TransitionPlayerBotMap` (an instant warp),
   `MovePlayerBotToWorldPortal` (walks), `ManagePlayerBotWorldTravel`
 - Combat: `FindDistributedTarget`, `ExecutePlayerBotBasicAttack`,
   `ExecutePlayerBotAttackSkill`, `HandlePlayerBotMultiPull`
 - Economy: `ManagePlayerBotEquipment`, `IsPlayerBotJunkItem`,
-  `ManagePlayerBot*Merchant`, `ManagePlayerBotRefining`, `ManagePlayerBotPrivateShop`
+  `ManagePlayerBot*Merchant`, `ManagePlayerBotRefining`, `ManagePlayerBotPrivateShop`,
+  `ManagePlayerBotBonusReroll`
 - Activities: `ManagePlayerBotHorse`, `ManagePlayerBotFishing`,
   `ManagePlayerBotBiologist`, `HandlePlayerBotTownVisit`
 - Planning/report: `PlanPlayerBotLongTermGoal`, `BuildPlayerBotStatusText`
 
 `CPlayerBotManager::Update` is the tick. Order matters and is load-bearing:
-the goal planner runs first, then the subsystem hooks (each `continue`s to claim
-the tick), and target acquisition and attacking run **last**. A subsystem that
-owns the tick therefore also suppresses combat and the gear pass.
+releasing an open private shop runs first -- engine state must not depend on
+which subsystem wins the tick -- then the goal planner, then the subsystem hooks
+(each `continue`s to claim the tick), and target acquisition and attacking run
+**last**. A subsystem that owns the tick therefore also suppresses combat and the
+gear pass.
 
 ### Traps this file has already sprung
 

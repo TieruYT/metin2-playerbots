@@ -816,6 +816,12 @@ namespace
 	};
 
 	typedef std::map<DWORD, TPlayerBotAIState> TPlayerBotAIStateMap;
+
+	// Every bot the manager has ever ticked, alive for the life of the process:
+	// a bot that logs out keeps its plans, cooldowns and hobby. It lives here
+	// rather than in the manager because the subsystems read it too - refining
+	// asks a bot for its personality long before the tick reaches it.
+	TPlayerBotAIStateMap s_mapPlayerBotAIStates;
 }
 
 #endif

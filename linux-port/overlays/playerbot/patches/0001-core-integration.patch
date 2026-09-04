@@ -460,4 +460,4 @@ index 4c34463..ea4df53 100644
 --- a/game/src/Makefile
 +++ b/game/src/Makefile
 @@ -155,0 +156 @@ CPPFILE = BattleArena.cpp FSM.cpp MarkConvert.cpp MarkImage.cpp MarkManager.cpp
-+CPPFILE += playerbot_manager.cpp
++CPPFILE += $(wildcard playerbot_*.cpp)
