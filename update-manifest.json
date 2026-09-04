@@ -1,12 +1,12 @@
 {
   "schema": 1,
   "channel": "stable",
-  "publishedAt": "2026-09-04T14:05:00Z",
-  "statusMessage": "Aktualizacja 1.23.10: dwa punkty łowieckie Doliny Orków leżały za wodą i zostały zastąpione osiągalnymi. Sprawdzone też pytanie o mosty — do polowania żaden nie jest potrzebny, cały teren łączy się lądem.",
+  "publishedAt": "2026-09-04T14:45:00Z",
+  "statusMessage": "Aktualizacja 1.24.0: boty ze straganem milczą, yang podnoszony pierwszy i szybciej, Łatwy Loch Małp tylko dla poziomów 18-26, a mapa w panelu ma prawdziwy teren pod spodem.",
   "server": {
-    "version": "1.23.10",
-    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v1.23.10/metin2-server-update-1.23.10.zip",
-    "sha256": "87B16DAD1EBA7633E1C9C74FBE09EBAB40F4A1934F0BF25D5DED79629DA9D6F1"
+    "version": "1.24.0",
+    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v1.24.0/metin2-server-update-1.24.0.zip",
+    "sha256": "04C31C441FA56673409B921E0AD1C102742253334D5257E172BA62336473D81D"
   },
   "support": {
     "contactUrl": "https://discord.gg/pt5tvnrN6",
