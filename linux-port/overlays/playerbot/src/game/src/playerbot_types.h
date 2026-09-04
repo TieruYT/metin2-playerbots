@@ -370,6 +370,12 @@ namespace
 	const DWORD PLAYERBOT_REMOTE_REFINE_RETURN_MIN_DELAY = 720000;
 	const DWORD PLAYERBOT_REMOTE_REFINE_RETURN_MAX_DELAY = 1500000;
 	const DWORD PLAYERBOT_MONKEY_MAX_VISIT_TIME = 1800000;
+	// Who the Easy Monkey Dungeon is worth a trip for. Below this a bot dies to
+	// the rooms it has to cross; above it the medals are pocket change against
+	// what the same half hour buys on the frontier, and the dungeon was filling
+	// up with characters that had nothing left to gain there.
+	const BYTE PLAYERBOT_MONKEY_MIN_LEVEL = 18;
+	const BYTE PLAYERBOT_MONKEY_MAX_LEVEL = 26;
 	const DWORD PLAYERBOT_M3_MAX_VISIT_TIME = 1200000;
 	const DWORD PLAYERBOT_MONKEY_REVERSE_PORTAL_BLOCK_TIME = 10000;
 	const long PLAYERBOT_MONKEY_EASY_BASE_X = 844800;

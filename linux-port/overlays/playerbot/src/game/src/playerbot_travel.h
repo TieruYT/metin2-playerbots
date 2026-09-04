@@ -283,6 +283,14 @@ namespace
 		if (!CanPlayerBotAdvanceHorse(ch))
 			return false;
 
+		// The dungeon is only worth a trip inside its own level band. This gate
+		// also empties it: a bot already inside re-evaluates the same call every
+		// tick, so the one that levels past the band finishes what it is doing
+		// and walks out rather than waiting for the thirty-minute timeout.
+		if (ch->GetLevel() < PLAYERBOT_MONKEY_MIN_LEVEL ||
+				ch->GetLevel() > PLAYERBOT_MONKEY_MAX_LEVEL)
+			return false;
+
 		// A combat horse matters most to Warriors and weapon Suras, but it must be
 		// one goal among several rather than a compulsory conveyor belt through the
 		// dungeon.  The cohort rotates every 30 minutes and again after every earned
