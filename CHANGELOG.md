@@ -17,6 +17,24 @@ every version here.
 
 ---
 
+## 1.24.7 — 2026-09-05
+
+### Naprawione
+
+- **Boty kończą uderzenia.** Rytm ataku był odmierzany płaskimi 480 ms, skalowanymi tylko szybkością ataku. Klient przyjmuje kolejne uderzenie combo dopiero od `DirectInputTime`, a ta wartość jest **późniejsza niż 480 ms dla każdej broni w grze**: 533 ms miecz jednoręczny, 732 szable, 932 dwuręczny, cała sekunda łuk. Trwająca animacja była więc za każdym razem ucinana.
+  - **Ostatnie uderzenie było ucinane najmocniej.** Krok combo, który ma `DirectInputTime` równe zero, w ogóle się nie łączy — kończy sekwencję i klient odgrywa go w całości. Czwarte combo dzwonka jest właśnie takie i potrzebuje 1333 ms, a dostawało niecałe 400.
+  - Czasy pochodzą z danych animacji, które serwer i tak wozi w `share/data/pc`, i są generowane przez `tools/generate_swing_timing.py` — 4 klasy × 6 rodzajów broni × 4 kroki combo. Dla łuku, który nie ma łańcucha combo, brana jest pełna długość animacji.
+  - **Boty przez to zwolniły, celowo.** Biły mniej więcej dwa razy szybciej, niż pozwala animacja, a obrażenia idą razem z pakietem — więc tempo zdobywania poziomów spadnie proporcjonalnie. To do wyrównania osobnym mnożnikiem, nie oszukiwaniem animacji.
+- **Ranking umiejętności pokazuje najwyższą rangę, nie sumę poziomów.** Sumowanie premiowało rozłożenie punktów po całym drzewku. Teraz widać to, co powiedziałby gracz: `M10 Silne Ciało`, `G1 Przywołanie Błyskawicy`, `P Berserk` — i po tym idzie sortowanie.
+
+### Zmienione
+
+- **Stragany mają wreszcie towar.** Bot wystawiał dokładnie jeden przedmiot; teraz na ladzie stoi do **ośmiu**, najlepsze na przedzie, więc ulepszacze i zapasowy ulepszony sprzęt idą pierwsze. Kupujący przechodzi całą ladę i bierze pozycję, która go interesuje, a nie zawsze pierwszą.
+- **Stragan można wystawić od 1. poziomu.** Wymóg 20. poziomu był nasz, nie gry — tobołek (przedmiot 50200) ma w tabelach `LIMIT_NONE`. To dlatego w Joan nie było żadnego straganu: z pięciuset botów stojących tam pięć miało dwudziestkę, podczas gdy w Bokjung było ich sto dwadzieścia.
+- **Wyprzedany stragan się zwija** i bot wraca do gry, zamiast stać przy pustej ladzie do końca licznika.
+
+---
+
 ## 1.24.6 — 2026-09-04
 
 ### Naprawione
