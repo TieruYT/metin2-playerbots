@@ -17,6 +17,17 @@ every version here.
 
 ---
 
+## 1.24.4 — 2026-09-04
+
+### Zmienione
+
+- **Stragany stoją teraz w kole.** W Joan wokół **Strażnika Wsi**, w Bokjung na dotychczasowym placu targowym. Każdy bot ma stały kąt na okręgu i wraca zawsze na to samo miejsce, więc krąg nie rozłazi się przy kolejnych otwarciach.
+  - Pozycja strażnika nie jest zgadnięta: to NPC 11002 z komórki (633,640) mapy `metin2_map_b1`, której `BasePosition` wynosi (0,102400) — czyli świat (63300,166400). Ten sam rachunek daje istniejącej stałej `PLAYERBOT_M1_TELEPORTER` jej (51900,153600) z komórki (519,512), więc jest sprawdzony. Wokół strażnika nie stoi żaden inny NPC w promieniu czterdziestu komórek.
+- **Przy każdym wystawieniu bot losuje miasto: 90% szans na Joan, 10% na Bokjung.** Losowanie jest za każdym razem od nowa, nie przypisane botowi na stałe. Nic nie jest zapamiętywane — bot, który wylosuje miasto, w którym akurat nie stoi, po prostu tym razem nie wystawia i losuje ponownie przy następnej próbie, więc nikt nie utknie w oczekiwaniu na miasto, do którego rzadko zagląda.
+- **Kupujący szukają straganów w obu miastach.** Wcześniej przeglądali wyłącznie Bokjung — po przeniesieniu większości sklepów do Joan dziewięć straganów na dziesięć zostałoby bez klientów.
+
+---
+
 ## 1.24.3 — 2026-09-04
 
 ### Naprawione

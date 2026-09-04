@@ -308,6 +308,21 @@ namespace
 	// tight enough that keepers kept walking around their pitch without ever
 	// counting as arrived.
 	const int PLAYERBOT_MARKET_ARRIVE = 450;
+	// Joan's stall circle, around the village guard. The guard is NPC 11002 and
+	// map data puts him in cell (633,640); metin2_map_b1's BasePosition is
+	// (0,102400) and world = base + cell*100, which is the same arithmetic that
+	// gives PLAYERBOT_M1_TELEPORTER its (51900,153600) from cell (519,512). He
+	// stands alone - no other NPC within forty cells - so a ring of stalls round
+	// him blocks nobody.
+	const long PLAYERBOT_M1_GUARD_X = 63300;
+	const long PLAYERBOT_M1_GUARD_Y = 166400;
+	// A ring rather than a scattered patch: one fixed radius for every keeper, so
+	// the stalls read as a circle round the guard instead of a crowd.
+	const int PLAYERBOT_SHOP_RING_RADIUS = 260;
+	// The chance, rolled again for every stall a bot puts up, that it chooses Joan
+	// over Bokjung. Joan is where the players are - three quarters of the live
+	// bots stand on map 21 at any moment - so that is where the stalls belong.
+	const DWORD PLAYERBOT_SHOP_M1_SHARE = 90;
 	// A stall stands for a while and then the bot goes back to playing. An hour
 	// was long enough that a player watching the market never saw one come down,
 	// which read as "the shops never close" even before the tick-ordering bug

@@ -325,6 +325,24 @@ namespace
 	// means not hunting, which is why it stays a minority; and since a keeper
 	// only opens when it happens to be in Bokjung with no errand outstanding,
 	// the share actually standing at any moment is smaller again.
+	// The centre of a town's stall ring, or false for a map that has none.
+	bool GetPlayerBotShopCentre(long mapIndex, long& pitchX, long& pitchY)
+	{
+		if (mapIndex == PLAYERBOT_MAP_CHUNJO_M1)
+		{
+			pitchX = PLAYERBOT_M1_GUARD_X;
+			pitchY = PLAYERBOT_M1_GUARD_Y;
+			return true;
+		}
+		if (mapIndex == PLAYERBOT_MAP_CHUNJO_M2)
+		{
+			pitchX = PLAYERBOT_M2_MARKET_X;
+			pitchY = PLAYERBOT_M2_MARKET_Y;
+			return true;
+		}
+		return false;
+	}
+
 	bool ShouldPlayerBotKeepShop(LPCHARACTER ch)
 	{
 		if (!ch || ch->GetLevel() < 20)
@@ -588,11 +606,11 @@ namespace
 
 		// Whatever else happens, a corpse or a bot that is no longer standing on
 		// the market strip has no business still holding a stall.
-		const bool bOffPitch = ch->IsDead() ||
-				ch->GetMapIndex() != PLAYERBOT_MAP_CHUNJO_M2 ||
-				DISTANCE_APPROX(ch->GetX() - PLAYERBOT_M2_MARKET_X,
-						ch->GetY() - PLAYERBOT_M2_MARKET_Y) >
-					PLAYERBOT_MARKET_SPREAD + PLAYERBOT_MARKET_ARRIVE * 2;
+		long pitchX = 0, pitchY = 0;
+		const bool onShopMap = GetPlayerBotShopCentre(ch->GetMapIndex(), pitchX, pitchY);
+		const bool bOffPitch = ch->IsDead() || !onShopMap ||
+				DISTANCE_APPROX(ch->GetX() - pitchX, ch->GetY() - pitchY) >
+					PLAYERBOT_SHOP_RING_RADIUS + PLAYERBOT_MARKET_ARRIVE * 2;
 
 		if (dwNow < state.dwShopCloseTime && !bOffPitch)
 		{
@@ -636,14 +654,24 @@ namespace
 		// for an idle moment that never arrives.
 		const bool justFinishedInTown = state.dwNextShopCheckTime != 0 &&
 				dwNow < state.dwNextShopCheckTime;
-		// A keeper already standing on the market strip counts too. A server
+		// Where to trade is rolled afresh for every stall, not fixed per bot: nine
+		// openings in ten choose Joan. Nothing is remembered - a bot that rolls the
+		// town it is not standing in simply does not open this time and rolls again
+		// on its next attempt, so the choice can never strand a keeper waiting for
+		// a town it rarely visits.
+		long pitchX = 0, pitchY = 0;
+		const long wantedMap = (number(1, 100) <= (int)PLAYERBOT_SHOP_M1_SHARE)
+				? PLAYERBOT_MAP_CHUNJO_M1 : PLAYERBOT_MAP_CHUNJO_M2;
+		if (ch->GetMapIndex() != wantedMap ||
+				!GetPlayerBotShopCentre(ch->GetMapIndex(), pitchX, pitchY))
+			return false;
+		// A keeper already standing on the ring counts as in town too. A server
 		// restart drops every shop - they live only in memory - and leaves its
 		// keeper parked exactly where the stall was, with no errand to bring it
 		// back to town and therefore no way to ever reopen.
-		const bool alreadyAtPitch = ch->GetMapIndex() == PLAYERBOT_MAP_CHUNJO_M2 &&
-				DISTANCE_APPROX(ch->GetX() - PLAYERBOT_M2_MARKET_X,
-						ch->GetY() - PLAYERBOT_M2_MARKET_Y) <=
-					PLAYERBOT_MARKET_SPREAD + PLAYERBOT_MARKET_ARRIVE;
+		const bool alreadyAtPitch =
+				DISTANCE_APPROX(ch->GetX() - pitchX, ch->GetY() - pitchY) <=
+					PLAYERBOT_SHOP_RING_RADIUS + PLAYERBOT_MARKET_ARRIVE;
 		if (!justFinishedInTown && !alreadyAtPitch)
 			return false;
 
@@ -659,11 +687,14 @@ namespace
 			return false;
 		}
 
+		// One radius for everyone puts the stalls on a ring; only the angle differs
+		// per bot, and it is stable, so a keeper returns to the same spot.
 		long offsetX = 0, offsetY = 0;
 		GetPlayerBotStableOffset(ch->GetPlayerID(), 0x4d4b5450U,
-				120, PLAYERBOT_MARKET_SPREAD, offsetX, offsetY);
-		const long stallX = PLAYERBOT_M2_MARKET_X + offsetX;
-		const long stallY = PLAYERBOT_M2_MARKET_Y + offsetY;
+				PLAYERBOT_SHOP_RING_RADIUS, PLAYERBOT_SHOP_RING_RADIUS,
+				offsetX, offsetY);
+		const long stallX = pitchX + offsetX;
+		const long stallY = pitchY + offsetY;
 
 		SetPlayerBotAction(state, BOT_ACTION_TRAVEL, dwNow);
 		if (!MovePlayerBotTownLeg(ch, state, dwNow, stallX, stallY,

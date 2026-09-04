@@ -114,8 +114,11 @@ namespace
 				state.bRecoveringAfterDeath || state.bTacticalRetreat ||
 				state.bMultiPullActive || state.bFishingSession)
 			return false;
-		// The market is in Bokjung and nowhere else.
-		if (ch->GetMapIndex() != PLAYERBOT_MAP_CHUNJO_M2)
+		// Stalls stand in both towns now - most of them in Joan, round the village
+		// guard - so a buyer looks wherever it happens to be. Restricting this to
+		// Bokjung would have left nine stalls in ten with nobody to sell to.
+		if (ch->GetMapIndex() != PLAYERBOT_MAP_CHUNJO_M1 &&
+				ch->GetMapIndex() != PLAYERBOT_MAP_CHUNJO_M2)
 			return false;
 		if (dwNow < state.dwNextShoppingTime)
 			return false;
