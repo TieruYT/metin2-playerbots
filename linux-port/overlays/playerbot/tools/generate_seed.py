@@ -9,7 +9,7 @@ import sys
 from pathlib import Path
 
 
-BOT_COUNT = 1000
+BOT_COUNT = 1500
 FIRST_PID = 4
 SEED_VERSION = 1
 

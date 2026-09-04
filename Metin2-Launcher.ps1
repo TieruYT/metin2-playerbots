@@ -318,12 +318,17 @@ function Get-PlayerbotCount {
 }
 
 function Set-PlayerbotCount {
-    # Writes PLAYERBOT_AUTOSPAWN_COUNT to .env. The game core reads it once on
-    # startup and spawns at most this many of the *seeded* bots, so the effective
-    # ceiling is the number of seeded playerbots (350 in the canonical seed).
+    # Writes PLAYERBOT_AUTOSPAWN_COUNT to .env. The core reads it once at startup
+    # and spawns at most this many of the bots it will accept, which is a
+    # different and usually smaller number: only characters the canonical seed
+    # created are in the registry. A world carrying bots from an older bootstrap
+    # keeps them, but they never spawn, so asking for more than the registry
+    # holds simply gets the registry. The core says both numbers at startup:
+    #   PLAYERBOT_AUTH: loaded <n> registered bot identities
+    #   PLAYERBOT: autospawn requested=<x> registered_started=<n>
     param([Parameter(Mandatory = $true)][int]$Count)
     if ($Count -lt 0) { $Count = 0 }
-    if ($Count -gt 1000) { $Count = 1000 }
+    if ($Count -gt 1500) { $Count = 1500 }
     $envPath = Get-PlayerbotEnvPath
     if (-not (Test-Path -LiteralPath $envPath -PathType Leaf)) {
         throw "Brak pliku .env: $envPath. Uruchom najpierw serwer (GRAJ), aby go utworzyć."
@@ -362,7 +367,7 @@ function Set-BotCountAction {
         return
     }
 
-    $answer = Read-Host 'Ilu botów ma grać (0-1000)'
+    $answer = Read-Host 'Ilu botów ma grać (0-1500)'
     if ($answer -notmatch '^\d+$') { Write-Host 'Anulowano: to nie jest liczba.' -ForegroundColor Yellow; return }
     $applied = Set-PlayerbotCount -Count ([int]$answer)
     Write-Host "Zapisano: $applied grających botów." -ForegroundColor Green
@@ -605,7 +610,7 @@ function Show-Menu {
         Write-Host ' 10. Utwórz paczkę diagnostyczną ZIP'
         Write-Host ' 11. Utwórz i wyślij logi (po potwierdzeniu)'
         Write-Host ' 12. Konfiguracja launchera'
-        Write-Host ' 13. Ustaw liczbę grających botów (0-1000)'
+        Write-Host ' 13. Ustaw liczbę grających botów (0-1500)'
         Write-Host ' 14. Importuj bazę z innej instalacji (wyższe postacie)'
         Write-Host ' 15. Napraw dostęp do bazy (gdy migrate/serwer nie startuje)'
         Write-Host '  0. Wyjście'

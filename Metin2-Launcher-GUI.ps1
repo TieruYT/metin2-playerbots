@@ -464,8 +464,9 @@ function Get-InstalledServerVersion {
 
 function Show-BotCountDialog {
     # Slider instead of a typed number: the range is a property of the world, and
-    # dragging is far friendlier than guessing a value. 1000 matches the largest
-    # cohort the panel recognises (PID 4..671).
+    # dragging is far friendlier than guessing a value. The maximum matches the
+    # canonical cohort the seed creates (PID 4..1503); how many of those a world
+    # can actually spawn depends on its registry, which is often smaller.
     param([int]$Current = 350)
     $dialog = [Windows.Forms.Form]::new()
     $dialog.Text = 'Liczba grających botów'
@@ -491,13 +492,13 @@ function Show-BotCountDialog {
     $bar = [Windows.Forms.TrackBar]::new()
     $bar.Name = 'botBar'
     $bar.Minimum = 0
-    $bar.Maximum = 1000
+    $bar.Maximum = 1500
     $bar.TickFrequency = 50
     $bar.SmallChange = 1
     $bar.LargeChange = 25
     $bar.Location = [Drawing.Point]::new(12, 104)
     $bar.Size = [Drawing.Size]::new(442, 45)
-    $bar.Value = [Math]::Max(0, [Math]::Min(1000, $Current))
+    $bar.Value = [Math]::Max(0, [Math]::Min(1500, $Current))
     $dialog.Controls.Add($bar)
     $valueLabel.Text = "Boty: $($bar.Value)"
     # $this/FindForm keeps the handler independent of captured locals.
@@ -692,7 +693,7 @@ $bundleButton = New-Button 'ZBIERZ / WYŚLIJ LOGI' 508 266 218 48 ([Drawing.Colo
 $diagnosticsButton = New-Button 'DIAGNOSTYKA' 28 328 218 45 ([Drawing.Color]::FromArgb(45, 110, 190))
 $openLogButton = New-Button 'OTWÓRZ LOG' 262 328 218 45 ([Drawing.Color]::FromArgb(58, 62, 72))
 $folderButton = New-Button 'FOLDER LOGÓW' 496 328 230 45 ([Drawing.Color]::FromArgb(58, 62, 72))
-$botCountButton = New-Button 'LICZBA BOTÓW (0–1000)' 28 380 218 32 ([Drawing.Color]::FromArgb(120, 95, 40))
+$botCountButton = New-Button 'LICZBA BOTÓW (0–1500)' 28 380 218 32 ([Drawing.Color]::FromArgb(120, 95, 40))
 $importDbButton = New-Button 'IMPORTUJ BAZĘ' 262 380 218 32 ([Drawing.Color]::FromArgb(70, 120, 90))
 $repairDbButton = New-Button 'NAPRAW DOSTĘP DO BAZY' 496 380 230 32 ([Drawing.Color]::FromArgb(150, 90, 55))
 

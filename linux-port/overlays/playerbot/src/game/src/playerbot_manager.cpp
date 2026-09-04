@@ -7602,7 +7602,15 @@ bool CPlayerBotManager::LoadRegisteredBots()
 			"JOIN player.player_index AS pi ON pi.id=a.id "
 			"WHERE l.seed_version=1 "
 			"AND l.state IN ('complete','adopted') "
-			"AND BINARY a.login=BINARY CONCAT('playerbot_',LPAD(l.pid-3,3,'0')) "
+			// LPAD shortens rather than pads when the value is already longer
+			// than the width, so LPAD(1001,3,'0') is '100' - the login of a
+			// different bot. Every identity past PID 1002 was therefore rejected
+			// in silence, and the cohort could never grow beyond a thousand no
+			// matter how many characters the seed created. Pad to three, never
+			// below the number's own length, which is what the generator's
+			// "playerbot_%03d" means.
+			"AND BINARY a.login=BINARY CONCAT('playerbot_',"
+			"LPAD(l.pid-3,GREATEST(3,LENGTH(l.pid-3)),'0')) "
 			"AND BINARY a.social_id=BINARY CONCAT('9',LPAD(l.pid-3,12,'0')) "
 			"AND pi.pid1=l.pid AND pi.pid2=0 AND pi.pid3=0 AND pi.pid4=0 "
 			"AND pi.empire=2 ORDER BY l.pid";
