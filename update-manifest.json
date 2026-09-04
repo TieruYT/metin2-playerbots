@@ -1,12 +1,12 @@
 {
   "schema": 1,
   "channel": "stable",
-  "publishedAt": "2026-09-04T16:45:00Z",
-  "statusMessage": "Aktualizacja 1.24.1: rynek botów działa naprawdę — boty kupują od siebie nawzajem. Wcześniej stragany miały towar i zero klientów.",
+  "publishedAt": "2026-09-04T18:06:32Z",
+  "statusMessage": "Aktualizacja 1.24.2: aktualizowanie przestalo konczyc sie bledem Dockera, boty maja wreszcie wlaczone swoje najwazniejsze umiejetnosci, a bonusy na przedmiotach sa podpisane tak jak w grze. Do tego magazyn bota i ikony umiejetnosci na stronie.",
   "server": {
-    "version": "1.24.1",
-    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v1.24.1/metin2-server-update-1.24.1.zip",
-    "sha256": "D8D2AD8AEEEDCFE7ED18FFAD2E8F576E85D5A7E2D99D776B2C71B2E0D5773662"
+    "version": "1.24.2",
+    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v1.24.2/metin2-server-update-1.24.2.zip",
+    "sha256": "F5036266FDBC6FCB34D35810ACABAF3EFBF3FCB196DC690217BAB8BEBB5DE04F"
   },
   "support": {
     "contactUrl": "https://discord.gg/pt5tvnrN6",
