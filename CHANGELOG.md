@@ -17,6 +17,29 @@ every version here.
 
 ---
 
+## 1.24.0 — 2026-09-04
+
+### Changed
+
+- **Bot pilnujący straganu milczy.** Nad głową ma już szyld sklepu, a linia statusu zamazywała jedyną etykietę, której przechodzący gracz naprawdę potrzebuje — nazwę straganu, który właśnie rozważa otworzyć. Ta sama zasada wycisza okrzyk o udanym ulepszeniu.
+- **Yang podnoszony pierwszy i niemal natychmiast.** Kolejka łupu sortowała się wyłącznie po odległości, więc bot mijał trzy kupki monet w drodze do skóry, a potem wracał po każdą z osobna — czas schodził na chodzenie po wyczyszczonym polu. Yang idzie teraz przed przedmiotami, a jego opóźnienie spada z 1000–1800 ms na **150–350 ms**. To zresztą yang płaci za mikstury, które pozwalają dalej zabijać.
+- **Łatwy Loch Małp dostał własne pasmo poziomów: 18–26.** Wyprawa zależała dotąd tylko od poziomu konia i klasy, nigdy od poziomu postaci — na żywym świecie siedziało tam **48 botów na poziomach 25–35**, tracąc półgodzinne wizyty na medale warte grosze wobec tego, co ten sam czas daje na granicy.
+  - Warunek sprawdzany jest w jednym miejscu i działa w obie strony: bot już w środku przelicza go co takt, więc ten, który wyrośnie z pasma, kończy, co robi, i wychodzi, zamiast czekać na trzydziestominutowy limit.
+  - **Sprawdzone na serwerze:** po przebudowie **wszystkie** działające boty powyżej pasma opuściły loch (82 wyjścia z powodem `monkey_horse_complete_direct`).
+
+### Added
+
+- **Mapa w panelu ma prawdziwy teren pod spodem.** Rysowany z tego samego `server_attr`, po którym nawigują boty, a nie zrzucony z klienta: ląd, woda i blokady w trzech kolorach, 256×256, **20 KB na wszystkie sześć map**.
+  - Pokrywa się ze znacznikami co do piksela, bo jedno i drugie liczone jest z tych samych granic mapy. Dzięki temu jest to tyle samo tło, co narzędzie diagnostyczne: jezioro na obrazku to jezioro, którego znaczniki nigdy nie przekroczą.
+  - `tools/render_map_tiles.py` odtwarza kafle, gdy dojdzie nowa mapa.
+- **Pasma filtra poziomów dopasowane do świata.** 1-5/6-10/11-15/16+ wrzucało prawie każdego bota do ostatniego kubełka, odkąd populacja sięga 37 poziomu. Teraz **1-15 / 16-25 / 26-35 / 36+**, gdzie 36+ to obsada Doliny Orków.
+
+---
+
+Pomysły gracza z `m2singleplayer.pl` (EXP, miejsce przebywania, umiejętności) panel ma już od dawna — jego strona to wersja 1.15.6. Jedyną rzeczą, której faktycznie brakowało, było tło mapy, i to zostało dodane.
+
+---
+
 ## 1.23.10 — 2026-09-04
 
 ### Fixed
