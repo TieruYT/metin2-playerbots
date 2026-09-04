@@ -1,12 +1,12 @@
 {
   "schema": 1,
   "channel": "stable",
-  "publishedAt": "2026-09-04T12:35:00Z",
-  "statusMessage": "Aktualizacja 1.23.7: kod botów podzielony na podsystemy. Zachowanie botów się nie zmienia — to wydanie porządkowe, sprawdzone na uruchomionym serwerze.",
+  "publishedAt": "2026-09-04T13:00:00Z",
+  "statusMessage": "Aktualizacja 1.23.8: podział kodu botów dokończony. Zachowanie botów się nie zmienia — to wydanie porządkowe, sprawdzone na uruchomionym serwerze.",
   "server": {
-    "version": "1.23.7",
-    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v1.23.7/metin2-server-update-1.23.7.zip",
-    "sha256": "E4C867F05A50295F6E279A8B0B5617331AF7C790687F7563F99CBADC4A7719FD"
+    "version": "1.23.8",
+    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v1.23.8/metin2-server-update-1.23.8.zip",
+    "sha256": "FAE231ECE13100C0F62261E37A8E7C6D79860E7494DBA22F661E4A6D6B6C12FE"
   },
   "support": {
     "contactUrl": "https://discord.gg/pt5tvnrN6",
