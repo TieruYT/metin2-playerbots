@@ -182,27 +182,31 @@ DELIMITER ;
 -- and the checks further down keep their SIGNAL - they are assertions now, so
 -- the worst case is exactly the behaviour this replaces.
 DROP TEMPORARY TABLE IF EXISTS playerbot_seed_skip;
+-- Deliberately no unique key: a PID usually trips several of the rules below,
+-- and a PRIMARY KEY turned each repeat into a duplicate-entry warning. Two
+-- thousand of those in front of an operator, for a table whose only job is to
+-- collect names, is worse than useless - it buries the two lines that matter.
 CREATE TEMPORARY TABLE playerbot_seed_skip (
     pid INT UNSIGNED NOT NULL,
-    PRIMARY KEY (pid)
+    KEY (pid)
 ) ENGINE=MEMORY DEFAULT CHARSET=latin1;
 
 -- Renamed, re-classed, or otherwise not the character this registry describes.
-INSERT IGNORE INTO playerbot_seed_skip (pid)
+INSERT INTO playerbot_seed_skip (pid)
 SELECT s.pid
   FROM playerbot_seed_spec AS s
   JOIN player.player AS p ON p.id = s.pid
  WHERE BINARY p.name <> BINARY s.player_name OR p.job <> s.job;
 
 -- player.name is only indexed, not unique, so aliases need their own pass.
-INSERT IGNORE INTO playerbot_seed_skip (pid)
+INSERT INTO playerbot_seed_skip (pid)
 SELECT s.pid
   FROM playerbot_seed_spec AS s
   JOIN player.player AS p ON p.name = s.player_name
  WHERE p.id <> s.pid;
 
 -- An existing character sitting on a foreign account.
-INSERT IGNORE INTO playerbot_seed_skip (pid)
+INSERT INTO playerbot_seed_skip (pid)
 SELECT s.pid
   FROM playerbot_seed_spec AS s
   JOIN player.player AS p ON p.id = s.pid
@@ -212,7 +216,7 @@ SELECT s.pid
     OR BINARY a.social_id <> BINARY s.social_id;
 
 -- The canonical login already owns somebody else.
-INSERT IGNORE INTO playerbot_seed_skip (pid)
+INSERT INTO playerbot_seed_skip (pid)
 SELECT s.pid
   FROM playerbot_seed_spec AS s
   JOIN account.account AS a ON a.login = s.login
@@ -220,7 +224,7 @@ SELECT s.pid
  WHERE p.id <> s.pid;
 
 -- The canonical social ID is attached to a different login.
-INSERT IGNORE INTO playerbot_seed_skip (pid)
+INSERT INTO playerbot_seed_skip (pid)
 SELECT s.pid
   FROM playerbot_seed_spec AS s
   JOIN account.account AS a ON a.social_id = s.social_id
@@ -228,7 +232,7 @@ SELECT s.pid
 
 -- A missing PID may resume a pre-existing account only when that account is
 -- unmistakably an unused partial result of this seed.
-INSERT IGNORE INTO playerbot_seed_skip (pid)
+INSERT INTO playerbot_seed_skip (pid)
 SELECT s.pid
   FROM playerbot_seed_spec AS s
   JOIN account.account AS a ON a.login = s.login
@@ -243,7 +247,7 @@ SELECT s.pid
 
 -- The canonical account carries an index that is not the expected single
 -- Chunjo character.
-INSERT IGNORE INTO playerbot_seed_skip (pid)
+INSERT INTO playerbot_seed_skip (pid)
 SELECT s.pid
   FROM playerbot_seed_spec AS s
   JOIN player.player AS p ON p.id = s.pid
@@ -254,7 +258,7 @@ SELECT s.pid
         OR pi.empire <> 2);
 
 -- The PID is referenced by somebody else's index slot.
-INSERT IGNORE INTO playerbot_seed_skip (pid)
+INSERT INTO playerbot_seed_skip (pid)
 SELECT s.pid
   FROM playerbot_seed_spec AS s
   JOIN player.player_index AS pi
@@ -270,7 +274,7 @@ SELECT s.pid
 
 -- Ledger rows from another seed version, or completed rows whose character is
 -- gone, are ambiguous and must be repaired by an operator rather than guessed.
-INSERT IGNORE INTO playerbot_seed_skip (pid)
+INSERT INTO playerbot_seed_skip (pid)
 SELECT s.pid
   FROM playerbot_seed_spec AS s
   JOIN common.playerbot_seed_state AS l ON l.pid = s.pid
@@ -278,7 +282,7 @@ SELECT s.pid
  WHERE l.seed_version <> 1
     OR (p.id IS NULL AND l.state IN ('complete', 'adopted'));
 
-SELECT CONCAT('playerbot seed: preserving ', COUNT(*),
+SELECT CONCAT('playerbot seed: preserving ', COUNT(DISTINCT pid),
               ' existing character(s) untouched') AS playerbot_seed_note
   FROM playerbot_seed_skip;
 

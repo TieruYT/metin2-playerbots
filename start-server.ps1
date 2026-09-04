@@ -502,6 +502,23 @@ if ((Test-Path -LiteralPath $overlaySource -PathType Container) -and
             $syncedFiles++
         }
     }
+    # The migrate container mounts mariadb/playerbot, so the seed it applies is a
+    # copy of the overlay's, staged by prepare-context.sh - which never runs
+    # here. Left alone it stays at whatever the distribution shipped.
+    $seedSource = Join-Path $PSScriptRoot 'linux-port\overlays\playerbot\sql\playerbots_seed.sql'
+    $seedStaged = Join-Path $PSScriptRoot 'linux-port\docker\mariadb\playerbot\playerbots_seed.sql'
+    if ((Test-Path -LiteralPath $seedSource -PathType Leaf) -and
+        (Test-Path -LiteralPath (Split-Path -Parent $seedStaged) -PathType Container)) {
+        $seedHash = $null
+        if (Test-Path -LiteralPath $seedStaged -PathType Leaf) {
+            $seedHash = (Get-FileHash -LiteralPath $seedStaged -Algorithm SHA256).Hash
+        }
+        if ($seedHash -ne (Get-FileHash -LiteralPath $seedSource -Algorithm SHA256).Hash) {
+            Copy-Item -LiteralPath $seedSource -Destination $seedStaged -Force
+            $syncedFiles++
+        }
+    }
+
     if ($syncedFiles -gt 0) {
         Write-Host "Synchronised $syncedFiles playerbot build input(s) into the build context." -ForegroundColor DarkGray
     }

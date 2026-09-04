@@ -335,6 +335,27 @@ function Sync-M2PlayerbotOverlay {
             $copied++
         }
     }
+
+    # The migrate container mounts linux-port/docker/mariadb/playerbot, so the
+    # seed it actually applies is a copy of the overlay's - staged there by
+    # prepare-context.sh, which never runs on a player's machine. That copy was
+    # from August: the 1000-character registry and the additive seeding were in
+    # every update package and reached nobody, because nothing replaced the file
+    # the container reads.
+    $seedSource = Join-Path $ServerRoot 'linux-port\overlays\playerbot\sql\playerbots_seed.sql'
+    $seedStaged = Join-Path $ServerRoot 'linux-port\docker\mariadb\playerbot\playerbots_seed.sql'
+    if ((Test-Path -LiteralPath $seedSource -PathType Leaf) -and
+        (Test-Path -LiteralPath (Split-Path -Parent $seedStaged) -PathType Container)) {
+        $seedStagedHash = $null
+        if (Test-Path -LiteralPath $seedStaged -PathType Leaf) {
+            $seedStagedHash = (Get-FileHash -LiteralPath $seedStaged -Algorithm SHA256).Hash
+        }
+        if ($seedStagedHash -ne (Get-FileHash -LiteralPath $seedSource -Algorithm SHA256).Hash) {
+            Copy-Item -LiteralPath $seedSource -Destination $seedStaged -Force
+            $copied++
+        }
+    }
+
     return $copied
 }
 
