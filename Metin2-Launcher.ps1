@@ -216,6 +216,12 @@ function Rebuild-Server {
     if ($synced -gt 0) {
         Write-Host "Zsynchronizowano $synced plik(ow) zrodlowych bota do kontekstu budowania." -ForegroundColor DarkGray
     }
+    # The engine patches are part of the overlay too, and until now nothing on a
+    # player's machine ever applied them.
+    $patched = Invoke-M2EnginePatches -ServerRoot $serverRoot
+    if ($patched -gt 0) {
+        Write-Host "Nalozono $patched latek silnika." -ForegroundColor DarkGray
+    }
     # See Stop-Server: compose progress on stderr must not be treated as failure
     # under $ErrorActionPreference='Stop' in Windows PowerShell 5.1.
     $previousPreference = $ErrorActionPreference

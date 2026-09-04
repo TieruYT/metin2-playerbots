@@ -17,6 +17,20 @@ every version here.
 
 ---
 
+## 1.24.3 — 2026-09-04
+
+### Naprawione
+
+- **Prywatne stragany wreszcie działają — botów i graczy.** Silnik zaczyna `OpenMyShop` od warunku `GetPart(PART_MAIN) > 2`, a `PART_MAIN` przechowuje vnum **założonej zbroi**. Niezałatany silnik odmawiał więc straganu każdemu, kto ma na sobie zbroję — również żywemu graczowi, który próbował wystawić sklep sam.
+  - Łatka `0004-private-shop-guard.patch`, która zamienia ten warunek na `IsPolymorphed()`, istnieje od dawna, jest w paczce aktualizacji i leży w każdej instalacji — ale nakłada ją `prepare-context.sh`, którego ścieżka przebudowy w launcherze **nigdy nie uruchamiała**. Łatka była dowożona i nigdy nakładana.
+  - Launcher nakłada teraz łatki silnika przy każdej przebudowie, **odkrywając** katalog zamiast trzymać listę nazw. To trzeci błąd tej samej klasy po seedzie i wildcardzie w Makefile.
+  - O tym, czy łatka już jest, decyduje **odczyt plików docelowych**, a nie kod wyjścia `patch`. Podczas pracy nad tym `patch -N` z busyboxa nałożył 18-kilobajtową łatkę integracji na drzewo, które już ją miało, i zdublował w niej wszystkie deklaracje. Porównywany jest cały blok hunka wraz z kontekstem — pojedyncza dodana linia nie wystarcza, bo `if (IsPolymorphed())` występuje w `char.cpp` w trzech innych miejscach.
+  - Gdy nałożenie się nie powiedzie, launcher **mówi o tym wprost** zamiast po cichu zgłosić sukces.
+- **Boty ze straganem nie rzucają już buffów.** Rzucanie skilla nie zamyka prywatnego sklepu — silnik zamyka go tylko przy ogłuszeniu, śmierci i wyjściu ze świata — ale sklepikarz machający aurą przy ladzie marnował manę i wyglądał niepoważnie.
+- **Rynek w Bokjung jest wyłączony ze strefy buffowania.** Ten warunek obejmował dotąd wyłącznie mapę 21, a rynek jest na mapie 23.
+
+---
+
 ## 1.24.2 — 2026-09-04
 
 ### Podziękowania

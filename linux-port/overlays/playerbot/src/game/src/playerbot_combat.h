@@ -143,6 +143,12 @@ namespace
 				state.bRecoveringAfterDeath || state.bTacticalRetreat ||
 				state.bMultiPullActive || state.bFishingSession)
 			return false;
+		// A bot minding its own stall is not hunting. Casting does not close a
+		// private shop - the engine only does that on stun, death and leaving the
+		// world - but a keeper standing at its counter throwing auras is burning
+		// mana on nothing and looks wrong to anyone walking past.
+		if (ch->GetMyShop())
+			return false;
 
 		if (ch->GetMapIndex() == 21)
 		{
@@ -151,6 +157,12 @@ namespace
 			if (DISTANCE_APPROX(ch->GetX() - townX, ch->GetY() - townY) <= 3000)
 				return false; // Inside city center / near town merchants
 		}
+		// The market is in Bokjung, and this check only ever covered Joan. A bot
+		// browsing the stalls has no business buffing in the middle of them.
+		if (ch->GetMapIndex() == PLAYERBOT_MAP_CHUNJO_M2 &&
+				DISTANCE_APPROX(ch->GetX() - PLAYERBOT_M2_MARKET_X,
+						ch->GetY() - PLAYERBOT_M2_MARKET_Y) <= PLAYERBOT_SHOPPING_RANGE)
+			return false;
 
 		state.dwNextBuffCheckTime = dwNow + 5000;
 

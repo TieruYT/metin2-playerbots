@@ -285,6 +285,151 @@ function Invoke-M2PackageUpdate {
     }
 }
 
+function Invoke-M2EnginePatches {
+    <#
+        The engine patches are shipped and then never applied. prepare-context.sh
+        applies them, but it needs the pristine tree at /opt/m2port and never runs
+        on a player's machine, and nothing in the rebuild path did it instead - so
+        0004-private-shop-guard.patch sat in every installation while every server
+        still ran the unpatched guard. That guard is `GetPart(PART_MAIN) > 2`, and
+        PART_MAIN holds the vnum of the worn body armour, so OpenMyShop refused a
+        stall to anyone wearing armour: every bot, and every player who tried it.
+
+        patch(1) is not something a Windows machine has, but Docker is - a build
+        cannot happen without it - so the patch runs in the same base image the
+        server is compiled with. The directory is read whole rather than by name:
+        adding a patch must not mean editing this function.
+    #>
+    param([Parameter(Mandatory = $true)][string]$ServerRoot)
+
+    $patchDir = Join-Path $ServerRoot 'linux-port\overlays\playerbot\patches'
+    $target = Join-Path $ServerRoot 'linux-port\docker\game\src\server'
+    if (-not (Test-Path -LiteralPath $patchDir -PathType Container)) { return 0 }
+    if (-not (Test-Path -LiteralPath $target -PathType Container)) { return 0 }
+    $patches = @(Get-ChildItem -LiteralPath $patchDir -File -Filter '*.patch' | Sort-Object Name)
+    if ($patches.Count -eq 0) { return 0 }
+
+    # busybox, not the build image: ubuntu:24.04 has no patch(1) at all, and the
+    # first version of this silently reported "nothing to apply" because a failed
+    # dry run and a missing binary look identical. busybox is four megabytes and
+    # its patch understands -N and --dry-run, which is all this needs.
+    $image = 'busybox:latest'
+
+    # Whether a patch is already in is decided by reading the target files, not
+    # by asking patch(1). busybox's -N cannot tell an applied patch from a fresh
+    # one: it re-applied the 18 KB core-integration patch onto a tree that
+    # already had it and duplicated every declaration in it. So the tool is only
+    # ever handed a patch this function has first established is absent, and
+    # after that it cannot double-apply whatever the tool reports.
+    # Whether a patch is already in is decided by reading the target files, not
+    # by asking patch(1). busybox's -N cannot tell an applied patch from a fresh
+    # one: it re-applied the 18 KB core-integration patch onto a tree that
+    # already had it and duplicated every declaration in it. So the tool is only
+    # ever handed a patch this function has first established is absent.
+    #
+    # The test is per hunk and uses the whole block the hunk produces - its
+    # context lines together with its added lines. A single added line is not
+    # enough to go on: 0004 adds "if (IsPolymorphed())", which char.cpp already
+    # contains in three other functions.
+    $pending = @()
+    foreach ($p in $patches) {
+        $blocks = @()
+        $file = $null
+        $current = $null
+        foreach ($line in [IO.File]::ReadAllLines($p.FullName)) {
+            if ($line.StartsWith('+++ b/')) { $file = $line.Substring(6).Trim(); continue }
+            if ($line.StartsWith('@@')) {
+                if ($null -ne $current -and $current.Lines.Count -gt 0) { $blocks += $current }
+                $current = [pscustomobject]@{ File = $file; Lines = (New-Object Collections.Generic.List[string]) }
+                continue
+            }
+            if ($null -eq $current) { continue }
+            if ($line.StartsWith('-')) { continue }
+            if ($line.StartsWith('+')) { $current.Lines.Add($line.Substring(1)); continue }
+            if ($line.StartsWith(' ')) { $current.Lines.Add($line.Substring(1)); continue }
+            if ($line.StartsWith('\')) { continue }
+            # Anything else ends the hunk (a new "diff --git", for instance).
+            if ($current.Lines.Count -gt 0) { $blocks += $current }
+            $current = $null
+        }
+        if ($null -ne $current -and $current.Lines.Count -gt 0) { $blocks += $current }
+        if ($blocks.Count -eq 0) { continue }
+
+        $cache = @{}
+        $found = 0
+        $checked = 0
+        foreach ($b in $blocks) {
+            $path = Join-Path $target $b.File
+            if (-not $cache.ContainsKey($path)) {
+                $cache[$path] = if (Test-Path -LiteralPath $path -PathType Leaf) {
+                    ([IO.File]::ReadAllText($path)) -replace "`r`n", "`n"
+                } else { $null }
+            }
+            if ($null -eq $cache[$path]) { continue }
+            $checked++
+            $needle = ($b.Lines -join "`n")
+            if ($needle.Trim().Length -eq 0) { $checked--; continue }
+            if ($cache[$path].Contains($needle)) { $found++ }
+        }
+        if ($checked -eq 0) { continue }
+        if ($found -eq $checked) { continue }          # every hunk already in
+        if ($found -gt 0) {
+            Write-Host "Latka $($p.Name) jest nalozona tylko czesciowo - pomijam ja, zeby nie pogorszyc." -ForegroundColor Yellow
+            continue
+        }
+        $pending += $p
+    }
+
+    if ($pending.Count -eq 0) { return 0 }
+
+    $lines = @(
+        'command -v patch >/dev/null 2>&1 || { echo NOPATCH; exit 3; }',
+        'cd /src || exit 4'
+    )
+    foreach ($p in $pending) {
+        $lines += ('patch -N -p1 -i "/patches/' + $p.Name + '" >/dev/null 2>&1 || { echo "FAILED ' + $p.Name + '"; exit 5; }')
+        $lines += ('echo "APPLIED ' + $p.Name + '"')
+    }
+    $scriptFile = Join-Path ([IO.Path]::GetTempPath()) ("m2patch-" + [Guid]::NewGuid().ToString('N') + ".sh")
+    [IO.File]::WriteAllText($scriptFile, ($lines -join "`n") + "`n", (New-Object Text.UTF8Encoding($false)))
+
+    $previous = $ErrorActionPreference
+    $count = 0
+    try {
+        $ErrorActionPreference = 'Continue'
+        $output = & docker run --rm `
+            -v "${target}:/src" -v "${patchDir}:/patches:ro" -v "${scriptFile}:/apply.sh:ro" `
+            --entrypoint sh $image /apply.sh 2>&1
+        $exit = $LASTEXITCODE
+        $text = ($output | Out-String)
+        if ($exit -eq 0) {
+            foreach ($line in @($output)) {
+                if ("$line" -match '^APPLIED (.+)$') {
+                    Write-Host "Nalozono latke silnika: $($Matches[1])" -ForegroundColor DarkGray
+                    $count++
+                }
+            }
+        }
+        else {
+            # Never fail quietly here: the stalls were broken for weeks because a
+            # patch that never arrived looked exactly like one already applied.
+            if ($text -match 'NOPATCH') {
+                Write-Host "Obraz $image nie zawiera narzedzia patch - latki silnika NIE zostaly nalozone." -ForegroundColor Yellow
+            }
+            else {
+                Write-Host 'Nie udalo sie nalozyc latek silnika - serwer zbuduje sie bez nich.' -ForegroundColor Yellow
+            }
+            Write-Host 'Prywatne stragany botow i graczy moga przez to nie dzialac.' -ForegroundColor Yellow
+            Write-Host $text -ForegroundColor DarkGray
+        }
+    }
+    finally {
+        $ErrorActionPreference = $previous
+        Remove-Item -LiteralPath $scriptFile -Force -ErrorAction SilentlyContinue
+    }
+    return $count
+}
+
 function Sync-M2PlayerbotOverlay {
     <#
         The compiler never sees linux-port/overlays -- it builds from the staged
@@ -966,5 +1111,6 @@ Export-ModuleMember -Function @(
     'Repair-M2GameDbUser',
     'Test-M2VolumeInitialized',
     'Test-M2DockerRunning',
-    'Sync-M2PlayerbotOverlay'
+    'Sync-M2PlayerbotOverlay',
+    'Invoke-M2EnginePatches'
 )
