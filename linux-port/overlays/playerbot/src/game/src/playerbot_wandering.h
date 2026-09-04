@@ -315,11 +315,17 @@ namespace
 		{
 			// Densest spawn clusters of each map, snapped onto a real regen.txt
 			// coordinate so a hub can never be planted inside an obstacle.
+			// All twelve are in the one region a bot can reach; the two that used
+			// to close this list sat across four to seven kilometres of open
+			// water and could never be walked to. Nothing on this map is ever
+			// placed on a water cell - not one of its 532 spawns, not one of its
+			// 16 NPCs - so those gaps are water, not bridges the attributes
+			// happened to paint over.
 			const TPlayerBotMapPoint orcValleyHubs[12] = {
 				{ 347800, 726700 }, { 317000, 726900 }, { 313100, 731700 },
 				{ 346400, 733700 }, { 319200, 734700 }, { 337000, 734800 },
 				{ 327200, 742300 }, { 332100, 749800 }, { 330800, 758100 },
-				{ 336300, 760100 }, { 348300, 797000 }, { 282100, 797600 }
+				{ 336300, 760100 }, { 323800, 745700 }, { 311000, 728300 }
 			};
 			const TPlayerBotMapPoint desertHubs[12] = {
 				{ 291300, 515700 }, { 237500, 525900 }, { 264600, 526100 },

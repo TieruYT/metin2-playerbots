@@ -17,6 +17,23 @@ every version here.
 
 ---
 
+## 1.23.10 — 2026-09-04
+
+### Fixed
+
+- **Dwa z dwunastu punktów łowieckich Doliny Orków leżały za wodą i nie dało się do nich dojść.** Zastąpione punktami wewnątrz obszaru, po którym boty faktycznie chodzą — wybranymi tak samo jak pozostałe: najgęstsze skupiska spawnów, przyciągnięte do prawdziwej współrzędnej z `regen.txt`.
+
+### Sprawdzone: czy boty przechodzą przez mosty
+
+Pytanie było zasadne — nawigacja botów traktuje wodę jako blokadę, więc most oznaczony w `server_attr` jako woda byłby dla nich ścianą. Pomiary mówią, że tak tu nie jest:
+
+- **Wszystkie 10 pozostałych punktów łowieckich leży w jednym obszarze** połączonym lądem z wejściem. Do polowania **żaden most nie jest potrzebny**.
+- Odcinki wody dzielące resztę mapy mają **4 600–6 750 jednostek** — to nie są mostki, tylko rzeka i jezioro.
+- **Mapa nigdy nic nie stawia na wodzie:** ani jeden z 532 punktów spawnu, ani jeden z 16 NPC. Gdyby deski mostu były oznaczone jako woda, coś by tam stało.
+- Silnik r40250 **w ogóle nie blokuje wody** — używa `ATTR_WATER` wyłącznie do łowienia. Blokada jest naszą decyzją i pozostaje słuszna: bez niej boty chodziłyby po jeziorach.
+
+---
+
 ## 1.23.9 — 2026-09-04
 
 ### Fixed
