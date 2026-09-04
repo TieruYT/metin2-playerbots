@@ -326,12 +326,18 @@ namespace
 	// base + cell*100.
 	const long PLAYERBOT_M1_GUARD_X = 63400;
 	const long PLAYERBOT_M1_GUARD_Y = 166300;
-	// How far from the middle a stall may stand. A hundred units is a metre in
-	// this engine, so this is a market spread over roughly eight to forty metres
-	// rather than the two-and-a-half-metre huddle it was: there is room around
-	// the guard and a player has to be able to walk between the counters.
-	const int PLAYERBOT_SHOP_RING_MIN = 800;
-	const int PLAYERBOT_SHOP_RING_RADIUS = 4000;
+	// How far from the middle a stall may stand. A hundred units is a metre here,
+	// so this is a market four to seventeen metres across instead of the
+	// two-and-a-half-metre huddle it was.
+	//
+	// It cannot be wider. shop_manager.cpp refuses a purchase beyond 2000 units,
+	// so a buyer reaches twenty metres and no further, and PLAYERBOT_SHOPPING_RANGE
+	// is 1800 for the same reason. Spread over forty metres the market looked
+	// roomy and stopped working: stalls at opposite ends were out of each other's
+	// reach and nobody bought anything at all. The ceiling belongs to the engine,
+	// not to us.
+	const int PLAYERBOT_SHOP_RING_MIN = 400;
+	const int PLAYERBOT_SHOP_RING_RADIUS = 1700;
 	// The shop bundle (item 50200) carries LIMIT_NONE in item_proto, so the game
 	// itself sells stalls from level one. The floor of twenty was ours, and it is
 	// why Joan had no market: five of the five hundred bots standing there were

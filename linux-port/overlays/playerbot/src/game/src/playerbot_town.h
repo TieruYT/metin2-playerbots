@@ -504,8 +504,32 @@ namespace
 		const size_t limit = merchant
 				? (size_t)PLAYERBOT_SHOP_MERCHANT_ITEMS
 				: (size_t)PLAYERBOT_SHOP_MAX_ITEMS;
-		if (outScored.size() > limit)
-			outScored.resize(limit);
+
+		// Half the counter is kept for refine materials. Ranking on worth alone
+		// buried them: a level-30 weapon, a good bonus roll and every spare at +6
+		// all outrank a material, and a bot with a few of those filled all eight
+		// slots with gear. Materials are what another bot actually walks the
+		// market for - the alternative is farming the same one for an hour - so a
+		// counter that has them always shows some.
+		const size_t reserved = limit / 2;
+		std::vector<std::pair<int, WORD> > materials;
+		std::vector<std::pair<int, WORD> > rest;
+		for (size_t i = 0; i < outScored.size(); ++i)
+		{
+			LPITEM item = ch->GetInventoryItem(outScored[i].second);
+			const bool isMaterial = item && item->GetType() == ITEM_MATERIAL &&
+					item->GetRefinedVnum() == 0;
+			if (isMaterial && materials.size() < reserved)
+				materials.push_back(outScored[i]);
+			else
+				rest.push_back(outScored[i]);
+		}
+		outScored = materials;
+		for (size_t i = 0; i < rest.size() && outScored.size() < limit; ++i)
+			outScored.push_back(rest[i]);
+		// Worth order again, so the best of whatever made the cut leads.
+		std::sort(outScored.begin(), outScored.end(),
+				std::greater<std::pair<int, WORD> >());
 	}
 
 	// A good refine is the one moment worth breaking the bots' silence for. They
