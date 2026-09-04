@@ -7783,29 +7783,78 @@ namespace
 		return true;
 	}
 
+	// A stall is engine state; the deadline that ends it is AI state. Keeping the
+	// two in step is the whole job of this pair of helpers, and doing it from a
+	// single place is what makes it possible to run the release *before* the
+	// subsystems that can claim the tick.
+	void ClosePlayerBotShop(LPCHARACTER ch, TPlayerBotAIState& state, DWORD dwNow,
+			const char* reason)
+	{
+		if (!ch)
+			return;
+		const bool bHadShop = ch->GetMyShop() != NULL;
+		if (bHadShop)
+			ch->CloseMyShop();
+		state.dwShopOpenedTime = 0;
+		state.dwShopCloseTime = 0;
+		state.dwNextShopKeepTime = dwNow +
+				number(PLAYERBOT_SHOP_REST_MIN, PLAYERBOT_SHOP_REST_MAX);
+		if (bHadShop)
+			sys_log(0, "PLAYERBOT_SHOP: closed pid=%u name=%s reason=%s",
+					ch->GetPlayerID(), ch->GetName(), reason);
+	}
+
+	// Runs at the very top of the tick, ahead of the inactivity watchdog and the
+	// navigation rescues. Those both "continue", and a keeper that never reached
+	// the shop hook could not close its stall: the sign stayed over its head and
+	// a rescue was free to teleport it out of the market still wearing it. The
+	// stall now outranks them - releasing engine state is not something a bot may
+	// be interrupted out of.
+	bool ManagePlayerBotShopLifetime(LPCHARACTER ch, TPlayerBotAIState& state,
+			DWORD dwNow)
+	{
+		if (!ch || !ch->GetMyShop())
+			return false;
+
+		// A stall with no deadline can never expire. The shop lives in the engine
+		// and the deadline in the AI state, so any path that loses one without the
+		// other used to strand the keeper trading forever; give it one instead.
+		if (state.dwShopCloseTime == 0)
+			state.dwShopCloseTime =
+					(state.dwShopOpenedTime != 0 ? state.dwShopOpenedTime : dwNow) +
+					PLAYERBOT_SHOP_MIN_DURATION;
+
+		// Whatever else happens, a corpse or a bot that is no longer standing on
+		// the market strip has no business still holding a stall.
+		const bool bOffPitch = ch->IsDead() ||
+				ch->GetMapIndex() != PLAYERBOT_MAP_CHUNJO_M2 ||
+				DISTANCE_APPROX(ch->GetX() - PLAYERBOT_M2_MARKET_X,
+						ch->GetY() - PLAYERBOT_M2_MARKET_Y) >
+					PLAYERBOT_MARKET_SPREAD + PLAYERBOT_MARKET_ARRIVE * 2;
+
+		if (dwNow < state.dwShopCloseTime && !bOffPitch)
+		{
+			// Standing at a stall is the activity, not the absence of one. Without
+			// this the 90-second watchdog fired on every keeper, once per stall.
+			state.dwLastMeaningfulActivityTime = dwNow;
+			state.lLastX = ch->GetX();
+			state.lLastY = ch->GetY();
+			return true;
+		}
+
+		ClosePlayerBotShop(ch, state, dwNow, bOffPitch ? "off_pitch" : "expired");
+		return false;
+	}
+
 	bool ManagePlayerBotPrivateShop(LPCHARACTER ch, TPlayerBotAIState& state, DWORD dwNow)
 	{
 		if (!ch || !ch->IsItemLoaded())
 			return false;
 
-		// Already trading: hold the pitch until the stall's time is up. Returning
-		// true keeps every other system off this bot, so it stands still like a
-		// real shop instead of wandering off mid-sale.
+		// The stall's own lifetime is settled earlier in the tick; by the time
+		// this runs a keeper either has no shop or has already been held there.
 		if (ch->GetMyShop())
-		{
-			if (state.dwShopCloseTime != 0 && dwNow >= state.dwShopCloseTime)
-			{
-				ch->CloseMyShop();
-				state.dwShopOpenedTime = 0;
-				state.dwShopCloseTime = 0;
-				state.dwNextShopKeepTime = dwNow +
-						number(PLAYERBOT_SHOP_REST_MIN, PLAYERBOT_SHOP_REST_MAX);
-				sys_log(0, "PLAYERBOT_SHOP: closed pid=%u name=%s",
-						ch->GetPlayerID(), ch->GetName());
-				return false;
-			}
 			return true;
-		}
 
 		if (!ShouldPlayerBotKeepShop(ch))
 			return false;
@@ -11691,6 +11740,13 @@ void CPlayerBotManager::Update()
 			continue;
 
 		if (!d->IsPhase(PHASE_GAME))
+			continue;
+
+		// Before anything that can claim the tick. An open stall is engine state
+		// with a deadline this manager owns, so releasing it must not depend on
+		// which subsystem happens to win the tick - that dependency is why stalls
+		// were left standing with their sign over the keeper's head.
+		if (ManagePlayerBotShopLifetime(ch, state, dwNow))
 			continue;
 
 		if (ch->IsItemLoaded() && dwNow >= state.dwNextInventoryMaintenanceTime)

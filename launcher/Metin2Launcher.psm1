@@ -73,6 +73,14 @@ function Get-M2UpdateManifest {
         }
         catch { $statusCode = 0 }
 
+        # GitHub serves raw manifests from an anonymous, per-IP budget. A player
+        # who clicks the button a few times in a row spends it, and the bare
+        # transport error that came back ("Operacja nie powiodla sie") told them
+        # nothing about waiting an hour - or that their install was fine.
+        if ($statusCode -eq 403 -or $statusCode -eq 429) {
+            throw 'GitHub chwilowo ogranicza liczbe zapytan z Twojego adresu IP (limit anonimowy). Nie jest to blad Twojej instalacji - serwer dziala dalej. Sprobuj ponownie za kilkanascie minut.'
+        }
+
         # The stable channel may intentionally be empty between releases. A
         # missing manifest must never make the launcher reinstall the server,
         # create another Compose project or touch the user's database.
@@ -275,6 +283,44 @@ function Invoke-M2PackageUpdate {
             Remove-Item -LiteralPath $tempRoot -Recurse -Force
         }
     }
+}
+
+function Sync-M2PlayerbotOverlay {
+    <#
+        The compiler never sees linux-port/overlays -- it builds from the staged
+        copy under linux-port/docker/game/src/server/game/src. On a development
+        machine prepare-context.sh keeps the two in step, but it needs the
+        pristine engine tree at /opt/m2port, which the distribution deliberately
+        does not contain, so on a player's machine nothing did.
+
+        That is how 1.23.2 shipped a manager that included a header no player
+        had: every build stopped at "playerbot_types.h: No such file or
+        directory", and 1.22.4 had already broken the same way on a stale
+        playerbot_manager.h. Copying the whole overlay directory - rather than a
+        hand-maintained list of filenames - is what keeps the next new source
+        file from repeating it.
+    #>
+    param([Parameter(Mandatory = $true)][string]$ServerRoot)
+
+    $source = Join-Path $ServerRoot 'linux-port\overlays\playerbot\src\game\src'
+    $staged = Join-Path $ServerRoot 'linux-port\docker\game\src\server\game\src'
+    if (-not (Test-Path -LiteralPath $source -PathType Container)) { return 0 }
+    if (-not (Test-Path -LiteralPath $staged -PathType Container)) { return 0 }
+
+    $copied = 0
+    foreach ($file in Get-ChildItem -LiteralPath $source -File) {
+        $destination = Join-Path $staged $file.Name
+        $current = $null
+        if (Test-Path -LiteralPath $destination -PathType Leaf) {
+            $current = (Get-FileHash -LiteralPath $destination -Algorithm SHA256).Hash
+        }
+        $incoming = (Get-FileHash -LiteralPath $file.FullName -Algorithm SHA256).Hash
+        if ($current -ne $incoming) {
+            Copy-Item -LiteralPath $file.FullName -Destination $destination -Force
+            $copied++
+        }
+    }
+    return $copied
 }
 
 function Get-M2SanitizedEnv {
@@ -883,5 +929,6 @@ Export-ModuleMember -Function @(
     'Invoke-M2DatabaseImport',
     'Repair-M2GameDbUser',
     'Test-M2VolumeInitialized',
-    'Test-M2DockerRunning'
+    'Test-M2DockerRunning',
+    'Sync-M2PlayerbotOverlay'
 )

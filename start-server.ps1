@@ -467,6 +467,33 @@ if (-not (Test-Path -LiteralPath $composeFile)) {
     throw "Compose file was not found: $composeFile"
 }
 
+# The build context under linux-port/docker/game/src is a staged copy of the
+# overlay sources, and nothing on a player's machine keeps it current:
+# prepare-context.sh needs the pristine engine tree, which the distribution
+# does not ship. An update that adds a source file therefore compiled against
+# whatever the copy happened to hold - in 1.23.2, against a missing header, and
+# the build stopped with "playerbot_types.h: No such file or directory".
+$overlaySource = Join-Path $PSScriptRoot 'linux-port\overlays\playerbot\src\game\src'
+$overlayStaged = Join-Path $PSScriptRoot 'linux-port\docker\game\src\server\game\src'
+if ((Test-Path -LiteralPath $overlaySource -PathType Container) -and
+    (Test-Path -LiteralPath $overlayStaged -PathType Container)) {
+    $syncedFiles = 0
+    foreach ($overlayFile in Get-ChildItem -LiteralPath $overlaySource -File) {
+        $stagedFile = Join-Path $overlayStaged $overlayFile.Name
+        $stagedHash = $null
+        if (Test-Path -LiteralPath $stagedFile -PathType Leaf) {
+            $stagedHash = (Get-FileHash -LiteralPath $stagedFile -Algorithm SHA256).Hash
+        }
+        if ($stagedHash -ne (Get-FileHash -LiteralPath $overlayFile.FullName -Algorithm SHA256).Hash) {
+            Copy-Item -LiteralPath $overlayFile.FullName -Destination $stagedFile -Force
+            $syncedFiles++
+        }
+    }
+    if ($syncedFiles -gt 0) {
+        Write-Host "Synchronised $syncedFiles playerbot source file(s) into the build context." -ForegroundColor DarkGray
+    }
+}
+
 Write-Host 'Starting Metin2 services...' -ForegroundColor Cyan
 Push-Location $composeDirectory
 try {

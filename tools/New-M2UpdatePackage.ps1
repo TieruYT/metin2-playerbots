@@ -23,6 +23,46 @@ try {
         Where-Object { $_ -and -not $_.StartsWith('#') })
     if ($entries.Count -eq 0) { throw 'The file list is empty.' }
 
+
+    # The overlay sources and the staged build context are two copies of the
+    # same files, and a package that carries one without the other is what took
+    # every player's server down in 1.22.4 and again in 1.23.2: the compiler saw
+    # a manager whose header was still the previous release's, or missing
+    # outright. Refuse to build such a package at all.
+    $overlayPrefix = 'linux-port\overlays\playerbot\src\game\src\'
+    $stagedPrefix = 'linux-port\docker\game\src\server\game\src\'
+    $overlayNames = @()
+    $stagedNames = @()
+    foreach ($relativeInput in $entries) {
+        $relative = $relativeInput.Replace('/', '\').TrimStart('\')
+        if ($relative.StartsWith($overlayPrefix, [StringComparison]::OrdinalIgnoreCase)) {
+            $overlayNames += $relative.Substring($overlayPrefix.Length)
+        }
+        elseif ($relative.StartsWith($stagedPrefix, [StringComparison]::OrdinalIgnoreCase)) {
+            $stagedNames += $relative.Substring($stagedPrefix.Length)
+        }
+    }
+    foreach ($name in $stagedNames) {
+        if ($overlayNames -notcontains $name) {
+            # The launcher syncs overlay -> build context before every build, so
+            # an overlay copy left behind by an older release would overwrite the
+            # good staged one on the player's machine. Both halves ship together
+            # or neither does.
+            throw "Build-context copy shipped without its Playerbot source: $name. Add $overlayPrefix$name to $listPath."
+        }
+    }
+    foreach ($name in $overlayNames) {
+        if ($stagedNames -notcontains $name) {
+            throw "Playerbot source shipped without its build-context copy: $name. Add $stagedPrefix$name to $listPath."
+        }
+        $a = Join-Path $source ($overlayPrefix + $name)
+        $b = Join-Path $source ($stagedPrefix + $name)
+        if ((Get-FileHash -LiteralPath $a -Algorithm SHA256).Hash -ne
+            (Get-FileHash -LiteralPath $b -Algorithm SHA256).Hash) {
+            throw "Playerbot source and its build-context copy differ: $name. Run prepare-context.sh or copy it across before packaging."
+        }
+    }
+
     foreach ($relativeInput in $entries) {
         $relative = $relativeInput.Replace('/', '\').TrimStart('\')
         if ([IO.Path]::IsPathRooted($relative) -or $relative.Split('\') -contains '..') {

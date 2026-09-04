@@ -197,6 +197,14 @@ function Stop-DockerAndServer {
 function Rebuild-Server {
     $composeDir = Join-Path $serverRoot 'linux-port\docker'
     $composeFile = Join-Path $composeDir 'docker-compose.yml'
+    # The overlay is the source of truth; the build context is only a copy of
+    # it. Refresh the copy before Docker reads it, or an update that added a
+    # source file compiles against the previous one - or, as in 1.23.2, against
+    # a header that is not there at all.
+    $synced = Sync-M2PlayerbotOverlay -ServerRoot $serverRoot
+    if ($synced -gt 0) {
+        Write-Host "Zsynchronizowano $synced plik(ow) zrodlowych bota do kontekstu budowania." -ForegroundColor DarkGray
+    }
     # See Stop-Server: compose progress on stderr must not be treated as failure
     # under $ErrorActionPreference='Stop' in Windows PowerShell 5.1.
     $previousPreference = $ErrorActionPreference

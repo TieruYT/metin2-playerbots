@@ -207,6 +207,8 @@ function Refresh-Status {
     }
     $script:serverStatus.Text = if ($serverRunning) { 'Serwer: DZIAŁA' } else { 'Serwer: ZATRZYMANY' }
     $script:serverStatus.ForeColor = if ($serverRunning) { [Drawing.Color]::LightGreen } else { [Drawing.Color]::Silver }
+
+    if ($script:versionLabel) { Update-VersionFooter }
 }
 
 # apt/dpkg chatter from a first image build, plus Docker's note about the data
@@ -645,8 +647,8 @@ $script:launcherFingerprint = Get-LauncherFingerprint
 
 $script:form = [Windows.Forms.Form]::new()
 $script:form.Text = 'Metin2 Singleplayer Playerbots — All in One'
-$script:form.Size = [Drawing.Size]::new(780, 732)
-$script:form.MinimumSize = [Drawing.Size]::new(780, 732)
+$script:form.Size = [Drawing.Size]::new(780, 764)
+$script:form.MinimumSize = [Drawing.Size]::new(780, 764)
 $script:form.StartPosition = 'CenterScreen'
 $script:form.BackColor = [Drawing.Color]::FromArgb(24, 25, 29)
 $script:form.ForeColor = [Drawing.Color]::White
@@ -728,6 +730,50 @@ $footer.Size = [Drawing.Size]::new(700, 25)
 $footer.ForeColor = [Drawing.Color]::DarkGray
 $script:form.Controls.Add($footer)
 
+
+$script:versionLabel = [Windows.Forms.Label]::new()
+$script:versionLabel.Location = [Drawing.Point]::new(28, 674)
+$script:versionLabel.Size = [Drawing.Size]::new(700, 22)
+$script:versionLabel.ForeColor = [Drawing.Color]::Silver
+$script:versionLabel.Font = [Drawing.Font]::new('Segoe UI Semibold', 9)
+$script:form.Controls.Add($script:versionLabel)
+
+$script:latestServerVersion = $null
+$script:latestVersionChecked = $false
+
+function Update-VersionFooter {
+    # The manifest lives behind GitHub's anonymous per-IP budget, so it is read
+    # once per session and whenever the player asks for a check - never on the
+    # 8-second status timer, which would spend that budget for nothing.
+    $installed = Get-InstalledServerVersion
+    $installedText = if ($installed -and $installed -ne 'unknown') { $installed } else { 'nieznana (przebudowa w toku)' }
+    $latestText = if ($script:latestServerVersion) { $script:latestServerVersion }
+        elseif ($script:latestVersionChecked) { 'nie udalo sie sprawdzic' }
+        else { 'sprawdzanie...' }
+    $script:versionLabel.Text = "Aktualna wersja: $installedText     |     Najnowsza wersja: $latestText"
+    $upToDate = $script:latestServerVersion -and $installed -and $installed -ne 'unknown' -and
+        $installed.Equals($script:latestServerVersion, [StringComparison]::OrdinalIgnoreCase)
+    $script:versionLabel.ForeColor = if ($upToDate) { [Drawing.Color]::LightGreen }
+        elseif ($script:latestServerVersion) { [Drawing.Color]::Gold }
+        else { [Drawing.Color]::Silver }
+}
+
+function Read-LatestServerVersion {
+    param([switch]$Force)
+    if ($script:latestVersionChecked -and -not $Force) { return }
+    $script:latestVersionChecked = $true
+    try {
+        $config = Get-M2LauncherConfig -ServerRoot $root -ConfigPath $configPath
+        $manifest = Get-M2UpdateManifest -Source ([string]$config.manifestUrl) -TimeoutSec 8
+        $serverProperty = $manifest.PSObject.Properties['server']
+        if ($serverProperty -and $serverProperty.Value -and [string]$serverProperty.Value.version) {
+            $script:latestServerVersion = ([string]$serverProperty.Value.version).Trim()
+        }
+    }
+    catch { }
+    Update-VersionFooter
+}
+
 $installButton.Add_Click({ Install-Or-Prepare })
 $playButton.Add_Click({
     if (-not (Find-ClientExecutable)) {
@@ -773,6 +819,9 @@ $updateButton.Add_Click({
         return
     }
     $available = ([string]$server.version).Trim()
+    $script:latestServerVersion = $available
+    $script:latestVersionChecked = $true
+    Update-VersionFooter
     Write-LocalLog "Dostępna wersja serwera: $available"
     if ($installed -and $installed -ne 'unknown' -and $installed.Equals($available, [StringComparison]::OrdinalIgnoreCase)) {
         [Windows.Forms.MessageBox]::Show("Masz już najnowszą wersję ($available).", 'Aktualizacje', 'OK', 'Information') | Out-Null
@@ -907,7 +956,13 @@ $timer.Start()
 
 $statusTimer = [Windows.Forms.Timer]::new()
 $statusTimer.Interval = 8000
-$statusTimer.Add_Tick({ if (-not $script:activeProcess) { Refresh-Status } })
+$statusTimer.Add_Tick({
+    if ($script:activeProcess) { return }
+    Refresh-Status
+    # One manifest read per session: on the first quiet tick rather than during
+    # form startup, so the window is already usable while it happens.
+    Read-LatestServerVersion
+})
 $statusTimer.Start()
 
 $script:form.Add_FormClosing({
@@ -925,5 +980,6 @@ if (Test-Path -LiteralPath $sessionLog -PathType Leaf) {
     if ($tail) { $script:logBox.Text = ($tail -join [Environment]::NewLine) + [Environment]::NewLine }
 }
 Write-LocalLog 'Uruchomiono GUI launchera.'
+Update-VersionFooter
 Refresh-Status
 [void]$script:form.ShowDialog()

@@ -13,6 +13,7 @@ linux-port/docker/panel/app/admin_panel.py
 linux-port/overlays/playerbot/serverfiles/mob_drop_item.m3.append.txt
 linux-port/overlays/playerbot/sql/playerbots_seed.sql
 linux-port/overlays/playerbot/src/game/src/playerbot_manager.cpp
+linux-port/overlays/playerbot/src/game/src/playerbot_manager.h
 # playerbot_manager.cpp includes both of these. They are not optional extras:
 # an update that ships the manager without them cannot compile on a machine
 # that does not already have the matching versions.
@@ -23,7 +24,14 @@ linux-port/overlays/playerbot/patches/0001-core-integration.patch
 # guard rejected outright - bots and players alike.
 linux-port/overlays/playerbot/patches/0004-private-shop-guard.patch
 linux-port/overlays/playerbot/tools/generate_seed.py
+# The staged build context. Players never run prepare-context.sh - it needs the
+# pristine engine tree, which the distribution does not contain - so these are
+# the copies the compiler actually sees. Shipping the manager without its own
+# headers is what broke 1.23.2 on every machine that applied it.
 linux-port/docker/game/src/server/game/src/playerbot_manager.cpp
+linux-port/docker/game/src/server/game/src/playerbot_manager.h
+linux-port/docker/game/src/server/game/src/playerbot_types.h
+linux-port/docker/game/src/server/game/src/playerbot_world_rules.h
 # Assigns maps to game cores. The bots' route now includes Orc Valley, and
 # a server-side bot cannot cross between cores, so this must ship with it.
 linux-port/docker/game/bin/m2-render-config

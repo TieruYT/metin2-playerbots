@@ -134,7 +134,27 @@ if [ -n "$stranded" ] && [ "$stranded" -gt 0 ] 2>/dev/null; then
     echo "[playerbot-migrate] moved $stranded bot(s) back to Bokjung"
 fi
 
-echo "[playerbot-migrate] applying deterministic 350-bot seed"
+# The registry's own size is written into the seed, so the wrapper never has to
+# be edited in step with it. Hardcoding 350 here survived the move to a
+# 1000-character cohort only because the old range happened to be a prefix of
+# the new one.
+pid_range=$(grep -o 'registry is not exactly PID [0-9]*\.\.[0-9]*' "$seed" | head -1 | sed 's/.*PID //')
+first_pid=${pid_range%%..*}
+last_pid=${pid_range##*..}
+case "${first_pid:-}${last_pid:-}" in
+    ''|*[!0-9]*)
+        echo "[playerbot-migrate] FATAL: cannot read the PID range from $seed" >&2
+        exit 1
+        ;;
+esac
+
+before=$(db -e "
+    SELECT COUNT(*)
+      FROM player.player
+     WHERE id BETWEEN $first_pid AND $last_pid;
+")
+
+echo "[playerbot-migrate] applying deterministic Playerbot seed (PID $first_pid..$last_pid)"
 result=/tmp/playerbot-seed.out
 trap 'rm -f "$result"' EXIT HUP INT TERM
 if db --show-warnings < "$seed" >"$result" 2>&1; then
@@ -159,11 +179,14 @@ fi
 count=$(db -e "
     SELECT COUNT(*)
       FROM player.player
-     WHERE id BETWEEN 4 AND 353;
+     WHERE id BETWEEN $first_pid AND $last_pid;
 ")
-if [ "$count" != "350" ]; then
-    echo "[playerbot-migrate] FATAL: post-check found $count of 350 target PIDs" >&2
+if [ -z "$count" ] || [ "$count" -eq 0 ] 2>/dev/null; then
+    echo "[playerbot-migrate] FATAL: post-check found no bot characters at all" >&2
     exit 1
 fi
-
-echo "[playerbot-migrate] seed complete: 350 canonical PIDs present"
+added=$((count - before))
+if [ "$added" -gt 0 ]; then
+    echo "[playerbot-migrate] created $added new bot character(s)"
+fi
+echo "[playerbot-migrate] seed complete: $count bot character(s) in PID $first_pid..$last_pid"

@@ -246,9 +246,12 @@ namespace
 	// tight enough that keepers kept walking around their pitch without ever
 	// counting as arrived.
 	const int PLAYERBOT_MARKET_ARRIVE = 450;
-	// A stall stands for a while and then the bot goes back to playing.
-	const DWORD PLAYERBOT_SHOP_MIN_DURATION = 1200000;   // 20 min
-	const DWORD PLAYERBOT_SHOP_MAX_DURATION = 3600000;   // 60 min
+	// A stall stands for a while and then the bot goes back to playing. An hour
+	// was long enough that a player watching the market never saw one come down,
+	// which read as "the shops never close" even before the tick-ordering bug
+	// that genuinely kept some of them open.
+	const DWORD PLAYERBOT_SHOP_MIN_DURATION = 600000;    // 10 min
+	const DWORD PLAYERBOT_SHOP_MAX_DURATION = 1500000;   // 25 min
 	// What a bot pays itself for the stall it sets up.
 	const DWORD PLAYERBOT_SHOP_BUNDLE_PRICE = 2000;
 	const DWORD PLAYERBOT_SHOP_REST_MIN = 1800000;

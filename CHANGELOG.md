@@ -17,6 +17,31 @@ every version here.
 
 ---
 
+## 1.23.3 — 2026-09-04
+
+### Fixed
+
+- **Serwer nie budował się po aktualizacji — to naprawiamy w pierwszej kolejności.** Zgłosili to `Archded` (build kończył się na `playerbot_types.h: No such file or directory`) i `Nagash` (`class 'CPlayerBotManager' does not have any field named 'm_bRegistryLoaded'`). Obie awarie miały **jedną przyczynę**: aktualizacja wysyłała nowy plik bota do kontekstu budowania, ale **bez jego własnych nagłówków**. Kompilator widział wtedy nowy kod obok nagłówka z poprzedniego wydania — albo bez nagłówka w ogóle.
+  - Winne było założenie, że kontekst budowania utrzymuje `prepare-context.sh`. Ten skrypt wymaga czystego drzewa silnika, którego paczka **celowo nie zawiera**, więc u gracza nie uruchamiał się nigdy.
+  - Teraz launcher i `start-server.ps1` **kopiują cały katalog źródeł bota** do kontekstu przed każdym budowaniem, więc kolejny nowy plik nie może się już zgubić. Dodatkowo pakowarka aktualizacji **odmawia zbudowania paczki**, w której źródło i jego kopia się rozjeżdżają.
+  - `Nagash` podejrzewał, że zepsuła to jego zmiana nazw botów. Tak nie było — nazwy nie miały z tym nic wspólnego.
+- **Sklepy botów nie były zamykane; nazwa stragana zostawała nad głową.** Zgłosił `Nagash`. Straganem zarządza silnik, a termin jego zamknięcia — kod bota, i zamykanie wykonywało się **za** watchdogiem bezczynności oraz ratunkami nawigacji. Każdy z nich przerywa takt, więc handlujący bot potrafił nigdy nie dojść do własnego kodu zamykania — a ratunek nawigacji mógł go **przenieść z rynku razem z wywieszonym szyldem**. Zamykanie stragana wykonuje się teraz **przed wszystkim innym**, a dodatkowo:
+  - straganowi bez terminu zamknięcia termin jest **dopisywany**, więc żadna ścieżka nie zostawi go otwartego na zawsze;
+  - bot, który zginął albo znalazł się poza rynkiem, zamyka stragan natychmiast;
+  - stanie przy straganie **liczy się jako aktywność**, więc watchdog nie zgłasza już błędu co 90 sekund dla każdego handlarza.
+- **Stragany stały zbyt długo, by ktokolwiek zobaczył ich zamknięcie.** Czas otwarcia zmieniony z 20–60 minut na **10–25 minut**.
+- **Świeża instalacja z obsadą 1000 botów przerwałaby się na ziarnie.** Końcowa asercja porównywała wynik z liczbą **350** wpisaną na sztywno — przy rejestrze 1000 pozycji zgłaszała błąd przy **każdym** udanym zasianiu. Teraz porównuje z rzeczywistym rozmiarem rejestru.
+- **Czytelny komunikat o limicie GitHuba.** Kilka kliknięć „Sprawdź aktualizacje" pod rząd wyczerpuje anonimowy limit zapytań, a launcher pokazywał wtedy tylko „Operacja nie powiodła się". Teraz mówi wprost, że to limit po stronie GitHuba, że instalacja jest sprawna i że wystarczy poczekać.
+
+### Changed
+
+- **Baza sama dokłada brakujące postacie botów.** Poprosił o to `Gacek`. Do tej pory **jedna** zmieniona nazwa bota unieważniała całe ziarno: świat zostawał na tylu botach, ile akurat miał, a suwak w launcherze obiecywał więcej, niż baza mogła dostarczyć. Teraz postać, która nie należy do ziarna, jest po prostu **pomijana** — a brakujące PID-y powstają normalnie.
+  - **Żaden istniejący wiersz nie jest zmieniany ani usuwany.** Twoje postacie, przezwiska i postęp zostają nietknięte; dokładane są wyłącznie te, których w bazie nie ma.
+  - Migracja wypisuje teraz, ile postaci zachowała i ile utworzyła.
+- **Launcher pokazuje wersje na dole okna:** `Aktualna wersja` i `Najnowsza wersja`. Zielono, gdy masz najnowszą. Manifest czytany jest **raz na sesję**, żeby nie zużywać limitu GitHuba.
+
+---
+
 ## 1.23.2 — 2026-09-04
 
 ### Changed

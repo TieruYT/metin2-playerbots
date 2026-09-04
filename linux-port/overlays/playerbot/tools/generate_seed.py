@@ -144,6 +144,146 @@ INSERT INTO playerbot_seed_spec
 VALUES
 @@VALUES@@;
 
+-- The generated registry describes itself; validate that before looking at a
+-- single durable row.
+DELIMITER //
+BEGIN NOT ATOMIC
+    DECLARE v_count INT DEFAULT 0;
+    DECLARE v_min_pid INT DEFAULT 0;
+    DECLARE v_max_pid INT DEFAULT 0;
+
+    SELECT COUNT(*), COALESCE(MIN(pid), 0), COALESCE(MAX(pid), 0)
+      INTO v_count, v_min_pid, v_max_pid
+      FROM playerbot_seed_spec;
+    IF v_count <> @@COUNT@@ OR v_min_pid <> @@FIRST@@ OR v_max_pid <> @@LAST@@ THEN
+        SIGNAL SQLSTATE '45000'
+            SET MESSAGE_TEXT = 'playerbot seed: registry is not exactly PID @@FIRST@@..@@LAST@@';
+    END IF;
+
+    -- The skip rules below read this ledger, so it is created here rather than
+    -- halfway through the durable-state pass. It is empty and idempotent;
+    -- creating it early commits to nothing.
+    CREATE TABLE IF NOT EXISTS common.playerbot_seed_state (
+        pid          INT UNSIGNED NOT NULL,
+        seed_version SMALLINT UNSIGNED NOT NULL,
+        state        ENUM('pending','complete','adopted') NOT NULL,
+        updated_at   TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+                     ON UPDATE CURRENT_TIMESTAMP,
+        PRIMARY KEY (pid)
+    ) ENGINE=MyISAM DEFAULT CHARSET=ascii;
+END//
+DELIMITER ;
+
+-- Every reason a PID must be left alone. Each of these used to abort the whole
+-- seed, so a single renamed bot froze a world at whatever cohort it happened to
+-- have: the launcher offered more bots and the database never grew to hold
+-- them. A PID that is not ours is now dropped from the registry instead, and
+-- the rest are still created. Nothing here updates or deletes a durable row,
+-- and the checks further down keep their SIGNAL - they are assertions now, so
+-- the worst case is exactly the behaviour this replaces.
+DROP TEMPORARY TABLE IF EXISTS playerbot_seed_skip;
+CREATE TEMPORARY TABLE playerbot_seed_skip (
+    pid INT UNSIGNED NOT NULL,
+    PRIMARY KEY (pid)
+) ENGINE=MEMORY DEFAULT CHARSET=latin1;
+
+-- Renamed, re-classed, or otherwise not the character this registry describes.
+INSERT IGNORE INTO playerbot_seed_skip (pid)
+SELECT s.pid
+  FROM playerbot_seed_spec AS s
+  JOIN player.player AS p ON p.id = s.pid
+ WHERE BINARY p.name <> BINARY s.player_name OR p.job <> s.job;
+
+-- player.name is only indexed, not unique, so aliases need their own pass.
+INSERT IGNORE INTO playerbot_seed_skip (pid)
+SELECT s.pid
+  FROM playerbot_seed_spec AS s
+  JOIN player.player AS p ON p.name = s.player_name
+ WHERE p.id <> s.pid;
+
+-- An existing character sitting on a foreign account.
+INSERT IGNORE INTO playerbot_seed_skip (pid)
+SELECT s.pid
+  FROM playerbot_seed_spec AS s
+  JOIN player.player AS p ON p.id = s.pid
+  LEFT JOIN account.account AS a ON a.id = p.account_id
+ WHERE a.id IS NULL
+    OR BINARY a.login <> BINARY s.login
+    OR BINARY a.social_id <> BINARY s.social_id;
+
+-- The canonical login already owns somebody else.
+INSERT IGNORE INTO playerbot_seed_skip (pid)
+SELECT s.pid
+  FROM playerbot_seed_spec AS s
+  JOIN account.account AS a ON a.login = s.login
+  JOIN player.player AS p ON p.account_id = a.id
+ WHERE p.id <> s.pid;
+
+-- The canonical social ID is attached to a different login.
+INSERT IGNORE INTO playerbot_seed_skip (pid)
+SELECT s.pid
+  FROM playerbot_seed_spec AS s
+  JOIN account.account AS a ON a.social_id = s.social_id
+ WHERE BINARY a.login <> BINARY s.login;
+
+-- A missing PID may resume a pre-existing account only when that account is
+-- unmistakably an unused partial result of this seed.
+INSERT IGNORE INTO playerbot_seed_skip (pid)
+SELECT s.pid
+  FROM playerbot_seed_spec AS s
+  JOIN account.account AS a ON a.login = s.login
+  LEFT JOIN player.player AS p ON p.account_id = a.id
+  LEFT JOIN player.player_index AS pi ON pi.id = a.id
+ WHERE NOT EXISTS (SELECT 1 FROM player.player AS pe WHERE pe.id = s.pid)
+   AND (BINARY a.social_id <> BINARY s.social_id
+        OR BINARY a.password <> BINARY '!'
+        OR BINARY a.status <> BINARY 'BLOCK'
+        OR p.id IS NOT NULL
+        OR pi.id IS NOT NULL);
+
+-- The canonical account carries an index that is not the expected single
+-- Chunjo character.
+INSERT IGNORE INTO playerbot_seed_skip (pid)
+SELECT s.pid
+  FROM playerbot_seed_spec AS s
+  JOIN player.player AS p ON p.id = s.pid
+  JOIN account.account AS a ON a.id = p.account_id
+  LEFT JOIN player.player_index AS pi ON pi.id = a.id
+ WHERE pi.id IS NOT NULL
+   AND (pi.pid1 <> s.pid OR pi.pid2 <> 0 OR pi.pid3 <> 0 OR pi.pid4 <> 0
+        OR pi.empire <> 2);
+
+-- The PID is referenced by somebody else's index slot.
+INSERT IGNORE INTO playerbot_seed_skip (pid)
+SELECT s.pid
+  FROM playerbot_seed_spec AS s
+  JOIN player.player_index AS pi
+    ON s.pid IN (pi.pid1, pi.pid2, pi.pid3, pi.pid4)
+  LEFT JOIN account.account AS a ON a.login = s.login
+  LEFT JOIN player.player AS p ON p.id = s.pid
+ WHERE p.id IS NULL
+    OR a.id IS NULL
+    OR pi.id <> a.id
+    OR pi.pid1 <> s.pid
+    OR pi.pid2 <> 0 OR pi.pid3 <> 0 OR pi.pid4 <> 0
+    OR pi.empire <> 2;
+
+-- Ledger rows from another seed version, or completed rows whose character is
+-- gone, are ambiguous and must be repaired by an operator rather than guessed.
+INSERT IGNORE INTO playerbot_seed_skip (pid)
+SELECT s.pid
+  FROM playerbot_seed_spec AS s
+  JOIN common.playerbot_seed_state AS l ON l.pid = s.pid
+  LEFT JOIN player.player AS p ON p.id = s.pid
+ WHERE l.seed_version <> 1
+    OR (p.id IS NULL AND l.state IN ('complete', 'adopted'));
+
+SELECT CONCAT('playerbot seed: preserving ', COUNT(*),
+              ' existing character(s) untouched') AS playerbot_seed_note
+  FROM playerbot_seed_skip;
+
+DELETE FROM playerbot_seed_spec WHERE pid IN (SELECT pid FROM playerbot_seed_skip);
+
 DROP TEMPORARY TABLE IF EXISTS playerbot_seed_missing;
 CREATE TEMPORARY TABLE playerbot_seed_missing LIKE playerbot_seed_spec;
 INSERT INTO playerbot_seed_missing
@@ -152,21 +292,15 @@ FROM playerbot_seed_spec AS s
 LEFT JOIN player.player AS p ON p.id = s.pid
 WHERE p.id IS NULL;
 
+SELECT CONCAT('playerbot seed: creating ', COUNT(*),
+              ' new bot character(s)') AS playerbot_seed_note
+  FROM playerbot_seed_missing;
+
 DELIMITER //
 BEGIN NOT ATOMIC
     DECLARE v_count INT DEFAULT 0;
-    DECLARE v_min_pid INT DEFAULT 0;
-    DECLARE v_max_pid INT DEFAULT 0;
+    DECLARE v_expected INT DEFAULT 0;
     DECLARE v_conflicts INT DEFAULT 0;
-
-    -- Validate the generated registry before examining or changing durable rows.
-    SELECT COUNT(*), COALESCE(MIN(pid), 0), COALESCE(MAX(pid), 0)
-      INTO v_count, v_min_pid, v_max_pid
-      FROM playerbot_seed_spec;
-    IF v_count <> @@COUNT@@ OR v_min_pid <> @@FIRST@@ OR v_max_pid <> @@LAST@@ THEN
-        SIGNAL SQLSTATE '45000'
-            SET MESSAGE_TEXT = 'playerbot seed: registry is not exactly PID @@FIRST@@..@@LAST@@';
-    END IF;
 
     -- A target PID may be reused only when its immutable identity is exact.
     SELECT COUNT(*) INTO v_conflicts
@@ -480,15 +614,17 @@ BEGIN NOT ATOMIC
       JOIN common.playerbot_seed_state AS l
         ON l.pid = s.pid AND l.seed_version = 1
        AND l.state IN ('complete', 'adopted');
-    IF v_count <> 350 THEN
+    SELECT COUNT(*) INTO v_expected FROM playerbot_seed_spec;
+    IF v_count <> v_expected THEN
         SIGNAL SQLSTATE '45000'
-            SET MESSAGE_TEXT = 'playerbot seed: final 350-row assertion failed';
+            SET MESSAGE_TEXT = 'playerbot seed: final row assertion failed';
     END IF;
 END//
 DELIMITER ;
 
 DROP TEMPORARY TABLE IF EXISTS playerbot_seed_pending;
 DROP TEMPORARY TABLE IF EXISTS playerbot_seed_missing;
+DROP TEMPORARY TABLE IF EXISTS playerbot_seed_skip;
 DROP TEMPORARY TABLE IF EXISTS playerbot_seed_spec;
 """
     sql = sql.replace("@@COUNT@@", str(BOT_COUNT))
