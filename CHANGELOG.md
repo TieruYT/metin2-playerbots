@@ -17,6 +17,23 @@ every version here.
 
 ---
 
+## 1.24.8 — 2026-09-05
+
+### Naprawione
+
+- **Stragany wreszcie powstają w Joan.** Losowanie 90/10 działało poprawnie i było bez znaczenia, bo w ścieżce straganu został twardy warunek z czasów, gdy rynek istniał tylko w Bokjung — i stał **przed** losowaniem. Bot stojący w Joan odpadał, zanim zdążył wybrać miasto. Sprawdzone na uruchomionym świecie: stragany stają teraz w obu miastach, bez ani jednej odmowy.
+
+### Zmienione
+
+- **Plac w Joan przeniesiony pod Strażnika Wsi** na komórkę (634, 639), a stragany rozstawiają się w promieniu **8–40 metrów** zamiast dotychczasowych dwóch i pół. Między ladami da się przejść, a każdy bot ma stały własny punkt, więc rynek nie przestawia się przy każdym otwarciu.
+- **Nowa osobowość: Handlarz.** Mniej więcej co szósty bot bez innego powołania. Handlarz trzyma stragan zawsze, gdy może, a nie raz na dziesięć razy; wystawia **20 pozycji** zamiast ośmiu; pracuje na zmianę 10–20 minut; i **nie przerywa handlu, żeby biec po medale konne** — ta wyprawa zabiera pół świata i godzinę, czyli dokładnie to gonienie za czymś, czego ta osobowość ma nie robić. W panelu widnieje jako **Handlarz** z ambicją **Handel**.
+
+### Warto wiedzieć
+
+- **Ambicja bota jest wyłącznie etykietą.** Trafia do pliku statusu i na stronę, ale żaden kod nigdy się na niej nie rozgałęział — dotyczy to także ambicji, które istniały wcześniej. Zachowanie Handlarza wynika z osobowości, nie z ambicji.
+
+---
+
 ## 1.24.7 — 2026-09-05
 
 ### Naprawione
