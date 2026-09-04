@@ -121,6 +121,13 @@ namespace
 		if (IsPlayerBotSpecialLevel30Weapon(item))
 			return false;
 
+		// Whatever else it is, a +7 or better is not something to hand an NPC for
+		// a fifth of the shop price. The reserve rule below keeps one spare per
+		// slot and sold the rest; that is how a Riba +9 went to a merchant
+		// because the same bot was carrying an axe +9. These go on a stall.
+		if (item->GetRefineLevel() >= PLAYERBOT_PRECIOUS_REFINE)
+			return false;
+
 		// Quest progress must survive every merchant visit. In particular, Horse
 		// Medals used to look like ordinary miscellaneous loot and could be sold
 		// before the world-travel state machine returned the bot to the Stable Boy.

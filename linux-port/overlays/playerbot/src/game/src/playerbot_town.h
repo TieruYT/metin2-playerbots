@@ -332,13 +332,56 @@ namespace
 		return (PlayerBotNavHash(ch->GetPlayerID() ^ 0x53484f50U) % 10U) == 0;
 	}
 
-	// The first inventory item the bot can legitimately part with. OpenMyShop
-	// refuses equipped, locked and ANTI_GIVE/ANTI_MYSHOP items outright, so the
-	// same rules are applied here rather than letting the call fail silently.
+	// What a bot asks for what it puts up. A refined item has no price in the
+	// tables - the merchant value is that of the unrefined base - so above +6
+	// the number is ours. Deliberately modest: the point is that another bot can
+	// actually buy it after an hour of hunting.
+	DWORD GetPlayerBotShopAskingPrice(LPITEM item)
+	{
+		if (!item)
+			return 1;
+		const BYTE refine = item->GetRefineLevel();
+		if (refine >= 9)
+			return PLAYERBOT_SHOP_PRICE_PLUS9;
+		if (refine == 8)
+			return PLAYERBOT_SHOP_PRICE_PLUS8;
+		if (refine == 7)
+			return PLAYERBOT_SHOP_PRICE_PLUS7;
+		const DWORD unit = GetPlayerBotNpcSellUnitPrice(item);
+		const DWORD price = unit * (DWORD)item->GetCount() *
+				PLAYERBOT_SHOP_MATERIAL_MARKUP;
+		return price == 0 ? 1U : price;
+	}
+
+	// How much a stall wants this on its counter rather than in the bag. Higher
+	// wins. Nothing scores what the bot still needs itself: that is filtered out
+	// before scoring, not scored badly.
+	int ScorePlayerBotShopStock(LPCHARACTER ch, LPITEM item)
+	{
+		if (!item)
+			return -1;
+		// A spare at +7 or better is the one thing on this market worth walking
+		// across Bokjung for, and the one thing that must never reach a merchant.
+		if (item->GetRefineLevel() >= PLAYERBOT_PRECIOUS_REFINE)
+			return 1000 + item->GetRefineLevel();
+		// Then refine materials, because that is what every other bot is short of
+		// and what it would otherwise have to farm.
+		if (PlayerBotNeedsRefineMaterial(ch, item->GetVnum()))
+			return -1;   // needed here; not for sale
+		if (item->GetRefinedVnum() == 0 && item->GetType() == ITEM_MATERIAL)
+			return 500;
+		return 1;
+	}
+
+	// The best thing this bot can legitimately part with. OpenMyShop refuses
+	// equipped, locked and ANTI_GIVE/ANTI_MYSHOP items outright, so the same
+	// rules are applied here rather than letting the call fail silently.
 	LPITEM FindPlayerBotShopItem(LPCHARACTER ch, WORD& cellOut)
 	{
 		if (!ch || !ch->IsItemLoaded())
 			return NULL;
+		LPITEM best = NULL;
+		int bestScore = 0;
 		for (WORD cell = 0; cell < INVENTORY_MAX_NUM; ++cell)
 		{
 			LPITEM item = ch->GetInventoryItem(cell);
@@ -369,10 +412,15 @@ namespace
 				if (wearCell < 0 || ch->GetWear((BYTE)wearCell) == NULL)
 					continue;
 			}
-			cellOut = cell;
-			return item;
+			const int score = ScorePlayerBotShopStock(ch, item);
+			if (score > bestScore)
+			{
+				bestScore = score;
+				best = item;
+				cellOut = cell;
+			}
 		}
-		return NULL;
+		return best;
 	}
 
 	// A good refine is the one moment worth breaking the bots' silence for. They
@@ -496,6 +544,9 @@ namespace
 			ch->CloseMyShop();
 		state.dwShopOpenedTime = 0;
 		state.dwShopCloseTime = 0;
+		state.dwShopItemVnum = 0;
+		state.dwShopItemPrice = 0;
+		state.bShopItemRefine = 0;
 		state.dwNextShopKeepTime = dwNow +
 				number(PLAYERBOT_SHOP_REST_MIN, PLAYERBOT_SHOP_REST_MAX);
 		if (bHadShop)
@@ -513,7 +564,19 @@ namespace
 			DWORD dwNow)
 	{
 		if (!ch || !ch->GetMyShop())
+		{
+			// The engine closes a stall the moment its last item is sold, so a
+			// recorded offer can outlive the shop it described. Nobody reads it
+			// without checking GetMyShop() first, but leaving it set would make
+			// the state say something untrue.
+			if (ch && state.dwShopItemVnum != 0)
+			{
+				state.dwShopItemVnum = 0;
+				state.dwShopItemPrice = 0;
+				state.bShopItemRefine = 0;
+			}
 			return false;
+		}
 
 		// A stall with no deadline can never expire. The shop lives in the engine
 		// and the deadline in the AI state, so any path that loses one without the
@@ -615,10 +678,7 @@ namespace
 		ch->SetVictim(NULL);
 		ch->Stop();
 
-		const DWORD unit = GetPlayerBotNpcSellUnitPrice(item);
-		DWORD price = unit * (DWORD)item->GetCount() * 3U;
-		if (price == 0)
-			price = 1;
+		const DWORD price = GetPlayerBotShopAskingPrice(item);
 
 		TShopItemTable table;
 		memset(&table, 0, sizeof(table));
@@ -666,6 +726,12 @@ namespace
 		state.dwShopOpenedTime = dwNow;
 		state.dwShopCloseTime = dwNow +
 				number(PLAYERBOT_SHOP_MIN_DURATION, PLAYERBOT_SHOP_MAX_DURATION);
+		// The shop's own item list is private to CShop and our stalls carry
+		// exactly one item, so the offer is recorded here instead. A bot browsing
+		// the market reads this rather than the engine's structure.
+		state.dwShopItemVnum = item->GetVnum();
+		state.dwShopItemPrice = price;
+		state.bShopItemRefine = item->GetRefineLevel();
 		sys_log(0, "PLAYERBOT_SHOP: opened pid=%u name=%s vnum=%u count=%d price=%u pos=(%ld,%ld)",
 				ch->GetPlayerID(), ch->GetName(), item->GetVnum(),
 				(int)item->GetCount(), price, ch->GetX(), ch->GetY());

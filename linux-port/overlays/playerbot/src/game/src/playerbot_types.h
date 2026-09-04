@@ -99,6 +99,28 @@ namespace
 	// although the server had already applied the skill damage.
 	const DWORD PLAYERBOT_SKILL_ANIMATION_LOCK = 1400;
 	const BYTE PLAYERBOT_RESERVE_GEAR_MIN_REFINE = 6;
+	// A +7 or better is never NPC fodder. The merchant pays a fifth of the shop
+	// price for it, and a bot vendored a Riba +9 for exactly that because it
+	// happened to be carrying an axe +9 as well - the "keep only the best spare
+	// per slot" rule had no idea what it was throwing away. Anything at this
+	// refine goes on a stall instead, where another bot can pay properly.
+	const BYTE PLAYERBOT_PRECIOUS_REFINE = 7;
+	// What a bot asks for a spare. Invented rather than derived: the item tables
+	// carry no price for a refined weapon, and these are meant to be affordable
+	// to a bot that has been hunting for an hour rather than a jackpot.
+	const DWORD PLAYERBOT_SHOP_PRICE_PLUS7 = 150000;
+	const DWORD PLAYERBOT_SHOP_PRICE_PLUS8 = 400000;
+	const DWORD PLAYERBOT_SHOP_PRICE_PLUS9 = 900000;
+	// Refine materials go up at a small markup over the merchant price, so a bot
+	// that needs one can buy it from a neighbour instead of farming for it.
+	const DWORD PLAYERBOT_SHOP_MATERIAL_MARKUP = 3;
+	// Browsing someone else's stall.
+	const DWORD PLAYERBOT_SHOPPING_INTERVAL_MIN = 120000;
+	const DWORD PLAYERBOT_SHOPPING_INTERVAL_MAX = 300000;
+	// The engine refuses a purchase beyond 2000, so stay inside that.
+	const int PLAYERBOT_SHOPPING_RANGE = 1800;
+	// Gold a bot will not spend on the market; potions and gear come first.
+	const DWORD PLAYERBOT_SHOPPING_GOLD_FLOOR = 200000;
 	const int PLAYERBOT_GEAR_SHARE_RANGE = 2200;
 	// Refining only runs while the bot is physically standing at the blacksmith.
 	// A real player can click several times during one visit; a three-second cadence
@@ -600,6 +622,10 @@ namespace
 			dwShopOpenedTime(0),
 			dwShopCloseTime(0),
 			dwNextShopKeepTime(0),
+			dwShopItemVnum(0),
+			dwShopItemPrice(0),
+			dwNextShoppingTime(0),
+			bShopItemRefine(0),
 			dwNextShopDebugTime(0),
 			dwMonkeyReversePortalBlockUntil(0),
 			dwNextLootPickupTime(0),
@@ -747,6 +773,13 @@ namespace
 		DWORD dwShopOpenedTime;
 		DWORD dwShopCloseTime;
 		DWORD dwNextShopKeepTime;
+		// What this bot is currently selling. CShop keeps its item list private
+		// and our stalls carry exactly one item, so remembering the offer here is
+		// both simpler and exactly accurate - we are the ones who put it there.
+		DWORD dwShopItemVnum;
+		DWORD dwShopItemPrice;
+		DWORD dwNextShoppingTime;
+		BYTE bShopItemRefine;
 		DWORD dwNextShopDebugTime;
 		DWORD dwMonkeyReversePortalBlockUntil;
 		DWORD dwNextLootPickupTime;

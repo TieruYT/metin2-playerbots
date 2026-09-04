@@ -24,6 +24,7 @@
 #include "questpc.h"
 #include "refine.h"
 #include "sectree.h"
+#include "shop_manager.h"
 #include "sectree_manager.h"
 #include "vector.h"
 #include "utils.h"
@@ -52,6 +53,7 @@ extern void SendShout(const char* szText, BYTE bEmpire);
 #include "playerbot_economy.h"
 #include "playerbot_travel.h"
 #include "playerbot_town.h"
+#include "playerbot_market.h"
 #include "playerbot_loot.h"
 #include "playerbot_survival.h"
 #include "playerbot_wandering.h"
@@ -983,6 +985,12 @@ void CPlayerBotManager::Update()
 		// which subsystem happens to win the tick - that dependency is why stalls
 		// were left standing with their sign over the keeper's head.
 		if (ManagePlayerBotShopLifetime(ch, state, dwNow))
+			continue;
+
+		// Browsing the market. Cheap when there is nothing to buy - it only looks
+		// around every couple of minutes - and claims the tick when it buys, so
+		// the purchase is never mixed into the same pass as a fight.
+		if (ManagePlayerBotShopping(ch, state, dwNow))
 			continue;
 
 		if (ch->IsItemLoaded() && dwNow >= state.dwNextInventoryMaintenanceTime)
