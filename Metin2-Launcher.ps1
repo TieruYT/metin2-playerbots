@@ -197,6 +197,17 @@ function Stop-DockerAndServer {
 function Rebuild-Server {
     $composeDir = Join-Path $serverRoot 'linux-port\docker'
     $composeFile = Join-Path $composeDir 'docker-compose.yml'
+    # Stopping the server also stops Docker Desktop (see Stop-DockerAndServer),
+    # so the sensible order - stop the server, then update it - always arrived
+    # here with a dead engine and failed on a raw npipe error, after the files
+    # had already been swapped. Start-Server has the same hole: it finishes a
+    # pending build before start-server.ps1 gets a chance to bring the engine
+    # up, so "click GRAJ" only ever worked when Docker happened to be running.
+    # Both paths go through here, so the engine is ensured here as well.
+    if (-not (Test-M2DockerRunning)) {
+        Write-Host 'Silnik Dockera jest zatrzymany - uruchamiam go przed budowaniem.' -ForegroundColor Yellow
+        Start-Docker
+    }
     # The overlay is the source of truth; the build context is only a copy of
     # it. Refresh the copy before Docker reads it, or an update that added a
     # source file compiles against the previous one - or, as in 1.23.2, against
@@ -254,8 +265,14 @@ function Update-Server {
     }
     $result = Invoke-M2PackageUpdate -Component $component -TargetRoot $serverRoot -BackupRoot (Join-Path $serverRoot 'backups')
     Write-Host "Podmieniono $($result.Files) plików. Kopia: $($result.Backup)" -ForegroundColor Green
-    Rebuild-Server
+    # From here the files on disk are the new version whatever happens to the
+    # build, and VERSION on disk already says so. Recording it only after a
+    # successful rebuild meant a deferred build left the launcher reporting the
+    # previous version for ever - it kept offering the same update and kept
+    # re-downloading and re-applying it, one backup directory per attempt. What
+    # tracks the build is the rebuild marker, not the version number.
     Save-State -ServerVersion $result.Version -ClientVersion ''
+    Rebuild-Server
     Write-Host "Serwer działa w wersji $($result.Version)." -ForegroundColor Green
 }
 
