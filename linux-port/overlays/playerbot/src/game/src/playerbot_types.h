@@ -108,7 +108,11 @@ namespace
 	// a string of fights with gaps for walking and looting between them, so the
 	// window has to outlast a gap without outlasting the walk back to town.
 	const DWORD PLAYERBOT_BUFF_COMBAT_WINDOW = 60000;
-	const BYTE PLAYERBOT_PRECIOUS_REFINE = 7;
+	const BYTE PLAYERBOT_PRECIOUS_REFINE = 6;
+	// A bonus line big enough to make an item worth selling whatever else it is.
+	// A thousand health is roughly what a good armour of the level range adds, so
+	// anything at or above it was rolled well rather than ordinarily.
+	const int PLAYERBOT_VALUABLE_HP_BONUS = 1000;
 	// What a bot asks for a spare. Invented rather than derived: the item tables
 	// carry no price for a refined weapon, and these are meant to be affordable
 	// to a bot that has been hunting for an hour rather than a jackpot.

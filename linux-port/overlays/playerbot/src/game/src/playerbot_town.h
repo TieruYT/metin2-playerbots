@@ -383,20 +383,70 @@ namespace
 	// How much a stall wants this on its counter rather than in the bag. Higher
 	// wins. Nothing scores what the bot still needs itself: that is filtered out
 	// before scoring, not scored badly.
-	int ScorePlayerBotShopStock(LPCHARACTER ch, LPITEM item)
+	// Does this item carry a bonus line worth more than the item itself? A large
+	// health roll or a shield rolled with block or reflect is what a player looks
+	// for, and it is worth a counter slot at any refine.
+	bool HasPlayerBotValuableBonus(LPITEM item)
+	{
+		if (!item)
+			return false;
+		for (int i = 0; i < ITEM_ATTRIBUTE_MAX_NUM; ++i)
+		{
+			const BYTE type = item->GetAttributeType(i);
+			const long value = item->GetAttributeValue(i);
+			if (value <= 0)
+				continue;
+			if (type == APPLY_MAX_HP && value >= PLAYERBOT_VALUABLE_HP_BONUS)
+				return true;
+			// A shield is bought for what it stops, not for its defence number.
+			if (item->GetType() == ITEM_ARMOR &&
+					item->GetSubType() == ARMOR_SHIELD &&
+					(type == APPLY_BLOCK || type == APPLY_REFLECT_MELEE))
+				return true;
+		}
+		return false;
+	}
+
+	// Horse medals are the one thing a bot farms for itself for hours. A trader
+	// has no such errand - it does not go to the Monkey Dungeon at all - and a
+	// bot whose horse is already at the level cap has nothing left to spend them
+	// on, so for those two the medals are stock like anything else.
+	bool CanPlayerBotSellHorseMedals(LPCHARACTER ch, bool merchant)
+	{
+		if (merchant)
+			return true;
+		return ch && ch->GetHorseLevel() >= 10 &&
+				ch->GetLevel() < GetPlayerBotNextHorseRequiredLevel(ch->GetHorseLevel());
+	}
+
+	int ScorePlayerBotShopStock(LPCHARACTER ch, LPITEM item, bool merchant)
 	{
 		if (!item)
 			return -1;
-		// A spare at +7 or better is the one thing on this market worth walking
-		// across Bokjung for, and the one thing that must never reach a merchant.
+		// A weapon from the level-30 set is the prize of this whole market. It is
+		// worth a counter slot at any refine at all, unrefined included.
+		if (IsPlayerBotSpecialLevel30Weapon(item))
+			return 2000;
+		// Then anything rolled with a bonus a player would go looking for.
+		if (HasPlayerBotValuableBonus(item))
+			return 1500;
+		// A spare at +6 or better is worth walking across town for, and is the one
+		// thing that must never reach an NPC merchant for a fifth of its worth.
 		if (item->GetRefineLevel() >= PLAYERBOT_PRECIOUS_REFINE)
 			return 1000 + item->GetRefineLevel();
-		// Then refine materials, because that is what every other bot is short of
-		// and what it would otherwise have to farm.
+		// A material this bot is short of stays in its own bag.
 		if (PlayerBotNeedsRefineMaterial(ch, item->GetVnum()))
-			return -1;   // needed here; not for sale
+			return -1;
+		if (item->GetVnum() == PLAYERBOT_HORSE_MEDAL_VNUM)
+			return CanPlayerBotSellHorseMedals(ch, merchant) ? 900 : -1;
+		// Refine materials: what every other bot is short of and would otherwise
+		// have to farm for an hour.
 		if (item->GetRefinedVnum() == 0 && item->GetType() == ITEM_MATERIAL)
 			return 500;
+		// Skill books. No bot reads one - that is still unwritten - so they are
+		// pure stock, and a player will want them.
+		if (item->GetType() == ITEM_SKILLBOOK)
+			return 400;
 		return 1;
 	}
 
@@ -427,7 +477,10 @@ namespace
 			if (vnum == 27001 || vnum == 27002 || vnum == 27003 || vnum == 27051 ||
 					vnum == 27004 || vnum == 27005 || vnum == 27006 || vnum == 27052)
 				continue;
-			if (vnum == PLAYERBOT_HORSE_MEDAL_VNUM || (vnum >= 50701 && vnum <= 50706))
+			// Biologist specimens stay: they are quest progress, not goods. Horse
+			// medals used to be excluded here as well, which meant nobody could
+			// ever buy one; whether they are for sale is now the scoring's call.
+			if (vnum >= 50701 && vnum <= 50706)
 				continue;
 			// Spare gear is the most interesting thing a stall can offer, but the
 			// bot must never put up the only weapon or armour it owns for a slot
@@ -440,7 +493,7 @@ namespace
 				if (wearCell < 0 || ch->GetWear((BYTE)wearCell) == NULL)
 					continue;
 			}
-			const int score = ScorePlayerBotShopStock(ch, item);
+			const int score = ScorePlayerBotShopStock(ch, item, merchant);
 			if (score > 0)
 				outScored.push_back(std::make_pair(score, cell));
 		}

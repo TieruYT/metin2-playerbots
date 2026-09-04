@@ -83,6 +83,19 @@ namespace
 		if (PlayerBotNeedsRefineMaterial(ch, offer->GetVnum()))
 			return true;
 
+		// A horse medal, if this bot still has a horse to raise. Buying one is
+		// hours of the Monkey Dungeon it does not have to run.
+		if (offer->GetVnum() == PLAYERBOT_HORSE_MEDAL_VNUM)
+			return CanPlayerBotAdvanceHorse(ch);
+
+		// A level-30 weapon of its own class, when it has none. This is the item
+		// bots cross the world to farm; buying one off a counter is the whole
+		// point of there being a market.
+		if (IsPlayerBotSpecialLevel30Weapon(offer) && IsPlayerBotWeapon(ch, offer) &&
+				offer->GetLevelLimit() <= ch->GetLevel() &&
+				!HasPlayerBotSpecialLevel30Weapon(ch, false))
+			return true;
+
 		// Gear only when it is genuinely better than what is worn. A bot that
 		// buys sideways upgrades spends its yang on nothing.
 		if (!IsPlayerBotEquipmentCandidate(ch, offer))
@@ -94,6 +107,11 @@ namespace
 			return false;
 		LPITEM worn = ch->GetWear((BYTE)wearCell);
 		if (!worn)
+			return true;
+		// A big bonus line is worth having even when the base item scores level
+		// with what is worn - a thousand health does not show up in the equipment
+		// score, and it is exactly what a player would buy the piece for.
+		if (HasPlayerBotValuableBonus(offer) && !HasPlayerBotValuableBonus(worn))
 			return true;
 		return GetPlayerBotEquipmentScore(offer, ch) >
 				GetPlayerBotEquipmentScore(worn, ch);
