@@ -82,6 +82,7 @@ dependency order at the top of `playerbot_manager.cpp`:
 | `playerbot_world_rules.h` | Pure travel policy. No engine types, unit-tested. |
 | `playerbot_navigation.h` | Where a bot may stand and how it gets there. Answers questions about the world only; calls nothing above it. |
 | `playerbot_world_memory.h` | What the population has learned about the world, as opposed to about itself. Written by one subsystem, read by another. |
+| `playerbot_movement.h` | Following a route: mounts, waypoints, Monkey Dungeon portals, and the known-metin registry (a stone is worth remembering only if someone can reach it). |
 | `playerbot_gear.h` | What a bot wears and carries: equipment scoring, the progression ladder, arrows, potions. |
 | `playerbot_manager.cpp` | The tick, plus every subsystem not yet lifted out. |
 
@@ -92,9 +93,9 @@ that respects what it calls. A fragment that needs something from a later
 subsystem forward-declares it rather than pulling it in -- `playerbot_gear.h`
 does this for `GetPlayerBotNpcApproach`.
 
-Still in `playerbot_manager.cpp`, and the obvious next cuts: movement
-(`ClearPlayerBotRoute` through `MovePlayerBot`), the activities (horse, fishing,
-biologist, hunting missions), combat, and the town/merchant economy.
+Still in `playerbot_manager.cpp`, and the obvious next cuts: the activities
+(horse, fishing, biologist, hunting missions), combat, and the town/merchant
+economy.
 
 Find a subsystem by its entry point rather than by line number:
 
@@ -115,6 +116,25 @@ which subsystem wins the tick -- then the goal planner, then the subsystem hooks
 (each `continue`s to claim the tick), and target acquisition and attacking run
 **last**. A subsystem that owns the tick therefore also suppresses combat and the
 gear pass.
+
+### The spawn ceiling is the registry, not the slider
+
+`PLAYERBOT_AUTOSPAWN_COUNT` asks for a number; `CPlayerBotManager::LoadRegisteredBots`
+decides what is available. It accepts a PID only when the ledger row says
+`complete`/`adopted` **and** the account login is exactly `playerbot_NNN` for that
+PID, the social id matches, and `player_index` holds that one character in empire 2.
+Anything else -- a bot renamed by hand, a character from an older bootstrap that
+used different account names -- stays in the database and never spawns. That guard
+is deliberate: it is what stops a raw PID turning a real player's character into a
+bot. Raising the ceiling on a world like that means growing the canonical cohort
+(`BOT_COUNT` in `generate_seed.py`), not loosening the rule.
+
+Read the two lines the core logs at startup before believing any count:
+
+```
+PLAYERBOT_AUTH: loaded 511 registered bot identities
+PLAYERBOT: autospawn requested=750 registered_started=511 in Chunjo
+```
 
 ### Traps this file has already sprung
 
