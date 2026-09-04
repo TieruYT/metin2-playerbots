@@ -1,12 +1,12 @@
 {
   "schema": 1,
   "channel": "stable",
-  "publishedAt": "2026-09-04T13:00:00Z",
-  "statusMessage": "Aktualizacja 1.23.8: podział kodu botów dokończony. Zachowanie botów się nie zmienia — to wydanie porządkowe, sprawdzone na uruchomionym serwerze.",
+  "publishedAt": "2026-09-04T13:25:00Z",
+  "statusMessage": "Aktualizacja 1.23.9: Dolina Orków wreszcie nadaje się do grania. Boty lądowały w odgrodzonym rogu mapy, z dostępem do 17 z 532 miejsc spawnu — teraz mają 161 i wszystkie punkty łowieckie.",
   "server": {
-    "version": "1.23.8",
-    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v1.23.8/metin2-server-update-1.23.8.zip",
-    "sha256": "FAE231ECE13100C0F62261E37A8E7C6D79860E7494DBA22F661E4A6D6B6C12FE"
+    "version": "1.23.9",
+    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v1.23.9/metin2-server-update-1.23.9.zip",
+    "sha256": "4C9F8968F521E1058E4D874B0C7A4FFAE9A42905001FB40BC5BD8EC6C567F6DA"
   },
   "support": {
     "contactUrl": "https://discord.gg/pt5tvnrN6",
