@@ -17,6 +17,16 @@ every version here.
 
 ---
 
+## 1.24.1 — 2026-09-04
+
+### Fixed
+
+- **Boty faktycznie kupują na rynku.** Wersja 1.24.0 wystawiała towar i nikt go nie brał, bo zakup wymaga **dwóch** rzeczy naraz, a ustawiona była jedna: `CShopManager::Buy` odrzuca kupującego, który nie jest zarejestrowany jako **gość straganu** (to `AddGuest` ustawia `ch->GetShop()`), nawet gdy właściciel sklepu jest ustawiony poprawnie. Bez tego funkcja wychodziła w pierwszej linii, po cichu.
+  - Przy okazji filtr wykluczał boty z `bVisitingShop` — czyli akurat te, które są w mieście i stoją przy rynku. Rynek nie miał w ogóle klientów.
+  - **Sprawdzone na serwerze:** transakcje bot–bot z przepływem yanga w obie strony.
+
+---
+
 ## 1.24.0 — 2026-09-04
 
 ### Changed

@@ -106,7 +106,11 @@ namespace
 		// A keeper minding its own counter is not also a customer.
 		if (ch->GetMyShop())
 			return false;
-		if (state.bVisitingShop || state.bVisitingBiologist || state.bVisitingStable ||
+		// bVisitingShop is deliberately not in this list. A bot standing anywhere
+		// near the market is on a town errand almost by definition, so excluding
+		// them left the market with no customers at all - browsing a stall while
+		// in town for potions is the whole idea, not a conflict with it.
+		if (state.bVisitingBiologist || state.bVisitingStable ||
 				state.bRecoveringAfterDeath || state.bTacticalRetreat ||
 				state.bMultiPullActive || state.bFishingSession)
 			return false;
@@ -155,12 +159,23 @@ namespace
 			const BYTE refine = offer->GetRefineLevel();
 			const int goldBefore = ch->GetGold();
 
-			// What a client does when a player clicks the stall, then the engine's
-			// own purchase. Clearing the owner afterwards matters: it is a pointer
-			// to another character, and nothing else would ever reset it.
+			// Exactly what a client does when a player clicks a stall, in the same
+			// order. Both halves are required and neither is optional:
+			// CShopManager::Buy returns immediately unless the buyer is registered
+			// as a guest of the shop (AddGuest is what sets ch->GetShop()) *and*
+			// has the shop owner set. Setting only the owner, which is the obvious
+			// half, silently bought nothing at all.
+			LPSHOP shop = keeper->GetMyShop();
+			if (!shop || ch->GetShop() || ch->GetExchange())
+				continue;
+			if (!shop->AddGuest(ch, keeper->GetVID(), false))
+				continue;
 			ch->SetShopOwner(keeper);
 			CShopManager::instance().Buy(ch, 0);
+			// Leaving either of these set would point this bot at a character it
+			// is no longer standing next to.
 			ch->SetShopOwner(NULL);
+			shop->RemoveGuest(ch);
 
 			if (ch->GetGold() < goldBefore)
 			{

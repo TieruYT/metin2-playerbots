@@ -24,6 +24,7 @@
 #include "questpc.h"
 #include "refine.h"
 #include "sectree.h"
+#include "shop.h"
 #include "shop_manager.h"
 #include "sectree_manager.h"
 #include "vector.h"
