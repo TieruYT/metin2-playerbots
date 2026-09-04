@@ -1,12 +1,12 @@
 {
   "schema": 1,
   "channel": "stable",
-  "publishedAt": "2026-09-04T00:20:00Z",
-  "statusMessage": "Aktualizacja 1.23.2: suwak do 1000 botów (rejestr powiększony — istniejący świat zachowuje swoją obsadę) oraz naprawa łowienia.",
+  "publishedAt": "2026-09-04T06:30:00Z",
+  "statusMessage": "Aktualizacja 1.23.3: naprawa budowania serwera po aktualizacji (to ona blokowała 1.23.2), zamykanie sklepów botów oraz automatyczne dokładanie brakujących postaci do bazy.",
   "server": {
-    "version": "1.23.2",
-    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v1.23.2/metin2-server-update-1.23.2.zip",
-    "sha256": "002C03D42AC47B1A7E2E33A6D3A9A8B74445E0AFCCC80EE7C65FA160E5E98ED9"
+    "version": "1.23.3",
+    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v1.23.3/metin2-server-update-1.23.3.zip",
+    "sha256": "D97B4E9E451049DE67C507F7CD8D3A670C3365054E07C0D20227EA1F17E988A3"
   },
   "support": {
     "contactUrl": "https://discord.gg/pt5tvnrN6",
