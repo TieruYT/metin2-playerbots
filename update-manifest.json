@@ -1,12 +1,12 @@
 {
   "schema": 1,
   "channel": "stable",
-  "publishedAt": "2026-09-04T14:45:00Z",
-  "statusMessage": "Aktualizacja 1.24.0: boty ze straganem milczą, yang podnoszony pierwszy i szybciej, Łatwy Loch Małp tylko dla poziomów 18-26, a mapa w panelu ma prawdziwy teren pod spodem.",
+  "publishedAt": "2026-09-04T16:45:00Z",
+  "statusMessage": "Aktualizacja 1.24.1: rynek botów działa naprawdę — boty kupują od siebie nawzajem. Wcześniej stragany miały towar i zero klientów.",
   "server": {
-    "version": "1.24.0",
-    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v1.24.0/metin2-server-update-1.24.0.zip",
-    "sha256": "04C31C441FA56673409B921E0AD1C102742253334D5257E172BA62336473D81D"
+    "version": "1.24.1",
+    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v1.24.1/metin2-server-update-1.24.1.zip",
+    "sha256": "D8D2AD8AEEEDCFE7ED18FFAD2E8F576E85D5A7E2D99D776B2C71B2E0D5773662"
   },
   "support": {
     "contactUrl": "https://discord.gg/pt5tvnrN6",
