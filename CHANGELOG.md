@@ -17,6 +17,25 @@ every version here.
 
 ---
 
+## 1.23.5 — 2026-09-04
+
+### Fixed
+
+- **Powiększona obsada botów nigdy do nikogo nie dotarła.** Kontener migracji montuje `linux-port/docker/mariadb/playerbot`, więc SQL, który faktycznie wykonuje, to **kopia** ziarna z overlaya — umieszczana tam przez `prepare-context.sh`, który wymaga czystego drzewa silnika i u gracza nie uruchamia się nigdy. Kopia, którą stosowały wszystkie instalacje, była **z 23 sierpnia**. Rejestr 1000 postaci z 1.23.2 i dzisiejsze dokładanie kont jechały w każdej paczce i nie zmieniały niczego.
+  - Synchronizacja overlaya odświeża teraz również tę kopię — na tej samej zasadzie co kontekst budowania: overlay jest źródłem prawdy, a każda jego kopia musi być aktualna, zanim wystartuje to, co ją czyta.
+  - **Sprawdzone na żywym świecie z 668 botami**: 668 zachowanych bez zmian, 332 utworzone, 1000 obecnych, a te 667, które miały postęp, nadal go mają. Druga migracja nie tworzy nic i nie zgłasza nic.
+- **Nowy plik źródłowy silnika nie skompilowałby się u gracza.** `Makefile` w kontekście budowania jest łatany przez `prepare-context.sh`, więc zmiana na `$(wildcard playerbot_*.cpp)` naprawiła ścieżkę deweloperską i ominęła tę, która ma znaczenie. Naprawiane jest teraz to jedno miejsce przy synchronizacji — bez nadpisywania graczom całego `Makefile`.
+- **Migracja przestała ostrzegać sama przed sobą.** PID zwykle wpada w kilka reguł pomijania naraz, a klucz główny zamieniał każde powtórzenie w ostrzeżenie o duplikacie — dwa tysiące linii przed operatorem, zasłaniających te dwie, które mówią, co migracja zrobiła.
+
+### Changed
+
+- **Kod botów podzielony na moduły.** `playerbot_manager.cpp` miał 12 527 linii, bo dodanie funkcji nic nie kosztowało, a dodanie **pliku** kosztowało pięć edycji w `prepare-context.sh` plus edycję łatki. Ta asymetria zniknęła: nic już nie wymienia tych plików z nazwy — skrypt odkrywa katalog, `Makefile` bierze wildcard, pakowarka rozwija wzorzec.
+  - Usunięte **483 linie martwego kodu** — stara nawigacja (`CPlayerBotNavGrid`, `MovePlayerBotLegacy`) była osiągalna wyłącznie z siebie nawzajem.
+  - Wydzielone `playerbot_navigation.h`, `playerbot_world_memory.h` i `playerbot_gear.h`. Menedżer ma **9 085 linii** zamiast 12 527.
+  - To były czyste przeniesienia. **Sprawdzone na żywo**: 1000 botów chodzi, walczy, kupuje, ulepsza, handluje i łowi.
+
+---
+
 ## 1.23.4 — 2026-09-04
 
 ### Added
