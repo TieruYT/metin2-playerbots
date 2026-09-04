@@ -81,6 +81,7 @@ namespace
 			case BOT_ACTION_PARTY_ASSEMBLE: return "zbieram PT";
 			case BOT_ACTION_BIOLOGIST: return "robie misje Biologa";
 			case BOT_ACTION_STABLE: return "odwiedzam Stajennego";
+			case BOT_ACTION_STALL: return "prowadze stragan";
 			default: return "mysle";
 		}
 	}

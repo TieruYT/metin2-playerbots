@@ -17,6 +17,22 @@ every version here.
 
 ---
 
+## 1.24.5 — 2026-09-04
+
+### Dodane
+
+- **Trzy nowe zakładki w rankingach na stronie**, obok Konia i Biologa:
+  - **Otwarte sklepy** — kto właśnie prowadzi stragan i w którym mieście.
+  - **Umiejętności** — suma wyuczonych poziomów umiejętności.
+  - **Przedmiot +9** — boty posiadające dowolny sprzęt na +9, z ikoną i oznaczeniem, czy nosi go na sobie, czy trzyma w plecaku.
+- **Boty raportują osobną akcję „Prowadzi stragan".** Dotąd sklepikarz zgłaszał tę samą akcję co bot w drodze, więc z zewnątrz nie dało się odróżnić handlującego od przechodzącego — a otwarty stragan istnieje wyłącznie w pamięci silnika i baza nic o nim nie wie. Panel czyta teraz tę akcję z pliku statusu i na niej opiera zakładkę.
+
+### Uwagi
+
+- Zakładka **Przedmiot +9** będzie pusta, dopóki któryś bot nie dobije do +9. W chwili wydania wszystkie przedmioty +9 w świecie należały do postaci gracza, nie do botów; botom udało się dojść do +8.
+
+---
+
 ## 1.24.4 — 2026-09-04
 
 ### Zmienione

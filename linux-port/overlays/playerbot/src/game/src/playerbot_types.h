@@ -556,6 +556,11 @@ namespace
 		BOT_ACTION_PARTY_ASSEMBLE,
 		BOT_ACTION_BIOLOGIST,
 		BOT_ACTION_STABLE,
+		// Standing at an open stall. Distinct from BOT_ACTION_SHOP, which is a
+		// visit to an NPC merchant: the panel has to tell the two apart to list
+		// who is actually trading. Appended, never inserted - the id goes into
+		// the status file the panel reads.
+		BOT_ACTION_STALL,
 		BOT_ACTION_FISHING
 	};
 

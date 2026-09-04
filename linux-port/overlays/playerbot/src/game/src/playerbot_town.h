@@ -619,6 +619,7 @@ namespace
 			state.dwLastMeaningfulActivityTime = dwNow;
 			state.lLastX = ch->GetX();
 			state.lLastY = ch->GetY();
+			SetPlayerBotAction(state, BOT_ACTION_STALL, dwNow);
 			return true;
 		}
 

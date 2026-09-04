@@ -146,18 +146,24 @@ BOT_GOAL_LABELS = {
         9: "Biologist mission", 10: "Hunting mission", 11: "Develop horse",
     },
 }
+# The action id a keeper reports while its stall stands. Must match
+# BOT_ACTION_STALL in playerbot_types.h - the id travels in the status file, so
+# the two enumerations are one interface.
+BOT_ACTION_STALL_ID = 13
+
 BOT_ACTION_LABELS = {
     "pl": {
         0: "Planuje następny ruch", 1: "Podróżuje", 2: "Walczy", 3: "Podnosi łup",
         4: "Regeneruje się", 5: "Wybiera profesję", 6: "Handluje", 7: "Ulepsza EQ",
         8: "Czyta KU", 9: "Wkłada KD", 10: "Organizuje PT", 11: "Robi Biologa",
-        12: "Odwiedza Stajennego",
+        12: "Odwiedza Stajennego", 13: "Prowadzi stragan",
     },
     "en": {
         0: "Planning next move", 1: "Travelling", 2: "Fighting", 3: "Picking up loot",
         4: "Recovering", 5: "Choosing profession", 6: "Trading", 7: "Refining gear",
         8: "Reading a skill book", 9: "Socketing a spirit stone", 10: "Organising a party",
         11: "Doing Biologist mission", 12: "Visiting the Stable Boy",
+        13: "Keeping a stall",
     },
 }
 
@@ -3784,7 +3790,7 @@ MAP_I18N = {
   "level":"Poziom","all":"Wszystkie","map":"Mapa","m1":"M1 — Joan","m2":"M2 — Bokjung","m3":"M3 — Waryong","monkey":"Łatwy Loch Małp","orc":"Dolina Orków","desert":"Pustynia Yongbi","heat":"Mapa cieplna","heat_deaths":"Zgony botów","heat_metins":"Rozbite metiny","search":"🔍 Szukaj bota (np. botarek)...",
   "solo_bot":"Bot solo","party_bot":"W grupie (PT)","metin_fight":"Walka z Metinem","loading":"Ładowanie...","world_stats":"Statystyki świata","active_bots":"Aktywne boty",
   "in_parties":"W grupach (PT)","avg_level":"Średni poziom","max_level":"Maks. poziom","rankings":"Rankingi botów","rank_level":"Poziom","rank_weapon":"Broń","rank_armor":"Zbroja",
-  "rank_weapon30":"Bronie 30 Lv","rank_items":"Przedmioty","rank_horse":"Koń","rank_biologist":"Biolog","rank_hunting":"Polowanie","rank_empty":"Brak danych rankingu.","rank_show":"Pokaż","rank_search":"Szukaj w rankingu...","none":"Brak","items_short":"przedm.",
+  "rank_weapon30":"Bronie 30 Lv","rank_items":"Przedmioty","rank_horse":"Koń","rank_biologist":"Biolog","rank_hunting":"Polowanie","rank_shops":"Otwarte sklepy","rank_skills":"Umiejętności","rank_plus9":"Przedmiot +9","rank_skill_sum":"suma poziomów","rank_stall_open":"Stragan otwarty","rank_empty":"Brak danych rankingu.","rank_show":"Pokaż","rank_search":"Szukaj w rankingu...","none":"Brak","items_short":"przedm.",
   "horse_lv":"Koń Lv","visible":"Widocznych","characters":"postaci","in_group":"W grupie [PT]","solo":"Solo","player":"GRACZ","bot":"Bot","class":"Klasa","action":"Akcja","status":"Status","personality":"Osobowość","ambition":"Ambicja","current_goal":"Aktualny cel",
   "coordinates":"Koordynaty","open_inventory":"Kliknij, aby otworzyć ekwipunek i EQ","loading_character":"Ładowanie ekwipunku i statystyk postaci","error":"Błąd","not_found":"Nie znaleziono danych",
   "teleport_me":"Teleportuj moją postać w grze (1 klik)","position":"Pozycja","horse":"Koń","biologist":"Biolog","bio_stage":"Etap Biologa","hunting":"Polowanie","no_data":"Brak danych",
@@ -3803,7 +3809,7 @@ MAP_I18N = {
   "level":"Level","all":"All","map":"Map","m1":"M1 — Joan","m2":"M2 — Bokjung","m3":"M3 — Waryong","monkey":"Easy Monkey Dungeon","orc":"Orc Valley","desert":"Yongbi Desert","heat":"Heatmap","heat_deaths":"Bot deaths","heat_metins":"Metins broken","search":"🔍 Find a bot (e.g. botarek)...",
   "solo_bot":"Solo bot","party_bot":"In party (PT)","metin_fight":"Fighting a Metin","loading":"Loading...","world_stats":"World statistics","active_bots":"Active bots",
   "in_parties":"In parties (PT)","avg_level":"Average level","max_level":"Max level","rankings":"Bot rankings","rank_level":"Level","rank_weapon":"Weapon","rank_armor":"Armour",
-  "rank_weapon30":"Lv 30 Weapons","rank_items":"Items","rank_horse":"Horse","rank_biologist":"Biologist","rank_hunting":"Hunting","rank_empty":"No ranking data.","rank_show":"Show","rank_search":"Search ranking...","none":"None","items_short":"items",
+  "rank_weapon30":"Lv 30 Weapons","rank_items":"Items","rank_horse":"Horse","rank_biologist":"Biologist","rank_hunting":"Hunting","rank_shops":"Open shops","rank_skills":"Skills","rank_plus9":"Item +9","rank_skill_sum":"total levels","rank_stall_open":"Stall open","rank_empty":"No ranking data.","rank_show":"Show","rank_search":"Search ranking...","none":"None","items_short":"items",
   "horse_lv":"Horse Lv","visible":"Visible","characters":"characters","in_group":"In party [PT]","solo":"Solo","player":"PLAYER","bot":"Bot","class":"Class","action":"Action","status":"Status","personality":"Personality","ambition":"Ambition","current_goal":"Current goal",
   "coordinates":"Coordinates","open_inventory":"Click to open inventory and equipment","loading_character":"Loading character equipment and statistics","error":"Error","not_found":"No data found",
   "teleport_me":"Teleport my in-game character (one click)","position":"Position","horse":"Horse","biologist":"Biologist","bio_stage":"Biologist stage","hunting":"Hunting","no_data":"No data",
@@ -3980,6 +3986,9 @@ TPL_LIVE_MAP = BASE.replace("__BODY__", """
           <button type="button" class="btn btn-sm rank-tab" onclick="setRankCategory('horse', this)" style="font-size:11px;padding:3px 6px">🐴 {{m.rank_horse}}</button>
           <button type="button" class="btn btn-sm rank-tab" onclick="setRankCategory('biologist', this)" style="font-size:11px;padding:3px 6px">🌿 {{m.rank_biologist}}</button>
           <button type="button" class="btn btn-sm rank-tab" onclick="setRankCategory('hunting', this)" style="font-size:11px;padding:3px 6px">🎯 {{m.rank_hunting}}</button>
+          <button type="button" class="btn btn-sm rank-tab" onclick="setRankCategory('shops', this)" style="font-size:11px;padding:3px 6px">🏪 {{m.rank_shops}}</button>
+          <button type="button" class="btn btn-sm rank-tab" onclick="setRankCategory('skills', this)" style="font-size:11px;padding:3px 6px">✨ {{m.rank_skills}}</button>
+          <button type="button" class="btn btn-sm rank-tab" onclick="setRankCategory('plus9', this)" style="font-size:11px;padding:3px 6px">🔥 {{m.rank_plus9}}</button>
         </div>
         <div style="display:grid;grid-template-columns:minmax(0,1fr) auto;gap:6px;margin-bottom:10px;align-items:center">
           <input id="rankSearch" type="search" placeholder="🔍 {{m.rank_search}}" oninput="renderRankings()" style="min-width:0;margin:0;padding:7px 8px;font-size:11px">
@@ -4634,6 +4643,18 @@ function renderRankings() {
       detailStr = '<span style="color:#4ade80;font-weight:700">' + (b.biologist_label || '0/6') + '</span>';
     } else if (g_selectedRankCategory === 'hunting') {
       detailStr = '<span style="color:#fb923c;font-weight:700">' + (b.hunting_label || I18N.none) + '</span>';
+    } else if (g_selectedRankCategory === 'shops') {
+      detailStr = '<span style="color:#22d3ee;font-weight:700">🏪 ' + I18N.rank_stall_open + '</span>' +
+                  (b.stall_map ? ' <span class="muted" style="font-size:11px">' + b.stall_map + '</span>' : '');
+    } else if (g_selectedRankCategory === 'skills') {
+      detailStr = '<span style="color:#38bdf8;font-weight:700">' + (b.skill_total || 0) + '</span>' +
+                  ' <span class="muted" style="font-size:11px">' + I18N.rank_skill_sum + '</span>';
+    } else if (g_selectedRankCategory === 'plus9') {
+      var p9win = b.item_window === 'EQUIPMENT'
+          ? '<span style="background:#15803d;color:#fff;font-size:9px;padding:1px 4px;border-radius:3px;margin-left:4px">EQ</span>'
+          : '<span style="background:#374151;color:#bbb;font-size:9px;padding:1px 4px;border-radius:3px;margin-left:4px">Plecak</span>';
+      var p9icon = b.weapon_vnum ? '<img src="' + getItemIconUrl(b.weapon_vnum) + '" style="width:16px;height:16px;vertical-align:middle;margin-right:4px;image-rendering:pixelated">' : '';
+      detailStr = p9icon + '<span style="color:#f97316;font-weight:700">' + (b.weapon_name || '+9') + '</span>' + p9win;
     } else {
       detailStr = '<span style="color:var(--gold);font-weight:700">Lv ' + b.level + '</span>';
     }
@@ -6448,6 +6469,48 @@ def api_bot_rankings():
                               hunting_remain ASC, p.level DESC
                     LIMIT %s
                 """, (rank_limit,))
+            elif rtype == "shops":
+                # An open stall exists only in the game core's memory, so this is
+                # the one ranking the database cannot answer. The live status file
+                # can: a keeper reports BOT_ACTION_STALL for as long as its stall
+                # stands, which is what separates it from a bot merely visiting a
+                # merchant (BOT_ACTION_SHOP).
+                live = read_playerbot_live_status()
+                keeper_ids = [pid for pid, entry in live.items()
+                              if entry.get("action_id") == BOT_ACTION_STALL_ID]
+                if not keeper_ids:
+                    return jsonify({"ok": True, "type": rtype, "limit": rank_limit,
+                                    "rankings": []})
+                keeper_ids = keeper_ids[:rank_limit]
+                placeholders = ",".join(["%s"] * len(keeper_ids))
+                cur.execute(("""
+                    SELECT id, name, level, job, gold
+                    FROM player.player
+                    WHERE id IN ({})
+                    ORDER BY level DESC
+                """).format(placeholders), tuple(keeper_ids))
+            elif rtype == "skills":
+                cur.execute("""
+                    SELECT id, name, level, job, gold, skill_group, skill_level
+                    FROM player.player
+                    WHERE name LIKE 'bot%%' AND skill_group > 0
+                    ORDER BY level DESC
+                    LIMIT 400
+                """)
+            elif rtype == "plus9":
+                # Equipment stores its refine in the vnum: base + 0..9. Anything
+                # below 12000 is wearable; the tables above that are materials and
+                # consumables, whose vnums ending in 9 mean nothing of the sort.
+                cur.execute("""
+                    SELECT p.id, p.name, p.level, p.job, p.gold,
+                           i.vnum as weapon_vnum, i.window as item_window
+                    FROM player.item i
+                    JOIN player.player p ON p.id = i.owner_id
+                    WHERE p.name LIKE 'bot%%' AND i.vnum < 12000
+                      AND MOD(i.vnum, 10) = 9
+                    ORDER BY i.vnum DESC, p.level DESC
+                    LIMIT %s
+                """, (rank_limit,))
             else: # level
                 cur.execute("""
                     SELECT id, name, level, job, exp, gold
@@ -6472,6 +6535,20 @@ def api_bot_rankings():
                     aval = r.get(f"attrvalue{a_idx}")
                     if atype == 71: sr = int(aval or 0)
                     if atype == 72: um = int(aval or 0)
+
+                # Only the skills ranking pays to decode the packed skill
+                # table; every other ranking would be doing it for nothing.
+                skill_total = 0
+                if rtype == "skills":
+                    for entry in parse_player_skills(r.get("skill_level"),
+                                                     r.get("job"),
+                                                     r.get("skill_group"), language):
+                        skill_total += int(entry.get("level") or 0)
+                stall_map = ""
+                if rtype == "shops":
+                    entry = live.get(r["id"]) or {}
+                    stall_map = messages.get(
+                        {21: "m1", 23: "m2", 24: "m3"}.get(entry.get("map_index"), ""), "")
 
                 bio_completed = max(0, min(len(BIOLOGIST_MISSIONS), int(r.get("biologist_completed") or 0)))
                 if bio_completed >= len(BIOLOGIST_MISSIONS):
@@ -6511,11 +6588,18 @@ def api_bot_rankings():
                     "hunting_current": hunting_current,
                     "hunting_remaining": hunting_remain,
                     "hunting_label": hunting_label,
+                    "skill_total": skill_total,
+                    "stall_map": stall_map,
                     "in_pt": bot_in_party_cohort(r["id"])
                 })
 
             if rtype == "weapon30":
                 rankings.sort(key=lambda x: (x["sr"], x["um"], x["level"]), reverse=True)
+            elif rtype == "skills":
+                # Ordered here rather than in SQL: the score comes out of the
+                # packed skill table, which MySQL cannot read.
+                rankings.sort(key=lambda x: (x["skill_total"], x["level"]), reverse=True)
+                rankings = rankings[:rank_limit]
 
             return jsonify({"ok": True, "type": rtype, "limit": rank_limit,
                             "rankings": rankings})
