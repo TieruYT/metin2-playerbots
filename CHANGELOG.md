@@ -17,6 +17,25 @@ every version here.
 
 ---
 
+## 1.24.9 — 2026-09-05
+
+### Zmienione
+
+- **Stragany wystawiają to, co gracz faktycznie chce kupić**, w tej kolejności:
+  - **Broń na 30. poziom** — przy dowolnym ulepszeniu, także bez żadnego. To przedmiot, po który boty jeżdżą przez pół świata.
+  - **Przedmioty z dużym bonusem** — od +1000 PŻ wzwyż, oraz tarcze z blokiem lub odbiciem ciosu, bo tarczę kupuje się dla tego, a nie dla liczby obrony.
+  - **Zapasowy sprzęt od +6** zamiast dotychczasowego +7. To jednocześnie nowa granica, poniżej której nic nie trafia do handlarza NPC za jedną piątą wartości.
+  - **Ulepszacze** — mają zarezerwowaną **połowę lady**, bo sama wycena je z niej wypychała.
+  - **Księgi umiejętności** — żaden bot ich nie czyta, więc to czysty towar.
+- **Medale konne trafiają na sprzedaż** u handlarzy oraz u botów, których koń i tak czeka na wyższy poziom postaci. Wcześniej były wykluczone całkowicie, więc **nikt nie mógł ich kupić**.
+- **Kupujący chcą tego samego.** Medalu, jeśli mają jeszcze konia do wychowania — to godziny lochu, których nie muszą biegać. Broni lv 30 swojej klasy, gdy żadnej nie mają. Oraz przedmiotu z dużym bonusem nawet wtedy, gdy baza wypada na równi z noszonym, bo tysiąc życia nie wchodzi do wyceny sprzętu.
+
+### Naprawione
+
+- **Plac handlowy zwężony do zasięgu, w którym gra pozwala kupować.** `shop_manager.cpp` odrzuca zakup powyżej 2000 jednostek, czyli 20 metrów. Rozstawienie lad na 40 metrów sprawiło, że rynek wyglądał przestronnie i przestał działać: przy dziesięciu straganach i 89 zamożnych botach w mieście nie doszło do **ani jednej** transakcji przez piętnaście minut. Rozrzut wynosi teraz 4–17 metrów — nadal siedem razy więcej niż na początku, ale każda lada jest osiągalna. Tego sufitu nie da się podnieść po naszej stronie.
+
+---
+
 ## 1.24.8 — 2026-09-05
 
 ### Naprawione
