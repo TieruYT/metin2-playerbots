@@ -1,0 +1,1094 @@
+#ifndef __INC_METIN2_PLAYERBOT_TOWN_H__
+#define __INC_METIN2_PLAYERBOT_TOWN_H__
+
+// A visit to town, from the gate to the last errand: which NPCs this trip is
+// for and in what order, walking each leg, the Biologist, and setting up a
+// market stall.
+//
+// A town visit is a small state machine because it has to survive being
+// interrupted - a bot that is teleported, killed, or simply loses its route
+// mid-errand must be able to pick the trip up rather than start it again. The
+// phase in TPlayerBotAIState is that memory, and every branch here either
+// advances it or ends the visit.
+//
+// The stall is engine state with an AI deadline, so releasing one runs at the
+// very top of the tick, ahead of everything that could claim it - see
+// ManagePlayerBotShopLifetime and the comment in CPlayerBotManager::Update.
+//
+// An implementation fragment in the sense playerbot_types.h describes: it
+// defines objects, relies on the engine headers playerbot_manager.cpp includes
+// above it, and reopens the same anonymous namespace. Include it exactly once,
+// after playerbot_travel.h - that file decides a town trip is due, this one
+// carries it out.
+
+namespace
+{
+	BYTE GetPlayerBotFirstInteriorTownPhase(const TPlayerBotAIState& state)
+	{
+		if (state.bTownNeedMisc)
+			return BOT_TOWN_PHASE_MISC_MERCHANT;
+		if (state.bTownNeedBlacksmith)
+			return BOT_TOWN_PHASE_BLACKSMITH;
+		return BOT_TOWN_PHASE_NONE;
+	}
+
+	BYTE GetPlayerBotFirstExteriorTownPhase(const TPlayerBotAIState& state)
+	{
+		if (state.bTownNeedTrainer)
+			return BOT_TOWN_PHASE_TRAINER;
+		if (state.bTownNeedWeaponMerchant)
+			return BOT_TOWN_PHASE_WEAPON_MERCHANT;
+		if (state.bTownNeedArmorMerchant)
+			return BOT_TOWN_PHASE_ARMOR_MERCHANT;
+		return BOT_TOWN_PHASE_NONE;
+	}
+
+	BYTE GetPlayerBotFirstDirectTownPhase(const TPlayerBotAIState& state)
+	{
+		if (state.bTownNeedWeaponMerchant)
+			return BOT_TOWN_PHASE_WEAPON_MERCHANT;
+		if (state.bTownNeedArmorMerchant)
+			return BOT_TOWN_PHASE_ARMOR_MERCHANT;
+		if (state.bTownNeedMisc)
+			return BOT_TOWN_PHASE_MISC_MERCHANT;
+		if (state.bTownNeedBlacksmith)
+			return BOT_TOWN_PHASE_BLACKSMITH;
+		return BOT_TOWN_PHASE_NONE;
+	}
+
+	void StartPlayerBotTownVisit(LPCHARACTER ch, TPlayerBotAIState& state, DWORD dwNow)
+	{
+		if (!ch || state.bVisitingShop ||
+				(ch->GetMapIndex() != PLAYERBOT_MAP_CHUNJO_M1 &&
+				 ch->GetMapIndex() != PLAYERBOT_MAP_CHUNJO_M2))
+			return;
+		const bool inM2 = ch->GetMapIndex() == PLAYERBOT_MAP_CHUNJO_M2;
+
+		state.bTownNeedTrainer = !inM2 && ch->GetLevel() >= 5 && ch->GetSkillGroup() == 0 &&
+				ch->GetJob() <= JOB_SHAMAN;
+		state.bTownNeedMisc = HasPlayerBotJunkForMerchant(ch, BOT_MERCHANT_MISC) ||
+				NeedsPlayerBotPotions(ch) || HasPlayerBotExcessPotions(ch) ||
+				NeedsPlayerBotProgressionBoots(ch);
+		state.bTownNeedWeaponMerchant = HasPlayerBotJunkForMerchant(
+				ch, BOT_MERCHANT_WEAPON) || ch->GetWear(WEAR_WEAPON) == NULL ||
+				NeedsPlayerBotProgressionWeapon(ch) || NeedsPlayerBotArrows(ch);
+		state.bTownNeedArmorMerchant = HasPlayerBotJunkForMerchant(ch, BOT_MERCHANT_ARMOR) ||
+				NeedsPlayerBotProgressionArmor(ch) || NeedsPlayerBotProgressionShield(ch) ||
+				NeedsPlayerBotProgressionHelmet(ch);
+		state.bTownNeedBlacksmith = HasPlayerBotRefineOpportunity(ch);
+		if (!state.bTownNeedTrainer && !state.bTownNeedMisc && !state.bTownNeedWeaponMerchant &&
+				!state.bTownNeedArmorMerchant && !state.bTownNeedBlacksmith)
+		{
+			state.dwNextShopCheckTime = dwNow + number(60000, 120000);
+			return;
+		}
+
+		state.bVisitingShop = true;
+		if (inM2)
+		{
+			// Bokjung has no decorative gate split: visit only the specialists which
+			// are needed and then walk straight back to the local hunting fields.
+			state.bTownVisitPhase = GetPlayerBotFirstDirectTownPhase(state);
+		}
+		else
+		{
+			const bool alreadyInsideTown = ch->GetX() >= 57000 && ch->GetX() <= 63000 &&
+					ch->GetY() >= 170000 && ch->GetY() <= 174000;
+			if (alreadyInsideTown)
+			{
+				state.bTownVisitPhase = GetPlayerBotFirstInteriorTownPhase(state);
+				if (state.bTownVisitPhase == BOT_TOWN_PHASE_NONE)
+					state.bTownVisitPhase = BOT_TOWN_PHASE_GATE_OUT;
+			}
+			else
+			{
+				state.bTownVisitPhase = GetPlayerBotFirstExteriorTownPhase(state);
+				if (state.bTownVisitPhase == BOT_TOWN_PHASE_NONE)
+					state.bTownVisitPhase = BOT_TOWN_PHASE_GATE_IN;
+			}
+		}
+		state.dwTownWaitUntil = 0;
+		state.dwNextShopCheckTime = dwNow + 60000;
+		state.dwTargetVID = 0;
+		state.bStuckCounter = 0;
+		ch->SetVictim(NULL);
+		ch->Stop();
+		ClearPlayerBotRoute(state, true);
+	}
+
+	void GetPlayerBotNpcApproach(DWORD playerID, long npcX, long npcY, DWORD salt,
+			long& approachX, long& approachY)
+	{
+		const DWORD hash = PlayerBotNavHash(playerID ^ salt);
+		const int lane = (int)(hash % 11U) - 5;
+		const int row = (int)((hash / 11U) % 6U);
+		approachX = npcX + lane * 90;
+		approachY = npcY - 240 - row * 80;
+	}
+
+	void GivePlayerBotBiologistReward(LPCHARACTER ch,
+			const TPlayerBotBiologistMission& mission)
+	{
+		if (!ch)
+			return;
+
+		DWORD rewardItem = 0;
+		switch (mission.requiredLevel)
+		{
+			case 4:
+				rewardItem = ch->GetJob() == JOB_SHAMAN ? 7003 : 13;
+				break;
+			case 7:
+			{
+				const DWORD armorRewards[4] = { 11203, 11403, 11603, 11803 };
+				if (ch->GetJob() <= JOB_SHAMAN)
+					rewardItem = armorRewards[ch->GetJob()];
+				break;
+			}
+			case 10: rewardItem = 16023; break;
+			case 15: rewardItem = 17023; break;
+			case 20: rewardItem = 14023; break;
+			case 25:
+			{
+				const DWORD helmetRewards[4] = { 12222, 12362, 12502, 12642 };
+				if (ch->GetJob() <= JOB_SHAMAN)
+					rewardItem = helmetRewards[ch->GetJob()];
+				break;
+			}
+		}
+
+		if (rewardItem != 0)
+			ch->AutoGiveItem(rewardItem, 1, -1, false);
+		if (mission.rewardGold > 0)
+			ch->PointChange(POINT_GOLD, mission.rewardGold);
+		if (mission.rewardExp > 0)
+			ch->PointChange(POINT_EXP, mission.rewardExp, true);
+	}
+
+	bool CompletePlayerBotBiologistMission(LPCHARACTER ch, size_t missionIndex)
+	{
+		if (!ch || missionIndex >= PLAYERBOT_BIOLOGIST_MISSION_COUNT)
+			return false;
+		const TPlayerBotBiologistMission& mission = PLAYERBOT_BIOLOGIST_MISSIONS[missionIndex];
+		const int completeState = GetPlayerBotBiologistStateIndex(missionIndex, "__complete");
+		quest::PC* pc = quest::CQuestManager::instance().GetPCForce(ch->GetPlayerID());
+		if (!pc || completeState < 0)
+			return false;
+
+		GivePlayerBotBiologistReward(ch, mission);
+		ch->SetQuestFlag(GetPlayerBotBiologistFlag(mission, "collect_count"), 0);
+		ch->SetQuestFlag(GetPlayerBotBiologistFlag(mission, "drink_drug"), 0);
+		pc->SetQuestState(mission.questName, completeState);
+		sys_log(0, "PLAYERBOT_BIOLOGIST: mission complete pid=%u name=%s quest=%s level=%u gold=%u exp=%u",
+				ch->GetPlayerID(), ch->GetName(), mission.questName, mission.requiredLevel,
+				mission.rewardGold, mission.rewardExp);
+		return true;
+	}
+
+	bool ManagePlayerBotBiologist(LPCHARACTER ch, TPlayerBotAIState& state, DWORD dwNow)
+	{
+		if (!ch || ch->GetMapIndex() != 21 || state.bVisitingShop)
+			return false;
+		if (!state.bVisitingBiologist && dwNow < state.dwNextBiologistCheckTime)
+			return false;
+		if (!state.bVisitingBiologist)
+			state.dwNextBiologistCheckTime = dwNow + 2000;
+
+		size_t missionIndex = 0;
+		const TPlayerBotBiologistMission* mission =
+				GetActivePlayerBotBiologistMission(ch, &missionIndex);
+		if (!mission)
+		{
+			state.bVisitingBiologist = false;
+			return false;
+		}
+		if (!EnsurePlayerBotBiologistMissionStarted(ch, missionIndex))
+			return false;
+
+		const int accepted = std::max(0, ch->GetQuestFlag(
+				GetPlayerBotBiologistFlag(*mission, "collect_count")));
+		const int remaining = std::max(0, (int)mission->requiredCount - accepted);
+		const int carried = ch->CountSpecifyItem(mission->itemVnum);
+		if (!state.bVisitingBiologist && carried < remaining)
+			return false;
+
+		if (!state.bVisitingBiologist)
+		{
+			state.bVisitingBiologist = true;
+			state.dwNextBiologistActionTime = 0;
+			state.dwTargetVID = 0;
+			ch->SetVictim(NULL);
+			ch->Stop();
+			ClearPlayerBotRoute(state, true);
+			sys_log(0, "PLAYERBOT_BIOLOGIST: going to NPC pid=%u name=%s quest=%s carried=%d accepted=%d/%u",
+					ch->GetPlayerID(), ch->GetName(), mission->questName,
+					carried, accepted, mission->requiredCount);
+		}
+
+		SetPlayerBotAction(state, BOT_ACTION_BIOLOGIST, dwNow);
+		state.dwTargetVID = 0;
+		ch->SetVictim(NULL);
+
+		long approachX = 0, approachY = 0;
+		GetPlayerBotNpcApproach(ch->GetPlayerID(), PLAYERBOT_BIOLOGIST_X,
+				PLAYERBOT_BIOLOGIST_Y, 0x42494f4cU, approachX, approachY);
+		if (DISTANCE_APPROX(ch->GetX() - approachX, ch->GetY() - approachY) > 650)
+		{
+			if (!MovePlayerBot(ch, approachX, approachY, dwNow, 20, true, true) &&
+					state.bStuckCounter >= 6)
+			{
+				state.bVisitingBiologist = false;
+				state.dwNextBiologistCheckTime = dwNow + 30000;
+				ClearPlayerBotRoute(state, true);
+				sys_err("PLAYERBOT_BIOLOGIST: route failed pid=%u name=%s from=(%ld,%ld)",
+						ch->GetPlayerID(), ch->GetName(), ch->GetX(), ch->GetY());
+				return false;
+			}
+			return true;
+		}
+
+		SetPlayerBotRidingForTravel(ch, state, false, dwNow, "biologist_interaction");
+		ch->Stop();
+		ch->SetPosition(POS_STANDING);
+		if (state.dwNextBiologistActionTime == 0)
+		{
+			state.dwNextBiologistActionTime = dwNow + number(3000, 8000);
+			return true;
+		}
+		if (dwNow < state.dwNextBiologistActionTime)
+			return true;
+
+		if (ch->CountSpecifyItem(mission->itemVnum) <= 0)
+		{
+			state.bVisitingBiologist = false;
+			state.dwNextBiologistActionTime = 0;
+			state.dwNextBiologistCheckTime = dwNow + number(5000, 12000);
+			ClearPlayerBotRoute(state, true);
+			return false;
+		}
+
+		ch->RemoveSpecifyItem(mission->itemVnum, 1);
+		const bool acceptedNow = number(1, 100) <= mission->acceptPercent;
+		int newAccepted = accepted;
+		if (acceptedNow)
+		{
+			newAccepted = accepted + 1;
+			ch->SetQuestFlag(GetPlayerBotBiologistFlag(*mission, "collect_count"), newAccepted);
+		}
+		sys_log(0, "PLAYERBOT_BIOLOGIST: submitted pid=%u name=%s quest=%s accepted_now=%d progress=%d/%u carried_left=%d",
+				ch->GetPlayerID(), ch->GetName(), mission->questName, acceptedNow ? 1 : 0,
+				newAccepted, mission->requiredCount, ch->CountSpecifyItem(mission->itemVnum));
+
+		if (newAccepted >= mission->requiredCount &&
+				CompletePlayerBotBiologistMission(ch, missionIndex))
+		{
+			state.bVisitingBiologist = false;
+			state.dwNextBiologistActionTime = 0;
+			state.dwNextBiologistCheckTime = dwNow + number(10000, 25000);
+			ClearPlayerBotRoute(state, true);
+			return false;
+		}
+
+		state.dwNextBiologistActionTime = dwNow + number(2500, 5000);
+		return true;
+	}
+
+	void FinishPlayerBotTownVisit(LPCHARACTER ch, TPlayerBotAIState& state, DWORD dwNow,
+			bool completed)
+	{
+		state.bVisitingShop = false;
+		state.bTownNeedMisc = false;
+		state.bTownNeedWeaponMerchant = false;
+		state.bTownNeedArmorMerchant = false;
+		state.bTownNeedBlacksmith = false;
+		state.bTownNeedTrainer = false;
+		state.bTownVisitPhase = BOT_TOWN_PHASE_NONE;
+		state.dwTownWaitUntil = 0;
+		state.dwNextShopCheckTime = dwNow +
+			(completed ? number(300000, 600000) : number(60000, 120000));
+		state.dwTargetVID = 0;
+		state.bStuckCounter = 0;
+		if (ch)
+		{
+			ch->SetVictim(NULL);
+			ch->Stop();
+			ch->SetPosition(POS_STANDING);
+		}
+		ClearPlayerBotRoute(state, true);
+	}
+
+	bool MovePlayerBotTownLeg(LPCHARACTER ch, TPlayerBotAIState& state, DWORD dwNow,
+			long goalX, long goalY, int arrivalDistance);
+
+	// A stable tenth of the population runs a market stall - always the same
+	// bots, so the market does not move around between restarts. Keeping a shop
+	// means not hunting, which is why it stays a minority; and since a keeper
+	// only opens when it happens to be in Bokjung with no errand outstanding,
+	// the share actually standing at any moment is smaller again.
+	bool ShouldPlayerBotKeepShop(LPCHARACTER ch)
+	{
+		if (!ch || ch->GetLevel() < 20)
+			return false;
+		return (PlayerBotNavHash(ch->GetPlayerID() ^ 0x53484f50U) % 10U) == 0;
+	}
+
+	// The first inventory item the bot can legitimately part with. OpenMyShop
+	// refuses equipped, locked and ANTI_GIVE/ANTI_MYSHOP items outright, so the
+	// same rules are applied here rather than letting the call fail silently.
+	LPITEM FindPlayerBotShopItem(LPCHARACTER ch, WORD& cellOut)
+	{
+		if (!ch || !ch->IsItemLoaded())
+			return NULL;
+		for (WORD cell = 0; cell < INVENTORY_MAX_NUM; ++cell)
+		{
+			LPITEM item = ch->GetInventoryItem(cell);
+			if (!item || item->IsEquipped() || item->isLocked())
+				continue;
+			const TItemTable* proto = item->GetProto();
+			if (!proto || IS_SET(proto->dwAntiFlags,
+					ITEM_ANTIFLAG_GIVE | ITEM_ANTIFLAG_MYSHOP))
+				continue;
+			// Not the vendor-trash rule: a stall should carry something a player
+			// might actually want. Materials and spare loot qualify; the bot's own
+			// supplies, weapons and armour do not, so it can never sell the gear
+			// or the potions it needs to keep playing.
+			const DWORD vnum = item->GetVnum();
+			if (vnum == 27001 || vnum == 27002 || vnum == 27003 || vnum == 27051 ||
+					vnum == 27004 || vnum == 27005 || vnum == 27006 || vnum == 27052)
+				continue;
+			if (vnum == PLAYERBOT_HORSE_MEDAL_VNUM || (vnum >= 50701 && vnum <= 50706))
+				continue;
+			// Spare gear is the most interesting thing a stall can offer, but the
+			// bot must never put up the only weapon or armour it owns for a slot
+			// it is still walking around empty. Something already worn there means
+			// what it carries is genuinely a spare.
+			const BYTE type = item->GetType();
+			if (type == ITEM_WEAPON || type == ITEM_ARMOR)
+			{
+				const int wearCell = item->FindEquipCell(ch);
+				if (wearCell < 0 || ch->GetWear((BYTE)wearCell) == NULL)
+					continue;
+			}
+			cellOut = cell;
+			return item;
+		}
+		return NULL;
+	}
+
+	// A good refine is the one moment worth breaking the bots' silence for. They
+	// say nothing when attacked, nothing during PvP, and nothing on a kill -
+	// only the blacksmith gets a reaction, and even then rarely.
+	void BroadcastPlayerBotRefineSuccess(LPCHARACTER ch, LPITEM item, int newPlus)
+	{
+		if (!ch || !item || newPlus < 7)
+			return;
+
+		static DWORD s_dwLastShoutTime = 0;
+		const DWORD dwNow = get_dword_time();
+		// One announcement every few minutes for the whole world: the chat should
+		// feel inhabited, not flooded.
+		if (s_dwLastShoutTime != 0 && dwNow < s_dwLastShoutTime + 180000)
+			return;
+		if (number(1, 100) > 45)
+			return;
+
+		static const char* kPlus7[] = {
+			"%s poszedl na +7, kowal dzis laskawy",
+			"no i mam +7 na %s, moglo byc gorzej",
+			"+7 na %s siadlo za pierwszym razem",
+			"udalo sie, %s na +7"
+		};
+		static const char* kPlus8[] = {
+			"%s na +8! rece mi sie trzesly",
+			"jest +8 na %s, teraz sie zastanawiam czy pchac dalej",
+			"+8 na %s, chyba mam dzis szczescie",
+			"weszlo na +8, %s gotowy do roboty"
+		};
+		static const char* kPlus9[] = {
+			"%s NA +9!!! nie wierze",
+			"+9 na %s, kto by pomyslal",
+			"dziewiatka na %s, dzis stawiam :D",
+			"%s +9, chyba wystarczy tych probek na dzis"
+		};
+
+		const char** pool = kPlus7;
+		if (newPlus >= 9)
+			pool = kPlus9;
+		else if (newPlus == 8)
+			pool = kPlus8;
+
+		char msg[CHAT_MAX_LEN + 1];
+		char body[CHAT_MAX_LEN + 1];
+		snprintf(body, sizeof(body), pool[number(0, 3)], item->GetName());
+		snprintf(msg, sizeof(msg), "%s : %s", ch->GetName(), body);
+
+		s_dwLastShoutTime = dwNow;
+		SendShout(msg, ch->GetEmpire());
+		sys_log(0, "PLAYERBOT_SHOUT: pid=%u plus=%d text=%s",
+				ch->GetPlayerID(), newPlus, msg);
+	}
+
+	// Where a bot belongs on each map we manage: the point that map is entered
+	// by, and Bokjung for anything else.
+	void GetPlayerBotHomePoint(long mapIndex, long& outMap, long& outX, long& outY)
+	{
+		outMap = PLAYERBOT_MAP_CHUNJO_M2;
+		outX = PLAYERBOT_M2_FROM_M3_X;
+		outY = PLAYERBOT_M2_FROM_M3_Y;
+		switch (mapIndex)
+		{
+			case PLAYERBOT_MAP_CHUNJO_M1:
+				outMap = mapIndex; outX = PLAYERBOT_M1_RETURN_X; outY = PLAYERBOT_M1_RETURN_Y; break;
+			case PLAYERBOT_MAP_CHUNJO_M2:
+				outMap = mapIndex; outX = PLAYERBOT_M2_ARRIVAL_X; outY = PLAYERBOT_M2_ARRIVAL_Y; break;
+			case PLAYERBOT_MAP_CHUNJO_M3:
+				outMap = mapIndex; outX = PLAYERBOT_M3_ARRIVAL_X; outY = PLAYERBOT_M3_ARRIVAL_Y; break;
+			case PLAYERBOT_MAP_MONKEY_EASY:
+				outMap = mapIndex; outX = PLAYERBOT_MONKEY_EASY_ARRIVAL_X; outY = PLAYERBOT_MONKEY_EASY_ARRIVAL_Y; break;
+			case PLAYERBOT_MAP_ORC_VALLEY:
+				outMap = mapIndex; outX = PLAYERBOT_ORC_VALLEY_ARRIVAL_X; outY = PLAYERBOT_ORC_VALLEY_ARRIVAL_Y; break;
+			case PLAYERBOT_MAP_DESERT:
+				outMap = mapIndex; outX = PLAYERBOT_DESERT_ARRIVAL_X; outY = PLAYERBOT_DESERT_ARRIVAL_Y; break;
+			default: break;
+		}
+	}
+
+	// A character with no sector, or one standing on a map this core does not
+	// host, cannot move at all - and nothing else in the tick can put it back.
+	// It is asked again on the next tick and answers the same way, for as long as
+	// the server runs: a day of logs held 35k such lines from 45 bots that never
+	// took another step, plus the watchdog resetting them 8k times to no effect.
+	bool RescuePlayerBotWithoutSectree(LPCHARACTER ch, TPlayerBotAIState& state, DWORD dwNow)
+	{
+		if (!ch)
+			return false;
+		const long mapIndex = ch->GetMapIndex();
+		if (ch->GetSectree() && SECTREE_MANAGER::instance().GetMap(mapIndex) != NULL)
+			return false;
+		if (state.dwNextSectreeRescueTime != 0 && dwNow < state.dwNextSectreeRescueTime)
+			return true; // already tried recently; do not spin
+		state.dwNextSectreeRescueTime = dwNow + 30000;
+
+		long homeMap = 0, homeX = 0, homeY = 0;
+		GetPlayerBotHomePoint(mapIndex, homeMap, homeX, homeY);
+		if (TransitionPlayerBotMap(ch, state, homeMap, homeX, homeY, dwNow, "sectree_rescue"))
+		{
+			sys_log(0, "PLAYERBOT_RESCUE: pid=%u name=%s had no sectree on map=%ld, moved to map=%ld (%ld,%ld)",
+					ch->GetPlayerID(), ch->GetName(), mapIndex, homeMap, homeX, homeY);
+		}
+		return true;
+	}
+
+	// A stall is engine state; the deadline that ends it is AI state. Keeping the
+	// two in step is the whole job of this pair of helpers, and doing it from a
+	// single place is what makes it possible to run the release *before* the
+	// subsystems that can claim the tick.
+	void ClosePlayerBotShop(LPCHARACTER ch, TPlayerBotAIState& state, DWORD dwNow,
+			const char* reason)
+	{
+		if (!ch)
+			return;
+		const bool bHadShop = ch->GetMyShop() != NULL;
+		if (bHadShop)
+			ch->CloseMyShop();
+		state.dwShopOpenedTime = 0;
+		state.dwShopCloseTime = 0;
+		state.dwNextShopKeepTime = dwNow +
+				number(PLAYERBOT_SHOP_REST_MIN, PLAYERBOT_SHOP_REST_MAX);
+		if (bHadShop)
+			sys_log(0, "PLAYERBOT_SHOP: closed pid=%u name=%s reason=%s",
+					ch->GetPlayerID(), ch->GetName(), reason);
+	}
+
+	// Runs at the very top of the tick, ahead of the inactivity watchdog and the
+	// navigation rescues. Those both "continue", and a keeper that never reached
+	// the shop hook could not close its stall: the sign stayed over its head and
+	// a rescue was free to teleport it out of the market still wearing it. The
+	// stall now outranks them - releasing engine state is not something a bot may
+	// be interrupted out of.
+	bool ManagePlayerBotShopLifetime(LPCHARACTER ch, TPlayerBotAIState& state,
+			DWORD dwNow)
+	{
+		if (!ch || !ch->GetMyShop())
+			return false;
+
+		// A stall with no deadline can never expire. The shop lives in the engine
+		// and the deadline in the AI state, so any path that loses one without the
+		// other used to strand the keeper trading forever; give it one instead.
+		if (state.dwShopCloseTime == 0)
+			state.dwShopCloseTime =
+					(state.dwShopOpenedTime != 0 ? state.dwShopOpenedTime : dwNow) +
+					PLAYERBOT_SHOP_MIN_DURATION;
+
+		// Whatever else happens, a corpse or a bot that is no longer standing on
+		// the market strip has no business still holding a stall.
+		const bool bOffPitch = ch->IsDead() ||
+				ch->GetMapIndex() != PLAYERBOT_MAP_CHUNJO_M2 ||
+				DISTANCE_APPROX(ch->GetX() - PLAYERBOT_M2_MARKET_X,
+						ch->GetY() - PLAYERBOT_M2_MARKET_Y) >
+					PLAYERBOT_MARKET_SPREAD + PLAYERBOT_MARKET_ARRIVE * 2;
+
+		if (dwNow < state.dwShopCloseTime && !bOffPitch)
+		{
+			// Standing at a stall is the activity, not the absence of one. Without
+			// this the 90-second watchdog fired on every keeper, once per stall.
+			state.dwLastMeaningfulActivityTime = dwNow;
+			state.lLastX = ch->GetX();
+			state.lLastY = ch->GetY();
+			return true;
+		}
+
+		ClosePlayerBotShop(ch, state, dwNow, bOffPitch ? "off_pitch" : "expired");
+		return false;
+	}
+
+	bool ManagePlayerBotPrivateShop(LPCHARACTER ch, TPlayerBotAIState& state, DWORD dwNow)
+	{
+		if (!ch || !ch->IsItemLoaded())
+			return false;
+
+		// The stall's own lifetime is settled earlier in the tick; by the time
+		// this runs a keeper either has no shop or has already been held there.
+		if (ch->GetMyShop())
+			return true;
+
+		if (!ShouldPlayerBotKeepShop(ch))
+			return false;
+		if (ch->GetMapIndex() != PLAYERBOT_MAP_CHUNJO_M2)
+			return false;
+
+		// Errands still come first - a stall opened mid-visit would be abandoned
+		// on the next tick.
+		if (state.bVisitingShop || state.bVisitingBiologist || state.bVisitingStable)
+			return false;
+		if (state.dwNextShopKeepTime != 0 && dwNow < state.dwNextShopKeepTime)
+			return false;
+		// ...but "in town with nothing to do" is a state that barely exists: a bot
+		// comes to Bokjung *because* it has an errand, and leaves the moment the
+		// errand is done. The stall therefore opens right after a completed town
+		// visit, while the bot is still standing in the village, instead of waiting
+		// for an idle moment that never arrives.
+		const bool justFinishedInTown = state.dwNextShopCheckTime != 0 &&
+				dwNow < state.dwNextShopCheckTime;
+		// A keeper already standing on the market strip counts too. A server
+		// restart drops every shop - they live only in memory - and leaves its
+		// keeper parked exactly where the stall was, with no errand to bring it
+		// back to town and therefore no way to ever reopen.
+		const bool alreadyAtPitch = ch->GetMapIndex() == PLAYERBOT_MAP_CHUNJO_M2 &&
+				DISTANCE_APPROX(ch->GetX() - PLAYERBOT_M2_MARKET_X,
+						ch->GetY() - PLAYERBOT_M2_MARKET_Y) <=
+					PLAYERBOT_MARKET_SPREAD + PLAYERBOT_MARKET_ARRIVE;
+		if (!justFinishedInTown && !alreadyAtPitch)
+			return false;
+
+		WORD cell = 0;
+		LPITEM item = FindPlayerBotShopItem(ch, cell);
+		if (!item)
+		{
+			// Nothing worth a stall right now; look again after a hunt rather than
+			// re-scanning the whole inventory every tick.
+			state.dwNextShopKeepTime = dwNow + number(300000, 600000);
+			sys_log(0, "PLAYERBOT_SHOP: nothing to sell pid=%u name=%s",
+					ch->GetPlayerID(), ch->GetName());
+			return false;
+		}
+
+		long offsetX = 0, offsetY = 0;
+		GetPlayerBotStableOffset(ch->GetPlayerID(), 0x4d4b5450U,
+				120, PLAYERBOT_MARKET_SPREAD, offsetX, offsetY);
+		const long stallX = PLAYERBOT_M2_MARKET_X + offsetX;
+		const long stallY = PLAYERBOT_M2_MARKET_Y + offsetY;
+
+		SetPlayerBotAction(state, BOT_ACTION_TRAVEL, dwNow);
+		if (!MovePlayerBotTownLeg(ch, state, dwNow, stallX, stallY,
+				PLAYERBOT_MARKET_ARRIVE))
+			return true; // still walking to the pitch
+
+		// OpenMyShop refuses a character whose main part is not its own body, so
+		// the horse has to go before the stall can be set up.
+		if (ch->IsRiding())
+			ch->StopRiding();
+		ch->HorseSummon(false);
+		ch->SetVictim(NULL);
+		ch->Stop();
+
+		const DWORD unit = GetPlayerBotNpcSellUnitPrice(item);
+		DWORD price = unit * (DWORD)item->GetCount() * 3U;
+		if (price == 0)
+			price = 1;
+
+		TShopItemTable table;
+		memset(&table, 0, sizeof(table));
+		table.vnum = item->GetVnum();
+		table.count = item->GetCount();
+		table.pos = TItemPos(INVENTORY, cell);
+		table.price = price;
+		table.display_pos = 0;
+
+		char sign[SHOP_SIGN_MAX_LEN + 1];
+		snprintf(sign, sizeof(sign), "%s", ch->GetName());
+
+		// Opening a stall costs a shop bundle, exactly as it does for a player:
+		// OpenMyShop consumes one 50200 and refuses outright without it. The other
+		// accepted item, the permanent 71049, takes a branch that writes through
+		// GetDesc() - a bot has no client descriptor, so that path must be avoided.
+		if (ch->CountSpecifyItem(71049) > 0)
+			return false;
+		if (ch->CountSpecifyItem(50200) == 0)
+		{
+			// The bot buys its stall like anything else it carries.
+			if (ch->GetGold() >= PLAYERBOT_SHOP_BUNDLE_PRICE)
+				ch->PointChange(POINT_GOLD, -(int)PLAYERBOT_SHOP_BUNDLE_PRICE);
+			ch->AutoGiveItem(50200, 1);
+		}
+
+		ch->OpenMyShop(sign, &table, 1);
+		if (!ch->GetMyShop())
+		{
+			// OpenMyShop refuses silently. Report which of its own guards said no,
+			// otherwise this is indistinguishable from the stall never being tried.
+			quest::PC* pc = quest::CQuestManager::instance().GetPCForce(ch->GetPlayerID());
+			const TItemTable* rp = item->GetProto();
+			LPITEM viaPos = ch->GetItem(table.pos);
+			sys_log(0, "PLAYERBOT_SHOP: refused pid=%u poly=%d quest=%d vnum=%u anti=%u equipped=%d locked=%d viaPos=%d sign=%d gold=%d",
+					ch->GetPlayerID(), ch->IsPolymorphed() ? 1 : 0,
+					(pc && pc->IsRunning()) ? 1 : 0, item->GetVnum(),
+					rp ? rp->dwAntiFlags : 0, item->IsEquipped() ? 1 : 0,
+					item->isLocked() ? 1 : 0, viaPos ? 1 : 0,
+					(int)strlen(sign), (int)(ch->GetGold() / 1000));
+			state.dwNextShopKeepTime = dwNow + number(60000, 180000);
+			return false;
+		}
+
+		state.dwShopOpenedTime = dwNow;
+		state.dwShopCloseTime = dwNow +
+				number(PLAYERBOT_SHOP_MIN_DURATION, PLAYERBOT_SHOP_MAX_DURATION);
+		sys_log(0, "PLAYERBOT_SHOP: opened pid=%u name=%s vnum=%u count=%d price=%u pos=(%ld,%ld)",
+				ch->GetPlayerID(), ch->GetName(), item->GetVnum(),
+				(int)item->GetCount(), price, ch->GetX(), ch->GetY());
+		return true;
+	}
+
+	bool MovePlayerBotTownLeg(LPCHARACTER ch, TPlayerBotAIState& state, DWORD dwNow,
+			long goalX, long goalY, int arrivalDistance)
+	{
+		if (DISTANCE_APPROX(ch->GetX() - goalX, ch->GetY() - goalY) <= arrivalDistance)
+		{
+			SetPlayerBotRidingForTravel(ch, state, false, dwNow, "town_interaction");
+			ch->Stop();
+			ch->SetPosition(POS_STANDING);
+			ClearPlayerBotRoute(state, true);
+			return true;
+		}
+
+		// NPCs and gateposts occupy ATTR_OBJECT cells.  A strict four-cell snap can
+		// therefore reject a perfectly valid visit when the chosen waiting spot is
+		// on the other side of a counter, pillar or another dynamic object.  Town
+		// legs may finish at the nearest point of the bot's own walkable component;
+		// the larger arrival radii below represent the normal interaction area.
+		const bool moveAccepted = MovePlayerBot(ch, goalX, goalY, dwNow, 16, true, true);
+		if (!moveAccepted && state.bStuckCounter >= 6)
+		{
+			sys_err("PLAYERBOT_TOWN: route failed pid=%u name=%s phase=%u from=(%ld,%ld) to=(%ld,%ld)",
+					ch->GetPlayerID(), ch->GetName(), (unsigned int)state.bTownVisitPhase,
+					ch->GetX(), ch->GetY(), goalX, goalY);
+
+			// A handful of decorative town objects are disconnected in server_attr
+			// even though the native client can run around them.  Retrying the same
+			// component forever left a bot permanently unable to sell.  After six
+			// independently planned failures, relocate once to the nearest verified
+			// walkable service cell and let the normal arrival/wait phase continue.
+			CPlayerBotNavigation& navigation = CPlayerBotNavigation::instance(ch->GetMapIndex());
+			PIXEL_POSITION safe;
+			if (navigation.Init(ch->GetMapIndex()) &&
+					navigation.FindNearestWalkableWorld(goalX, goalY, 16, safe,
+							ch->GetPlayerID() ^ (DWORD)state.bTownVisitPhase))
+			{
+				ClearPlayerBotRoute(state, true);
+				state.bStuckCounter = 0;
+				ch->Show(ch->GetMapIndex(), safe.x, safe.y, 0);
+				ch->Stop();
+				ch->SendMovePacket(FUNC_MOVE, 0, safe.x, safe.y, 0, dwNow);
+				sys_err("PLAYERBOT_TOWN: service rescue pid=%u name=%s phase=%u to=(%ld,%ld)",
+						ch->GetPlayerID(), ch->GetName(), (unsigned int)state.bTownVisitPhase,
+						safe.x, safe.y);
+			}
+			else
+				FinishPlayerBotTownVisit(ch, state, dwNow, false);
+		}
+		return false;
+	}
+
+	bool MovePlayerBotAcrossTownGate(LPCHARACTER ch, TPlayerBotAIState& state,
+			DWORD dwNow, long goalY)
+	{
+		if (!ch)
+			return false;
+		const int distance = DISTANCE_APPROX(
+				ch->GetX() - PLAYERBOT_TOWN_GATE_X, ch->GetY() - goalY);
+		if (distance <= 450)
+		{
+			ch->Stop();
+			ch->SetPosition(POS_STANDING);
+			ClearPlayerBotRoute(state, true);
+			return true;
+		}
+
+		// server_attr separates the two sides of Joan's decorative gate into
+		// different components even though players can run through its opening.
+		// This one verified 5.75 m segment is therefore issued directly, while all
+		// ordinary navigation remains collision-aware. It replaces endless A*
+		// retries at (603,675) with the same straight run a real player performs.
+		if (distance <= 1200)
+		{
+			ClearPlayerBotRoute(state, true);
+			ch->SetRotationToXY(PLAYERBOT_TOWN_GATE_X, goalY);
+			if (ch->Goto(PLAYERBOT_TOWN_GATE_X, goalY))
+			{
+				ch->SendMovePacket(FUNC_MOVE, 0, PLAYERBOT_TOWN_GATE_X, goalY,
+						ch->GetCurrentMoveDuration(), dwNow);
+				return false;
+			}
+		}
+
+		return MovePlayerBotTownLeg(ch, state, dwNow,
+				PLAYERBOT_TOWN_GATE_X, goalY, 450);
+	}
+
+	bool HandlePlayerBotTownVisit(LPCHARACTER ch, TPlayerBotAIState& state, DWORD dwNow)
+	{
+		if (!ch || !state.bVisitingShop ||
+				(ch->GetMapIndex() != PLAYERBOT_MAP_CHUNJO_M1 &&
+				 ch->GetMapIndex() != PLAYERBOT_MAP_CHUNJO_M2))
+			return false;
+		const bool inM2 = ch->GetMapIndex() == PLAYERBOT_MAP_CHUNJO_M2;
+		const long weaponNpcX = inM2 ? PLAYERBOT_M2_WEAPON_MERCHANT_X : PLAYERBOT_WEAPON_MERCHANT_X;
+		const long weaponNpcY = inM2 ? PLAYERBOT_M2_WEAPON_MERCHANT_Y : PLAYERBOT_WEAPON_MERCHANT_Y;
+		const long armorNpcX = inM2 ? PLAYERBOT_M2_ARMOR_MERCHANT_X : PLAYERBOT_ARMOR_MERCHANT_X;
+		const long armorNpcY = inM2 ? PLAYERBOT_M2_ARMOR_MERCHANT_Y : PLAYERBOT_ARMOR_MERCHANT_Y;
+		const long miscNpcX = inM2 ? PLAYERBOT_M2_MISC_MERCHANT_X : PLAYERBOT_MISC_MERCHANT_X;
+		const long miscNpcY = inM2 ? PLAYERBOT_M2_MISC_MERCHANT_Y : PLAYERBOT_MISC_MERCHANT_Y;
+		const long blacksmithNpcX = inM2 ? PLAYERBOT_M2_BLACKSMITH_X : PLAYERBOT_BLACKSMITH_X;
+		const long blacksmithNpcY = inM2 ? PLAYERBOT_M2_BLACKSMITH_Y : PLAYERBOT_BLACKSMITH_Y;
+
+		if (state.bTownVisitPhase == BOT_TOWN_PHASE_TRAINER ||
+				state.bTownVisitPhase == BOT_TOWN_PHASE_TRAINER_WAIT)
+			SetPlayerBotAction(state, BOT_ACTION_TRAIN, dwNow);
+		else if (state.bTownVisitPhase == BOT_TOWN_PHASE_BLACKSMITH ||
+				state.bTownVisitPhase == BOT_TOWN_PHASE_BLACKSMITH_WAIT)
+			SetPlayerBotAction(state, BOT_ACTION_REFINE, dwNow);
+		else if (state.bTownVisitPhase == BOT_TOWN_PHASE_WEAPON_WAIT ||
+				state.bTownVisitPhase == BOT_TOWN_PHASE_ARMOR_WAIT ||
+				state.bTownVisitPhase == BOT_TOWN_PHASE_MISC_WAIT)
+			SetPlayerBotAction(state, BOT_ACTION_SHOP, dwNow);
+		else
+			SetPlayerBotAction(state, BOT_ACTION_TRAVEL, dwNow);
+
+		state.dwTargetVID = 0;
+		ch->SetVictim(NULL);
+
+		if (state.bTownVisitPhase == BOT_TOWN_PHASE_NONE)
+		{
+			state.bTownVisitPhase = inM2
+					? GetPlayerBotFirstDirectTownPhase(state)
+					: GetPlayerBotFirstExteriorTownPhase(state);
+			if (!inM2 && state.bTownVisitPhase == BOT_TOWN_PHASE_NONE)
+				state.bTownVisitPhase = BOT_TOWN_PHASE_GATE_IN;
+			if (inM2 && state.bTownVisitPhase == BOT_TOWN_PHASE_NONE)
+			{
+				FinishPlayerBotTownVisit(ch, state, dwNow, true);
+				return true;
+			}
+		}
+
+		// Eight profession trainers stand south of Joan.  Their npc.txt cells are
+		// 623/627 (Warrior), 631/635 (Ninja), 645/649 (Sura), 653/657
+		// (Shaman); the second coordinate includes map 21's 102400 Y base.
+		const BYTE wantedGroup = (ch->GetPlayerID() % 2 == 0) ? 1 : 2;
+		const long trainerGroup1X[4] = { 62300, 63100, 64500, 65300 };
+		const long trainerGroup2X[4] = { 62700, 63500, 64900, 65700 };
+		const BYTE trainerJob = std::min<BYTE>(ch->GetJob(), JOB_SHAMAN);
+		const long trainerNpcX = wantedGroup == 1
+				? trainerGroup1X[trainerJob] : trainerGroup2X[trainerJob];
+		const long trainerNpcY = ch->GetJob() <= JOB_WARRIOR ? 161800 : 161900;
+		long trainerX = 0, trainerY = 0;
+		GetPlayerBotNpcApproach(ch->GetPlayerID(), trainerNpcX, trainerNpcY,
+				0x54524149U, trainerX, trainerY);
+
+		if (state.bTownVisitPhase == BOT_TOWN_PHASE_TRAINER)
+		{
+			SetPlayerBotAction(state, BOT_ACTION_TRAIN, dwNow);
+			if (MovePlayerBotTownLeg(ch, state, dwNow, trainerX, trainerY, 550))
+			{
+				if (ChoosePlayerBotSkillGroup(ch))
+					state.bTownNeedTrainer = false;
+				state.dwTownWaitUntil = dwNow + number(
+						PLAYERBOT_TRAINER_WAIT_MIN, PLAYERBOT_TRAINER_WAIT_MAX);
+				state.bTownVisitPhase = BOT_TOWN_PHASE_TRAINER_WAIT;
+				sys_log(0, "PLAYERBOT_TOWN: trainer visit pid=%u name=%s job=%u group=%u wait_ms=%u pos=(%ld,%ld)",
+						ch->GetPlayerID(), ch->GetName(), ch->GetJob(), ch->GetSkillGroup(),
+						state.dwTownWaitUntil - dwNow, ch->GetX(), ch->GetY());
+			}
+			return true;
+		}
+
+		if (state.bTownVisitPhase == BOT_TOWN_PHASE_TRAINER_WAIT)
+		{
+			SetPlayerBotAction(state, BOT_ACTION_TRAIN, dwNow);
+			ch->Stop();
+			ch->SetPosition(POS_STANDING);
+			if (dwNow >= state.dwTownWaitUntil)
+			{
+				state.bTownVisitPhase = state.bTownNeedWeaponMerchant
+						? BOT_TOWN_PHASE_WEAPON_MERCHANT
+						: (state.bTownNeedArmorMerchant ? BOT_TOWN_PHASE_ARMOR_MERCHANT
+							: ((state.bTownNeedMisc || state.bTownNeedBlacksmith)
+								? BOT_TOWN_PHASE_GATE_IN : BOT_TOWN_PHASE_NONE));
+				state.dwTownWaitUntil = 0;
+				ClearPlayerBotRoute(state, true);
+				if (state.bTownVisitPhase == BOT_TOWN_PHASE_NONE)
+					FinishPlayerBotTownVisit(ch, state, dwNow, true);
+			}
+			return true;
+		}
+
+		long weaponMerchantX = 0, weaponMerchantY = 0;
+		GetPlayerBotNpcApproach(ch->GetPlayerID(), weaponNpcX,
+				weaponNpcY, 0x57454150U, weaponMerchantX, weaponMerchantY);
+		if (state.bTownVisitPhase == BOT_TOWN_PHASE_WEAPON_MERCHANT)
+		{
+			if (MovePlayerBotTownLeg(ch, state, dwNow,
+					weaponMerchantX, weaponMerchantY, 850))
+			{
+				ManagePlayerBotWeaponMerchant(ch);
+				ManagePlayerBotEquipment(ch, state, dwNow);
+				if (!ch->GetWear(WEAR_WEAPON))
+				{
+					// Nothing sellable was sufficient. Leave the counter after this
+					// visit and search nearby hunting fields for ownerless Yang/gear.
+					state.dwEmergencyScavengeUntil = dwNow + 120000;
+					sys_log(0, "PLAYERBOT_GEAR: emergency scavenging armed pid=%u name=%s until=%u gold=%lld",
+							ch->GetPlayerID(), ch->GetName(), state.dwEmergencyScavengeUntil,
+							(long long)ch->GetGold());
+				}
+				state.bTownNeedBlacksmith = state.bTownNeedBlacksmith ||
+						HasPlayerBotRefineOpportunity(ch);
+				state.bTownNeedWeaponMerchant = false;
+				state.dwTownWaitUntil = dwNow + number(
+						PLAYERBOT_MERCHANT_WAIT_MIN, PLAYERBOT_MERCHANT_WAIT_MAX);
+				state.bTownVisitPhase = BOT_TOWN_PHASE_WEAPON_WAIT;
+				sys_log(0, "PLAYERBOT_TOWN: weapon merchant visit pid=%u name=%s wait_ms=%u pos=(%ld,%ld)",
+						ch->GetPlayerID(), ch->GetName(), state.dwTownWaitUntil - dwNow,
+						ch->GetX(), ch->GetY());
+			}
+			return true;
+		}
+
+		if (state.bTownVisitPhase == BOT_TOWN_PHASE_WEAPON_WAIT)
+		{
+			ch->Stop();
+			ch->SetPosition(POS_STANDING);
+			if (dwNow >= state.dwTownWaitUntil)
+			{
+				state.bTownVisitPhase = state.bTownNeedArmorMerchant
+						? BOT_TOWN_PHASE_ARMOR_MERCHANT
+						: (inM2 ? GetPlayerBotFirstDirectTownPhase(state)
+							: ((state.bTownNeedMisc || state.bTownNeedBlacksmith)
+								? BOT_TOWN_PHASE_GATE_IN : BOT_TOWN_PHASE_NONE));
+				state.dwTownWaitUntil = 0;
+				ClearPlayerBotRoute(state, true);
+				if (state.bTownVisitPhase == BOT_TOWN_PHASE_NONE)
+					FinishPlayerBotTownVisit(ch, state, dwNow, true);
+			}
+			return true;
+		}
+
+		long armorMerchantX = 0, armorMerchantY = 0;
+		GetPlayerBotNpcApproach(ch->GetPlayerID(), armorNpcX,
+				armorNpcY, 0x41524d52U, armorMerchantX, armorMerchantY);
+		if (state.bTownVisitPhase == BOT_TOWN_PHASE_ARMOR_MERCHANT)
+		{
+			if (MovePlayerBotTownLeg(ch, state, dwNow,
+					armorMerchantX, armorMerchantY, 850))
+			{
+				ManagePlayerBotArmorMerchant(ch);
+				ManagePlayerBotEquipment(ch, state, dwNow);
+				state.bTownNeedBlacksmith = state.bTownNeedBlacksmith ||
+						HasPlayerBotRefineOpportunity(ch);
+				state.bTownNeedArmorMerchant = false;
+				state.dwTownWaitUntil = dwNow + number(
+						PLAYERBOT_MERCHANT_WAIT_MIN, PLAYERBOT_MERCHANT_WAIT_MAX);
+				state.bTownVisitPhase = BOT_TOWN_PHASE_ARMOR_WAIT;
+				sys_log(0, "PLAYERBOT_TOWN: armor merchant visit pid=%u name=%s wait_ms=%u pos=(%ld,%ld)",
+						ch->GetPlayerID(), ch->GetName(), state.dwTownWaitUntil - dwNow,
+						ch->GetX(), ch->GetY());
+			}
+			return true;
+		}
+
+		if (state.bTownVisitPhase == BOT_TOWN_PHASE_ARMOR_WAIT)
+		{
+			ch->Stop();
+			ch->SetPosition(POS_STANDING);
+			if (dwNow >= state.dwTownWaitUntil)
+			{
+				state.bTownVisitPhase = inM2
+						? GetPlayerBotFirstDirectTownPhase(state)
+						: ((state.bTownNeedMisc || state.bTownNeedBlacksmith)
+							? BOT_TOWN_PHASE_GATE_IN : BOT_TOWN_PHASE_NONE);
+				state.dwTownWaitUntil = 0;
+				ClearPlayerBotRoute(state, true);
+				if (state.bTownVisitPhase == BOT_TOWN_PHASE_NONE)
+					FinishPlayerBotTownVisit(ch, state, dwNow, true);
+			}
+			return true;
+		}
+
+		if (state.bTownVisitPhase == BOT_TOWN_PHASE_GATE_IN)
+		{
+			if (inM2)
+			{
+				FinishPlayerBotTownVisit(ch, state, dwNow, false);
+				return true;
+			}
+			if (MovePlayerBotTownLeg(ch, state, dwNow,
+					PLAYERBOT_TOWN_GATE_X, PLAYERBOT_TOWN_GATE_OUTSIDE_Y, 1000))
+				state.bTownVisitPhase = BOT_TOWN_PHASE_GATE_CROSS_IN;
+			return true;
+		}
+
+		if (state.bTownVisitPhase == BOT_TOWN_PHASE_GATE_CROSS_IN)
+		{
+			if (MovePlayerBotAcrossTownGate(ch, state, dwNow,
+					PLAYERBOT_TOWN_GATE_INSIDE_Y))
+			{
+				state.bTownVisitPhase = GetPlayerBotFirstInteriorTownPhase(state);
+				if (state.bTownVisitPhase == BOT_TOWN_PHASE_NONE)
+					state.bTownVisitPhase = BOT_TOWN_PHASE_GATE_OUT;
+			}
+			return true;
+		}
+
+		long merchantX = 0, merchantY = 0;
+		GetPlayerBotNpcApproach(ch->GetPlayerID(), miscNpcX,
+				miscNpcY, 0x4d495343U, merchantX, merchantY);
+		if (state.bTownVisitPhase == BOT_TOWN_PHASE_MISC_MERCHANT)
+		{
+			if (MovePlayerBotTownLeg(ch, state, dwNow, merchantX, merchantY, 650))
+			{
+				ManagePlayerBotMiscMerchant(ch);
+				state.bTownNeedMisc = false;
+				state.dwTownWaitUntil = dwNow + number(
+						PLAYERBOT_MERCHANT_WAIT_MIN, PLAYERBOT_MERCHANT_WAIT_MAX);
+				state.bTownVisitPhase = BOT_TOWN_PHASE_MISC_WAIT;
+				sys_log(0, "PLAYERBOT_TOWN: misc merchant visit pid=%u name=%s wait_ms=%u pos=(%ld,%ld)",
+						ch->GetPlayerID(), ch->GetName(), state.dwTownWaitUntil - dwNow,
+						ch->GetX(), ch->GetY());
+			}
+			return true;
+		}
+
+		if (state.bTownVisitPhase == BOT_TOWN_PHASE_MISC_WAIT)
+		{
+			ch->Stop();
+			ch->SetPosition(POS_STANDING);
+			if (dwNow >= state.dwTownWaitUntil)
+			{
+				state.bTownVisitPhase = state.bTownNeedBlacksmith
+						? BOT_TOWN_PHASE_BLACKSMITH
+						: (inM2 ? BOT_TOWN_PHASE_NONE : BOT_TOWN_PHASE_GATE_OUT);
+				state.dwTownWaitUntil = 0;
+				ClearPlayerBotRoute(state, true);
+				if (state.bTownVisitPhase == BOT_TOWN_PHASE_NONE)
+					FinishPlayerBotTownVisit(ch, state, dwNow, true);
+			}
+			return true;
+		}
+
+		long blacksmithX = 0, blacksmithY = 0;
+		GetPlayerBotNpcApproach(ch->GetPlayerID(), blacksmithNpcX,
+				blacksmithNpcY, 0x4b4f574cU, blacksmithX, blacksmithY);
+		// Keep the per-PID spread, but halve it specifically at the blacksmith.
+		// Together with the tighter arrival radius this keeps every refiner close
+		// enough to look like it is actually interacting with the NPC.
+		blacksmithX = blacksmithNpcX + (blacksmithX - blacksmithNpcX) / 2;
+		blacksmithY = blacksmithNpcY + (blacksmithY - blacksmithNpcY) / 2;
+		if (state.bTownVisitPhase == BOT_TOWN_PHASE_BLACKSMITH)
+		{
+			if (MovePlayerBotTownLeg(ch, state, dwNow, blacksmithX, blacksmithY, 500))
+			{
+				ManagePlayerBotRefining(ch, state, dwNow);
+				// The blacksmith is where a player rerolls bonus lines too, and the
+				// bot is already standing still there for six to twenty-four seconds.
+				ManagePlayerBotBonusReroll(ch, state, dwNow);
+				if (!HasPlayerBotRefineOpportunity(ch))
+					RestorePlayerBotEquipmentAfterRefining(ch, state, dwNow);
+				state.bTownNeedBlacksmith = false;
+				state.dwTownWaitUntil = dwNow + number(
+						PLAYERBOT_BLACKSMITH_WAIT_MIN, PLAYERBOT_BLACKSMITH_WAIT_MAX);
+				state.bTownVisitPhase = BOT_TOWN_PHASE_BLACKSMITH_WAIT;
+				sys_log(0, "PLAYERBOT_TOWN: blacksmith visit pid=%u name=%s wait_ms=%u pos=(%ld,%ld)",
+						ch->GetPlayerID(), ch->GetName(), state.dwTownWaitUntil - dwNow,
+						ch->GetX(), ch->GetY());
+			}
+			return true;
+		}
+
+		if (state.bTownVisitPhase == BOT_TOWN_PHASE_BLACKSMITH_WAIT)
+		{
+			ch->Stop();
+			ch->SetPosition(POS_STANDING);
+			// Use the time spent at the NPC like a real player: make further regular
+			// refine attempts instead of clicking only once and idling.  This cadence
+			// never extends dwTownWaitUntil; the visit has one absolute 6-24 s limit.
+			ManagePlayerBotRefining(ch, state, dwNow);
+			ManagePlayerBotBonusReroll(ch, state, dwNow);
+			if (!HasPlayerBotRefineOpportunity(ch))
+				RestorePlayerBotEquipmentAfterRefining(ch, state, dwNow);
+			if (dwNow >= state.dwTownWaitUntil)
+			{
+				// Always leave the NPC wearing the best surviving/refined equipment,
+				// even if materials, Yang or a failed roll ended the session early.
+				RestorePlayerBotEquipmentAfterRefining(ch, state, dwNow);
+				state.bTownVisitPhase = inM2
+						? BOT_TOWN_PHASE_NONE : BOT_TOWN_PHASE_GATE_OUT;
+				state.dwTownWaitUntil = 0;
+				ClearPlayerBotRoute(state, true);
+				if (state.bTownVisitPhase == BOT_TOWN_PHASE_NONE)
+					FinishPlayerBotTownVisit(ch, state, dwNow, true);
+			}
+			return true;
+		}
+
+		if (state.bTownVisitPhase == BOT_TOWN_PHASE_GATE_OUT)
+		{
+			if (inM2)
+			{
+				FinishPlayerBotTownVisit(ch, state, dwNow, false);
+				return true;
+			}
+			if (MovePlayerBotTownLeg(ch, state, dwNow,
+					PLAYERBOT_TOWN_GATE_X, PLAYERBOT_TOWN_GATE_INSIDE_Y, 1000))
+				state.bTownVisitPhase = BOT_TOWN_PHASE_GATE_CROSS_OUT;
+			return true;
+		}
+
+		if (state.bTownVisitPhase == BOT_TOWN_PHASE_GATE_CROSS_OUT)
+		{
+			if (MovePlayerBotAcrossTownGate(ch, state, dwNow,
+					PLAYERBOT_TOWN_GATE_OUTSIDE_Y))
+			{
+				state.bTownVisitPhase = GetPlayerBotFirstExteriorTownPhase(state);
+				ClearPlayerBotRoute(state, true);
+				if (state.bTownVisitPhase == BOT_TOWN_PHASE_NONE)
+					FinishPlayerBotTownVisit(ch, state, dwNow, true);
+			}
+			return true;
+		}
+
+		FinishPlayerBotTownVisit(ch, state, dwNow, false);
+		return true;
+	}
+}
+
+#endif
