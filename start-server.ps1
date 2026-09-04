@@ -489,8 +489,21 @@ if ((Test-Path -LiteralPath $overlaySource -PathType Container) -and
             $syncedFiles++
         }
     }
+    # prepare-context.sh patches the engine Makefile to compile every
+    # playerbot_*.cpp it finds, and it never runs on a player's machine. Repair
+    # that one line here rather than shipping the whole Makefile over theirs.
+    $gameMakefile = Join-Path $PSScriptRoot 'linux-port\docker\game\src\server\game\src\Makefile'
+    if (Test-Path -LiteralPath $gameMakefile -PathType Leaf) {
+        $makefileText = Get-Content -LiteralPath $gameMakefile -Raw
+        if ($makefileText -match '(?m)^CPPFILE \+= playerbot_manager\.cpp\s*$') {
+            $makefileText = $makefileText -replace '(?m)^CPPFILE \+= playerbot_manager\.cpp\s*$',
+                'CPPFILE += $(wildcard playerbot_*.cpp)'
+            [IO.File]::WriteAllText($gameMakefile, $makefileText)
+            $syncedFiles++
+        }
+    }
     if ($syncedFiles -gt 0) {
-        Write-Host "Synchronised $syncedFiles playerbot source file(s) into the build context." -ForegroundColor DarkGray
+        Write-Host "Synchronised $syncedFiles playerbot build input(s) into the build context." -ForegroundColor DarkGray
     }
 }
 

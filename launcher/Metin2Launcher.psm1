@@ -320,6 +320,21 @@ function Sync-M2PlayerbotOverlay {
             $copied++
         }
     }
+
+    # The engine Makefile in the build context is patched by prepare-context.sh,
+    # which never runs on a player's machine - so the wildcard that makes a new
+    # .cpp compile itself would never reach them. Repair that one line here
+    # instead of shipping the whole Makefile over theirs.
+    $makefile = Join-Path $ServerRoot 'linux-port\docker\game\src\server\game\src\Makefile'
+    if (Test-Path -LiteralPath $makefile -PathType Leaf) {
+        $text = Get-Content -LiteralPath $makefile -Raw
+        if ($text -match '(?m)^CPPFILE \+= playerbot_manager\.cpp\s*$') {
+            $text = $text -replace '(?m)^CPPFILE \+= playerbot_manager\.cpp\s*$',
+                'CPPFILE += $(wildcard playerbot_*.cpp)'
+            [IO.File]::WriteAllText($makefile, $text)
+            $copied++
+        }
+    }
     return $copied
 }
 
