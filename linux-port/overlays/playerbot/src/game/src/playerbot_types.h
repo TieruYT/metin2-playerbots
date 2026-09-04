@@ -323,6 +323,15 @@ namespace
 	// A ring rather than a scattered patch: one fixed radius for every keeper, so
 	// the stalls read as a circle round the guard instead of a crowd.
 	const int PLAYERBOT_SHOP_RING_RADIUS = 260;
+	// The shop bundle (item 50200) carries LIMIT_NONE in item_proto, so the game
+	// itself sells stalls from level one. The floor of twenty was ours, and it is
+	// why Joan had no market: five of the five hundred bots standing there were
+	// above it, while Bokjung held a hundred and twenty.
+	const BYTE PLAYERBOT_SHOP_MIN_LEVEL = 1;
+	// How many items go on the counter. The engine allows forty
+	// (SHOP_HOST_ITEM_MAX_NUM); this is about what a bot plausibly has spare, and
+	// every slot costs an inventory scan when a buyer reads the offer.
+	const BYTE PLAYERBOT_SHOP_MAX_ITEMS = 8;
 	// The chance, rolled again for every stall a bot puts up, that it chooses Joan
 	// over Bokjung. Joan is where the players are - three quarters of the live
 	// bots stand on map 21 at any moment - so that is where the stalls belong.
@@ -423,6 +432,16 @@ namespace
 	const long PLAYERBOT_MONKEY_EASY_BASE_Y = 435200;
 	const long MAP21_BASE_X = 921600;
 	const long MAP21_BASE_Y = 204800;
+
+	// One line on a stall's counter. CShop keeps its own item list private, and a
+	// bot browsing the market reads this instead - we are the ones who put the
+	// items there, so it is exactly what is on sale.
+	struct TPlayerBotShopOffer
+	{
+		DWORD dwVnum;
+		DWORD dwPrice;
+		BYTE bRefine;
+	};
 
 	struct TPlayerBotBiologistMission
 	{
@@ -646,10 +665,7 @@ namespace
 			dwShopOpenedTime(0),
 			dwShopCloseTime(0),
 			dwNextShopKeepTime(0),
-			dwShopItemVnum(0),
-			dwShopItemPrice(0),
 			dwNextShoppingTime(0),
-			bShopItemRefine(0),
 			dwNextShopDebugTime(0),
 			dwMonkeyReversePortalBlockUntil(0),
 			dwNextLootPickupTime(0),
@@ -797,13 +813,12 @@ namespace
 		DWORD dwShopOpenedTime;
 		DWORD dwShopCloseTime;
 		DWORD dwNextShopKeepTime;
-		// What this bot is currently selling. CShop keeps its item list private
-		// and our stalls carry exactly one item, so remembering the offer here is
-		// both simpler and exactly accurate - we are the ones who put it there.
-		DWORD dwShopItemVnum;
-		DWORD dwShopItemPrice;
 		DWORD dwNextShoppingTime;
-		BYTE bShopItemRefine;
+		// What this bot is currently selling, in the order the items sit on the
+		// counter - an index here is the index CShopManager::Buy expects. Not in
+		// the initialiser list: it default-constructs empty, which is the state a
+		// bot with no stall is in.
+		std::vector<TPlayerBotShopOffer> vecShopOffers;
 		DWORD dwNextShopDebugTime;
 		DWORD dwMonkeyReversePortalBlockUntil;
 		DWORD dwNextLootPickupTime;

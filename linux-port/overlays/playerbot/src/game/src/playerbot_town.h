@@ -345,7 +345,7 @@ namespace
 
 	bool ShouldPlayerBotKeepShop(LPCHARACTER ch)
 	{
-		if (!ch || ch->GetLevel() < 20)
+		if (!ch || ch->GetLevel() < PLAYERBOT_SHOP_MIN_LEVEL)
 			return false;
 		return (PlayerBotNavHash(ch->GetPlayerID() ^ 0x53484f50U) % 10U) == 0;
 	}
@@ -391,15 +391,16 @@ namespace
 		return 1;
 	}
 
-	// The best thing this bot can legitimately part with. OpenMyShop refuses
-	// equipped, locked and ANTI_GIVE/ANTI_MYSHOP items outright, so the same
-	// rules are applied here rather than letting the call fail silently.
-	LPITEM FindPlayerBotShopItem(LPCHARACTER ch, WORD& cellOut)
+	// Everything this bot can legitimately part with, best first. OpenMyShop
+	// refuses equipped, locked and ANTI_GIVE/ANTI_MYSHOP items outright - and it
+	// refuses the *whole* shop over one bad line, not just that line - so the
+	// same rules are applied here rather than letting the call fail silently.
+	void CollectPlayerBotShopItems(LPCHARACTER ch,
+			std::vector<std::pair<int, WORD> >& outScored)
 	{
+		outScored.clear();
 		if (!ch || !ch->IsItemLoaded())
-			return NULL;
-		LPITEM best = NULL;
-		int bestScore = 0;
+			return;
 		for (WORD cell = 0; cell < INVENTORY_MAX_NUM; ++cell)
 		{
 			LPITEM item = ch->GetInventoryItem(cell);
@@ -431,14 +432,15 @@ namespace
 					continue;
 			}
 			const int score = ScorePlayerBotShopStock(ch, item);
-			if (score > bestScore)
-			{
-				bestScore = score;
-				best = item;
-				cellOut = cell;
-			}
+			if (score > 0)
+				outScored.push_back(std::make_pair(score, cell));
 		}
-		return best;
+		// Best first, so a counter that cannot hold everything holds the part
+		// worth walking across town for.
+		std::sort(outScored.begin(), outScored.end(),
+				std::greater<std::pair<int, WORD> >());
+		if (outScored.size() > (size_t)PLAYERBOT_SHOP_MAX_ITEMS)
+			outScored.resize((size_t)PLAYERBOT_SHOP_MAX_ITEMS);
 	}
 
 	// A good refine is the one moment worth breaking the bots' silence for. They
@@ -562,9 +564,7 @@ namespace
 			ch->CloseMyShop();
 		state.dwShopOpenedTime = 0;
 		state.dwShopCloseTime = 0;
-		state.dwShopItemVnum = 0;
-		state.dwShopItemPrice = 0;
-		state.bShopItemRefine = 0;
+		state.vecShopOffers.clear();
 		state.dwNextShopKeepTime = dwNow +
 				number(PLAYERBOT_SHOP_REST_MIN, PLAYERBOT_SHOP_REST_MAX);
 		if (bHadShop)
@@ -587,11 +587,9 @@ namespace
 			// recorded offer can outlive the shop it described. Nobody reads it
 			// without checking GetMyShop() first, but leaving it set would make
 			// the state say something untrue.
-			if (ch && state.dwShopItemVnum != 0)
+			if (ch && !state.vecShopOffers.empty())
 			{
-				state.dwShopItemVnum = 0;
-				state.dwShopItemPrice = 0;
-				state.bShopItemRefine = 0;
+				state.vecShopOffers.clear();
 			}
 			return false;
 		}
@@ -604,6 +602,30 @@ namespace
 					(state.dwShopOpenedTime != 0 ? state.dwShopOpenedTime : dwNow) +
 					PLAYERBOT_SHOP_MIN_DURATION;
 
+		// A counter with nothing left on it is just a bot standing still. Private
+		// shop items stay in the owner's inventory, so what is still for sale is
+		// simply what is still there. One pass over the bag, returning the moment
+		// anything matches - which is the ordinary case.
+		bool bSoldOut = !state.vecShopOffers.empty() && ch->IsItemLoaded();
+		if (bSoldOut)
+		{
+			for (WORD cell = 0; cell < INVENTORY_MAX_NUM && bSoldOut; ++cell)
+			{
+				LPITEM item = ch->GetInventoryItem(cell);
+				if (!item)
+					continue;
+				for (size_t i = 0; i < state.vecShopOffers.size(); ++i)
+				{
+					if (item->GetVnum() == state.vecShopOffers[i].dwVnum &&
+							item->GetRefineLevel() == state.vecShopOffers[i].bRefine)
+					{
+						bSoldOut = false;
+						break;
+					}
+				}
+			}
+		}
+
 		// Whatever else happens, a corpse or a bot that is no longer standing on
 		// the market strip has no business still holding a stall.
 		long pitchX = 0, pitchY = 0;
@@ -611,6 +633,14 @@ namespace
 		const bool bOffPitch = ch->IsDead() || !onShopMap ||
 				DISTANCE_APPROX(ch->GetX() - pitchX, ch->GetY() - pitchY) >
 					PLAYERBOT_SHOP_RING_RADIUS + PLAYERBOT_MARKET_ARRIVE * 2;
+
+		if (bSoldOut)
+		{
+			// Sold out is a reason to go back to playing, not to stand at an empty
+			// counter until the clock runs out.
+			ClosePlayerBotShop(ch, state, dwNow, "sold_out");
+			return false;
+		}
 
 		if (dwNow < state.dwShopCloseTime && !bOffPitch)
 		{
@@ -676,9 +706,9 @@ namespace
 		if (!justFinishedInTown && !alreadyAtPitch)
 			return false;
 
-		WORD cell = 0;
-		LPITEM item = FindPlayerBotShopItem(ch, cell);
-		if (!item)
+		std::vector<std::pair<int, WORD> > scored;
+		CollectPlayerBotShopItems(ch, scored);
+		if (scored.empty())
 		{
 			// Nothing worth a stall right now; look again after a hunt rather than
 			// re-scanning the whole inventory every tick.
@@ -710,15 +740,44 @@ namespace
 		ch->SetVictim(NULL);
 		ch->Stop();
 
-		const DWORD price = GetPlayerBotShopAskingPrice(item);
+		// One table entry per item, in the order they will sit on the counter.
+		// OpenMyShop rejects the entire shop if any single line is unsellable, so
+		// each item is re-checked here: the inventory may have moved between the
+		// scan above and this point - a town errand happens in between.
+		TShopItemTable table[PLAYERBOT_SHOP_MAX_ITEMS];
+		memset(table, 0, sizeof(table));
+		std::vector<TPlayerBotShopOffer> offers;
+		BYTE tableCount = 0;
+		for (size_t i = 0; i < scored.size() &&
+				tableCount < PLAYERBOT_SHOP_MAX_ITEMS; ++i)
+		{
+			const WORD cell = scored[i].second;
+			LPITEM item = ch->GetInventoryItem(cell);
+			if (!item || item->IsEquipped() || item->isLocked())
+				continue;
+			const TItemTable* proto = item->GetProto();
+			if (!proto || IS_SET(proto->dwAntiFlags,
+					ITEM_ANTIFLAG_GIVE | ITEM_ANTIFLAG_MYSHOP))
+				continue;
+			const DWORD price = GetPlayerBotShopAskingPrice(item);
+			table[tableCount].vnum = item->GetVnum();
+			table[tableCount].count = item->GetCount();
+			table[tableCount].pos = TItemPos(INVENTORY, cell);
+			table[tableCount].price = price;
+			table[tableCount].display_pos = tableCount;
 
-		TShopItemTable table;
-		memset(&table, 0, sizeof(table));
-		table.vnum = item->GetVnum();
-		table.count = item->GetCount();
-		table.pos = TItemPos(INVENTORY, cell);
-		table.price = price;
-		table.display_pos = 0;
+			TPlayerBotShopOffer offer;
+			offer.dwVnum = item->GetVnum();
+			offer.dwPrice = price;
+			offer.bRefine = item->GetRefineLevel();
+			offers.push_back(offer);
+			++tableCount;
+		}
+		if (tableCount == 0)
+		{
+			state.dwNextShopKeepTime = dwNow + number(300000, 600000);
+			return false;
+		}
 
 		char sign[SHOP_SIGN_MAX_LEN + 1];
 		snprintf(sign, sizeof(sign), "%s", ch->GetName());
@@ -737,19 +796,21 @@ namespace
 			ch->AutoGiveItem(50200, 1);
 		}
 
-		ch->OpenMyShop(sign, &table, 1);
+		ch->OpenMyShop(sign, table, tableCount);
 		if (!ch->GetMyShop())
 		{
-			// OpenMyShop refuses silently. Report which of its own guards said no,
-			// otherwise this is indistinguishable from the stall never being tried.
+			// OpenMyShop refuses silently, and it refuses the whole shop over one
+			// bad line - so report the first item as the representative sample
+			// along with how many were offered.
 			quest::PC* pc = quest::CQuestManager::instance().GetPCForce(ch->GetPlayerID());
-			const TItemTable* rp = item->GetProto();
-			LPITEM viaPos = ch->GetItem(table.pos);
-			sys_log(0, "PLAYERBOT_SHOP: refused pid=%u poly=%d quest=%d vnum=%u anti=%u equipped=%d locked=%d viaPos=%d sign=%d gold=%d",
-					ch->GetPlayerID(), ch->IsPolymorphed() ? 1 : 0,
-					(pc && pc->IsRunning()) ? 1 : 0, item->GetVnum(),
-					rp ? rp->dwAntiFlags : 0, item->IsEquipped() ? 1 : 0,
-					item->isLocked() ? 1 : 0, viaPos ? 1 : 0,
+			LPITEM first = ch->GetItem(table[0].pos);
+			const TItemTable* rp = first ? first->GetProto() : NULL;
+			sys_log(0, "PLAYERBOT_SHOP: refused pid=%u items=%u poly=%d quest=%d vnum=%u anti=%u equipped=%d locked=%d viaPos=%d sign=%d gold=%d",
+					ch->GetPlayerID(), (unsigned int)tableCount,
+					ch->IsPolymorphed() ? 1 : 0,
+					(pc && pc->IsRunning()) ? 1 : 0, table[0].vnum,
+					rp ? rp->dwAntiFlags : 0, first && first->IsEquipped() ? 1 : 0,
+					first && first->isLocked() ? 1 : 0, first ? 1 : 0,
 					(int)strlen(sign), (int)(ch->GetGold() / 1000));
 			state.dwNextShopKeepTime = dwNow + number(60000, 180000);
 			return false;
@@ -758,15 +819,14 @@ namespace
 		state.dwShopOpenedTime = dwNow;
 		state.dwShopCloseTime = dwNow +
 				number(PLAYERBOT_SHOP_MIN_DURATION, PLAYERBOT_SHOP_MAX_DURATION);
-		// The shop's own item list is private to CShop and our stalls carry
-		// exactly one item, so the offer is recorded here instead. A bot browsing
-		// the market reads this rather than the engine's structure.
-		state.dwShopItemVnum = item->GetVnum();
-		state.dwShopItemPrice = price;
-		state.bShopItemRefine = item->GetRefineLevel();
-		sys_log(0, "PLAYERBOT_SHOP: opened pid=%u name=%s vnum=%u count=%d price=%u pos=(%ld,%ld)",
-				ch->GetPlayerID(), ch->GetName(), item->GetVnum(),
-				(int)item->GetCount(), price, ch->GetX(), ch->GetY());
+		// The shop's own item list is private to CShop, so what is on the counter
+		// is recorded here instead - in the same order, because that order is what
+		// CShopManager::Buy indexes by. A bot browsing the market reads this
+		// rather than the engine's structure.
+		state.vecShopOffers = offers;
+		sys_log(0, "PLAYERBOT_SHOP: opened pid=%u name=%s items=%u first_vnum=%u first_price=%u pos=(%ld,%ld)",
+				ch->GetPlayerID(), ch->GetName(), (unsigned int)tableCount,
+				offers[0].dwVnum, offers[0].dwPrice, ch->GetX(), ch->GetY());
 		return true;
 	}
 

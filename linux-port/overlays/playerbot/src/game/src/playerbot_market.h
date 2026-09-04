@@ -145,17 +145,33 @@ namespace
 				continue;
 			TPlayerBotAIStateMap::const_iterator it =
 					s_mapPlayerBotAIStates.find(keeper->GetPlayerID());
-			if (it == s_mapPlayerBotAIStates.end() || it->second.dwShopItemVnum == 0)
-				continue;
-			const DWORD price = it->second.dwShopItemPrice;
-			// Never spend down to nothing: potions and the next weapon come first.
-			if (price == 0 ||
-					ch->GetGold() - (int)price < (int)PLAYERBOT_SHOPPING_GOLD_FLOOR)
+			if (it == s_mapPlayerBotAIStates.end() || it->second.vecShopOffers.empty())
 				continue;
 
-			LPITEM offer = FindPlayerBotStallItem(keeper,
-					it->second.dwShopItemVnum, it->second.bShopItemRefine);
-			if (!WantsPlayerBotStallItem(ch, offer))
+			// A counter holds several things now. Walk it and take the first the
+			// buyer actually wants; the index is the slot, because the offers were
+			// recorded in the order they were handed to OpenMyShop.
+			BYTE slot = 0;
+			LPITEM offer = NULL;
+			DWORD price = 0;
+			for (size_t k = 0; k < it->second.vecShopOffers.size(); ++k)
+			{
+				const TPlayerBotShopOffer& candidate = it->second.vecShopOffers[k];
+				// Never spend down to nothing: potions and the next weapon first.
+				if (candidate.dwPrice == 0 ||
+						ch->GetGold() - (int)candidate.dwPrice <
+							(int)PLAYERBOT_SHOPPING_GOLD_FLOOR)
+					continue;
+				LPITEM candidateItem = FindPlayerBotStallItem(keeper,
+						candidate.dwVnum, candidate.bRefine);
+				if (!WantsPlayerBotStallItem(ch, candidateItem))
+					continue;
+				slot = (BYTE)k;
+				offer = candidateItem;
+				price = candidate.dwPrice;
+				break;
+			}
+			if (!offer)
 				continue;
 
 			const DWORD vnum = offer->GetVnum();
@@ -174,7 +190,7 @@ namespace
 			if (!shop->AddGuest(ch, keeper->GetVID(), false))
 				continue;
 			ch->SetShopOwner(keeper);
-			CShopManager::instance().Buy(ch, 0);
+			CShopManager::instance().Buy(ch, slot);
 			// Leaving either of these set would point this bot at a character it
 			// is no longer standing next to.
 			ch->SetShopOwner(NULL);
@@ -182,10 +198,10 @@ namespace
 
 			if (ch->GetGold() < goldBefore)
 			{
-				sys_log(0, "PLAYERBOT_MARKET: bought pid=%u name=%s from=%s vnum=%u refine=%u paid=%d gold=%d",
+				sys_log(0, "PLAYERBOT_MARKET: bought pid=%u name=%s from=%s slot=%u vnum=%u refine=%u asked=%u paid=%d gold=%d",
 						ch->GetPlayerID(), ch->GetName(), keeper->GetName(),
-						vnum, (unsigned int)refine, goldBefore - ch->GetGold(),
-						ch->GetGold());
+						(unsigned int)slot, vnum, (unsigned int)refine, price,
+						goldBefore - ch->GetGold(), ch->GetGold());
 				return true;
 			}
 		}
