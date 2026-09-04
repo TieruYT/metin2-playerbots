@@ -80,18 +80,23 @@ dependency order at the top of `playerbot_manager.cpp`:
 |---|---|
 | `playerbot_types.h` | Tuning constants, enums, `TPlayerBotAIState`, the state map, and the two goal/action transitions every subsystem makes. |
 | `playerbot_world_rules.h` | Pure travel policy. No engine types, unit-tested. |
-| `playerbot_navigation.h` | Where a bot may stand and whether two points connect. Answers questions about the world only; calls nothing above it. |
+| `playerbot_navigation.h` | Where a bot may stand and whether two points connect. Calls nothing above it. |
 | `playerbot_world_memory.h` | What the population has learned about the world, as opposed to about itself. |
 | `playerbot_movement.h` | Following a route: mounts, waypoints, portals, and the known-metin registry. |
 | `playerbot_gear.h` | What a bot wears and carries: equipment scoring, the progression ladder, arrows, potions. |
-| `playerbot_activities.h` | What a bot does that is not fighting: the horse, and fishing. Each owns the whole tick while it runs. |
+| `playerbot_activities.h` | The horse, and fishing. Each owns the whole tick while it runs. |
 | `playerbot_missions.h` | The Biologist's collections and the level-up hunt, driven without a quest dialog. |
 | `playerbot_skills.h` | The character sheet: stat points, the job's skill order, keeping buffs up. |
-| `playerbot_combat.h` | The fight: the packets a swing or a cast is made of, attack skills, party cohesion, an archer's pull. |
+| `playerbot_combat.h` | How a swing or a cast is sent: the packets a bot has no client to generate. |
 | `playerbot_economy.h` | Money and bag: junk, merchants, the blacksmith, bonus rerolling, market stalls. |
-| `playerbot_travel.h` | Where a bot ought to be: what it still needs before it may leave, which frontier suits it, and crossing between maps. |
+| `playerbot_travel.h` | Where a bot ought to be, and crossing between maps. |
 | `playerbot_town.h` | A town visit end to end, as a state machine that survives being interrupted. |
-| `playerbot_manager.cpp` | Target selection, attacking, pulls, loot, party, wandering, the status text - and `CPlayerBotManager` with the tick. |
+| `playerbot_loot.h` | Picking things up, in and out of a fight, without sweeping the floor. |
+| `playerbot_survival.h` | Saving progress, breaking off a losing fight, and the walk back after dying. |
+| `playerbot_wandering.h` | What a bot does on a hunting map when nothing is asking for its attention. |
+| `playerbot_status.h` | What a bot shows above its head, and the words for it. |
+| `playerbot_targeting.h` | Choosing what to hit and hitting it, including the claim that keeps hundreds of bots off the same monster. |
+| `playerbot_manager.cpp` | Personality, party, upkeep, the watchdog - and `CPlayerBotManager` with the tick. |
 
 These are fragments, not normal headers: each defines objects, relies on the
 engine headers the manager includes above it, and reopens the same anonymous
@@ -100,11 +105,10 @@ that respects what it calls. A fragment that needs something from a later
 subsystem forward-declares it rather than pulling it in -- `playerbot_gear.h`
 does this for `GetPlayerBotNpcApproach`.
 
-What is left in `playerbot_manager.cpp` is the combat loop proper - choosing a
-target, claiming it against other bots, attacking, multi-pulls, loot, the party,
-wandering - plus the status text and the manager class itself. Those are the
-next cuts, and the tick is the last one: it is the only thing that has to see
-all of them.
+`playerbot_manager.cpp` is now the manager: who a bot is, its party, the small
+upkeep passes, the inactivity watchdog, and `CPlayerBotManager` itself. The tick
+stays there on purpose - it is the one thing that has to see every subsystem, so
+moving it would only mean declaring all of them somewhere else.
 
 Find a subsystem by its entry point rather than by line number:
 
