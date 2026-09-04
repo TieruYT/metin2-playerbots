@@ -96,6 +96,25 @@ namespace
 	// A real player can click several times during one visit; a three-second cadence
 	// permits several attempts without extending the absolute 6-24 s visit.
 	const DWORD PLAYERBOT_REFINE_INTERVAL = 3000;
+	// Bonus rerolling. Both verified against share/conf/item_proto.txt rather
+	// than taken from the feature notes: 71084 is USE_CHANGE_ATTRIBUTE (rerolls
+	// every line) and 71085 is USE_ADD_ATTRIBUTE (adds one). Neither can be
+	// dropped, sold, traded or put in a stall, so a bot can only ever spend its
+	// own gold on them.
+	const DWORD PLAYERBOT_BONUS_CHANGE_VNUM = 71084;
+	const DWORD PLAYERBOT_BONUS_ADD_VNUM = 71085;
+	const DWORD PLAYERBOT_BONUS_STONE_PRICE = 25000;
+	// Below this the gear itself is still changing every few levels, so paying to
+	// polish its bonus lines is money the bot needs for the next weapon.
+	const BYTE PLAYERBOT_BONUS_MIN_LEVEL = 30;
+	// What the bot keeps: roughly one strong offensive line, or two decent ones.
+	const int PLAYERBOT_BONUS_KEEP_SCORE = 240;
+	const int PLAYERBOT_BONUS_STONES_PER_VISIT = 3;
+	// Effectively once per town visit. A four-second cadence like the refiner's
+	// would let one stop at the blacksmith burn a quarter of a million yang.
+	const DWORD PLAYERBOT_BONUS_INTERVAL = 300000;
+	// Gold the bot refuses to spend on bonuses; potions and gear come first.
+	const DWORD PLAYERBOT_BONUS_GOLD_FLOOR = 120000;
 	const DWORD PLAYERBOT_INACTIVITY_RESET_TIME = 90000;
 	const DWORD PLAYERBOT_WANDER_INTERVAL = 8000;
 	const DWORD PLAYERBOT_PARTY_CHECK_INTERVAL = 10000;
@@ -288,6 +307,11 @@ namespace
 	// A point well inside the river, used only to turn the bot to face the water.
 	const long PLAYERBOT_FISHING_WATER_X = 68000;
 	const int PLAYERBOT_FISHING_ARRIVE = 200;
+	// Independently planned route failures before the bank is written off. Six
+	// matches the town-service rescue; anything larger is indistinguishable from
+	// never giving up at all.
+	const int PLAYERBOT_FISHING_STUCK_LIMIT = 6;
+	const DWORD PLAYERBOT_FISHING_PROGRESS_LOG = 15000;
 	// fishing::Compute() peaks at time step 15 -- about 3.0 s after the bite for
 	// the normal and easy tables.  Pulling in a small band around that catches
 	// fish reliably without looking frame-perfect.
@@ -525,6 +549,7 @@ namespace
 			dwNextRetreatMoveTime(0),
 			dwRetreatThreatVID(0),
 			dwNextRefineCheckTime(0),
+			dwNextBonusCheckTime(0),
 			dwNextChatTime(0),
 			dwLastStatusChatTime(0),
 			dwNextStatusProbeTime(0),
@@ -538,6 +563,7 @@ namespace
 			dwNextFishingActionTime(0),
 			dwFishingCastTime(0),
 			dwFishingSessionEndTime(0),
+			dwNextFishingProgressLogTime(0),
 			dwNextWorldTravelTime(0),
 			dwTravelBlockedSince(0),
 			dwNextRemoteRefineReturnTime(0),
@@ -664,6 +690,7 @@ namespace
 		DWORD dwNextRetreatMoveTime;
 		DWORD dwRetreatThreatVID;
 		DWORD dwNextRefineCheckTime;
+		DWORD dwNextBonusCheckTime;
 		DWORD dwNextChatTime;
 		DWORD dwLastStatusChatTime;
 		DWORD dwNextStatusProbeTime;
@@ -679,6 +706,10 @@ namespace
 		// a bite can be given up on instead of parking the bot at the bank.
 		DWORD dwFishingCastTime;
 		DWORD dwFishingSessionEndTime;
+		// A stuck angler used to be invisible: bFishingSession exempts it from the
+		// inactivity watchdog, so nothing complained while it stood still for the
+		// whole session. This throttles one progress line instead.
+		DWORD dwNextFishingProgressLogTime;
 		DWORD dwNextWorldTravelTime;
 		// Since when a live target has been holding world travel back.
 		DWORD dwTravelBlockedSince;

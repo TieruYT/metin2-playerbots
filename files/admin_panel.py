@@ -4678,8 +4678,45 @@ fetch('/static/item_icons.json')
   .then(function(data) { g_itemIcons = data; })
   .catch(function(err) { console.warn('Could not load item_icons.json:', err); });
 
+// Bonus lines are a flat number or a percentage depending on the APPLY type,
+// and nothing about the value itself says which. This is the list of the flat
+// ones; everything else the engine rolls is a percentage.
+var ATTR_FLAT = {1:1, 2:1, 3:1, 4:1, 5:1, 6:1, 42:1, 47:1, 52:1, 53:1, 54:1, 55:1, 56:1, 58:1};
+function attrSuffix(type) { return ATTR_FLAT[type] ? '' : '%'; }
+
 var ATTR_NAMES = {
   1: {pl: "Max PŻ", en: "Max HP"},
+  26: {pl: "Regeneracja PE przy Trafieniu", en: "MP Regen when Hit"},
+  39: {pl: "Odbicie Ataku", en: "Melee Reflect"},
+  40: {pl: "Odbicie Klątwy", en: "Curse Reflect"},
+  42: {pl: "Regeneracja PE za Zabicie", en: "MP per Kill"},
+  46: {pl: "Wzmocnienie Mikstur", en: "Potion Bonus"},
+  47: {pl: "Regeneracja PŻ za Zabicie", en: "HP per Kill"},
+  48: {pl: "Odporność na Omdlenie", en: "Stun Immunity"},
+  49: {pl: "Odporność na Spowolnienie", en: "Slow Immunity"},
+  50: {pl: "Odporność na Upadek", en: "Fall Immunity"},
+  52: {pl: "Zasięg Łuku", en: "Bow Range"},
+  55: {pl: "Magiczna Wartość Ataku", en: "Magic Attack Value"},
+  56: {pl: "Magiczna Wartość Obrony", en: "Magic Defence Value"},
+  57: {pl: "Szansa na Klątwę", en: "Curse Chance"},
+  58: {pl: "Max Wytrzymałość", en: "Max Stamina"},
+  59: {pl: "Silny przeciwko Wojownikom", en: "Strong vs Warriors"},
+  60: {pl: "Silny przeciwko Ninja", en: "Strong vs Ninjas"},
+  61: {pl: "Silny przeciwko Sura", en: "Strong vs Suras"},
+  62: {pl: "Silny przeciwko Szamanom", en: "Strong vs Shamans"},
+  63: {pl: "Silny przeciwko Potworom", en: "Strong vs Monsters"},
+  64: {pl: "Wzmocnienie Ataku", en: "Attack Bonus"},
+  65: {pl: "Wzmocnienie Obrony", en: "Defence Bonus"},
+  66: {pl: "Wzmocnienie Doświadczenia", en: "EXP Bonus"},
+  69: {pl: "Max PŻ", en: "Max HP"},
+  70: {pl: "Max PE", en: "Max MP"},
+  73: {pl: "Odporność na Obrażenia od Umiejętności", en: "Skill Damage Resistance"},
+  74: {pl: "Odporność na Obrażenia od Ciosów", en: "Melee Damage Resistance"},
+  77: {pl: "Szansa na Pochłonięcie PŻ", en: "HP Absorption Chance"},
+  78: {pl: "Odporność na Wojowników", en: "Warrior Resistance"},
+  79: {pl: "Odporność na Ninja", en: "Ninja Resistance"},
+  80: {pl: "Odporność na Sura", en: "Sura Resistance"},
+  81: {pl: "Odporność na Szamanów", en: "Shaman Resistance"},
   2: {pl: "Max PE", en: "Max MP"},
   3: {pl: "Energia Życiowa", en: "Vitality"},
   4: {pl: "Inteligencja", en: "Intelligence"},
@@ -4800,7 +4837,7 @@ function showItemTooltip(ev, item) {
     def.apply.forEach(function(ap) {
       if (ap.type && ap.val) {
         var apName = ATTR_NAMES[ap.type] ? (ATTR_NAMES[ap.type][lg] || ATTR_NAMES[ap.type].en) : ('Bonus #' + ap.type);
-        statHtml += '<div class="m2-tt-stat">' + apName + ': +' + ap.val + (ap.type === 1 || ap.type === 2 || ap.type === 53 || ap.type === 54 ? '' : '%') + '</div>';
+        statHtml += '<div class="m2-tt-stat">' + apName + ': +' + ap.val + attrSuffix(ap.type) + '</div>';
         hasStats = true;
       }
     });
@@ -4816,7 +4853,7 @@ function showItemTooltip(ev, item) {
     item.attrs.forEach(function(a) {
       var aName = ATTR_NAMES[a.type] ? (ATTR_NAMES[a.type][lg] || ATTR_NAMES[a.type].en) : ('Bonus #' + a.type);
       var sign = a.val > 0 ? '+' : '';
-      var pct = (a.type === 1 || a.type === 2 || a.type === 53 || a.type === 54) ? '' : '%';
+      var pct = attrSuffix(a.type);
       html += '<div class="m2-tt-bonus">' + aName + ' ' + sign + a.val + pct + '</div>';
     });
   }

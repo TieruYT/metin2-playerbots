@@ -4902,6 +4902,7 @@ namespace
 			state.bIsFishing = false;
 			state.dwFishingCastTime = 0;
 			state.dwNextFishingActionTime = 0;
+			state.dwNextFishingProgressLogTime = 0;
 			state.dwFishingSessionEndTime = dwNow +
 					number(PLAYERBOT_FISHING_SESSION_MIN, PLAYERBOT_FISHING_SESSION_MAX);
 			state.dwTargetVID = 0;
@@ -4933,10 +4934,44 @@ namespace
 
 		long destX = 0, destY = 0;
 		if (needsTackle)
+		{
 			GetPlayerBotNpcApproach(ch->GetPlayerID(), PLAYERBOT_FISHERMAN_X,
 					PLAYERBOT_FISHERMAN_Y, 0x46495348U, destX, destY);
+		}
 		else
+		{
 			GetPlayerBotFishingStand(ch->GetPlayerID(), destX, destY);
+			// The bank spots are hand-picked world coordinates. server_attr is the
+			// only authority on whether one is standable, and the town services
+			// already learned that a hand-picked point can be a cell the navigation
+			// refuses. Snap to a verified walkable cell before walking at it.
+			CPlayerBotNavigation& navigation =
+					CPlayerBotNavigation::instance(ch->GetMapIndex());
+			PIXEL_POSITION bank;
+			if (navigation.Init(ch->GetMapIndex()) &&
+					navigation.FindNearestWalkableWorld(destX, destY, 12, bank,
+							ch->GetPlayerID()))
+			{
+				destX = bank.x;
+				destY = bank.y;
+			}
+		}
+
+		// bFishingSession exempts a bot from the inactivity watchdog - standing
+		// still at the bank is the activity - which also means a session that goes
+		// wrong is completely silent. One throttled line says where it actually is.
+		if (dwNow >= state.dwNextFishingProgressLogTime)
+		{
+			state.dwNextFishingProgressLogTime = dwNow + PLAYERBOT_FISHING_PROGRESS_LOG;
+			sys_log(0, "PLAYERBOT_FISHING: progress pid=%u name=%s pos=(%ld,%ld) dest=(%ld,%ld) dist=%ld tackle=%d rod=%d bait=%d casting=%d stuck=%u riding=%d",
+					ch->GetPlayerID(), ch->GetName(), ch->GetX(), ch->GetY(),
+					destX, destY,
+					(long)DISTANCE_APPROX(ch->GetX() - destX, ch->GetY() - destY),
+					needsTackle ? 1 : 0, IsPlayerBotHoldingRod(ch) ? 1 : 0,
+					ch->CountSpecifyItem(PLAYERBOT_FISHING_BAIT_VNUM),
+					state.bIsFishing ? 1 : 0, (unsigned int)state.bStuckCounter,
+					ch->IsRiding() ? 1 : 0);
+		}
 
 		// A session that never reaches the water is the worst of both worlds: the
 		// bot has paid for tackle, stopped hunting, and walks the same failing
@@ -4956,15 +4991,31 @@ namespace
 				PLAYERBOT_FISHING_ARRIVE)
 		{
 			// Riding there is fine; the line simply cannot go in from a saddle.
-			if (!MovePlayerBot(ch, destX, destY, dwNow, 16, true, true) &&
-					state.bStuckCounter >= 6)
+			if (MovePlayerBot(ch, destX, destY, dwNow, 16, true, true) ||
+					state.bStuckCounter < PLAYERBOT_FISHING_STUCK_LIMIT)
+				return true;
+
+			// Out of route. The tackle leg cannot be skipped - only the Rybak sells
+			// rods - but the bank can be: fishing() in r40250 asks for a
+			// non-blocking tile, a rod of type ITEM_ROD and bait in socket 2, and
+			// never looks for water at all (it computes a facing offset and then
+			// discards it). Casting where the bot already stands is therefore a
+			// real cast, and it beats spending the entire session walking at a
+			// bank the navigation cannot reach.
+			if (needsTackle ||
+					IsPlayerBotPositionBlocked(ch->GetMapIndex(), ch->GetX(), ch->GetY()))
 			{
-				sys_err("PLAYERBOT_FISHING: route failed pid=%u name=%s from=(%ld,%ld) to=(%ld,%ld)",
+				sys_err("PLAYERBOT_FISHING: route failed pid=%u name=%s from=(%ld,%ld) to=(%ld,%ld) tackle=%d",
 						ch->GetPlayerID(), ch->GetName(), ch->GetX(), ch->GetY(),
-						destX, destY);
+						destX, destY, needsTackle ? 1 : 0);
 				return EndPlayerBotFishingSession(ch, state, dwNow, "route_failed");
 			}
-			return true;
+
+			sys_log(0, "PLAYERBOT_FISHING: bank unreachable, casting in place pid=%u name=%s pos=(%ld,%ld) bank=(%ld,%ld)",
+					ch->GetPlayerID(), ch->GetName(), ch->GetX(), ch->GetY(),
+					destX, destY);
+			state.bStuckCounter = 0;
+			ClearPlayerBotRoute(state, true);
 		}
 
 		SetPlayerBotRidingForTravel(ch, state, false, dwNow, "fishing");
@@ -6190,6 +6241,193 @@ namespace
 		}
 
 		return false;
+	}
+
+	// --- Bonus lines ---------------------------------------------------------
+	// Gear is only half a bot's power; the four bonus lines are the other half. A
+	// level-appropriate weapon rolled into four resistances is genuinely worse
+	// than the one it replaced, and until now nothing ever looked at them.
+	//
+	// The scoring below is deliberately coarse. It exists to tell "worth keeping"
+	// from "roll it again", not to model the damage formula: every line is scored
+	// as points-per-typical-roll so that a +2000 HP line and a +15 attack line
+	// can be compared at all.
+	bool IsPlayerBotCaster(LPCHARACTER ch)
+	{
+		return ch && (ch->GetJob() == JOB_SHAMAN || ch->GetJob() == JOB_SURA);
+	}
+
+	int ScorePlayerBotBonusLine(LPCHARACTER ch, bool bOffensiveSlot, BYTE type, short value)
+	{
+		// A negative roll exists (movement speed on some sets) and is worth less
+		// than nothing, so it must not be able to prop up a bad item's total.
+		if (value <= 0)
+			return 0;
+
+		switch (type)
+		{
+			case APPLY_SKILL_DAMAGE_BONUS:      return value * 12;
+			case APPLY_NORMAL_HIT_DAMAGE_BONUS: return value * 10;
+			case APPLY_CRITICAL_PCT:            return value * 10;
+			case APPLY_PENETRATE_PCT:           return value * 10;
+			case APPLY_ATTBONUS_MONSTER:        return value * 8;
+			case APPLY_ATT_SPEED:               return value * 8;
+			case APPLY_STEAL_HP:                return value * 6;
+			case APPLY_ATT_GRADE_BONUS:         return bOffensiveSlot ? value * 5 : value * 3;
+			case APPLY_CAST_SPEED:              return IsPlayerBotCaster(ch) ? value * 8 : value;
+			case APPLY_MAX_HP_PCT:              return value * 15;
+			case APPLY_DEF_GRADE_BONUS:         return bOffensiveSlot ? value * 2 : value * 6;
+			case APPLY_MOV_SPEED:               return value * 3;
+			// Big absolute numbers that have to be scaled down to compare with the
+			// percentage lines above.
+			case APPLY_MAX_HP:                  return value / 4;
+			case APPLY_MAX_SP:                  return IsPlayerBotCaster(ch) ? value / 4 : value / 12;
+			// Everything else - resistances, stamina, experience bonus - is real but
+			// minor for a bot that only grinds. Never zero: a line is still a line.
+			default:                            return value;
+		}
+	}
+
+	bool IsPlayerBotOffensiveSlot(BYTE wearCell)
+	{
+		return wearCell == WEAR_WEAPON;
+	}
+
+	int ScorePlayerBotItemBonuses(LPCHARACTER ch, LPITEM item, BYTE wearCell)
+	{
+		if (!ch || !item)
+			return 0;
+		const bool bOffensive = IsPlayerBotOffensiveSlot(wearCell);
+		int score = 0;
+		const int count = item->GetAttributeCount();
+		for (int i = 0; i < count && i < ITEM_ATTRIBUTE_MAX_NUM; ++i)
+		{
+			score += ScorePlayerBotBonusLine(ch, bOffensive,
+					item->GetAttributeType(i), item->GetAttributeValue(i));
+		}
+		return score;
+	}
+
+	// An item the engine will actually accept a stone on. UseItemEx refuses an
+	// equipped item outright ("if (item2->IsEquipped()) return false"), costumes,
+	// and anything without an attribute set, so a bot has to take the piece off
+	// first - exactly as a player does.
+	bool CanPlayerBotRerollItem(LPITEM item)
+	{
+		return item && item->GetType() != ITEM_COSTUME && !item->isLocked() &&
+				!item->IsExchanging() && item->GetAttributeSetIndex() != -1;
+	}
+
+	// The stones cannot be dropped, sold, traded or shopped, so there is no market
+	// to walk to: the bot pays for one the same way it pays for its stall.
+	bool BuyPlayerBotBonusStone(LPCHARACTER ch, DWORD vnum)
+	{
+		if (!ch)
+			return false;
+		if (ch->CountSpecifyItem(vnum) > 0)
+			return true;
+		if (ch->GetGold() < (int)(PLAYERBOT_BONUS_GOLD_FLOOR + PLAYERBOT_BONUS_STONE_PRICE))
+			return false;
+		if (ch->GetEmptyInventory(1) < 0)
+			return false;
+		if (!ch->AutoGiveItem(vnum, 1, -1, false))
+			return false;
+		ch->PointChange(POINT_GOLD, -(int)PLAYERBOT_BONUS_STONE_PRICE);
+		return true;
+	}
+
+	bool ConsumePlayerBotBonusStone(LPCHARACTER ch, DWORD vnum)
+	{
+		if (!ch)
+			return false;
+		for (WORD cell = 0; cell < INVENTORY_MAX_NUM; ++cell)
+		{
+			LPITEM stone = ch->GetInventoryItem(cell);
+			if (!stone || stone->GetVnum() != vnum)
+				continue;
+			if (stone->GetCount() > 1)
+				stone->SetCount(stone->GetCount() - 1);
+			else
+				ITEM_MANAGER::instance().RemoveItem(stone, "PLAYERBOT_BONUS");
+			return true;
+		}
+		return false;
+	}
+
+	// Worn gear only. Spares in the bag are sold or put in a stall long before
+	// they are worth polishing, and rerolling them would spend the gold the bot
+	// needs for its next real upgrade.
+	bool ManagePlayerBotBonusReroll(LPCHARACTER ch, TPlayerBotAIState& state, DWORD dwNow)
+	{
+		if (!ch || !ch->IsItemLoaded() || dwNow < state.dwNextBonusCheckTime)
+			return false;
+		state.dwNextBonusCheckTime = dwNow + PLAYERBOT_BONUS_INTERVAL;
+		if (ch->GetLevel() < PLAYERBOT_BONUS_MIN_LEVEL)
+			return false;
+		if (ch->GetGold() < (int)(PLAYERBOT_BONUS_GOLD_FLOOR + PLAYERBOT_BONUS_STONE_PRICE))
+			return false;
+
+		const BYTE wearSlots[] = {
+			WEAR_WEAPON, WEAR_BODY, WEAR_HEAD, WEAR_SHIELD,
+			WEAR_FOOTS, WEAR_WRIST, WEAR_NECK, WEAR_EAR
+		};
+
+		int stonesUsed = 0;
+		for (size_t i = 0; i < sizeof(wearSlots) / sizeof(wearSlots[0]) &&
+				stonesUsed < PLAYERBOT_BONUS_STONES_PER_VISIT; ++i)
+		{
+			const BYTE wearCell = wearSlots[i];
+			LPITEM item = ch->GetWear(wearCell);
+			if (!CanPlayerBotRerollItem(item))
+				continue;
+
+			const int count = item->GetAttributeCount();
+			const int score = ScorePlayerBotItemBonuses(ch, item, wearCell);
+
+			// An empty line is free power: add before rerolling, always. Only once
+			// the item is full does the quality of what it rolled start to matter,
+			// and USE_CHANGE_ATTRIBUTE needs at least one line to work on anyway.
+			const bool bWantAdd = count < 4;
+			const bool bWantChange = !bWantAdd && score < PLAYERBOT_BONUS_KEEP_SCORE;
+			if (!bWantAdd && !bWantChange)
+				continue;
+
+			const DWORD stoneVnum = bWantAdd ? PLAYERBOT_BONUS_ADD_VNUM
+					: PLAYERBOT_BONUS_CHANGE_VNUM;
+			if (!BuyPlayerBotBonusStone(ch, stoneVnum))
+				continue;
+
+			// The piece has to come off for the engine to touch it, and it has to go
+			// back on afterwards - a bot walking around with its weapon in the bag
+			// would be worse than any bonus line it could win.
+			if (!ch->UnequipItem(item))
+				continue;
+
+			if (bWantAdd)
+				item->AddAttribute();
+			else
+				item->ChangeAttribute();
+
+			ConsumePlayerBotBonusStone(ch, stoneVnum);
+			++stonesUsed;
+
+			const int newScore = ScorePlayerBotItemBonuses(ch, item, wearCell);
+			if (!ch->EquipItem(item))
+			{
+				sys_err("PLAYERBOT_BONUS: could not re-equip pid=%u name=%s vnum=%u slot=%u",
+						ch->GetPlayerID(), ch->GetName(), item->GetVnum(),
+						(unsigned int)wearCell);
+				continue;
+			}
+
+			sys_log(0, "PLAYERBOT_BONUS: %s pid=%u name=%s vnum=%u slot=%u lines=%d->%d score=%d->%d gold=%d",
+					bWantAdd ? "added" : "rerolled", ch->GetPlayerID(), ch->GetName(),
+					item->GetVnum(), (unsigned int)wearCell, count,
+					item->GetAttributeCount(), score, newScore,
+					(int)(ch->GetGold() / 1000));
+		}
+
+		return stonesUsed > 0;
 	}
 
 	bool ManagePlayerBotRefining(LPCHARACTER ch, TPlayerBotAIState& state, DWORD dwNow)
@@ -8322,6 +8560,9 @@ namespace
 			if (MovePlayerBotTownLeg(ch, state, dwNow, blacksmithX, blacksmithY, 500))
 			{
 				ManagePlayerBotRefining(ch, state, dwNow);
+				// The blacksmith is where a player rerolls bonus lines too, and the
+				// bot is already standing still there for six to twenty-four seconds.
+				ManagePlayerBotBonusReroll(ch, state, dwNow);
 				if (!HasPlayerBotRefineOpportunity(ch))
 					RestorePlayerBotEquipmentAfterRefining(ch, state, dwNow);
 				state.bTownNeedBlacksmith = false;
@@ -8343,6 +8584,7 @@ namespace
 			// refine attempts instead of clicking only once and idling.  This cadence
 			// never extends dwTownWaitUntil; the visit has one absolute 6-24 s limit.
 			ManagePlayerBotRefining(ch, state, dwNow);
+			ManagePlayerBotBonusReroll(ch, state, dwNow);
 			if (!HasPlayerBotRefineOpportunity(ch))
 				RestorePlayerBotEquipmentAfterRefining(ch, state, dwNow);
 			if (dwNow >= state.dwTownWaitUntil)

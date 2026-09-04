@@ -17,6 +17,27 @@ every version here.
 
 ---
 
+## 1.23.4 — 2026-09-04
+
+### Added
+
+- **Boty poprawiają bonusy na swoim sprzęcie.** Ekwipunek to tylko połowa siły postaci — druga połowa to cztery linie bonusów, a do tej pory nikt na nie nie patrzył. Bot na 30+ poziomie, stojąc u kowala, dokłada brakującą linię (`Wzmocnienie Przedmiotu`) albo przelosowuje słabe (`Zaczarowanie Przedmiotu`).
+  - Oba przedmioty sprawdzone w `item_proto`, nie wzięte z notatek: **71084** to `USE_CHANGE_ATTRIBUTE`, **71085** to `USE_ADD_ATTRIBUTE`.
+  - Silnik **odmawia** zmiany bonusów w założonym przedmiocie (`if (item2->IsEquipped()) return false`), więc bot zdejmuje część, losuje i zakłada z powrotem — dokładnie jak gracz.
+  - Punktacja jest celowo zgrubna: ma odróżnić „warto zachować" od „losuj jeszcze raz", a nie odwzorować wzór na obrażenia. Broń ceni obrażenia od umiejętności, krytyki i przebicia; reszta sprzętu punkty życia i obronę.
+  - Bot nie tknie ostatnich **120 tysięcy** yang — mikstury i sprzęt są ważniejsze — i wydaje najwyżej trzy kamienie na wizytę.
+
+### Fixed
+
+- **Bot potrafił przestać łowić na dobre.** Sesja wędkarska zwalnia bota z watchdoga bezczynności (stanie przy brzegu **jest** czynnością), więc bot, który nie mógł dojść nad wodę, stał w miejscu w całkowitej ciszy. Teraz:
+  - punkt na brzegu jest **przyciągany do zweryfikowanej chodliwej komórki**, tak samo jak punkty usług w mieście;
+  - gdy brzeg i tak jest nieosiągalny, bot **zarzuca tam, gdzie stoi** — `fishing()` w r40250 wymaga tylko niezablokowanego pola, wędki i przynęty, a wody nie sprawdza w ogóle (wylicza kierunek i go odrzuca);
+  - co 15 sekund trafia do dziennika jedna linia `PLAYERBOT_FISHING: progress` z pozycją, celem, odległością i stanem sprzętu, więc następne zgłoszenie będzie można rozstrzygnąć jedną linią.
+- **Panel nazywał co trzeci bonus „Bonus #63".** Tablica nazw pokrywała typy 1–25 i garść innych; brakowało między innymi odbicia ataku, odporności na omdlenie, magicznej wartości ataku i całej rodziny „silny przeciwko…". Dodane **31 brakujących** nazw, po polsku i angielsku.
+- **Panel pokazywał cztery podstawowe statystyki jako procenty.** Siła, Zręczność, Inteligencja i Energia Życiowa to liczby, nie procenty — podobnie jak magiczna wartość ataku i obrony czy wytrzymałość. Rozróżnienie ma teraz własną listę zamiast testu na cztery typy.
+
+---
+
 ## 1.23.3 — 2026-09-04
 
 ### Fixed
