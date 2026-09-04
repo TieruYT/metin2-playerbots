@@ -1,12 +1,12 @@
 {
   "schema": 1,
   "channel": "stable",
-  "publishedAt": "2026-09-04T22:44:53Z",
-  "statusMessage": "Aktualizacja 1.24.8: stragany wreszcie powstaja w Joan, pod Straznikiem Wsi i z rozrzutem na kilkadziesiat metrow. Doszla tez osobowosc Handlarza - co szosty bot handluje zawodowo, wystawia 20 pozycji i nie biega za koniem.",
+  "publishedAt": "2026-09-04T23:20:02Z",
+  "statusMessage": "Aktualizacja 1.24.9: stragany wystawiaja bronie na 30 lvl, przedmioty z duzym bonusem, sprzet od +6, ulepszacze i ksiegi, a medale konne wreszcie da sie kupic. Plac handlowy zwezony do zasiegu, w ktorym gra pozwala kupowac - przy szerszym rynek nie dzialal wcale.",
   "server": {
-    "version": "1.24.8",
-    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v1.24.8/metin2-server-update-1.24.8.zip",
-    "sha256": "4CAD7BCADB3132B20D53C63D8AD0C952EAA901615DCFD3A4ADBE360947076AF5"
+    "version": "1.24.9",
+    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v1.24.9/metin2-server-update-1.24.9.zip",
+    "sha256": "1741EA31974444E648DC11CA1FD84D62923F32D619A846614D8D81562CAEFB55"
   },
   "support": {
     "contactUrl": "https://discord.gg/pt5tvnrN6",
