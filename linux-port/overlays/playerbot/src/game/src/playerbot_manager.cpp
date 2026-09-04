@@ -75,6 +75,13 @@ namespace
 		if (role == BOT_ROLE_METIN_HUNTER)
 			return BOT_PERSONALITY_METIN_BREAKER;
 
+		// Traders are drawn before the rest: a bot that trades for a living is not
+		// a variant of an adventurer, it is a different way of playing, and the
+		// world was short of one.
+		if ((PlayerBotNavHash(ch->GetPlayerID() ^ 0x4d524348U) %
+				PLAYERBOT_MERCHANT_SHARE) == 0)
+			return BOT_PERSONALITY_MERCHANT;
+
 		switch (PlayerBotNavHash(ch->GetPlayerID() ^ 0x50524f46U) % 4U)
 		{
 			case 0: return BOT_PERSONALITY_GEAR_SPECIALIST;
@@ -96,6 +103,8 @@ namespace
 				return BOT_AMBITION_EQUIPMENT;
 			case BOT_PERSONALITY_CAREFUL_COLLECTOR:
 				return BOT_AMBITION_BIOLOGIST;
+			case BOT_PERSONALITY_MERCHANT:
+				return BOT_AMBITION_TRADE;
 			case BOT_PERSONALITY_WANDERER:
 				return BOT_AMBITION_HORSE;
 			case BOT_PERSONALITY_TEAM_COMPANION:

@@ -116,20 +116,22 @@ BOT_PERSONALITY_LABELS = {
     "pl": {
         0: "Wytrwały poszukiwacz", 1: "Pogromca Metinów", 2: "Towarzysz drużyny",
         3: "Mistrz ekwipunku", 4: "Rozważny zbieracz", 5: "Wędrowiec",
+        6: "Handlarz",
     },
     "en": {
         0: "Steady adventurer", 1: "Metin breaker", 2: "Team companion",
         3: "Gear specialist", 4: "Careful collector", 5: "Wanderer",
+        6: "Merchant",
     },
 }
 BOT_AMBITION_LABELS = {
     "pl": {
         0: "Poziom", 1: "Ekwipunek", 2: "Metiny", 3: "Koń",
-        4: "Biolog", 5: "Umiejętności",
+        4: "Biolog", 5: "Umiejętności", 6: "Handel",
     },
     "en": {
         0: "Level", 1: "Equipment", 2: "Metins", 3: "Horse",
-        4: "Biologist", 5: "Skills",
+        4: "Biologist", 5: "Skills", 6: "Trade",
     },
 }
 BOT_GOAL_LABELS = {

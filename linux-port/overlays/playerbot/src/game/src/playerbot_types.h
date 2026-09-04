@@ -318,11 +318,16 @@ namespace
 	// gives PLAYERBOT_M1_TELEPORTER its (51900,153600) from cell (519,512). He
 	// stands alone - no other NPC within forty cells - so a ring of stalls round
 	// him blocks nobody.
-	const long PLAYERBOT_M1_GUARD_X = 63300;
-	const long PLAYERBOT_M1_GUARD_Y = 166400;
-	// A ring rather than a scattered patch: one fixed radius for every keeper, so
-	// the stalls read as a circle round the guard instead of a crowd.
-	const int PLAYERBOT_SHOP_RING_RADIUS = 260;
+	// Cell (634,639) of metin2_map_b1, whose BasePosition is (0,102400): world =
+	// base + cell*100.
+	const long PLAYERBOT_M1_GUARD_X = 63400;
+	const long PLAYERBOT_M1_GUARD_Y = 166300;
+	// How far from the middle a stall may stand. A hundred units is a metre in
+	// this engine, so this is a market spread over roughly eight to forty metres
+	// rather than the two-and-a-half-metre huddle it was: there is room around
+	// the guard and a player has to be able to walk between the counters.
+	const int PLAYERBOT_SHOP_RING_MIN = 800;
+	const int PLAYERBOT_SHOP_RING_RADIUS = 4000;
 	// The shop bundle (item 50200) carries LIMIT_NONE in item_proto, so the game
 	// itself sells stalls from level one. The floor of twenty was ours, and it is
 	// why Joan had no market: five of the five hundred bots standing there were
@@ -332,6 +337,14 @@ namespace
 	// (SHOP_HOST_ITEM_MAX_NUM); this is about what a bot plausibly has spare, and
 	// every slot costs an inventory scan when a buyer reads the offer.
 	const BYTE PLAYERBOT_SHOP_MAX_ITEMS = 8;
+	// A trader's counter. It is the bot's occupation rather than a sideline, so it
+	// carries far more and keeps the stall up for a proper shift.
+	const BYTE PLAYERBOT_SHOP_MERCHANT_ITEMS = 20;
+	const DWORD PLAYERBOT_SHOP_MERCHANT_MIN_DURATION = 600000;   // 10 min
+	const DWORD PLAYERBOT_SHOP_MERCHANT_MAX_DURATION = 1200000;  // 20 min
+	// One bot in six that has no other calling trades for a living. Enough to give
+	// each market a few permanent faces without emptying the hunting grounds.
+	const DWORD PLAYERBOT_MERCHANT_SHARE = 6;
 	// The chance, rolled again for every stall a bot puts up, that it chooses Joan
 	// over Bokjung. Joan is where the players are - three quarters of the live
 	// bots stand on map 21 at any moment - so that is where the stalls belong.
@@ -594,6 +607,11 @@ namespace
 		BOT_PERSONALITY_TEAM_COMPANION,
 		BOT_PERSONALITY_GEAR_SPECIALIST,
 		BOT_PERSONALITY_CAREFUL_COLLECTOR,
+		// A trader. Every other bot is chasing something - a level, a horse, a
+		// better weapon - and they all end up playing the same way. This one keeps
+		// a stall because that is what it does, not because it happened to have a
+		// spare while passing through town.
+		BOT_PERSONALITY_MERCHANT,
 		BOT_PERSONALITY_WANDERER
 	};
 
@@ -604,7 +622,8 @@ namespace
 		BOT_AMBITION_METINS,
 		BOT_AMBITION_HORSE,
 		BOT_AMBITION_BIOLOGIST,
-		BOT_AMBITION_SKILLS
+		BOT_AMBITION_SKILLS,
+		BOT_AMBITION_TRADE
 	};
 
 	struct TPlayerBotAIState

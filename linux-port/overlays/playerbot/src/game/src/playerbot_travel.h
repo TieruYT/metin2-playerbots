@@ -447,7 +447,12 @@ namespace
 
 		const long mapIndex = ch->GetMapIndex();
 		const bool hasMedal = ch->CountSpecifyItem(PLAYERBOT_HORSE_MEDAL_VNUM) > 0;
+		// A trader does not down tools to go and farm horse medals in the Monkey
+		// Dungeon. That errand takes a bot right across the world for the better
+		// part of an hour, and it is exactly the striving this personality exists
+		// not to do.
 		const bool pursuesHorseExpedition =
+				state.bPersonality != BOT_PERSONALITY_MERCHANT &&
 				ShouldPlayerBotPursueHorseExpedition(ch, dwNow);
 		const bool needsHorseExpedition = pursuesHorseExpedition && !hasMedal;
 		// GetWear answers NULL for every slot until the item cache has loaded,

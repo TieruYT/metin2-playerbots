@@ -343,10 +343,19 @@ namespace
 		return false;
 	}
 
-	bool ShouldPlayerBotKeepShop(LPCHARACTER ch)
+	bool IsPlayerBotMerchant(const TPlayerBotAIState& state)
+	{
+		return state.bPersonality == BOT_PERSONALITY_MERCHANT;
+	}
+
+	bool ShouldPlayerBotKeepShop(LPCHARACTER ch, const TPlayerBotAIState& state)
 	{
 		if (!ch || ch->GetLevel() < PLAYERBOT_SHOP_MIN_LEVEL)
 			return false;
+		// A trader always has the stall open when it can. For everyone else it
+		// stays what it was: an occasional thing one bot in ten does with a spare.
+		if (IsPlayerBotMerchant(state))
+			return true;
 		return (PlayerBotNavHash(ch->GetPlayerID() ^ 0x53484f50U) % 10U) == 0;
 	}
 
@@ -396,7 +405,7 @@ namespace
 	// refuses the *whole* shop over one bad line, not just that line - so the
 	// same rules are applied here rather than letting the call fail silently.
 	void CollectPlayerBotShopItems(LPCHARACTER ch,
-			std::vector<std::pair<int, WORD> >& outScored)
+			std::vector<std::pair<int, WORD> >& outScored, bool merchant)
 	{
 		outScored.clear();
 		if (!ch || !ch->IsItemLoaded())
@@ -439,8 +448,11 @@ namespace
 		// worth walking across town for.
 		std::sort(outScored.begin(), outScored.end(),
 				std::greater<std::pair<int, WORD> >());
-		if (outScored.size() > (size_t)PLAYERBOT_SHOP_MAX_ITEMS)
-			outScored.resize((size_t)PLAYERBOT_SHOP_MAX_ITEMS);
+		const size_t limit = merchant
+				? (size_t)PLAYERBOT_SHOP_MERCHANT_ITEMS
+				: (size_t)PLAYERBOT_SHOP_MAX_ITEMS;
+		if (outScored.size() > limit)
+			outScored.resize(limit);
 	}
 
 	// A good refine is the one moment worth breaking the bots' silence for. They
@@ -667,10 +679,13 @@ namespace
 		if (ch->GetMyShop())
 			return true;
 
-		if (!ShouldPlayerBotKeepShop(ch))
+		if (!ShouldPlayerBotKeepShop(ch, state))
 			return false;
-		if (ch->GetMapIndex() != PLAYERBOT_MAP_CHUNJO_M2)
-			return false;
+		// No map test here. There used to be one pinning stalls to Bokjung, left
+		// over from when that was the only market, and it sat in front of the
+		// choice below - so a bot in Joan returned before it ever got to roll, and
+		// every stall in the world was still opening in Bokjung. Which towns are
+		// allowed is decided by the roll and by GetPlayerBotShopCentre.
 
 		// Errands still come first - a stall opened mid-visit would be abandoned
 		// on the next tick.
@@ -707,7 +722,7 @@ namespace
 			return false;
 
 		std::vector<std::pair<int, WORD> > scored;
-		CollectPlayerBotShopItems(ch, scored);
+		CollectPlayerBotShopItems(ch, scored, IsPlayerBotMerchant(state));
 		if (scored.empty())
 		{
 			// Nothing worth a stall right now; look again after a hunt rather than
@@ -718,11 +733,11 @@ namespace
 			return false;
 		}
 
-		// One radius for everyone puts the stalls on a ring; only the angle differs
-		// per bot, and it is stable, so a keeper returns to the same spot.
+		// Distance and angle are both stable per bot, so a keeper returns to its
+		// own pitch every time instead of the market rearranging itself.
 		long offsetX = 0, offsetY = 0;
 		GetPlayerBotStableOffset(ch->GetPlayerID(), 0x4d4b5450U,
-				PLAYERBOT_SHOP_RING_RADIUS, PLAYERBOT_SHOP_RING_RADIUS,
+				PLAYERBOT_SHOP_RING_MIN, PLAYERBOT_SHOP_RING_RADIUS,
 				offsetX, offsetY);
 		const long stallX = pitchX + offsetX;
 		const long stallY = pitchY + offsetY;
@@ -744,12 +759,13 @@ namespace
 		// OpenMyShop rejects the entire shop if any single line is unsellable, so
 		// each item is re-checked here: the inventory may have moved between the
 		// scan above and this point - a town errand happens in between.
-		TShopItemTable table[PLAYERBOT_SHOP_MAX_ITEMS];
+		TShopItemTable table[PLAYERBOT_SHOP_MERCHANT_ITEMS];
 		memset(table, 0, sizeof(table));
 		std::vector<TPlayerBotShopOffer> offers;
+		const BYTE tableLimit = IsPlayerBotMerchant(state)
+				? PLAYERBOT_SHOP_MERCHANT_ITEMS : PLAYERBOT_SHOP_MAX_ITEMS;
 		BYTE tableCount = 0;
-		for (size_t i = 0; i < scored.size() &&
-				tableCount < PLAYERBOT_SHOP_MAX_ITEMS; ++i)
+		for (size_t i = 0; i < scored.size() && tableCount < tableLimit; ++i)
 		{
 			const WORD cell = scored[i].second;
 			LPITEM item = ch->GetInventoryItem(cell);
@@ -817,8 +833,10 @@ namespace
 		}
 
 		state.dwShopOpenedTime = dwNow;
-		state.dwShopCloseTime = dwNow +
-				number(PLAYERBOT_SHOP_MIN_DURATION, PLAYERBOT_SHOP_MAX_DURATION);
+		state.dwShopCloseTime = dwNow + (IsPlayerBotMerchant(state)
+				? number(PLAYERBOT_SHOP_MERCHANT_MIN_DURATION,
+						PLAYERBOT_SHOP_MERCHANT_MAX_DURATION)
+				: number(PLAYERBOT_SHOP_MIN_DURATION, PLAYERBOT_SHOP_MAX_DURATION));
 		// The shop's own item list is private to CShop, so what is on the counter
 		// is recorded here instead - in the same order, because that order is what
 		// CShopManager::Buy indexes by. A bot browsing the market reads this
