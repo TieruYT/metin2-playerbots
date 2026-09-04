@@ -17,6 +17,29 @@ every version here.
 
 ---
 
+## 1.24.2 — 2026-09-04
+
+### Podziękowania
+
+- **OskarPWA** udostępnił swoją wersję panelu i zgodził się, żeby wziąć z niej dwie rzeczy: **okno magazynu bota** oraz **ikony przy umiejętnościach**. Jedno i drugie jest w tym wydaniu. Dzięki!
+
+### Dodane
+
+- **Magazyn bota na stronie.** Obok ekwipunku doszła ikona magazynu. Okno jest niezależne od karty bota: można je przeciągać po stronie i zostaje otwarte, gdy zamkniesz i otworzysz kartę. Siatka 5×9 jest tą samą, którą rysuje ekwipunek.
+  - **Uwaga na teraz:** boty jeszcze nie korzystają z magazynu — w kodzie AI nie ma ani jednego odwołania do skrytki — więc okno będzie pokazywać „Magazyn jest pusty", dopóki nie dołożymy botom samego zachowania. Sam widok działa.
+- **Ikony przy umiejętnościach.** Każda umiejętność na karcie bota ma teraz swoją ikonę, z osobnym wariantem dla mistrzowskich (M/G/P). Gdy ikony nie ma w danej instalacji, nazwa wyświetla się sama, bez zepsutego obrazka.
+
+### Naprawione
+
+- **Aktualizacja przestała kończyć się błędem Dockera.** Zatrzymanie serwera wyłącza także Docker Desktop, a aktualizacja szła prosto do budowania i trafiała na martwy silnik — już po podmianie plików. Rozsądna kolejność (zatrzymaj, potem zaktualizuj) zawodziła zawsze. Teraz silnik jest podnoszony przed budowaniem. To samo dotyczyło przycisku GRAJ, który dokańczał zaległe budowanie, zanim cokolwiek zdążyło uruchomić Dockera.
+- **Launcher przestał zgłaszać wersję, której nie ma.** Numer zapisywał się dopiero po udanym budowaniu, więc po nieudanym launcher w kolejnych uruchomieniach wciąż podawał poprzednią wersję, proponował tę samą aktualizację i pobierał ją od nowa — za każdym razem z nowym katalogiem w `backups`.
+- **Teleportacja do bota działa dla każdego.** Przycisk wysyłał na sztywno wpisaną nazwę postaci, więc na każdej instalacji przenosił tę jedną postać, a wszystkim pozostałym po cichu nie robił nic.
+- **Boty mają włączone swoje najważniejsze umiejętności.** Buffy rzucały się wyłącznie wtedy, gdy bot miał już cel — czyli bot wchodził do każdej walki bez nich, tracił pierwsze sekundy na rzucanie, a po walce znów stał goły. Teraz utrzymuje je także poza walką.
+  - **Sura WP zdejmowała sobie Czarowane Ostrze.** Na liście buffów było 66, czyli Rozproszenie Magii — a to nie buff, tylko atak z flagą `REMOVE_GOOD_AFFECT`, rzucany sam na siebie. Czarowana Zbroja (65) nie była buffowana w ogóle.
+  - **Wojownik nigdy nie rzucał Berserku, a szaman jednego z dwóch buffów.** Numery umiejętności były skrzyżowane z flagami efektów, przez co włączony jeden buff raportował drugi jako już aktywny. Sprawdzone w `skill_proto`.
+
+---
+
 ## 1.24.1 — 2026-09-04
 
 ### Fixed

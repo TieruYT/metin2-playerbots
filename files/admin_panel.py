@@ -3788,7 +3788,7 @@ MAP_I18N = {
   "horse_lv":"Koń Lv","visible":"Widocznych","characters":"postaci","in_group":"W grupie [PT]","solo":"Solo","player":"GRACZ","bot":"Bot","class":"Klasa","action":"Akcja","status":"Status","personality":"Osobowość","ambition":"Ambicja","current_goal":"Aktualny cel",
   "coordinates":"Koordynaty","open_inventory":"Kliknij, aby otworzyć ekwipunek i EQ","loading_character":"Ładowanie ekwipunku i statystyk postaci","error":"Błąd","not_found":"Nie znaleziono danych",
   "teleport_me":"Teleportuj moją postać w grze (1 klik)","position":"Pozycja","horse":"Koń","biologist":"Biolog","bio_stage":"Etap Biologa","hunting":"Polowanie","no_data":"Brak danych",
-  "stats":"Statystyki","unspent_stats":"Nierozdane: {n} pkt statystyk","skills":"Umiejętności","profession_none":"Nie wybrano","profession_pending":"Profesja nie została jeszcze wybrana.",
+  "stats":"Statystyki","unspent_stats":"Nierozdane: {n} pkt statystyk","skills":"Umiejętności","profession_none":"Nie wybrano","profession_pending":"Profesja nie została jeszcze wybrana.","depot":"Magazyn","depot_empty":"Magazyn jest pusty.",
   "unspent_skills":"Nierozdane: {n} pkt umiejętności","equipped":"Założony ekwipunek (EQ)","weapon":"Broń","armor":"Zbroja","helmet":"Hełm","shield":"Tarcza","bracelet":"Bransoleta",
   "boots":"Buty","necklace":"Naszyjnik","earrings":"Kolczyki","empty":"Puste","inventory":"Zawartość ekwipunku","items_count":"przedmiotów","inventory_empty":"Ekwipunek jest pusty.","quantity":"Ilość",
   "event_log":"Dziennik zdarzeń bota (logi na żywo)","track_live":"Śledź na żywo","copy_logs":"Kopiuj logi","loading_logs":"Ładowanie logów postaci","no_logs":"Brak najświeższych wpisów w logach dla tej postaci.",
@@ -3807,7 +3807,7 @@ MAP_I18N = {
   "horse_lv":"Horse Lv","visible":"Visible","characters":"characters","in_group":"In party [PT]","solo":"Solo","player":"PLAYER","bot":"Bot","class":"Class","action":"Action","status":"Status","personality":"Personality","ambition":"Ambition","current_goal":"Current goal",
   "coordinates":"Coordinates","open_inventory":"Click to open inventory and equipment","loading_character":"Loading character equipment and statistics","error":"Error","not_found":"No data found",
   "teleport_me":"Teleport my in-game character (one click)","position":"Position","horse":"Horse","biologist":"Biologist","bio_stage":"Biologist stage","hunting":"Hunting","no_data":"No data",
-  "stats":"Statistics","unspent_stats":"Unspent: {n} stat points","skills":"Skills","profession_none":"Not selected","profession_pending":"The profession has not been selected yet.",
+  "stats":"Statistics","unspent_stats":"Unspent: {n} stat points","skills":"Skills","profession_none":"Not selected","profession_pending":"The profession has not been selected yet.","depot":"Depot","depot_empty":"The depot is empty.",
   "unspent_skills":"Unspent: {n} skill points","equipped":"Equipped items","weapon":"Weapon","armor":"Armour","helmet":"Helmet","shield":"Shield","bracelet":"Bracelet",
   "boots":"Boots","necklace":"Necklace","earrings":"Earrings","empty":"Empty","inventory":"Inventory contents","items_count":"items","inventory_empty":"The inventory is empty.","quantity":"Quantity",
   "event_log":"Bot event log (live)","track_live":"Track live","copy_logs":"Copy logs","loading_logs":"Loading logs for","no_logs":"No recent log entries for this character.",
@@ -4195,6 +4195,55 @@ TPL_LIVE_MAP = BASE.replace("__BODY__", """
   background: #332717;
   color: #ffd700;
 }
+/* The depot window floats free of #botModal so that dragging it and closing
+   the bot modal stay independent of each other, and so it survives a modal
+   close/reopen. The grid inside it is the equipment modal's own
+   .m2-grid-frame/.m2-grid-bg/.m2-item-overlay, reused unchanged. */
+.m2-safebox-window {
+  position: fixed;
+  top: 90px;
+  right: 24px;
+  /* Above .modal-overlay (z-index 9999): both can be open at once, and this
+     must float over the modal's backdrop rather than be buried by it merely
+     for coming earlier in the document. */
+  z-index: 10001;
+  width: 186px;
+  background: #1a150e;
+  border: 1px solid #332814;
+  border-radius: 6px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.65);
+  padding: 8px;
+  display: none;
+}
+.m2-safebox-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 6px;
+  padding-bottom: 4px;
+  border-bottom: 1px solid #3d3119;
+  cursor: move;
+  user-select: none;
+  color: var(--gold);
+  font-size: 12px;
+  font-weight: 700;
+}
+.m2-safebox-close {
+  background: none;
+  border: none;
+  color: #a89070;
+  cursor: pointer;
+  font-size: 15px;
+  line-height: 1;
+  padding: 0 2px;
+}
+.m2-safebox-close:hover { color: #ffd700; }
+.m2-safebox-empty {
+  color: #6b6252;
+  font-size: 11px;
+  text-align: center;
+  padding: 10px 0;
+}
 .m2-grid-frame {
   position: relative;
   width: 170px;
@@ -4368,6 +4417,19 @@ TPL_LIVE_MAP = BASE.replace("__BODY__", """
 <div id="m2ItemTooltip"></div>
 
 <!-- Bot Detail & Inventory Modal -->
+<!-- Depot (safebox), floating and draggable; see .m2-safebox-window. -->
+<div id="m2SafeboxWindow" class="m2-safebox-window">
+  <div class="m2-safebox-header" id="m2SafeboxHeader">
+    <span>📦 <span id="m2SafeboxTitle">{{m.depot}}</span></span>
+    <button type="button" class="m2-safebox-close" onclick="closeSafeboxWindow()">&times;</button>
+  </div>
+  <div class="m2-grid-frame">
+    <div class="m2-grid-bg" id="m2SafeboxGridBg"></div>
+    <div id="m2SafeboxItemOverlay" class="m2-item-overlay"></div>
+  </div>
+  <div id="m2SafeboxEmpty" class="m2-safebox-empty" style="display:none">{{m.depot_empty}}</div>
+</div>
+
 <div id="botModal" class="modal-overlay" onclick="if(event.target===this)closeBotModal()">
   <div class="modal-box">
     <button class="modal-close-btn" onclick="closeBotModal()">&times;</button>
@@ -4781,6 +4843,161 @@ var ATTR_NAMES = {
   72: {pl: "Obrażenia Umiejętności", en: "Skill Damage"}
 };
 
+function skillIconImg(vnum, rank, size) {
+  // A rank beginning with M, G or P means the skill is trained past normal, and
+  // those have their own "_m" sprite. Not every skill got one, so a missing
+  // master sprite falls back to the base icon rather than showing a broken
+  // image - and a missing base icon hides the element entirely, because the
+  // icons are client artwork and are not present in every installation.
+  var useMaster = rank && /^[MGP]/.test(rank);
+  var src = '/static/skill_icons/' + vnum + (useMaster ? '_m' : '') + '.png';
+  var fallback = '/static/skill_icons/' + vnum + '.png';
+  var px = size || 20;
+  return '<img src="' + src + '" style="width:' + px + 'px;height:' + px +
+         'px;vertical-align:middle;image-rendering:pixelated;margin-right:6px" ' +
+         'onerror="if(this.src.indexOf(\\'_m\\')>=0){this.src=\\'' + fallback +
+         '\\';}else{this.style.display=\\'none\\';}">';
+}
+
+var g_currentSafeboxItems = [];
+var g_currentSafeboxPid = null;
+
+// Fills the 45-cell (5x9) backdrop once. The window is static markup rather
+// than something rebuilt per render, so this only ever has to run one time.
+function ensureSafeboxGridCells() {
+  var bg = document.getElementById('m2SafeboxGridBg');
+  if (!bg || bg.children.length > 0) return;
+  var html = '';
+  for (var c = 0; c < 45; c++) html += '<div class="m2-grid-cell"></div>';
+  bg.innerHTML = html;
+}
+
+function renderSafeboxGrid(items) {
+  var overlay = document.getElementById('m2SafeboxItemOverlay');
+  if (!overlay) return;
+  overlay.innerHTML = '';
+  items.forEach(function(it) {
+    if (it.pos < 0 || it.pos >= 45) return;
+    var col = it.pos % 5;
+    var row = Math.floor(it.pos / 5);
+    var def = (g_itemDefs && g_itemDefs[String(it.vnum)]) || {};
+    var size = def.size || 1;
+    if (size < 1) size = 1;
+    if (size > 3) size = 3;
+
+    var el = document.createElement('div');
+    el.className = 'm2-item-entity';
+    el.style.left = (col * 34) + 'px';
+    el.style.top = (row * 34) + 'px';
+    el.style.width = '34px';
+    el.style.height = (size * 34) + 'px';
+
+    var img = document.createElement('img');
+    img.src = getItemIconUrl(it.vnum);
+    img.style.maxWidth = '32px';
+    img.style.maxHeight = (size * 32) + 'px';
+    img.style.imageRendering = 'pixelated';
+    img.draggable = false;
+    el.appendChild(img);
+
+    if (it.count > 1) {
+      var badge = document.createElement('span');
+      badge.className = 'm2-item-count';
+      badge.innerText = it.count;
+      el.appendChild(badge);
+    }
+
+    el.onmouseenter = function(ev) { showItemTooltip(ev, it); };
+    el.onmousemove = function(ev) { moveItemTooltip(ev); };
+    el.onmouseleave = function() { hideItemTooltip(); };
+
+    overlay.appendChild(el);
+  });
+  var empty = document.getElementById('m2SafeboxEmpty');
+  if (empty) empty.style.display = items.length ? 'none' : 'block';
+}
+
+function toggleBotSafeboxFromEl(el) {
+  var pid = parseInt(el.getAttribute('data-botpid'), 10);
+  toggleBotSafebox(pid, el.getAttribute('data-botname'));
+}
+
+function closeSafeboxWindow() {
+  var win = document.getElementById('m2SafeboxWindow');
+  if (win) win.style.display = 'none';
+  g_currentSafeboxPid = null;
+}
+
+function toggleBotSafebox(pid, name) {
+  var win = document.getElementById('m2SafeboxWindow');
+  if (!win) return;
+
+  if (win.style.display !== 'none' && g_currentSafeboxPid === pid) {
+    closeSafeboxWindow();
+    return;
+  }
+
+  ensureSafeboxGridCells();
+  win.style.display = 'block';
+  g_currentSafeboxPid = pid;
+  var titleEl = document.getElementById('m2SafeboxTitle');
+  if (titleEl) titleEl.textContent = (I18N.depot || 'Magazyn') + (name ? ' — ' + name : '');
+
+  renderSafeboxGrid([]);
+  fetch('/api/bot_safebox/' + pid)
+    .then(function(res) { return res.json(); })
+    .then(function(data) {
+      // The window may have been pointed at a different bot while this was in
+      // flight; dropping the stale answer is cheaper than cancelling it.
+      if (g_currentSafeboxPid !== pid) return;
+      if (!data || !data.ok) return;
+      g_currentSafeboxItems = data.items || [];
+      renderSafeboxGrid(g_currentSafeboxItems);
+    })
+    .catch(function() {});
+}
+
+// Dragging by the header, the way the game's own windows behave. The first
+// drag swaps the initial top/right anchor for an absolute left/top.
+(function initSafeboxDrag() {
+  var win, header, dragging = false, offsetX = 0, offsetY = 0;
+
+  function onPointerDown(ev) {
+    win = document.getElementById('m2SafeboxWindow');
+    if (!win) return;
+    dragging = true;
+    var rect = win.getBoundingClientRect();
+    var point = ev.touches ? ev.touches[0] : ev;
+    offsetX = point.clientX - rect.left;
+    offsetY = point.clientY - rect.top;
+    win.style.left = rect.left + 'px';
+    win.style.top = rect.top + 'px';
+    win.style.right = 'auto';
+    ev.preventDefault();
+  }
+
+  function onPointerMove(ev) {
+    if (!dragging || !win) return;
+    var point = ev.touches ? ev.touches[0] : ev;
+    var maxLeft = window.innerWidth - win.offsetWidth;
+    var maxTop = window.innerHeight - win.offsetHeight;
+    win.style.left = Math.min(Math.max(0, point.clientX - offsetX), Math.max(0, maxLeft)) + 'px';
+    win.style.top = Math.min(Math.max(0, point.clientY - offsetY), Math.max(0, maxTop)) + 'px';
+  }
+
+  function onPointerUp() { dragging = false; }
+
+  header = document.getElementById('m2SafeboxHeader');
+  if (header) {
+    header.addEventListener('mousedown', onPointerDown);
+    header.addEventListener('touchstart', onPointerDown, {passive: false});
+    document.addEventListener('mousemove', onPointerMove);
+    document.addEventListener('touchmove', onPointerMove, {passive: false});
+    document.addEventListener('mouseup', onPointerUp);
+    document.addEventListener('touchend', onPointerUp);
+  }
+})();
+
 function getItemIconUrl(vnum) {
   var vStr = String(vnum);
   var iconFile = (g_itemIcons && g_itemIcons[vStr]) ? g_itemIcons[vStr] : null;
@@ -5074,7 +5291,8 @@ function openBotModal(pid) {
                           (skill.rank.charAt(0) === 'P' ? '#f472b6' :
                           (skill.rank.charAt(0) === 'G' ? '#c084fc' :
                           (skill.rank.charAt(0) === 'M' ? '#38bdf8' : '#f8fafc')));
-          html += '<div class="skill-row"><span>' + skill.name + '</span>' +
+          html += '<div class="skill-row"><span>' +
+                  skillIconImg(skill.vnum, skill.rank, 18) + skill.name + '</span>' +
                   '<b style="color:' + rankColor + '">' + skill.rank + '</b></div>';
         });
       }
@@ -5135,6 +5353,15 @@ function openBotModal(pid) {
         }
         html += '<div class="m2-equip-slot" style="left:' + cfg.left + 'px;top:' + cfg.top + 'px;width:' + cfg.w + 'px;height:' + cfg.h + 'px"' + hoverAttr + '>' + inner + '</div>';
       });
+
+      // The depot is not a wear slot, so it has no entry in equipCoords. The
+      // container is 200px wide and the eight real slots stop at x=132, so it
+      // goes in that unused margin rather than overlapping any of them.
+      html += '<div class="m2-equip-slot" title="' + (I18N.depot || 'Magazyn') +
+              '" style="left:150px;top:6px;width:34px;height:34px;cursor:pointer;' +
+              'display:flex;align-items:center;justify-content:center;font-size:19px"' +
+              ' data-botpid="' + p.id + '" data-botname="' + p.name + '"' +
+              ' onclick="toggleBotSafeboxFromEl(this)">\U0001F4E6</div>';
 
       html += '</div>'; // End Equipment Section
 
@@ -6018,6 +6245,56 @@ def api_bot_inventory(pid):
             })
     except Exception as e:
         return jsonify({"ok": False, "error": str(e)})
+
+@app.route("/api/bot_safebox/<int:pid>")
+def api_bot_safebox(pid):
+    # Safebox rows are not owned by the character's pid the way inventory and
+    # equipment rows are. CSafebox belongs to the ACCOUNT - a real player can
+    # check an item in on one character and take it out on another - so
+    # item.owner_id here is player.account_id. Same table, same columns,
+    # different owner.
+    language = lang()
+    try:
+        with db() as c, c.cursor() as cur:
+            cur.execute("SELECT account_id FROM player.player WHERE id = %s", (pid,))
+            row = cur.fetchone()
+            if not row:
+                return jsonify({"ok": False, "error": "not found"}), 404
+            cur.execute(
+                """
+                SELECT id, pos, `count`, vnum, socket0, socket1, socket2,
+                       attrtype0, attrvalue0, attrtype1, attrvalue1,
+                       attrtype2, attrvalue2, attrtype3, attrvalue3,
+                       attrtype4, attrvalue4, attrtype5, attrvalue5,
+                       attrtype6, attrvalue6
+                  FROM player.item
+                 WHERE owner_id = %s AND `window` = 'SAFEBOX'
+                 ORDER BY pos ASC
+                """,
+                (row["account_id"],),
+            )
+            items = []
+            for it in cur.fetchall():
+                vnum = it.get("vnum") or 0
+                attrs = []
+                for a_idx in range(7):
+                    atype = it.get("attrtype%d" % a_idx) or 0
+                    aval = it.get("attrvalue%d" % a_idx) or 0
+                    if atype != 0 and aval != 0:
+                        attrs.append({"type": atype, "val": aval})
+                items.append({
+                    "id": it.get("id"),
+                    "vnum": vnum,
+                    "name": localized_item_name(vnum, language),
+                    "count": it.get("count") or 1,
+                    "pos": it.get("pos") or 0,
+                    "sockets": [it.get("socket0") or 0, it.get("socket1") or 0,
+                                it.get("socket2") or 0],
+                    "attrs": attrs,
+                })
+            return jsonify({"ok": True, "items": items})
+    except Exception as e:
+        return jsonify({"ok": False, "error": str(e)}), 500
 
 @app.route("/api/bot_rankings")
 def api_bot_rankings():
