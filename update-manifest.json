@@ -1,12 +1,12 @@
 {
   "schema": 1,
   "channel": "stable",
-  "publishedAt": "2026-09-04T21:15:49Z",
-  "statusMessage": "Aktualizacja 1.24.5: trzy nowe rankingi na stronie - otwarte sklepy, umiejetnosci i przedmiot +9. Zawiera tez 1.24.3 i 1.24.4, czyli dzialajace stragany i ich ustawienie w kolo przy Strazniku Wsi w Joan.",
+  "publishedAt": "2026-09-04T21:20:11Z",
+  "statusMessage": "Aktualizacja 1.24.6: boty przestaly rzucac buffy bojowe poza walka - koniec stania w miescie z aura, ktora i tak wygasa przed dotarciem na lowisko. Bezszelestny Chod, Zwinnosc i Leczenie dzialaja dalej wszedzie.",
   "server": {
-    "version": "1.24.5",
-    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v1.24.5/metin2-server-update-1.24.5.zip",
-    "sha256": "8C901D02A353AC8CB3F48FB803E7D5231C98A1C1BFED453CF0468401B86D5267"
+    "version": "1.24.6",
+    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v1.24.6/metin2-server-update-1.24.6.zip",
+    "sha256": "DAFE6EF8FA560F3144D0BF8977C0EB463A27500A3BC279B82B4937CACA63C798"
   },
   "support": {
     "contactUrl": "https://discord.gg/pt5tvnrN6",
