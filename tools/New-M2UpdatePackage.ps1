@@ -68,6 +68,27 @@ try {
             $stagedNames += $relative.Substring($stagedPrefix.Length)
         }
     }
+
+    # The seed has the same two-copy shape as the sources: the overlay's is the
+    # source of truth and the migrate container mounts the other one.
+    # Listed with forward slashes, the way the file list writes them, and only
+    # turned into a path when one is needed.
+    $seedOverlay = 'linux-port/overlays/playerbot/sql/playerbots_seed.sql'
+    $seedMounted = 'linux-port/docker/mariadb/playerbot/playerbots_seed.sql'
+    $shipsOverlaySeed = $entries -contains $seedOverlay
+    $shipsMountedSeed = $entries -contains $seedMounted
+    if ($shipsOverlaySeed -or $shipsMountedSeed) {
+        if (-not ($shipsOverlaySeed -and $shipsMountedSeed)) {
+            throw "The seed ships in only one of its two locations. Add both $seedOverlay and $seedMounted to $listPath."
+        }
+        $seedOverlayPath = Join-Path $source ($seedOverlay -replace '/', [IO.Path]::DirectorySeparatorChar)
+        $seedMountedPath = Join-Path $source ($seedMounted -replace '/', [IO.Path]::DirectorySeparatorChar)
+        if ((Get-FileHash -LiteralPath $seedOverlayPath -Algorithm SHA256).Hash -ne
+            (Get-FileHash -LiteralPath $seedMountedPath -Algorithm SHA256).Hash) {
+            throw "The overlay seed and the seed the migrate container mounts differ. Copy it across before packaging."
+        }
+    }
+
     foreach ($name in $stagedNames) {
         if ($overlayNames -notcontains $name) {
             # The launcher syncs overlay -> build context before every build, so

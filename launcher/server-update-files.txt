@@ -12,6 +12,10 @@ linux-port/docker/prepare-context.sh
 linux-port/docker/panel/app/admin_panel.py
 linux-port/overlays/playerbot/serverfiles/mob_drop_item.m3.append.txt
 linux-port/overlays/playerbot/sql/playerbots_seed.sql
+# ...and the copy the migrate container actually mounts and runs. The launcher
+# refreshes it before every start, but shipping it as well means an install that
+# starts compose directly is not silently seeding an August-era registry.
+linux-port/docker/mariadb/playerbot/playerbots_seed.sql
 linux-port/overlays/playerbot/tools/generate_seed.py
 # The overlay sources, and the staged build context they are compiled from.
 # Wildcards, not lists: splitting a source file must not require editing this
