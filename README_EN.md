@@ -27,6 +27,11 @@ Unlike conventional external client-bot scripts, bots in this project are **firs
 - 🎒 **Looting & Town Economy**: Post-battle loot collection, automated equipment evaluation including shields, appropriate merchant visits, potion restocking, and gear refinement at the **Blacksmith**.
 - 🐴 **Horse Progression**: Real Horse Medal expeditions into the Monkey Dungeon, delivery to the nearest Stable Boy, and mounted long-distance travel.
 - 👥 **Party & Squad Dynamics**: Dynamic 2–3 player squad formations, cooperative exping, and pulling mobs in dense monster camps.
+- 🏪 **Stalls and a bot-to-bot market**: Bots open private stalls in Bokjung and **buy from each other** — the refine material someone is short of, or a piece of gear better than what they are wearing. Anything at +7 or above is never sold to an NPC merchant.
+- 🧬 **Biologist missions**: Collecting specimens and handing them in stage by stage, driven without a quest dialog.
+- 🎣 **Fishing**: A full session — bait written into the rod's socket, waiting for the bite, and pulling inside the six-second window.
+- ✨ **Bonus rerolling**: Bots use Change and Add Attribute stones on gear they are not currently wearing.
+- 🧠 **Personality and goals**: Every bot has its own character and ambition (Metin hunter, collector, horse breeder) that decides what it does with a given hour.
 - 💾 **Native MariaDB Persistence**: Each bot has its own persistent account and character entry in MariaDB, retaining Level, EXP, Yang, items, and quest flags across server restarts.
 
 ---
@@ -36,13 +41,16 @@ Unlike conventional external client-bot scripts, bots in this project are **firs
 The project is under active research and development.
 
 > [!NOTE]
-> **Supported Kingdom:** The autonomous world currently covers **Chunjo**: Joan (M1, map 21), Bokjung (M2, map 23), Waryong/M3 (map 24), and the Easy Monkey Dungeon (map 25). More Chunjo regions and the other kingdoms (*Shinsoo – Reds* and *Jinno – Blues*) remain future work.
+> **Supported Kingdom:** The autonomous world currently covers **Chunjo**: Joan (M1, map 21), Bokjung (M2, map 23), Waryong/M3 (map 24), the Easy Monkey Dungeon (map 25, levels 18–26), **Orc Valley** (map 64), and the **Yongbi Desert** (map 63). More Chunjo regions and the other kingdoms (*Shinsoo – Reds* and *Jinno – Blues*) remain future work.
+>
+> In Orc Valley the bots use the main contiguous landmass. The bridge-linked islands stay out of reach: bridge decks are a client-side object and are absent from the server collision layer the bots route on.
 
-### Resource Footprint (350 Bot Snapshot)
-- **Game Engine (`game core`)**: ~1.05 GiB RAM
-- **Database (`MariaDB`)**: ~154 MiB RAM
-- **Web Admin Panel & Live Map**: ~383 MiB RAM
+### Resource Footprint (measured with 742 bots alive)
+- **Game Engine (`game core`)**: ~1.76 GiB RAM, ~32% of one core
+- **Database (`MariaDB`)**: ~89 MiB RAM
+- **Web Admin Panel & Live Map**: ~270 MiB RAM
 - Runs smoothly in the background on standard modern developer PCs.
+- `PLAYERBOT_AUTOSPAWN_COUNT` asks for a number, but the ceiling is how many canonical identities exist in the database (`BOT_COUNT` in `generate_seed.py`), not the slider.
 
 ---
 
@@ -95,12 +103,12 @@ Manage bots directly via in-game chat (requires GM / Administrator permissions):
 
 - [x] **Phase 1**: Full combat animations for all classes, Archer projectiles, 2D NavGrid (A*), Blacksmith refinement cycle, and 32 regional hubs in Chunjo.
 - [x] **Phase 2A**: M1/M2/M3 traversal, level-based zones, the Easy Monkey Dungeon, and real Horse Medal expeditions.
-- [ ] **Phase 2B**: Orc Valley, Desert, and full **Demon Tower (DT)** runs.
+- [ ] **Phase 2B**: Orc Valley ✅ and Yongbi Desert ✅ — full **Demon Tower (DT)** runs still to come.
 - [ ] **Phase 3**: Reading Skill Books (KU) and Soul Stones (KD), advanced skill priority trees.
 - [x] **Phase 4A**: Early Biologist missions and first-stage horse progression backed by real Horse Medal drops.
-- [ ] **Phase 4B**: Orc Tooth and later Biologist missions plus Combat and Military Horse progression.
-- [ ] **Phase 5**: Non-combat life skills: Fishing minigame, mining ore veins, and alchemy crafting.
-- [ ] **Phase 6**: Private offline player shops in town centers, inter-bot trading, and dynamic market pricing.
+- [ ] **Phase 4B** *(up next)*: Orc Tooth and later Biologist missions plus Combat and Military Horse progression. Bots are to keep the same cooldowns a player has and use the potion that shortens the wait, with the same success chance the quests use.
+- [ ] **Phase 5**: Fishing ✅ — mining ore veins and alchemy crafting still to come.
+- [x] **Phase 6**: Private bot stalls in town and bot-to-bot trading. Pricing is still fixed-tier rather than demand-driven.
 
 ---
 
@@ -118,5 +126,6 @@ Detailed guides separated into dedicated documentation modules:
 ## 🤝 Credits & Acknowledgements
 
 - **AzzlackSyndicate** — author of the original Linux port foundation, installers, and panel. The source repository is now private; its Git history and attribution are retained.
+- **OskarPWA** — the bot depot window and the skill icons on the site come from a panel he built and shared for merging back.
 - [DadsMmoLab/dads-mmo-lab](https://github.com/DadsMmoLab/dads-mmo-lab) — Research inspiration for autonomous MMO agent design.
 - The Metin2 emulation and research community.

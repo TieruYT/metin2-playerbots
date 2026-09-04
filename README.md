@@ -27,6 +27,11 @@ W przeciwieństwie do tradycyjnych botów-klientów, boty w tym projekcie są **
 - 🎒 **Loot i ekonomia miejska**: Zbieranie Yang i przedmiotów po walce, automatyczne ubieranie lepszego ekwipunku wraz z tarczami, regularne powroty do odpowiednich handlarzy, uzupełnianie mikstur i ulepszanie u **Kowala**.
 - 🐴 **Rozwój konia**: Wyprawy po prawdziwe Medale Konne do Lochu Małp, oddawanie ich najbliższemu Stajennemu i używanie konia do długich podróży.
 - 👥 **Grupy i Party**: Dynamiczne tworzenie 2–3 osobowych drużyn, formacje bojowe i wspólne expienie w gęstych obozach potworów.
+- 🏪 **Stragany i rynek bot–bot**: Boty otwierają prywatne stragany w Bokjung i **kupują od siebie nawzajem** — ulepszacze, których akurat komuś brakuje, i sprzęt lepszy od noszonego. Przedmiot na +7 lub wyżej nigdy nie trafia do handlarza NPC.
+- 🧬 **Misje Biologa**: Zbieranie okazów i oddawanie ich Biologowi, etapami, bez okna dialogowego questa.
+- 🎣 **Łowienie ryb**: Pełna sesja z przynętą w gnieździe wędki, czekaniem na branie i wyciąganiem w oknie 6 sekund.
+- ✨ **Przerzucanie bonusów**: Boty używają Kamieni Zmiany i Dodania Bonusu na sprzęcie, którego akurat nie mają założonego.
+- 🧠 **Osobowość i cele**: Każdy bot ma własny charakter i ambicję (łowca Metinów, kolekcjoner, hodowca konia), które decydują, co robi w danej godzinie.
 - 💾 **Trwały zapis w bazie**: Każdy bot posiada własne konto i postać w bazie MariaDB — zachowuje poziom, przedmioty, Yang i postępy po restarcie serwera.
 
 ---
@@ -36,13 +41,16 @@ W przeciwieństwie do tradycyjnych botów-klientów, boty w tym projekcie są **
 Projekt jest w fazie aktywnego rozwoju.
 
 > [!NOTE]
-> **Obsługiwane Królestwo:** Obecnie autonomiczny świat obejmuje **Chunjo**: Joan (M1, mapa 21), Bokjung (M2, mapa 23), Waryong/M3 (mapa 24) oraz Łatwy Loch Małp (mapa 25). Obsługa kolejnych regionów Chunjo i królestw (*Shinsoo – Czerwoni* oraz *Jinno – Niebiescy*) jest zaplanowana w dalszych etapach.
+> **Obsługiwane Królestwo:** Obecnie autonomiczny świat obejmuje **Chunjo**: Joan (M1, mapa 21), Bokjung (M2, mapa 23), Waryong/M3 (mapa 24), Łatwy Loch Małp (mapa 25, poziomy 18–26), **Dolinę Orków** (mapa 64) oraz **Pustynię Yongbi** (mapa 63). Obsługa kolejnych regionów Chunjo i królestw (*Shinsoo – Czerwoni* oraz *Jinno – Niebiescy*) jest zaplanowana w dalszych etapach.
+>
+> W Dolinie Orków boty poruszają się po głównym, spójnym lądzie. Wyspy połączone mostami pozostają poza zasięgiem: pokłady mostów są elementem klienta i nie ma ich w warstwie kolizji serwera, po której boty wyznaczają trasę.
 
-### Zużycie zasobów (Snapshot dla 350 botów)
-- **Serwer gry (`game core`)**: ~1.05 GiB RAM
-- **Baza danych (`MariaDB`)**: ~154 MiB RAM
-- **Panel Webowy Live Map**: ~383 MiB RAM
+### Zużycie zasobów (pomiar przy 742 żywych botach)
+- **Serwer gry (`game core`)**: ~1.76 GiB RAM, ~32% jednego rdzenia
+- **Baza danych (`MariaDB`)**: ~89 MiB RAM
+- **Panel Webowy Live Map**: ~270 MiB RAM
 - Całość bez problemu działa lokalnie w tle na maszynie deweloperskiej.
+- Liczbę botów ustawia `PLAYERBOT_AUTOSPAWN_COUNT`, ale sufitem jest liczba kanonicznych tożsamości w bazie (`BOT_COUNT` w `generate_seed.py`), a nie sam suwak.
 
 ---
 
@@ -95,12 +103,12 @@ Zarządzanie botami bezpośrednio z poziomu czatu w grze (dla konta GM / Adminis
 
 - [x] **Faza 1**: Pełne animacje wszystkich klas, łucznicy z pociskami, siatka 2D NavGrid (A*), ulepszanie u Kowala i 32 huby expienia w Chunjo.
 - [x] **Faza 2A**: Przejścia M1/M2/M3, expienie strefowe, Łatwy Loch Małp i rzeczywiste wyprawy po Medale Konne.
-- [ ] **Faza 2B**: Dolina Orków, Pustynia oraz wyprawy na **Wieżę Demonów (DT)**.
+- [ ] **Faza 2B**: Dolina Orków ✅ i Pustynia Yongbi ✅ — pozostają wyprawy na **Wieżę Demonów (DT)**.
 - [ ] **Faza 3**: Czytanie Ksiąg Umiejętności (KU) i Kamieni Duchowych (KD), zaawansowane buildy skilli.
 - [x] **Faza 4A**: Podstawowe misje Biologa i pierwszy etap konia oparty na prawdziwym dropie Medali Konnych.
-- [ ] **Faza 4B**: Zęby Orka i późniejsze misje Biologa oraz koń bojowy i militarny.
-- [ ] **Faza 5**: Aktywności poboczne: łowienie ryb, kilof i wydobywanie rud z żył alchemii.
-- [ ] **Faza 6**: Prywatne tobołki/sklepy botów w miastach, handel między botami i dynamiczna wycena przedmiotów.
+- [ ] **Faza 4B** *(następne w kolejce)*: Zęby Orka i późniejsze misje Biologa oraz koń bojowy i militarny. Boty mają zachować takie same odstępy czasowe jak gracz i korzystać z eliksiru skracającego oczekiwanie, z tą samą szansą powodzenia co w questach.
+- [ ] **Faza 5**: Łowienie ryb ✅ — pozostają kilof, wydobywanie rud i alchemia.
+- [x] **Faza 6**: Prywatne stragany botów w mieście i handel bot–bot. Wycena opiera się na razie na stałych progach, nie na popycie.
 
 ---
 
@@ -118,5 +126,6 @@ Szczegółowe informacje podzielone na dedykowane poradniki:
 ## 🤝 Podziękowania i Credits
 
 - **AzzlackSyndicate** — autor pierwotnej bazy linuksowego portu, instalatorów i panelu. Repozytorium źródłowe jest obecnie prywatne; zachowujemy historię Git i pełną atrybucję.
+- **OskarPWA** — okno magazynu bota i ikony umiejętności na stronie pochodzą z panelu, który zbudował i udostępnił do przeniesienia.
 - [DadsMmoLab/dads-mmo-lab](https://github.com/DadsMmoLab/dads-mmo-lab) — Inspiracja badawcza dla autonomicznych agentów w grach MMO.
 - Społeczność badaczy i entuzjastów platformy Metin2.
