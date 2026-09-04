@@ -29,6 +29,13 @@ every version here.
   - **Uwaga na teraz:** boty jeszcze nie korzystają z magazynu — w kodzie AI nie ma ani jednego odwołania do skrytki — więc okno będzie pokazywać „Magazyn jest pusty", dopóki nie dołożymy botom samego zachowania. Sam widok działa.
 - **Ikony przy umiejętnościach.** Każda umiejętność na karcie bota ma teraz swoją ikonę, z osobnym wariantem dla mistrzowskich (M/G/P). Gdy ikony nie ma w danej instalacji, nazwa wyświetla się sama, bez zepsutego obrazka.
 
+- **Nazwy bonusów na przedmiotach są teraz takie jak w grze.** Panel miał własną, ręcznie pisaną listę; teraz opisy pochodzą wprost z klienta — numery z enuma serwera, przypisanie z `AFFECT_DICT` klienta, brzmienie z jego polskiego `locale_game.txt`. Nic nie jest tłumaczone na piechotę.
+  - **`71` i `72` były zamienione miejscami.** `71` to Obrażenie Umiejętności, `72` to Średnie Obrażenia — istotne przy FMS/RIB.
+  - **Brakowało bonusów `87`–`91`**, więc odporność na lód, ziemię i mrok oraz odporności na cios krytyczny i przeszywający pokazywały się jako „Bonus #89" i podobne.
+  - **`42` i `47`** (szansa na odzyskanie PE/PŻ po zabiciu) były pokazywane jako zwykłe liczby zamiast procentów, a **`48`–`50`** dostawały doklejone „+1%", choć w grze to same nazwy bez wartości.
+  - **`51` i `77` zniknęły z opisów.** `51` to spakowana liczba (numer umiejętności plus wartość), a nie bonus do pokazania; `77` nie występuje w tym kliencie.
+  - Wartość ujemna nie da już zapisu `+-10`.
+
 ### Naprawione
 
 - **Aktualizacja przestała kończyć się błędem Dockera.** Zatrzymanie serwera wyłącza także Docker Desktop, a aktualizacja szła prosto do budowania i trafiała na martwy silnik — już po podmianie plików. Rozsądna kolejność (zatrzymaj, potem zaktualizuj) zawodziła zawsze. Teraz silnik jest podnoszony przed budowaniem. To samo dotyczyło przycisku GRAJ, który dokańczał zaległe budowanie, zanim cokolwiek zdążyło uruchomić Dockera.

@@ -4758,90 +4758,134 @@ fetch('/static/item_icons.json')
   .then(function(data) { g_itemIcons = data; })
   .catch(function(err) { console.warn('Could not load item_icons.json:', err); });
 
-// Bonus lines are a flat number or a percentage depending on the APPLY type,
-// and nothing about the value itself says which. This is the list of the flat
-// ones; everything else the engine rolls is a percentage.
-var ATTR_FLAT = {1:1, 2:1, 3:1, 4:1, 5:1, 6:1, 42:1, 47:1, 52:1, 53:1, 54:1, 55:1, 56:1, 58:1};
-function attrSuffix(type) { return ATTR_FLAT[type] ? '' : '%'; }
-
-var ATTR_NAMES = {
-  1: {pl: "Max PŻ", en: "Max HP"},
-  26: {pl: "Regeneracja PE przy Trafieniu", en: "MP Regen when Hit"},
-  39: {pl: "Odbicie Ataku", en: "Melee Reflect"},
-  40: {pl: "Odbicie Klątwy", en: "Curse Reflect"},
-  42: {pl: "Regeneracja PE za Zabicie", en: "MP per Kill"},
-  46: {pl: "Wzmocnienie Mikstur", en: "Potion Bonus"},
-  47: {pl: "Regeneracja PŻ za Zabicie", en: "HP per Kill"},
-  48: {pl: "Odporność na Omdlenie", en: "Stun Immunity"},
-  49: {pl: "Odporność na Spowolnienie", en: "Slow Immunity"},
-  50: {pl: "Odporność na Upadek", en: "Fall Immunity"},
-  52: {pl: "Zasięg Łuku", en: "Bow Range"},
-  55: {pl: "Magiczna Wartość Ataku", en: "Magic Attack Value"},
-  56: {pl: "Magiczna Wartość Obrony", en: "Magic Defence Value"},
-  57: {pl: "Szansa na Klątwę", en: "Curse Chance"},
-  58: {pl: "Max Wytrzymałość", en: "Max Stamina"},
-  59: {pl: "Silny przeciwko Wojownikom", en: "Strong vs Warriors"},
-  60: {pl: "Silny przeciwko Ninja", en: "Strong vs Ninjas"},
-  61: {pl: "Silny przeciwko Sura", en: "Strong vs Suras"},
-  62: {pl: "Silny przeciwko Szamanom", en: "Strong vs Shamans"},
-  63: {pl: "Silny przeciwko Potworom", en: "Strong vs Monsters"},
-  64: {pl: "Wzmocnienie Ataku", en: "Attack Bonus"},
-  65: {pl: "Wzmocnienie Obrony", en: "Defence Bonus"},
-  66: {pl: "Wzmocnienie Doświadczenia", en: "EXP Bonus"},
-  69: {pl: "Max PŻ", en: "Max HP"},
-  70: {pl: "Max PE", en: "Max MP"},
-  73: {pl: "Odporność na Obrażenia od Umiejętności", en: "Skill Damage Resistance"},
-  74: {pl: "Odporność na Obrażenia od Ciosów", en: "Melee Damage Resistance"},
-  77: {pl: "Szansa na Pochłonięcie PŻ", en: "HP Absorption Chance"},
-  78: {pl: "Odporność na Wojowników", en: "Warrior Resistance"},
-  79: {pl: "Odporność na Ninja", en: "Ninja Resistance"},
-  80: {pl: "Odporność na Sura", en: "Sura Resistance"},
-  81: {pl: "Odporność na Szamanów", en: "Shaman Resistance"},
-  2: {pl: "Max PE", en: "Max MP"},
-  3: {pl: "Energia Życiowa", en: "Vitality"},
-  4: {pl: "Inteligencja", en: "Intelligence"},
-  5: {pl: "Siła", en: "Strength"},
-  6: {pl: "Zręczność", en: "Dexterity"},
-  7: {pl: "Szybkość Ataku", en: "Attack Speed"},
-  8: {pl: "Szybkość Poruszania się", en: "Movement Speed"},
-  9: {pl: "Szybkość Zaklęcia", en: "Casting Speed"},
-  10: {pl: "Regeneracja PŻ", en: "HP Regen"},
-  11: {pl: "Regeneracja PE", en: "MP Regen"},
-  12: {pl: "Szansa na Otrucie", en: "Poisoning Chance"},
-  13: {pl: "Szansa na Omdlenie", en: "Stun Chance"},
-  14: {pl: "Szansa na Spowolnienie", en: "Slow Chance"},
-  15: {pl: "Szansa na Cios Krytyczny", en: "Critical Hit"},
-  16: {pl: "Szansa na Przeszywający Cios", en: "Piercing Hit"},
-  17: {pl: "Silny przeciwko Półludziom", en: "Strong vs Half-Humans"},
-  18: {pl: "Silny przeciwko Zwierzętom", en: "Strong vs Animals"},
-  19: {pl: "Silny przeciwko Orkom", en: "Strong vs Orcs"},
-  20: {pl: "Silny przeciwko Mistykom", en: "Strong vs Esoterics"},
-  21: {pl: "Silny przeciwko Nieumarłym", en: "Strong vs Undead"},
-  22: {pl: "Silny przeciwko Diabłom", en: "Strong vs Devils"},
-  23: {pl: "Obrażenia absorbowane przez PŻ", en: "Damage absorbed by HP"},
-  24: {pl: "Obrażenia absorbowane przez PE", en: "Damage absorbed by MP"},
-  25: {pl: "Szansa na kradzież PE", en: "Chance to steal MP"},
-  27: {pl: "Szansa na Blok Ciosów", en: "Block Chance"},
-  28: {pl: "Szansa na Unik Strzał", en: "Dodge Arrows"},
-  29: {pl: "Odporność na Miecze", en: "Sword Defense"},
-  30: {pl: "Odporność na Broń Dwuręczną", en: "Two-Handed Defense"},
-  31: {pl: "Odporność na Sztylety", en: "Dagger Defense"},
-  32: {pl: "Odporność na Dzwony", en: "Bell Defense"},
-  33: {pl: "Odporność na Wachlarze", en: "Fan Defense"},
-  34: {pl: "Odporność na Strzały", en: "Arrow Resistance"},
-  35: {pl: "Odporność na Ogień", en: "Fire Resistance"},
-  36: {pl: "Odporność na Błyskawice", en: "Lightning Resistance"},
-  37: {pl: "Odporność na Magię", en: "Magic Resistance"},
-  38: {pl: "Odporność na Wiatr", en: "Wind Resistance"},
-  41: {pl: "Odporność na Trucizny", en: "Poison Resistance"},
-  43: {pl: "Bonus Doświadczenia", en: "EXP Bonus"},
-  44: {pl: "Szansa na podwójną ilość Yang", en: "Double Yang Drop"},
-  45: {pl: "Szansa na podwójną ilość Przedmiotów", en: "Double Item Drop"},
-  53: {pl: "Wartość Ataku", en: "Attack Value"},
-  54: {pl: "Obrona", en: "Defense"},
-  71: {pl: "Średnie Obrażenia", en: "Average Damage"},
-  72: {pl: "Obrażenia Umiejętności", en: "Skill Damage"}
+// Every bonus line the engine can roll, with the wording the game itself uses.
+// Generated from three sources that have to agree: the server's EApplyTypes
+// enum fixes the numbers, the client's AFFECT_DICT maps each number to a locale
+// key, and the client's locale_game.txt holds the text. Nothing here is
+// translated by hand, which is what the previous table did - it had 71 and 72
+// the wrong way round (71 is skill damage, 72 is average damage), classed the
+// two post-kill recovery chances as plain numbers rather than percentages, and
+// had no entry at all for 87-91, so an ice/earth/dark resistance showed up as
+// "Bonus #89".
+//
+// The text keeps the client's own placeholder, and that is what says how to
+// print the value: %d%% is a percentage, %d a plain number, %.1f a
+// multiplier, and no placeholder at all means the client shows the line with no
+// number after it. Ids the client has no text for are absent on purpose.
+var APPLY_META = {
+  1: {pl: "Max PŻ: +%d", en: "Max. HP +%d", f: "flat"},
+  2: {pl: "Max PE: +%d", en: "Max. SP +%d", f: "flat"},
+  3: {pl: "Witalność +%d", en: "Vitality +%d", f: "flat"},
+  4: {pl: "Inteligencja +%d", en: "Intelligence +%d", f: "flat"},
+  5: {pl: "Siła: +%d", en: "Strength +%d", f: "flat"},
+  6: {pl: "Zręczność +%d", en: "Dexterity +%d", f: "flat"},
+  7: {pl: "Szybkość Ataku +%d%%", en: "Attack Speed +%d%%", f: "percent"},
+  8: {pl: "Szybkość Ruchu %d%%", en: "Moving Speed %d%%", f: "percent"},
+  9: {pl: "Szybkość Zaklęcia +%d%%", en: "Casting Speed +%d%%", f: "percent"},
+  10: {pl: "Regeneracja PŻ: +%d%%", en: "HP Regeneration +%d%%", f: "percent"},
+  11: {pl: "Regeneracja PE: +%d%%", en: "SP Regeneration +%d%%", f: "percent"},
+  12: {pl: "Szansa na Otrucie %d%%", en: "Poisoning chance %d%%", f: "percent"},
+  13: {pl: "Szansa na Omdlenie %d%%", en: "Blackout chance %d%%", f: "percent"},
+  14: {pl: "Szansa na Spowolnienie %d%%", en: "Slowing chance %d%%", f: "percent"},
+  15: {pl: "Szansa na cios krytyczny +%d%%", en: "Chance of critical hit +%d%% ", f: "percent"},
+  16: {pl: "Szansa na przeszywające Uderzenie: %d%% ", en: "%d%% Chance for piercing Hits", f: "percent"},
+  17: {pl: "Silny przeciwko Ludziom +%d%%", en: "Strong against Half Humans +%d%%", f: "percent"},
+  18: {pl: "Silny przeciwko Zwierzętom +%d%%", en: "Strong against Animals +%d%%", f: "percent"},
+  19: {pl: "Silny przeciwko Orkom +%d%%", en: "Strong against Orcs +%d%%", f: "percent"},
+  20: {pl: "Silny przeciwko Mistykom +%d%%", en: "Strong against Mystics +%d%%", f: "percent"},
+  21: {pl: "Silny przeciwko Nieumarłym +%d%%", en: "Strong against Undead +%d%%", f: "percent"},
+  22: {pl: "Silny przeciwko Diabłom +%d%%", en: "Strong against Devils +%d%%", f: "percent"},
+  23: {pl: "%d%% obrażeń będzie dodanych do PŻ", en: "%d%% damage  will be absorbed by HP", f: "percent"},
+  24: {pl: "%d%% obrażeń będzie dodanych do PE", en: "%d%% damage will be absorbed by SP", f: "percent"},
+  25: {pl: "%d%% Szansa na kradzież PE", en: "%d%% chance to rob SP", f: "percent"},
+  26: {pl: "Szansa na odzyskanie PE: %d%%", en: "%d%% Chance to get back SP when hit", f: "percent"},
+  27: {pl: "Szansa na blok ciosów %d%%", en: "Chance to block a close-combat attack %d%% ", f: "percent"},
+  28: {pl: "Szansa na uniknięcie Strzały: %d%%", en: "Chance to avoid Arrows %d%%", f: "percent"},
+  29: {pl: "Odporność na Miecze: %d%%", en: "Sword Defence %d%%", f: "percent"},
+  30: {pl: "Odporność na Broń Dwuręczną: %d%%", en: "Two-Handed Defence %d%%", f: "percent"},
+  31: {pl: "Odporność na Sztylety: %d%%", en: "Dagger Defence %d%%", f: "percent"},
+  32: {pl: "Odporność na Dzwony: %d%%", en: "Bell Defence %d%%", f: "percent"},
+  33: {pl: "Odporność na Wachlarze: %d%%", en: "Fan Defence %d%%", f: "percent"},
+  34: {pl: "Odporność na Strzały: %d%%", en: "Arrow Resistance %d%%", f: "percent"},
+  35: {pl: "Odporność na Ogień: %d%%", en: "Fire Resistance %d%%", f: "percent"},
+  36: {pl: "Odporność na Błyskawice: %d%%", en: "Lightning Resistance %d%%", f: "percent"},
+  37: {pl: "Odporność na Magię: %d%%", en: "Magic Resistance %d%%", f: "percent"},
+  38: {pl: "Odporność na Wiatr: %d%%", en: "Wind Resistance %d%%", f: "percent"},
+  39: {pl: "%d%% Szansa na odbicie Ciosu", en: "%d%% Chance to reflect close combat hits  ", f: "percent"},
+  40: {pl: "Szansa na odbicie Klątwy: %d%%", en: "Chance to reflect Curse: %d%%", f: "percent"},
+  41: {pl: "Odporność na Trucizny: %d%%", en: "Poison Resistance %d%%", f: "percent"},
+  42: {pl: "Szansa na odzyskanie PE: %d%%", en: "%d%% Chance to restore SP", f: "percent"},
+  43: {pl: "Szansa na Bonus DOŚ: %d%%", en: "%d%% Chance for EXP Bonus", f: "percent"},
+  44: {pl: "Szansa na podwójną ilość Yang: %d%%", en: "%d%% Chance to drop double Yang", f: "percent"},
+  45: {pl: "Szansa na podwójną ilość Przedmiotów: %d%%", en: "%d%% Chance to drop double the Items", f: "percent"},
+  46: {pl: "Mikstury %d%% efekt podniesiony", en: "Potion %d%% effect raise", f: "percent"},
+  47: {pl: "Szansa na odzyskanie PŻ: %d%%", en: "%d%% Chance, to restore HP", f: "percent"},
+  48: {pl: "Odporność na Omdlenia", en: "Defence against blackouts", f: "boolean"},
+  49: {pl: "Odporność na Spowolnienia", en: "Defence against slowing", f: "boolean"},
+  50: {pl: "Niewrażliwy na Upadek", en: "Immune against falling down", f: "boolean"},
+  52: {pl: "Zasięg Łuku +%dm", en: "Arc Range +%dm", f: "flat"},
+  53: {pl: "Wartość Ataku +%d", en: "Attack Value +%d", f: "flat"},
+  54: {pl: "Obrona +%d", en: "Defence +%d", f: "flat"},
+  55: {pl: "Wartość Magicznego Ataku: +%d", en: "Magical Attack Value +%d", f: "flat"},
+  56: {pl: "Magiczna Obrona: +%d", en: "Magical Defence +%d", f: "flat"},
+  58: {pl: "Max Wytrzymałość: +%d", en: "Max. Endurance +%d", f: "flat"},
+  59: {pl: "Silny przeciwko Wojownikom +%d%%", en: "Strong against Warriorr +%d%%", f: "percent"},
+  60: {pl: "Silny przeciwko Ninja +%d%%", en: "Strong against Ninjas +%d%%", f: "percent"},
+  61: {pl: "Silny przeciwko Sura +%d%%", en: "Strong against Sura +%d%%", f: "percent"},
+  62: {pl: "Silny przeciwko Szamanom +%d%%", en: "Strong against Shamans +%d%%", f: "percent"},
+  63: {pl: "Silny przeciwko Potworom +%d%%", en: "Strength against monsters +%d%%", f: "percent"},
+  64: {pl: "Wartość Ataku: +%d%%", en: "Attack Value +%d%%", f: "percent"},
+  65: {pl: "Obrona: +%d%%", en: "Defence +%d%%", f: "percent"},
+  66: {pl: "Punkty Doświadczenia: +%d%%", en: "EXP +%d%%", f: "percent"},
+  67: {pl: "Szansa na zdobycie Przedmiotów pomnożona o %.1f", en: "Chance of capturing Items multiplied with %.1f", f: "multiplier"},
+  68: {pl: "Szansa na zdobycie Yang pomnożona o %.1f", en: "Chance of capturing Yang multiplied with %.1f", f: "multiplier"},
+  69: {pl: "Maks. PŻ +%d%%", en: "Max. HP +%d%%", f: "percent"},
+  70: {pl: "Maks. PE +%d%% ", en: "Max. SP +%d%% ", f: "percent"},
+  71: {pl: "Obrażenie Umiejętności: %d%%", en: "Skill Damage %d%%", f: "percent"},
+  72: {pl: "Średnie Obrażenia: %d%%", en: "Average Damage %d%%", f: "percent"},
+  73: {pl: "Odporność na Obrażenia Umiejętności %d%%", en: "Resistance against Skill Damage %d%%", f: "percent"},
+  74: {pl: "Odporność na Obrażenia: %d%%", en: "Average Damage Resistance %d%%", f: "percent"},
+  75: {pl: "iCafe DOŚ Bonus +%d%%", en: "iCafe EXP Bonus +%d%%", f: "percent"},
+  76: {pl: "iCafe Szansa na zdobycie Przedmiotów plus %.1f%%", en: "iCafe Chance of capturing Items plus %.1f%%", f: "percent_decimal"},
+  78: {pl: "Odporność na Wojowników: %d%%", en: "Defence chance against warrior attacks: %d%%", f: "percent"},
+  79: {pl: "Odporność na Ninja: %d%%", en: "Defence chance against ninja attacks: %d%%", f: "percent"},
+  80: {pl: "Odporność na Sura: %d%%", en: "Defence chance against sura attacks: %d%%", f: "percent"},
+  81: {pl: "Odporność na Szamanów: %d%%", en: "Defence chance against shaman attacks: %d%%", f: "percent"},
+  82: {pl: "Energia %d", en: "Energy %d ", f: "flat"},
+  84: {pl: "Bonus kostiumu %d%% ", en: "Costume bonus %d%% ", f: "percent"},
+  85: {pl: "Magiczny atak +%d%%", en: "Magic attack +%d%%", f: "percent"},
+  86: {pl: "Magiczny/krótkodystansowy atak +%d%%", en: "Magic/melee attack +%d%%", f: "percent"},
+  87: {pl: "Odporność na lód +%d%%", en: "Ice resistance +%d%%", f: "percent"},
+  88: {pl: "Odporność na ziemię +%d%%", en: "Earth resistance +%d%%", f: "percent"},
+  89: {pl: "Odporność na mrok +%d%%", en: "Resistance against darkness +%d%%", f: "percent"},
+  90: {pl: "Odporność na cios krytyczny +%d%%", en: "Resistance against critical hits +%d%%", f: "percent"},
+  91: {pl: "Odporność na przeszywający cios +%d%%", en: "Resistance against piercing hits +%d%%", f: "percent"}
 };
+
+// One formatter for both the fixed bonuses an item is made with and the random
+// lines rolled onto it, so the same id can never be worded or punctuated two
+// different ways. The sign lives in the client's own template: where it puts a
+// "+" the value is meant to read as a gain, so a negative value drops that "+"
+// instead of printing "+-10".
+function formatApply(type, val, lg) {
+  var meta = APPLY_META[type];
+  if (!meta) return 'Bonus #' + type + ': ' + (val > 0 ? '+' : '') + val;
+  var text = meta[lg] || meta.en;
+  if (meta.f === 'boolean') return text;
+  var shown = (meta.f === 'multiplier' || meta.f === 'percent_decimal')
+      ? (Math.round(val * 10) / 10).toFixed(1)
+      : String(val);
+  // The templates are C format strings, so a literal per-cent sign is
+  // written %% and has to be collapsed after the value goes in - other-
+  // wise every percentage line ends in "10%%" instead of "10%".
+  return text.replace(/\\+?%(\\.1f|d|s)/, function(match) {
+    var plus = match.charAt(0) === '+';
+    if (!plus) return shown;
+    return val < 0 ? shown : '+' + shown;
+  }).replace(/%%/g, '%');
+}
+
+function applyIsHidden(type) { return !APPLY_META[type]; }
 
 function skillIconImg(vnum, rank, size) {
   // A rank beginning with M, G or P means the skill is trained past normal, and
@@ -5071,8 +5115,8 @@ function showItemTooltip(ev, item) {
   if (def.apply && def.apply.length > 0) {
     def.apply.forEach(function(ap) {
       if (ap.type && ap.val) {
-        var apName = ATTR_NAMES[ap.type] ? (ATTR_NAMES[ap.type][lg] || ATTR_NAMES[ap.type].en) : ('Bonus #' + ap.type);
-        statHtml += '<div class="m2-tt-stat">' + apName + ': +' + ap.val + attrSuffix(ap.type) + '</div>';
+        if (applyIsHidden(ap.type)) return;
+        statHtml += '<div class="m2-tt-stat">' + formatApply(ap.type, ap.val, lg) + '</div>';
         hasStats = true;
       }
     });
@@ -5086,10 +5130,8 @@ function showItemTooltip(ev, item) {
   if (item.attrs && item.attrs.length > 0) {
     html += '<div class="m2-tt-divider"></div>';
     item.attrs.forEach(function(a) {
-      var aName = ATTR_NAMES[a.type] ? (ATTR_NAMES[a.type][lg] || ATTR_NAMES[a.type].en) : ('Bonus #' + a.type);
-      var sign = a.val > 0 ? '+' : '';
-      var pct = attrSuffix(a.type);
-      html += '<div class="m2-tt-bonus">' + aName + ' ' + sign + a.val + pct + '</div>';
+      if (applyIsHidden(a.type)) return;
+      html += '<div class="m2-tt-bonus">' + formatApply(a.type, a.val, lg) + '</div>';
     });
   }
 
