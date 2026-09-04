@@ -1,12 +1,12 @@
 {
   "schema": 1,
   "channel": "stable",
-  "publishedAt": "2026-09-04T13:25:00Z",
-  "statusMessage": "Aktualizacja 1.23.9: Dolina Orków wreszcie nadaje się do grania. Boty lądowały w odgrodzonym rogu mapy, z dostępem do 17 z 532 miejsc spawnu — teraz mają 161 i wszystkie punkty łowieckie.",
+  "publishedAt": "2026-09-04T14:05:00Z",
+  "statusMessage": "Aktualizacja 1.23.10: dwa punkty łowieckie Doliny Orków leżały za wodą i zostały zastąpione osiągalnymi. Sprawdzone też pytanie o mosty — do polowania żaden nie jest potrzebny, cały teren łączy się lądem.",
   "server": {
-    "version": "1.23.9",
-    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v1.23.9/metin2-server-update-1.23.9.zip",
-    "sha256": "4C9F8968F521E1058E4D874B0C7A4FFAE9A42905001FB40BC5BD8EC6C567F6DA"
+    "version": "1.23.10",
+    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v1.23.10/metin2-server-update-1.23.10.zip",
+    "sha256": "87B16DAD1EBA7633E1C9C74FBE09EBAB40F4A1934F0BF25D5DED79629DA9D6F1"
   },
   "support": {
     "contactUrl": "https://discord.gg/pt5tvnrN6",
