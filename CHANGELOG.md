@@ -17,6 +17,30 @@ every version here.
 
 ---
 
+## 1.23.6 — 2026-09-04
+
+### Fixed
+
+- **Rejestr po cichu odrzucał każdego bota od PID 1003 w górę.** `LPAD` w MySQL nie dopełnia, tylko **skraca**, gdy wartość jest dłuższa niż podana szerokość — więc `LPAD(1001,3,'0')` to `100`, czyli login zupełnie innego bota. Zapytanie rejestru porównywało z tym konto każdej postaci, przez co każdy bot powyżej PID 1002 nie przechodził warunku, którego nie mógł przejść. Bez żadnego błędu w logu.
+  - Obsada nie mogła urosnąć powyżej tysiąca, **niezależnie od tego, ile postaci utworzyło ziarno**.
+  - Zmierzone na żywym świecie z 1500 zasianymi botami: zapytanie zwracało **511**, po poprawce zwraca **1012**.
+
+### Changed
+
+- **Kanoniczna obsada powiększona do 1500** (PID 4..1503), a limit w launcherze razem z nią. Świat, który nosi boty ze starszego rozruchu, zachowuje je — ale zajmują one PID-y, których rejestr nigdy nie przyjmie, więc jedyny sposób, by dać takiemu światu więcej grających botów, to poszerzyć zakres kanoniczny poza nie.
+- **Wydzielony `playerbot_movement.h`** (720 linii): trasy, wsiadanie na konia, przechodzenie waypointów, portale Małpiej Świątyni. Rejestr znanych metinów trafił tam razem z nimi — o tym, czy kamień warto zapamiętać, decyduje to, czy ktoś może do niego dojść, więc rozdzielenie ich znaczyłoby przekazywanie osiągalności z powrotem.
+  - `playerbot_manager.cpp`: **8 388 linii** zamiast 12 527 z dzisiejszego rana.
+
+---
+
+**Zmierzone na działającym serwerze, krok po kroku:**
+
+| | boty w grze |
+|---|---|
+| przed 1.23.5 | 180 |
+| po 1.23.5 (ziarno wreszcie dociera) | 511 |
+| po 1.23.6 (poprawka rejestru + obsada 1500) | **750** |
+
 ## 1.23.5 — 2026-09-04
 
 ### Fixed
