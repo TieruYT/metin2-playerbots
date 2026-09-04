@@ -1,12 +1,12 @@
 {
   "schema": 1,
   "channel": "stable",
-  "publishedAt": "2026-09-04T07:10:00Z",
-  "statusMessage": "Aktualizacja 1.23.4: boty poprawiają bonusy na swoim sprzęcie u kowala, wędkarz nie zawiesza się już przy brzegu, a panel nazywa wszystkie bonusy zamiast pokazywać „Bonus #63\".",
+  "publishedAt": "2026-09-04T10:35:00Z",
+  "statusMessage": "Aktualizacja 1.23.5: powiększona obsada botów wreszcie naprawdę dociera do bazy (dotąd każda instalacja stosowała ziarno z 23 sierpnia), plus podział kodu botów na moduły. Sprawdzone na działającym serwerze z 1000 botami.",
   "server": {
-    "version": "1.23.4",
-    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v1.23.4/metin2-server-update-1.23.4.zip",
-    "sha256": "671995E7830EB37BD89D70751F88EC606B88AA091009B0BAEA97D84C6D7797BF"
+    "version": "1.23.5",
+    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v1.23.5/metin2-server-update-1.23.5.zip",
+    "sha256": "F3F1AE6EA2065AAC208CD2411AA530C1DFE06F5B5BEEDB73D6114B8E7F035361"
   },
   "support": {
     "contactUrl": "https://discord.gg/pt5tvnrN6",
