@@ -17,6 +17,26 @@ every version here.
 
 ---
 
+## 1.23.9 — 2026-09-04
+
+### Fixed
+
+- **Dolina Orków była mapą, na którą bot mógł wejść, ale nie mógł na niej grać.** Boty lądowały w punkcie startowym imperium, a `map_n_threeway` to mapa graniczna trzech imperiów — **każdy róg jest odgrodzony murem**. Z tego miejsca bot sięgał **17 z 532 grup spawnu** i ani jednego z dwunastu punktów łowieckich.
+  - Trzynaście botów siedziało tam na dokładnie wejściowym poziomie i nie awansowało, planując w kółko trasy, które nie mogły istnieć: **7812 z 8259** wpisów „unreachable" w jednej sesji pochodziło z tej jednej mapy.
+  - Wejście i wyjście są teraz w największym spójnym obszarze mapy — **161 grup spawnu** i wszystkie punkty łowieckie. Oba to współrzędne z `regen.txt`, więc są chodliwe, i oba w tym samym obszarze: **do wyjścia bot idzie pieszo**, więc wyjście za murem zablokowałoby każdego, kto tam wszedł.
+  - Migracja przenosi boty zostawione w starym rogu do terenu łowieckiego, zanim rdzeń gry je wczyta.
+- **Wędrówka pyta, czy punkt jest osiągalny, zanim do niego pójdzie** — na mapach granicznych i w Małpiej Świątyni. Kosztuje to sprawdzenie spójnego obszaru, a oszczędza przeszukiwanie trasy, które i tak musi się nie udać. Bot po złej stronie muru poluje tam, gdzie stoi, zamiast cyklicznie próbować dwunastu niemożliwych celów.
+
+### Added
+
+- **`tools/analyse_map_reach.py`** — narzędzie, którym to zmierzono. Dekoduje `server_attr`, stosuje tę samą regułę blokowania co nawigacja botów, rozlewa się od zadanego punktu i mówi, jaka część tablicy spawnów jest po tej samej stronie murów. Pustynia dostaje z wejścia **1170 z 1172** — dlatego ta mapa zawsze działała, a tamta nigdy.
+
+---
+
+**Zmierzone na uruchomionym serwerze:** trasy nieosiągalne do Doliny Orków **7812 → 0**, w całym ostatnim oknie logu zostały **4 awarie od 2 botów**. Bot obecny na mapie stoi wewnątrz głównego terenu łowieckiego.
+
+**Zamknięte zgłoszenia:** [#5](https://github.com/TieruYT/metin2-playerbots/issues/5) i [#7](https://github.com/TieruYT/metin2-playerbots/issues/7).
+
 ## 1.23.8 — 2026-09-04
 
 ### Changed
