@@ -877,6 +877,37 @@ namespace
 		return hitCount;
 	}
 
+	// The pause a swing needs before the next one, in milliseconds. The table is
+	// measured at attack speed 100; the client plays the motion faster as that
+	// rises, so the window moves with it.
+	DWORD GetPlayerBotSwingInterval(LPCHARACTER ch, BYTE comboMotion)
+	{
+		if (!ch)
+			return PLAYERBOT_SWING_MS_FALLBACK;
+		LPITEM weapon = ch->GetWear(WEAR_WEAPON);
+		const BYTE subType = (weapon && weapon->GetType() == ITEM_WEAPON)
+				? weapon->GetSubType() : (BYTE)WEAPON_SWORD;
+		// GetJob carries the gender as well; the motion set does not.
+		const BYTE job = (BYTE)(ch->GetJob() % 4);
+		DWORD base = PLAYERBOT_SWING_MS_FALLBACK;
+		if (job < 4 && subType < 6)
+		{
+			const BYTE step = (comboMotion >= MOTION_COMBO_ATTACK_1 &&
+					comboMotion <= MOTION_COMBO_ATTACK_4)
+					? (BYTE)(comboMotion - MOTION_COMBO_ATTACK_1) : (BYTE)0;
+			const DWORD found = PLAYERBOT_SWING_MS[job][subType][step];
+			if (found > 0)
+				base = found;
+		}
+		int attSpeed = ch->GetPoint(POINT_ATT_SPEED);
+		if (attSpeed <= 0)
+			attSpeed = 100;
+		const DWORD scaled = (base * 100U) / (DWORD)attSpeed;
+		// Even a heavily buffed character cannot outrun its own animation by much;
+		// the floor stops an extreme attack speed turning into a packet storm.
+		return scaled < 200U ? 200U : scaled;
+	}
+
 	bool ExecutePlayerBotBasicAttack(LPCHARACTER ch, LPCHARACTER target,
 			TPlayerBotAIState& state, DWORD dwNow)
 	{
@@ -910,13 +941,13 @@ namespace
 		if (ch->IsStateMove() || dwNow < state.dwNextAttackTime)
 			return false;
 
-		int attSpeed = ch->GetPoint(POINT_ATT_SPEED);
-		if (attSpeed <= 0)
-			attSpeed = 100;
-		// A normal 100 attack-speed character produces a visible combo step about
-		// every half-second.  This is deliberately shared by bows: their old 1 s+
-		// pause came from the staggered AI tick, not from the client animation.
-		const int hitInterval = std::max(250, 48000 / attSpeed);
+		// How long this particular swing takes, from the client's own motion data
+		// rather than one number for the whole game. The flat 480 ms this replaces
+		// was earlier than every weapon in the game will accept: a two-handed sword
+		// wants 932 ms and a bow a full second, so both were being cut in half, and
+		// the finishing strike of a bell combo - which does not chain at all and
+		// has to play whole - was cut worst of any.
+		const int hitInterval = (int)GetPlayerBotSwingInterval(ch, state.bComboMotion);
 
 		ch->SetPosition(POS_FIGHTING);
 		ch->SetVictim(target);

@@ -43,6 +43,7 @@ extern int passes_per_sec;
 extern void SendShout(const char* szText, BYTE bEmpire);
 
 #include "playerbot_types.h"
+#include "playerbot_swing_timing.h"
 #include "playerbot_navigation.h"
 #include "playerbot_world_memory.h"
 #include "playerbot_movement.h"
