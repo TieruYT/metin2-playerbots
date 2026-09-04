@@ -277,6 +277,11 @@ namespace
 
 	void ManagePlayerBotStatusOverhead(LPCHARACTER ch, TPlayerBotAIState& state, DWORD dwNow)
 	{
+		// A keeper's head already carries its shop sign. Writing the status line
+		// over it replaces the one label a passing player actually needs - the
+		// name of the stall they are deciding whether to open.
+		if (ch && ch->GetMyShop())
+			return;
 		if (!ch)
 			return;
 

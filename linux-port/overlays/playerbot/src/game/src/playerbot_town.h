@@ -382,6 +382,9 @@ namespace
 	{
 		if (!ch || !item || newPlus < 7)
 			return;
+		// Same rule as the overhead line: a bot minding a stall says nothing.
+		if (ch->GetMyShop())
+			return;
 
 		static DWORD s_dwLastShoutTime = 0;
 		const DWORD dwNow = get_dword_time();

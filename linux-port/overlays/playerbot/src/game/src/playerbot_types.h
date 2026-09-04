@@ -29,6 +29,14 @@ namespace
 	const DWORD PLAYERBOT_LOOT_VISIBLE_DELAY_MAX = 1800;
 	const DWORD PLAYERBOT_LOOT_PICKUP_INTERVAL_MIN = 450;
 	const DWORD PLAYERBOT_LOOT_PICKUP_INTERVAL_MAX = 850;
+	// Yang is taken almost at once. The pause above exists so a bot does not
+	// hoover a field the instant it drops, but a coin pile is one click a player
+	// never hesitates over, and three of them in a row had bots standing in a
+	// cleared field for six seconds instead of finding the next pack.
+	const DWORD PLAYERBOT_LOOT_MONEY_DELAY_MIN = 150;
+	const DWORD PLAYERBOT_LOOT_MONEY_DELAY_MAX = 350;
+	const DWORD PLAYERBOT_LOOT_MONEY_INTERVAL_MIN = 150;
+	const DWORD PLAYERBOT_LOOT_MONEY_INTERVAL_MAX = 300;
 	// A combat pickup is a cheap-looking action but an expensive query: Metin2's
 	// ForEachAround snapshots every entity in nine neighbouring sectrees before
 	// the callback can apply the 3 m pickup radius.  Throttle empty scans as well

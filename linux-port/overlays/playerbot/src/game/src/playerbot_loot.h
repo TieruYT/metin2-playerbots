@@ -17,6 +17,55 @@
 
 namespace
 {
+	// Dropped yang. ITEM_ELK is the money type, not a vnum: the drop is a real
+	// item on the ground like any other, which is why it queues behind herbs and
+	// hides unless something says otherwise.
+	bool IsPlayerBotMoneyDrop(LPITEM item)
+	{
+		return item && item->GetType() == ITEM_ELK;
+	}
+
+	// Yang first, then by distance. A bot that walks past three coin piles to
+	// reach a hide, then walks back for each pile, spends its time crossing a
+	// field it has already cleared - and the yang is what pays for the potions
+	// that keep it killing.
+	struct FPlayerBotLootOrder
+	{
+		bool operator()(const std::pair<int, LPITEM>& a,
+				const std::pair<int, LPITEM>& b) const
+		{
+			const bool aMoney = IsPlayerBotMoneyDrop(a.second);
+			const bool bMoney = IsPlayerBotMoneyDrop(b.second);
+			if (aMoney != bMoney)
+				return aMoney;
+			return a.first < b.first;
+		}
+	};
+
+	// How long a drop has to have been lying there before this bot reaches for
+	// it. Long enough for a person to have noticed it - except for yang, which
+	// nobody hesitates over.
+	DWORD GetPlayerBotLootVisibleDelay(LPITEM item, DWORD itemVID, DWORD playerID)
+	{
+		const DWORD roll = PlayerBotNavHash(itemVID ^ playerID);
+		if (IsPlayerBotMoneyDrop(item))
+			return PLAYERBOT_LOOT_MONEY_DELAY_MIN +
+					(roll % (PLAYERBOT_LOOT_MONEY_DELAY_MAX -
+							PLAYERBOT_LOOT_MONEY_DELAY_MIN + 1));
+		return PLAYERBOT_LOOT_VISIBLE_DELAY_MIN +
+				(roll % (PLAYERBOT_LOOT_VISIBLE_DELAY_MAX -
+						PLAYERBOT_LOOT_VISIBLE_DELAY_MIN + 1));
+	}
+
+	DWORD GetPlayerBotLootPickupInterval(LPITEM item)
+	{
+		if (IsPlayerBotMoneyDrop(item))
+			return number(PLAYERBOT_LOOT_MONEY_INTERVAL_MIN,
+					PLAYERBOT_LOOT_MONEY_INTERVAL_MAX);
+		return number(PLAYERBOT_LOOT_PICKUP_INTERVAL_MIN,
+				PLAYERBOT_LOOT_PICKUP_INTERVAL_MAX);
+	}
+
 	class FPlayerBotPartyLootOwner
 	{
 		public:
@@ -93,7 +142,7 @@ namespace
 
 			void Sort()
 			{
-				std::sort(m_items.begin(), m_items.end());
+				std::sort(m_items.begin(), m_items.end(), FPlayerBotLootOrder());
 			}
 
 			const std::vector<std::pair<int, LPITEM> >& GetItems() const { return m_items; }
@@ -174,9 +223,8 @@ namespace
 				state.mapLootSeenSince[itemVID] = dwNow;
 				continue;
 			}
-			const DWORD visibleDelay = PLAYERBOT_LOOT_VISIBLE_DELAY_MIN +
-					(PlayerBotNavHash(itemVID ^ ch->GetPlayerID()) %
-					 (PLAYERBOT_LOOT_VISIBLE_DELAY_MAX - PLAYERBOT_LOOT_VISIBLE_DELAY_MIN + 1));
+			const DWORD visibleDelay = GetPlayerBotLootVisibleDelay(
+					item, itemVID, ch->GetPlayerID());
 			if (dwNow - seen->second >= visibleDelay)
 			{
 				pickup = item;
@@ -189,8 +237,7 @@ namespace
 
 		const DWORD itemVID = pickup->GetVID();
 		const DWORD itemVnum = pickup->GetVnum();
-		state.dwNextLootPickupTime = dwNow + number(
-				PLAYERBOT_LOOT_PICKUP_INTERVAL_MIN, PLAYERBOT_LOOT_PICKUP_INTERVAL_MAX);
+		state.dwNextLootPickupTime = dwNow + GetPlayerBotLootPickupInterval(pickup);
 		if (ch->PickupItem(itemVID))
 		{
 			state.mapLootSeenSince.erase(itemVID);
@@ -304,9 +351,8 @@ namespace
 			return false;
 		const DWORD nearestVID = nearest->GetVID();
 		const DWORD firstSeen = state.mapLootSeenSince[nearestVID];
-		const DWORD visibleDelay = PLAYERBOT_LOOT_VISIBLE_DELAY_MIN +
-				(PlayerBotNavHash(nearestVID ^ ch->GetPlayerID()) %
-				 (PLAYERBOT_LOOT_VISIBLE_DELAY_MAX - PLAYERBOT_LOOT_VISIBLE_DELAY_MIN + 1));
+		const DWORD visibleDelay = GetPlayerBotLootVisibleDelay(
+				nearest, nearestVID, ch->GetPlayerID());
 		const bool visibleLongEnough = dwNow - firstSeen >= visibleDelay;
 
 		if (items.front().first <= PLAYERBOT_PICKUP_RANGE)
@@ -316,8 +362,7 @@ namespace
 				return true;
 
 			const DWORD itemVnum = nearest->GetVnum();
-			state.dwNextLootPickupTime = dwNow + number(
-					PLAYERBOT_LOOT_PICKUP_INTERVAL_MIN, PLAYERBOT_LOOT_PICKUP_INTERVAL_MAX);
+			state.dwNextLootPickupTime = dwNow + GetPlayerBotLootPickupInterval(nearest);
 			if (ch->PickupItem(nearestVID))
 			{
 				state.mapLootSeenSince.erase(nearestVID);
