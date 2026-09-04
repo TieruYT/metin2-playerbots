@@ -17,6 +17,20 @@ every version here.
 
 ---
 
+## 1.23.8 — 2026-09-04
+
+### Changed
+
+- **Podział kodu botów dokończony — wydanie bez zmian w zachowaniu.** `playerbot_manager.cpp` miał rano **12 527 linii**; ma **1 521**. Wszystko to przeniesienia, nic nie zostało przepisane.
+  - Wydzielone w tym kroku: `playerbot_targeting.h` (wybór celu i rezerwowanie go przed setką innych botów), `playerbot_loot.h`, `playerbot_survival.h`, `playerbot_wandering.h`, `playerbot_status.h`.
+  - Rdzeń celowania został **jednym plikiem**, choć ma 1266 linii: rezerwacja celu, licznik atakujących metin i decyzja o multi-pullu muszą widzieć ten sam obraz tego, kto z czym walczy. Rozbicie ich dałoby trzy pliki czytające trzy różne prawdy.
+  - Sprawdzenie „czy gracz jest blisko" trafiło do statusu — to ono decyduje, że przy nikim nie ma po co nic nadawać.
+  - W menedżerze została **rola menedżera**: kim bot jest, jego drużyna, drobne przeglądy, watchdog i sam takt. Takt zostaje tam celowo — jako jedyny musi widzieć wszystkie podsystemy.
+
+---
+
+**Weryfikacja:** kontrola `-m32` w gcc:13 po każdym cięciu — zero błędów, te same dwanaście ostrzeżeń przez cały czas, test jednostkowy przechodzi. Obraz zbudowany i uruchomiony: rejestr 1012 tożsamości, boty piją mikstury, ulepszają, zakładają sprzęt, rozdają punkty, wycofują się taktycznie i wspierają drużynę.
+
 ## 1.23.7 — 2026-09-04
 
 ### Changed
