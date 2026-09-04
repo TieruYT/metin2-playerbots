@@ -822,6 +822,27 @@ namespace
 	// rather than in the manager because the subsystems read it too - refining
 	// asks a bot for its personality long before the tick reaches it.
 	TPlayerBotAIStateMap s_mapPlayerBotAIStates;
+
+	// Changing goal or action is a state transition, so it lives with the
+	// state. Every subsystem does it, and each one used to have to be
+	// included after whichever file happened to hold these two.
+	void SetPlayerBotGoal(LPCHARACTER ch, TPlayerBotAIState& state, BYTE goal, DWORD dwNow)
+	{
+		if (state.bLongTermGoal == goal)
+			return;
+		state.bLongTermGoal = goal;
+		state.dwGoalStartedTime = dwNow;
+		sys_log(0, "PLAYERBOT_GOAL: pid=%u name=%s goal=%u",
+				ch ? ch->GetPlayerID() : 0, ch ? ch->GetName() : "?", (unsigned int)goal);
+	}
+
+	void SetPlayerBotAction(TPlayerBotAIState& state, BYTE action, DWORD dwNow)
+	{
+		if (state.bCurrentAction == action)
+			return;
+		state.bCurrentAction = action;
+		state.dwActionChangedTime = dwNow;
+	}
 }
 
 #endif

@@ -78,12 +78,13 @@ dependency order at the top of `playerbot_manager.cpp`:
 
 | File | What |
 |---|---|
-| `playerbot_types.h` | Tuning constants, enums, `TPlayerBotAIState` and the state map. |
+| `playerbot_types.h` | Tuning constants, enums, `TPlayerBotAIState`, the state map, and the two goal/action transitions every subsystem makes. |
 | `playerbot_world_rules.h` | Pure travel policy. No engine types, unit-tested. |
 | `playerbot_navigation.h` | Where a bot may stand and how it gets there. Answers questions about the world only; calls nothing above it. |
 | `playerbot_world_memory.h` | What the population has learned about the world, as opposed to about itself. Written by one subsystem, read by another. |
 | `playerbot_movement.h` | Following a route: mounts, waypoints, Monkey Dungeon portals, and the known-metin registry (a stone is worth remembering only if someone can reach it). |
 | `playerbot_gear.h` | What a bot wears and carries: equipment scoring, the progression ladder, arrows, potions. |
+| `playerbot_activities.h` | What a bot does that is not fighting: the horse, and fishing. Each owns the whole tick while it runs. |
 | `playerbot_manager.cpp` | The tick, plus every subsystem not yet lifted out. |
 
 These are fragments, not normal headers: each defines objects, relies on the
@@ -93,9 +94,9 @@ that respects what it calls. A fragment that needs something from a later
 subsystem forward-declares it rather than pulling it in -- `playerbot_gear.h`
 does this for `GetPlayerBotNpcApproach`.
 
-Still in `playerbot_manager.cpp`, and the obvious next cuts: the activities
-(horse, fishing, biologist, hunting missions), combat, and the town/merchant
-economy.
+Still in `playerbot_manager.cpp`, and the obvious next cuts: combat, the
+town/merchant economy (junk, refining, stalls, bonus rerolling), the biologist
+and hunting missions, and the tick itself.
 
 Find a subsystem by its entry point rather than by line number:
 
