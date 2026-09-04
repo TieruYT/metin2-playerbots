@@ -1,12 +1,12 @@
 {
   "schema": 1,
   "channel": "stable",
-  "publishedAt": "2026-09-04T22:21:41Z",
-  "statusMessage": "Aktualizacja 1.24.7: boty koncza wreszcie uderzenia - rytm ataku bierze sie teraz z danych animacji, a nie z jednej liczby dla calej gry. Stragany maja do osmiu przedmiotow i mozna je wystawiac od 1 poziomu. Uwaga: boty przez to bija wolniej, bo wczesniej wyprzedzaly wlasna animacje.",
+  "publishedAt": "2026-09-04T22:44:53Z",
+  "statusMessage": "Aktualizacja 1.24.8: stragany wreszcie powstaja w Joan, pod Straznikiem Wsi i z rozrzutem na kilkadziesiat metrow. Doszla tez osobowosc Handlarza - co szosty bot handluje zawodowo, wystawia 20 pozycji i nie biega za koniem.",
   "server": {
-    "version": "1.24.7",
-    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v1.24.7/metin2-server-update-1.24.7.zip",
-    "sha256": "C8C9D18954433AB33B2F3191A33AF7DB1C6B011A3BE16B07EB7D8F4BD119245D"
+    "version": "1.24.8",
+    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v1.24.8/metin2-server-update-1.24.8.zip",
+    "sha256": "4CAD7BCADB3132B20D53C63D8AD0C952EAA901615DCFD3A4ADBE360947076AF5"
   },
   "support": {
     "contactUrl": "https://discord.gg/pt5tvnrN6",
