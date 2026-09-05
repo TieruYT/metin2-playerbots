@@ -1,12 +1,12 @@
 {
   "schema": 1,
   "channel": "stable",
-  "publishedAt": "2026-09-05T21:00:00Z",
-  "statusMessage": "Aktualizacja 1.25.8. Boty kupuja wreszcie bransolety, naszyjniki i kolczyki - te trzy sloty nie mialy zadnej drabiny, wiec ozdobe bot nosil tylko z dropu. Ozdoba dobierana jest do klasy, nie do poziomu: kolczyki rotuja statystyka, wiec szaman bierze ten z inteligencja, a nie nowszy z sila. Cala wycena sprzetu rozroznia teraz klasy. Do Lochu Malp prawie nikt nie chodzil, bo okno wyprawy mialo dokladnie dwa poziomy i zamykalo sie na zawsze - a suwak konia w panelu nie wplywal na wyprawy w ogole.",
+  "publishedAt": "2026-09-05T22:00:00Z",
+  "statusMessage": "Aktualizacja 1.26.0. Boty wchodza do Doliny Orkow brama Chunjo, a nie srodkowym teleporterem, i rozchodza sie po wyspach zamiast stac na jednej - Amulet Orka i Ezoteryczny Przewodnik nie maja tam gdzie ladowaly ani jednego punktu odrodzenia. Ulepszacz, ktorego bot sam nie potrzebuje, trafia na jego stragan zamiast do kupca. Bot porownuje bron po obrazeniach w czasie, nie zsiada z konia przy teleporterze i konczy walke, ktora do niczego nie prowadzi. Naprawione: zamarzanie przy portalu, postacie przepadajace po przejsciu na mape drugiego rdzenia, znak straganu nad glowa biegajacego bota. Mapy w panelu dwa razy dokladniejsze, z trzecia warstwa cieplna.",
   "server": {
-    "version": "1.25.8",
-    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v1.25.8/metin2-server-update-1.25.8.zip",
-    "sha256": "2E2C06F86BDC1C0325488F104D74A44947DFAD3388A8049DCCD95B25418609C9"
+    "version": "1.26.0",
+    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v1.26.0/metin2-server-update-1.26.0.zip",
+    "sha256": "E0654872AD0785417D2289445DD0857556E9A0F0787A5860F880EAEB45618C89"
   },
   "support": {
     "contactUrl": "https://discord.gg/pt5tvnrN6",

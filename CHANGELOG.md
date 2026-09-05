@@ -17,6 +17,89 @@ every version here.
 
 ---
 
+## 1.26.0 — 2026-09-05
+
+### Nowe
+
+- **Boty wchodzą do Doliny Orków bramą Chunjo i rozchodzą się po wyspach.**
+  Mapa ma cztery teleportery — po jednym na królestwo i jeden na środku,
+  niczyj. Boty lądowały przy tym środkowym, więc cała populacja pojawiała się
+  na wyspie centralnej. Teraz wychodzą tam, gdzie wychodzi postać z Chunjo.
+- **Bot, który przez pięć minut nie ruszył się dalej niż o szerokość huba,
+  idzie do następnego** — nawet jeśli akurat ma tu co bić. Rotacja po miejscach
+  polowania działała wyłącznie w turze, w której nie było żadnego celu, a przy
+  4041 punktach odrodzenia w Dolinie taka tura nie przychodziła nigdy. Razem
+  z bramą Chunjo dało to jedną wyspę z dwudziestu trzech — a Amulet Orka
+  i Ezoteryczny Przewodnik nie mają tam ani jednego punktu odrodzenia.
+- **Ulepszacze krążą między botami.** Materiał, którego znalazca sam nie
+  potrzebował, był złomem i szedł do kupca ogólnego przy najbliższej wizycie
+  w mieście — niszczony w tempie, w jakim wypadał. Teraz zostaje jako towar na
+  własny stragan, do ośmiu komórek (materiały się stackują). Na ladę trafiają
+  wyłącznie te 84 materiały, których faktycznie żąda jakaś receptura, a nie
+  wszystkie 240 przedmiotów typu materiał.
+- **Boty nie zsiadają z konia przy teleporterze.** Zsiadanie ma sens przed
+  rozmową z NPC; z teleporterem bot nie rozmawia, bo przejście jest serwerowe.
+  W jeden wieczór było to 1362 zsiadania, każde z ponownym wsiadaniem trzy
+  sekundy później po drugiej stronie.
+- **Bot porównuje broń po obrażeniach w czasie, a nie po rodzinie.** Broń
+  z zestawu na 30 poziom dostawała płaski bonus tak duży, że żaden bot nigdy
+  jej nie wymieniał — FMS +4 wygrywał z mieczem na 36 poziom +7, który jest
+  lepszy. Do tego silnik skraca o połowę odstęp między ciosami sztyletu
+  i podwaja obrażenia łuku, więc na tych dwóch te same liczby są warte dwa
+  razy tyle: sztylet na 30 poziom z 40-44 bije mocniej niż miecz z 57-73.
+- **Mapy w panelu są dwa razy dokładniejsze.** Kafle 1024 zamiast 512, więc
+  na mapie królestwa piksel to dwie komórki terenu, a nie cztery — mury,
+  budynki i drogi przestały się rozmazywać. Jasne, piaskowe podłoże zamiast
+  ciemnozielonego, bo nakładki cieplne są ciepłe i na ciemnym tle z nim
+  konkurowały. Siatka mapy cieplnej z 44 na 72, więc ognisko wypada na
+  budynku, a nie na dzielnicy. Doszła trzecia warstwa: **awanse umiejętności**.
+
+### Naprawione
+
+- **Boty potrafiły zamarznąć przy teleporterze na dobre.** Marsz do portalu
+  ignorował to, czy udało się wyznaczyć trasę, i zawsze meldował sukces —
+  a podróż zajmuje całą turę, więc nic poniżej już się nie wykonywało. Bot stał
+  bez trasy, przeskakując cel co sześć sekund, a strażnik bezczynności resetował
+  go w kółko prosto z powrotem w tę samą decyzję. Teraz mierzony jest postęp:
+  bez ruchu przez dwadzieścia sekund bot oddaje turę i wraca do polowania.
+- **Bot i potwór potrafili leczyć się nawzajem w nieskończoność.** Reguła
+  „ta walka do niczego nie prowadzi" istniała tylko dla kamieni metin. Zwykły
+  potwór był porzucany wyłącznie wtedy, gdy bot nie potrafił do niego dojść,
+  więc walka z Czarnym Orkiem, który regenerował się szybciej, niż bot zdejmował
+  mu życie, nie miała końca. Teraz obowiązuje ten sam test co przy kamieniach.
+- **Boty przestały bić potwory dużo poniżej swojego poziomu.** Zwykły cel
+  wybierany był po samej odległości, więc bot z 19 poziomu tłukł psy z 1
+  poziomu pod murami Joan. Tabela doświadczenia silnika płaci za takiego
+  potwora jedną setną — potwór niżej niż o dziewięć poziomów jest teraz
+  pomijany, dopóki w zasięgu jest cokolwiek lepszego.
+- **Postacie botów przepadały bezpowrotnie po przejściu na mapę drugiego
+  rdzenia.** Takie przejście udaje się połowicznie: współrzędne się zmieniają,
+  wstawienie do sektora nie — a zwykłe wylogowanie utrwala pozycję, której
+  żaden start już nie wczyta. Bot nie był zablokowany ani bezczynny; był
+  odrzucany przy każdym uruchomieniu i po prostu nie istniał. Teraz rozjazd
+  między mapą a pozycją jest wykrywany i bot wraca do Bokjung.
+
+  Postaci, które zdążyły utknąć wcześniej, poprawka nie odzyska — trzeba je
+  przestawić raz w bazie:
+
+  ```sql
+  UPDATE player.player SET map_index = 21, x = 55700, y = 157900
+  WHERE name LIKE 'bot%'
+    AND map_index NOT IN (21,23,24,25,26,61,63,64,69,70,73,108,216,217);
+  ```
+
+- **Znak straganu znikał tylko tym, którzy akurat patrzyli.** Odwołanie szyldu
+  leci do klientów będących w zasięgu w tej jednej chwili, więc kto podszedł
+  sekundę później, widział bota z szyldem sklepu, którego nie da się otworzyć.
+  Zamknięty stragan odbiera swój znak przez sześć sekund.
+- **Szybka przebudowa serwera potrafiła po cichu wydać starą binarkę.** Dotyczy
+  tylko osób budujących lokalnie przez `tools/fast-game-build`: ścieżka
+  kontenera była przepisywana przez Git Bash, plik nie dostawał świeżego
+  znacznika czasu i `make` uznawał go za aktualny. Teraz brak odświeżenia
+  przerywa budowę zamiast wydać stary plik.
+
+---
+
 ## 1.25.8 — 2026-09-05
 
 ### Nowe
