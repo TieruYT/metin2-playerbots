@@ -201,14 +201,18 @@ PLAYERBOT: autospawn requested=750 registered_started=511 in Chunjo
   its first field, `m`/`b`/`e` naming a mob directly, `g` a group, `r` a
   group_group; the id is the last field of that line.
 - **Where the refine materials come from.** The 407 recipes in
-  `player.refine_proto` name 84 distinct materials, and Orc Valley (map 64,
-  `map_n_threeway`) carries ten of them - the Orc Amulet from Elite Orc (631)
-  and Big Bald Orc (651), the Esoteric Guide from 701/751, Orc Tooth, Snake
-  Tail, Curse Book and the rest. What was in shortage was not the drop but the
-  killing: bots warp in at one point and wandering, which is what rotates them
-  between hunting hubs, runs only on a tick with nothing to fight. On a map with
-  four thousand spawns that tick never comes. Measure where the population
-  actually stands before concluding a map has no monsters worth farming.
+  `player.refine_proto` name 84 distinct materials; 64 of them drop from a
+  monster that stands on one of the fourteen hosted maps (`mob_proto` column 33
+  through `etc_drop_item.txt`, or `mob_drop_item.txt`), and the fishbone comes
+  from gutting a fish, which no drop table records. Orc Valley alone carries
+  ten - the Orc Amulet from Elite Orc (631) and Big Bald Orc (651), the
+  Esoteric Guide from 701/751, Orc Tooth, Snake Tail, Curse Book - and the Bear
+  Hide that 943 pieces of +6 gear were waiting on comes from ordinary bears on
+  maps 21 and 24. What was in shortage was never the drop; it was the killing:
+  bots warped in at one point and never left it, and a spare material was
+  vendored on the next town visit. An earlier version of this note said 28 of
+  84 were obtainable. That number came from the broken group_group parser
+  described above; measure again before believing any count of this kind.
 - Drop tables answer three different questions and only one of them uses vnums.
   `mob_drop_item.txt` is per-mob and by vnum; `etc_drop_item.txt` and
   `common_drop_item.txt` key on the **Korean item name**, and the etc table is
