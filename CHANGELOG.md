@@ -17,6 +17,62 @@ every version here.
 
 ---
 
+## 1.25.5 — 2026-09-05
+
+### Naprawione
+
+- **Boty w Dolinie Orków stały tylko na środku mapy.** Dolina to dwadzieścia trzy
+  wyspy w delcie rzeki, połączone dwudziestoma dwoma mostami. W danych mapy rzeka
+  ma znacznik blokady i znacznik wody, a **pomost nad tą rzeką ma samą wodę, bez
+  blokady** — i właśnie tak mapa mówi „tędy można przejść". Nawigacja bota
+  odrzucała każdą wodę, więc odrzucała też wszystkie mosty. Z punktu wejścia bot
+  miał dostęp do 17,6% chodliwego terenu i 161 z 532 grup potworów, a mapa
+  rozpadała mu się na dziewiętnaście osobnych kawałków. Teraz jest **jednym
+  kawałkiem**. Woda jest przechodnia, ale kosztowna, więc bot wchodzi na most, bo
+  innej drogi z wyspy nie ma, a płycizn na pustyni nie brodzi, kiedy obok jest
+  suchy ląd.
+- **Miejsca łowieckie Doliny obejmowały jedną wyspę.** Lista dwunastu punktów
+  została kiedyś przycięta do tego, co bot potrafił osiągnąć przy zepsutej
+  nawigacji — mieściła się w prostokącie 37×35 km na mapie, której potwory
+  rozstawione są na 133×131 km, i obejmowała 128 z 532 grup. Nowe szesnaście
+  punktów wyliczono z danych respawnu mapy: każdy to prawdziwe miejsce potworów,
+  sprawdzone jako chodliwe i osiągalne z wejścia, rozstawione co najmniej 12 000
+  jednostek od siebie. Obejmują 250 grup.
+- **Na straganach leżał szrot.** Sprzęt na poziom 29 i niższy przy +4 albo +5 nie
+  trafia już na ladę — z 487 takich sztuk w plecakach botów 272 były na poziom 29
+  lub niżej, czyli o klasę za stare dla właściciela i bez wartości dla kogokolwiek
+  innego. Wyjątki zostają: dobre bonusy, wszystko od +6, broń na 30. poziom,
+  a także **tarcze i hełmy od 21. poziomu**, bo w tych dwóch slotach nie ma nic
+  między sprzętem startowym a 41. poziomem.
+- **Stragany z jedną sztuką.** Osiemnaście z trzydziestu czterech straganów
+  otwartych w ciągu kwadransa niosło dokładnie jeden przedmiot. Lada wymaga teraz
+  co najmniej dwóch pozycji — chyba że ta jedna jest tego warta sama w sobie:
+  broń na 30. poziom, medal konny, mocny bonus albo ulepszenie od +6.
+
+### Nowe
+
+- **Boty chodzą na zakupy.** Wcześniej kupowały tylko z lady, która akurat stała
+  dwadzieścia metrów od nich — stąd dwanaście zakupów na pół godziny przy siedmiu
+  setkach botów. Bot, któremu brakuje składnika do ulepszenia, może rozwinąć konia
+  albo nie ma broni na 30. poziom, idzie teraz na rynek, wybiera najbliższą ladę
+  z tą rzeczą, **podchodzi pod nią** i tam kupuje; jeśli przyszedł po dwie rzeczy,
+  zostaje po drugą. Wyprawa ma dziewięćdziesiąt sekund i kończy się w chwili, gdy
+  bot stoi wśród straganów i nic go nie interesuje.
+- **Mapa świata w panelu pokazuje przeprawy.** Tło mapy malowało każdą wodę jako
+  rzekę, więc Dolina Orków wyglądała na deltę bez jednego przejścia — dokładnie
+  tak, jak widziały ją boty. Mosty i brody mają teraz własny kolor, a kafle mają
+  512 pikseli zamiast 256 i próbkują każdą komórkę pod pikselem, bo most ma 600
+  jednostek szerokości i przy próbkowaniu samego środka połowa z nich znikała.
+
+### Warto wiedzieć
+
+- Jeśli u Ciebie Dolina Orków była pusta mimo botów na 36. poziomie i wyżej, to
+  mogła być jeszcze jedna, osobna przyczyna: serwer dzieli mapy na trzy procesy,
+  a bot nie ma klienta, który mógłby przelogować się między nimi, więc Dolina musi
+  być na tym samym procesie co miasta. W kodzie jest tak od 1.22.0 i aktualizacja
+  launcherem przebudowuje obrazy, więc nic nie musisz robić — ale jeśli obraz
+  serwera jest starszy, boty będą stały pod teleporterem zamiast wejść na mapę.
+
 ## 1.25.4 — 2026-09-05
 
 ### Naprawione

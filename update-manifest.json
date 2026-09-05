@@ -1,12 +1,12 @@
 {
   "schema": 1,
   "channel": "stable",
-  "publishedAt": "2026-09-05T13:11:49Z",
-  "statusMessage": "Aktualizacja 1.25.4. Bot przenoszony na inna mape zabieral ze soba otwarty stragan, a szyld byl zdejmowany dopiero w miejscu docelowym - dlatego widziano boty z szyldem sklepu w lochu. Aktualizacje wracaja do kilkunastu sekund: poprzednia paczka niosla 4952 pliki zamiast 200. Dziennik launchera przestal byc czesciowo nieczytelny.",
+  "publishedAt": "2026-09-05T17:35:00Z",
+  "statusMessage": "Aktualizacja 1.25.5. Boty w Dolinie Orkow staly tylko na srodku mapy: nawigacja traktowala kazda wode jak sciane, a most nad rzeka to wlasnie woda bez blokady - z wejscia bot mial 17,6% terenu i 161 z 532 grup potworow, teraz cala mape. Miejsca lowieckie Doliny obejmuja 250 grup zamiast 128. Ze straganow znikl szrot na poziom 29 i nizej przy +4, lada wymaga co najmniej dwoch pozycji, a boty chodza na zakupy pod stragany. Mapa w panelu pokazuje mosty i brody.",
   "server": {
-    "version": "1.25.4",
-    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v1.25.4/metin2-server-update-1.25.4.zip",
-    "sha256": "0BDF172B86F2BA5CA2DD01B740E786A5C4B9F929212F92E33509EF387EEC1F74"
+    "version": "1.25.5",
+    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v1.25.5/metin2-server-update-1.25.5.zip",
+    "sha256": "DE0F96EB73935A5F4290CEA7E379C0F3A15D34BDAA96280A539C6B622A3236D0"
   },
   "support": {
     "contactUrl": "https://discord.gg/pt5tvnrN6",
