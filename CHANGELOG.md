@@ -17,6 +17,71 @@ every version here.
 
 ---
 
+## 1.27.0 — 2026-09-06
+
+### Nowe
+
+- **Bot, któremu brakuje ulepszacza, idzie po niego do potwora, który go nosi.**
+  Do tej pory brak materiału kończył się na targu — a jeśli lada była pusta,
+  bot polował gdziekolwiek. Teraz przy wyborze celu potwór, którego przedmiot
+  z tabeli dropu jest na liście braków, wygrywa z sąsiadami; a gdy w zasięgu
+  nie ma żadnego, bot przeszukuje całą mapę i rusza do najbliższego. W pierwsze
+  24 minuty 385 botów wyruszyło 1845 razy, z czego 500 po Amulet Orka.
+- **Cena na straganie bierze się z zakończonych sprzedaży, nie ze stałego
+  mnożnika.** Świat pamięta ostatnie ceny jednostkowe każdego przedmiotu.
+  Przy dwóch sprzedażach lada wystawia medianę: 15% drożej, gdy ostatnia
+  sprzedaż była w ciągu dziesięciu minut, 15% taniej, gdy nikt nie kupił od
+  godziny — w klamrze między ceną u kupca a jej dwunastokrotnością. Cena
+  wystawiona to nadzieja sprzedawcy; cena zapłacona to jedyny pomiar popytu.
+- **Bot porównuje broń po tym, jak jego szkoła zadaje obrażenia.** Miecz sury
+  Czarnej Magii i dzwon szamana mają w proto dwie pary wartości — fizyczną i
+  magiczną — a wycena czytała tylko fizyczną. Szkoły czarujące (Czarna Magia,
+  obie szkoły szamana) liczą teraz magię z połową fizyki; reszta fizykę z
+  ćwiartką magii. Tak samo bonusy: średnie obrażenia są warte więcej szkołom
+  ciosów, obrażenia umiejętności — szkołom skilli; wcześniej te drugie wpadały
+  do domyślnego koszyka wartego dziesięć razy mniej.
+- **Rybia Ość, Małż, perły i Zwój Błogosławieństwa są ulepszaczami.** Ośmiu z
+  84 materiałów receptur nie ma typu „materiał"; Rybia Ość (13 receptur) szła
+  do kupca jako „kieszonkowe wędkarza". Teraz o tym, co jest ulepszaczem,
+  decyduje tabela receptur, nie typ przedmiotu.
+- **Małż potrzebny do receptury nie jest otwierany.** 26 receptur zużywa go
+  jako jest; otwieranie tego, po który bot i tak idzie do kowala, zamieniało
+  pewny materiał na szansę na inny.
+- **Kamień Duszy dobierany pod szkołę.** Kamień Potwora pierwszy dla każdego,
+  Śmierci i Penetracji dla szkół ciosów, Powtórki dla szkół skilli, klasowe
+  na końcu — w świecie potworów. Zbroja: Witalności, potem Uchylenia, Obrony.
+
+### Naprawione
+
+- **Bot wkładał Kamień Duszy z gwarancją sukcesu i za darmo.** Kamień był
+  wpisywany wprost do gniazda i kasowany; gracz ma 30% szans, a przy porażce
+  pęknięty kamień na stałe w gnieździe. Na żywym świecie stało 261 obsadzonych
+  gniazd i zero pękniętych. Teraz kamień idzie tą samą ścieżką co u gracza —
+  zdjęcie sprzętu, próba, odczyt gniazda, założenie. Pierwszego wieczoru:
+  sześć pęknięć, jeden sukces.
+- **Kamień Potwora był po stronie zbroi.** Podział rodzajów kamieni na
+  broń/zbroję miał granicę o jeden za nisko; proto mówi jasno, że 28037 to
+  broń. Poprzedni sposób wkładania nie zauważał różnicy.
+- **Bot mógł przekuć broń w stopień, którego nie założy.** Silnik sprawdza
+  poziom wyniku ulepszania tylko w wersji koreańskiej; ten serwer ma locale,
+  więc kontrola była wyłączona. Pięć rodzin w zasięgu botów podnosi wymagany
+  poziom z każdym plusem — Upiorna Kusza z 38 na 56, trzy dzwony z 52 na 60.
+  Bot pyta teraz o poziom wyniku przed próbą.
+- **Skan mapy po materiał spadał całym stadem naraz.** Po restarcie każdy bot
+  robił go w tej samej sekundzie, i znowu co 90 s — rdzeń szedł na 100%.
+  Pierwszy skan jest rozłożony po pidzie, a na jeden tick przypada ich
+  najwyżej sześć. W stanie ustalonym rdzeń pracuje na 14%.
+
+### Sprostowanie
+
+Wcześniejsza analiza tego projektu twierdziła, że na hostowanych mapach da
+się zdobyć 28 z 84 materiałów. To wynik błędnego odczytu `group_group.txt`.
+Poprawnie: **64 z 84**, plus Rybia Ość z wędkowania. Skóra Niedźwiedzia,
+której czekały 943 sztuki sprzętu na +6, wypada z niedźwiedzi na mapach 21
+i 24 — nie brakowało dropu, brakowało kogoś, kto go zbierze.
+
+---
+
 ## 1.26.0 — 2026-09-05
 
 ### Nowe

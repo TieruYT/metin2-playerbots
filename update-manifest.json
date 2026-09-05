@@ -1,12 +1,12 @@
 {
   "schema": 1,
   "channel": "stable",
-  "publishedAt": "2026-09-05T22:00:00Z",
-  "statusMessage": "Aktualizacja 1.26.0. Boty wchodza do Doliny Orkow brama Chunjo, a nie srodkowym teleporterem, i rozchodza sie po wyspach zamiast stac na jednej - Amulet Orka i Ezoteryczny Przewodnik nie maja tam gdzie ladowaly ani jednego punktu odrodzenia. Ulepszacz, ktorego bot sam nie potrzebuje, trafia na jego stragan zamiast do kupca. Bot porownuje bron po obrazeniach w czasie, nie zsiada z konia przy teleporterze i konczy walke, ktora do niczego nie prowadzi. Naprawione: zamarzanie przy portalu, postacie przepadajace po przejsciu na mape drugiego rdzenia, znak straganu nad glowa biegajacego bota. Mapy w panelu dwa razy dokladniejsze, z trzecia warstwa cieplna.",
+  "publishedAt": "2026-09-05T23:40:00Z",
+  "statusMessage": "Aktualizacja 1.27.0. Bot, ktoremu brakuje ulepszacza, idzie po niego do potwora, ktory go nosi - w pierwsze 24 minuty 385 botow wyruszylo 1845 razy, 500 z nich po Amulet Orka. Cena na straganie bierze sie z zakonczonych sprzedazy, nie ze stalego mnoznika. Bron wyceniana po tym, jak szkola zadaje obrazenia (fizyka kontra magia). Rybia Osc, Malz i perly sa ulepszaczami. Kamien Duszy wkladany jak u gracza: 30% szans, pekniety kamien przy porazce - wczesniej boty mialy 100% za darmo. Bot nie przekuje broni w stopien, ktorego nie zalozy.",
   "server": {
-    "version": "1.26.0",
-    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v1.26.0/metin2-server-update-1.26.0.zip",
-    "sha256": "E0654872AD0785417D2289445DD0857556E9A0F0787A5860F880EAEB45618C89"
+    "version": "1.27.0",
+    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v1.27.0/metin2-server-update-1.27.0.zip",
+    "sha256": "48E0593622CD3AF44384F547AA2249A083E096111AE19067ADA1FF4B8F29507A"
   },
   "support": {
     "contactUrl": "https://discord.gg/pt5tvnrN6",
