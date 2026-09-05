@@ -17,6 +17,35 @@ every version here.
 
 ---
 
+## 1.25.3 — 2026-09-05
+
+> Jeśli po aktualizacji panel nadal pokazuje starą wersję albo brakuje w nim
+> nowych zakładek — **to jest ta poprawka**. Przebudowa obrazu, nawet z
+> `--no-cache`, nie mogła tego naprawić.
+
+### Naprawione
+
+- **Panel raportował wersję sprzed wielu aktualizacji.** Panel czyta numer z
+  `linux-port/docker/panel/app/VERSION`, który stawia tam `prepare-context.sh` —
+  skrypt, jak dokumentuje sam `start-server.ps1`, **nigdy nieuruchamiany na
+  maszynie gracza**. Plik zostawał więc na wartości z instalatora niezależnie od
+  liczby aktualizacji: u jednego z operatorów panel po trzech wydaniach dalej
+  mówił 1.15.6, a `docker compose build --no-cache panel` niczego nie zmieniał,
+  bo budował ze starego pliku.
+- **Dziewięć innych plików miało ten sam problem.** Przejrzeliśmy wszystko, co
+  `prepare-context.sh` przygotowuje, i porównaliśmy z tym, co paczka wysyła.
+  Zamrożone od instalacji były: `panel/app/VERSION`, `panel/app/CHANGELOG.md`
+  (dziennik zmian w panelu), `items.json`, `favicon.png`, cała zawartość
+  `/static`, `panel/schema/web_admin_schema.sql` (schemat bazy dla funkcji
+  panelu), `game/quest/web_admin.quest` (pomocnik teleportacji z panelu),
+  `high_risk.quest` oraz `mob_drop_item.m3.append.txt`. Skrypt startowy
+  synchronizuje teraz wszystkie, a paczka niesie ich źródła.
+- **Wzorzec `katalog/*` w liście aktualizacji schodzi w podkatalogi.** Dotąd
+  łapał wyłącznie pliki bezpośrednio w katalogu, więc `files/static/*` nie
+  pasował do niczego. Dodanie drugiego zestawu ikon nie wymaga już edycji listy.
+
+---
+
 ## 1.25.2 — 2026-09-05
 
 ### Naprawione

@@ -1,12 +1,12 @@
 {
   "schema": 1,
   "channel": "stable",
-  "publishedAt": "2026-09-05T12:19:32Z",
-  "statusMessage": "Aktualizacja 1.25.2 - WAZNA. Panel po aktualizacji zostawal stary: obraz budowal sie z drugiej, nieodswiezanej kopii admin_panel.py, wiec suwaki zachowania botow i strona sezonu nie pojawialy sie mimo zainstalowanej nowej wersji. Jesli masz 1.25.0 lub 1.25.1 i nie widzisz nowych zakladek - to jest ta poprawka.",
+  "publishedAt": "2026-09-05T12:39:13Z",
+  "statusMessage": "Aktualizacja 1.25.3 - WAZNA. Jesli panel po aktualizacji pokazuje stara wersje albo brakuje w nim nowych zakladek, to jest ta poprawka: panel czytal numer z pliku, ktorego zadna aktualizacja nie ruszala, a przebudowa obrazu nawet z --no-cache nic nie dawala. Ten sam problem mialo dziewiec innych plikow, w tym schemat bazy panelu i quest teleportacji.",
   "server": {
-    "version": "1.25.2",
-    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v1.25.2/metin2-server-update-1.25.2.zip",
-    "sha256": "3E507B694612653B75448A6C2F76923E259A6EFF62F5B5F11179201448B005A7"
+    "version": "1.25.3",
+    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v1.25.3/metin2-server-update-1.25.3.zip",
+    "sha256": "164518FE21F3948F9397F437357AAFD00FB9684E93523B6EECB44074A548D902"
   },
   "support": {
     "contactUrl": "https://discord.gg/pt5tvnrN6",

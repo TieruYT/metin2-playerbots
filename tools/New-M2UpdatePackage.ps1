@@ -42,8 +42,21 @@ try {
         if (-not (Test-Path -LiteralPath $searchRoot -PathType Container)) {
             throw "Pattern directory does not exist: $directory"
         }
-        $matched = @(Get-ChildItem -LiteralPath $searchRoot -File -Filter $leaf |
-            Sort-Object Name | ForEach-Object { (Join-Path $directory $_.Name) })
+        # A bare "*" is taken to mean the whole tree under that directory, so a
+        # line can name a folder of assets without naming the shape of it.
+        # files/static holds only subdirectories, and listing
+        # static/skill_icons/*.png instead would have worked exactly until the
+        # second icon set - which is the trap the playerbot sources were pulled
+        # out of.
+        if ($leaf -eq '*') {
+            $matched = @(Get-ChildItem -LiteralPath $searchRoot -File -Recurse |
+                Sort-Object FullName | ForEach-Object {
+                    Join-Path $directory $_.FullName.Substring($searchRoot.Length).TrimStart('\\')
+                })
+        } else {
+            $matched = @(Get-ChildItem -LiteralPath $searchRoot -File -Filter $leaf |
+                Sort-Object Name | ForEach-Object { (Join-Path $directory $_.Name) })
+        }
         if ($matched.Count -eq 0) { throw "Pattern matched no files: $entry" }
         $expanded += $matched
     }

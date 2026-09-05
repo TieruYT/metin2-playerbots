@@ -1,12 +1,22 @@
 # Files copied into a server update ZIP. Keep .env and databases out.
 # A line may use a wildcard in its last segment; it expands to what is there.
 files/admin_panel.py
+# The rest of what prepare-context.sh stages out of files/. That script does not
+# run on a player's machine - start-server.ps1 stages these instead - so every
+# one of them has to travel with the update or the copy in the image stays at
+# whatever the installer shipped.
+files/items.json
+files/favicon.png
+files/web_admin_schema.sql
+files/web_admin.quest
+files/high_risk.quest
+files/speed_boost.quest
 # The panel's skill icons. Two copies for the same reason admin_panel.py has
 # two: files/ is the source and linux-port/docker/panel/app/ is the build
 # context the image is actually made from, and an update that refreshed only
 # one of them would leave the running panel behind the sources.
-files/static/skill_icons/*.png
-linux-port/docker/panel/app/static/skill_icons/*.png
+files/static/*
+linux-port/docker/panel/app/static/*
 linux-port/docker/docker-compose.yml
 linux-port/docker/.env.example
 linux-port/docker/mariadb/initdb.d/10-import-dumps.sh

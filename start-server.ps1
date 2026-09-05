@@ -502,23 +502,64 @@ if ((Test-Path -LiteralPath $overlaySource -PathType Container) -and
             $syncedFiles++
         }
     }
-    # Same again for the panel. files/admin_panel.py is the source and
-    # panel/app/admin_panel.py is what the image is built from; prepare-context.sh
-    # copies one to the other and does not run here either. Without this an
-    # update can carry a perfectly good panel and the player still gets the old
-    # one - which is exactly what 1.25.0 and 1.25.1 did with the behaviour
-    # sliders and the season page.
-    $panelSource = Join-Path $PSScriptRoot 'files\admin_panel.py'
-    $panelStaged = Join-Path $PSScriptRoot 'linux-port\docker\panel\app\admin_panel.py'
-    if ((Test-Path -LiteralPath $panelSource -PathType Leaf) -and
-        (Test-Path -LiteralPath (Split-Path -Parent $panelStaged) -PathType Container)) {
-        $panelHash = $null
-        if (Test-Path -LiteralPath $panelStaged -PathType Leaf) {
-            $panelHash = (Get-FileHash -LiteralPath $panelStaged -Algorithm SHA256).Hash
+    # Everything else prepare-context.sh stages, for the same reason as the
+    # three above: it does not run here. Left alone, each of these stays at
+    # whatever the installer shipped however many updates go by - and
+    # panel/app/VERSION is the one that gets noticed, because it is what the
+    # panel reports it is running. An operator three releases past 1.15.6 was
+    # still being told 1.15.6 by a panel rebuilt with --no-cache.
+    #
+    # speed_boost.quest is not here on purpose: prepare-context rewrites a line
+    # in it rather than copying it, and this script renders that file itself
+    # further down.
+    $stagedPairs = @(
+        @{ From = 'files\admin_panel.py';       To = 'linux-port\docker\panel\app\admin_panel.py' },
+        @{ From = 'VERSION';                    To = 'linux-port\docker\panel\app\VERSION' },
+        @{ From = 'CHANGELOG.md';               To = 'linux-port\docker\panel\app\CHANGELOG.md' },
+        @{ From = 'files\items.json';           To = 'linux-port\docker\panel\app\items.json' },
+        @{ From = 'files\favicon.png';          To = 'linux-port\docker\panel\app\favicon.png' },
+        @{ From = 'files\web_admin_schema.sql'; To = 'linux-port\docker\panel\schema\web_admin_schema.sql' },
+        @{ From = 'files\web_admin.quest';      To = 'linux-port\docker\game\quest\web_admin.quest' },
+        @{ From = 'files\high_risk.quest';      To = 'linux-port\docker\game\quest\high_risk.quest' },
+        @{ From = 'linux-port\overlays\playerbot\serverfiles\mob_drop_item.m3.append.txt';
+           To   = 'linux-port\docker\game\mob_drop_item.m3.append.txt' }
+    )
+    foreach ($pair in $stagedPairs) {
+        $from = Join-Path $PSScriptRoot $pair.From
+        $to   = Join-Path $PSScriptRoot $pair.To
+        if (-not (Test-Path -LiteralPath $from -PathType Leaf)) { continue }
+        $toParent = Split-Path -Parent $to
+        if (-not (Test-Path -LiteralPath $toParent -PathType Container)) { continue }
+        $toHash = $null
+        if (Test-Path -LiteralPath $to -PathType Leaf) {
+            $toHash = (Get-FileHash -LiteralPath $to -Algorithm SHA256).Hash
         }
-        if ($panelHash -ne (Get-FileHash -LiteralPath $panelSource -Algorithm SHA256).Hash) {
-            Copy-Item -LiteralPath $panelSource -Destination $panelStaged -Force
+        if ($toHash -ne (Get-FileHash -LiteralPath $from -Algorithm SHA256).Hash) {
+            Copy-Item -LiteralPath $from -Destination $to -Force
             $syncedFiles++
+        }
+    }
+
+    # /static is a directory, and prepare-context copies it whole so that adding
+    # an icon set is only ever a matter of putting one there. Same rule here.
+    $staticSource = Join-Path $PSScriptRoot 'files\static'
+    $staticStaged = Join-Path $PSScriptRoot 'linux-port\docker\panel\app\static'
+    if (Test-Path -LiteralPath $staticSource -PathType Container) {
+        foreach ($asset in Get-ChildItem -LiteralPath $staticSource -Recurse -File) {
+            $relative = $asset.FullName.Substring($staticSource.Length).TrimStart('\')
+            $target = Join-Path $staticStaged $relative
+            $targetParent = Split-Path -Parent $target
+            if (-not (Test-Path -LiteralPath $targetParent -PathType Container)) {
+                New-Item -ItemType Directory -Path $targetParent -Force | Out-Null
+            }
+            $targetHash = $null
+            if (Test-Path -LiteralPath $target -PathType Leaf) {
+                $targetHash = (Get-FileHash -LiteralPath $target -Algorithm SHA256).Hash
+            }
+            if ($targetHash -ne (Get-FileHash -LiteralPath $asset.FullName -Algorithm SHA256).Hash) {
+                Copy-Item -LiteralPath $asset.FullName -Destination $target -Force
+                $syncedFiles++
+            }
         }
     }
 
