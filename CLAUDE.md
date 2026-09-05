@@ -93,6 +93,7 @@ dependency order at the top of `playerbot_manager.cpp`:
 | `playerbot_bonus.h` | The bonus lines on worn gear: what a line is worth, what finishes an item, and what a bot will pay to change it. |
 | `playerbot_travel.h` | Where a bot ought to be, and crossing between maps. |
 | `playerbot_planner.h` | Which long-term goal wins: the candidates, their base priorities, and the three gates no weight can touch. |
+| `playerbot_guild.h` | Founding and recruiting a guild, and who a bot has got on with. |
 | `playerbot_town.h` | A town visit end to end, as a state machine that survives being interrupted. |
 | `playerbot_loot.h` | Picking things up, in and out of a fight, without sweeping the floor. |
 | `playerbot_survival.h` | Saving progress, breaking off a losing fight, and the walk back after dying. |
