@@ -5618,7 +5618,9 @@ function openBotModal(pid) {
       var inv = data.inventory || [];
       var stats = p.stats || {};
       var skills = p.skills || [];
-      var isBot = p.name.startsWith('bot');
+      // The account decides, not the nickname: renaming a bot used to relabel
+      // it GRACZ here while every other view still knew what it was.
+      var isBot = !!p.is_bot;
       var typeBadge = isBot ? '<span style="background:#2ecc71;color:#000;padding:2px 6px;border-radius:4px;font-size:11px;font-weight:700">BOT</span>'
                             : '<span style="background:#ef4444;color:#fff;padding:2px 6px;border-radius:4px;font-size:11px;font-weight:700">GRACZ</span>';
 
@@ -5961,6 +5963,53 @@ def live_map():
                                   curlang=language,
                                   is_admin=bool(session.get("auth")))
 
+# ---------------------------------------------------------------------------
+# What makes a character a bot, in one place instead of eighteen.
+#
+# The name used to be the test: everything this project creates is called
+# bot<something>, so `name LIKE 'bot%'` found them all. Rename them and the live
+# map, all eleven rankings, the world statistics and the season page stop
+# counting them - and an operator who had renamed his own was re-editing this
+# file by hand after every update to get them back.
+#
+# The core never asks the name. CPlayerBotManager::LoadRegisteredBots accepts a
+# character only when its account login is exactly playerbot_NNN, and a rename
+# does not touch an account login. So that is what is asked here too, with the
+# old name test kept beside it: a hand-made bot on an ordinary account has
+# always been visible in this panel and stays visible.
+#
+# Queries carry a marker rather than the predicate, because the predicate has to
+# be spelled four ways - with or without the table alias the query happens to
+# use, and with % doubled or not depending on whether that query passes
+# parameters, since only those go through %-formatting. The marker is expanded
+# here; nothing from a request is ever interpolated, and every value still
+# travels as a parameter exactly as before.
+# ---------------------------------------------------------------------------
+def _bot_identity(alias, pct):
+    ref = (alias + ".") if alias else ""
+    return ("(EXISTS (SELECT 1 FROM account.account ba"
+            " WHERE ba.id = " + ref + "account_id"
+            " AND LEFT(ba.login, 10) = 'playerbot_')"
+            " OR " + ref + "name LIKE 'bot" + pct + "')")
+
+
+_BOT_MARKERS = {
+    "<<BOT_2>>":     _bot_identity("", "%%"),
+    "<<BOT_1>>":     _bot_identity("", "%"),
+    "<<BOT_P_2>>":   _bot_identity("p", "%%"),
+    "<<BOT_P_1>>":   _bot_identity("p", "%"),
+    "<<BOT_NOT_1>>": "NOT " + _bot_identity("", "%"),
+}
+
+
+def bot_sql(query):
+    """Expand the bot-identity markers in a query."""
+    for marker, predicate in _BOT_MARKERS.items():
+        if marker in query:
+            query = query.replace(marker, predicate)
+    return query
+
+
 @app.route("/api/admin/warp_me", methods=["POST"])
 def api_admin_warp_me():
     try:
@@ -5972,7 +6021,7 @@ def api_admin_warp_me():
         # Fallback to the latest active human player
         if gm_name == "auto":
             with db() as c, c.cursor() as cur:
-                cur.execute("SELECT name FROM player.player WHERE name NOT LIKE 'bot%' ORDER BY last_play DESC LIMIT 1")
+                cur.execute(bot_sql("SELECT name FROM player.player WHERE <<BOT_NOT_1>> ORDER BY last_play DESC LIMIT 1"))
                 r = cur.fetchone()
                 if not r:
                     # Naming a character that may not exist would queue a command
@@ -6824,16 +6873,16 @@ def api_bot_positions():
         with db() as c, c.cursor() as cur:
             # A bot is defined by its canonical account (playerbot_NNN), not by
             # its character name -- renaming a bot in player.player used to drop
-            # it off the live map. The name LIKE 'bot%' arm keeps any legacy or
+            # it off the live map. The <<BOT_1>> arm keeps any legacy or
             # hand-made bot visible too.
-            cur.execute("""
+            cur.execute(bot_sql("""
                 SELECT p.id, p.name, p.level, p.job, p.x, p.y, p.hp, p.gold, p.map_index
                 FROM player.player p
                 LEFT JOIN account.account a ON a.id = p.account_id
-                WHERE (LEFT(a.login, 10) = 'playerbot_' OR p.name LIKE 'bot%')
+                WHERE (LEFT(a.login, 10) = 'playerbot_' OR <<BOT_P_1>>)
                   AND p.map_index IN (21, 23, 24, 25, 63, 64)
                 ORDER BY p.level DESC, p.id ASC
-            """)
+            """))
             rows = cur.fetchall()
             bots = []
             # The map is the live world, not the roster. Only a fraction of the
@@ -6901,13 +6950,14 @@ def api_bot_inventory(pid):
     live_labels = playerbot_live_labels(live, language)
     try:
         with db() as c, c.cursor() as cur:
-            cur.execute("""
+            cur.execute(bot_sql("""
                 SELECT id, name, level, job, exp, gold, hp, mp, x, y,
                        horse_level, st, ht, dx, iq, stat_point, skill_point,
-                       skill_group, skill_level
+                       skill_group, skill_level,
+                       <<BOT_2>> AS is_bot
                 FROM player.player
                 WHERE id = %s
-            """, (pid,))
+            """), (pid,))
             player = cur.fetchone()
             if not player:
                 return jsonify({"ok": False, "error": messages["character_missing"]})
@@ -7113,15 +7163,15 @@ def api_bot_rankings():
     try:
         with db() as c, c.cursor() as cur:
             if rtype == "gold":
-                cur.execute("""
+                cur.execute(bot_sql("""
                     SELECT id, name, level, job, gold
                     FROM player.player
-                    WHERE name LIKE 'bot%%'
+                    WHERE <<BOT_2>>
                     ORDER BY gold DESC, level DESC
                     LIMIT %s
-                """, (rank_limit,))
+                """), (rank_limit,))
             elif rtype == "weapon30":
-                cur.execute("""
+                cur.execute(bot_sql("""
                     SELECT p.id, p.name, p.level, p.job, p.gold,
                            i.vnum as weapon_vnum, i.window as item_window,
                            i.attrtype0, i.attrvalue0, i.attrtype1, i.attrvalue1,
@@ -7130,7 +7180,7 @@ def api_bot_rankings():
                            i.attrtype6, i.attrvalue6
                     FROM player.item i
                     JOIN player.player p ON p.id = i.owner_id
-                    WHERE p.name LIKE 'bot%%' AND (
+                    WHERE <<BOT_P_2>> AND (
                         (i.vnum BETWEEN 290 AND 299) OR
                         (i.vnum BETWEEN 1170 AND 1179) OR
                         (i.vnum BETWEEN 2150 AND 2159) OR
@@ -7140,47 +7190,47 @@ def api_bot_rankings():
                     )
                     ORDER BY i.id DESC
                     LIMIT %s
-                """, (rank_limit,))
+                """), (rank_limit,))
             elif rtype == "weapon":
-                cur.execute("""
+                cur.execute(bot_sql("""
                     SELECT p.id, p.name, p.level, p.job, p.gold, i.vnum as weapon_vnum
                     FROM player.player p
                     LEFT JOIN player.item i ON p.id = i.owner_id AND i.window = 'EQUIPMENT' AND i.pos = 4
-                    WHERE p.name LIKE 'bot%%'
+                    WHERE <<BOT_P_2>>
                     ORDER BY MOD(i.vnum, 10) DESC, i.vnum DESC, p.level DESC
                     LIMIT %s
-                """, (rank_limit,))
+                """), (rank_limit,))
             elif rtype == "armor":
-                cur.execute("""
+                cur.execute(bot_sql("""
                     SELECT p.id, p.name, p.level, p.job, p.gold, i.vnum as armor_vnum
                     FROM player.player p
                     LEFT JOIN player.item i ON p.id = i.owner_id AND i.window = 'EQUIPMENT' AND i.pos = 0
-                    WHERE p.name LIKE 'bot%%'
+                    WHERE <<BOT_P_2>>
                     ORDER BY MOD(i.vnum, 10) DESC, i.vnum DESC, p.level DESC
                     LIMIT %s
-                """, (rank_limit,))
+                """), (rank_limit,))
             elif rtype == "items":
-                cur.execute("""
+                cur.execute(bot_sql("""
                     SELECT p.id, p.name, p.level, p.job, p.gold, COUNT(i.id) as item_count
                     FROM player.player p
                     LEFT JOIN player.item i ON p.id = i.owner_id AND i.window = 'INVENTORY'
-                    WHERE p.name LIKE 'bot%%'
+                    WHERE <<BOT_P_2>>
                     GROUP BY p.id
                     ORDER BY item_count DESC, p.level DESC
                     LIMIT %s
-                """, (rank_limit,))
+                """), (rank_limit,))
             elif rtype == "horse":
-                cur.execute("""
+                cur.execute(bot_sql("""
                     SELECT id, name, level, job, gold, horse_level
                     FROM player.player
-                    WHERE name LIKE 'bot%%'
+                    WHERE <<BOT_2>>
                     ORDER BY horse_level DESC, level DESC, exp DESC
                     LIMIT %s
-                """, (rank_limit,))
+                """), (rank_limit,))
             elif rtype == "biologist":
                 mission_names = tuple(m[0] for m in BIOLOGIST_MISSIONS)
                 placeholders = ",".join(["%s"] * len(mission_names))
-                ranking_sql = """
+                ranking_sql = bot_sql("""
                     SELECT p.id, p.name, p.level, p.job, p.gold,
                            COUNT(DISTINCT CASE
                                WHEN q.szState = '__status' AND q.lValue = %s
@@ -7188,15 +7238,15 @@ def api_bot_rankings():
                     FROM player.player p
                     LEFT JOIN player.quest q
                       ON q.dwPID = p.id AND q.szName IN ({})
-                    WHERE p.name LIKE 'bot%%'
+                    WHERE <<BOT_P_2>>
                     GROUP BY p.id
                     ORDER BY biologist_completed DESC, p.level DESC, p.exp DESC
                     LIMIT %s
-                """.format(placeholders)
+                """).format(placeholders)
                 cur.execute(ranking_sql, (BIOLOGIST_COMPLETE_STATE,) + mission_names +
                             (rank_limit,))
             elif rtype == "hunting":
-                cur.execute("""
+                cur.execute(bot_sql("""
                     SELECT p.id, p.name, p.level, p.job, p.gold,
                            MAX(CASE WHEN q.szState = 'complete' THEN q.lValue ELSE 0 END) AS hunting_complete,
                            MAX(CASE WHEN q.szState = 'current' THEN q.lValue ELSE 0 END) AS hunting_current,
@@ -7205,12 +7255,12 @@ def api_bot_rankings():
                     FROM player.player p
                     LEFT JOIN player.quest q
                       ON q.dwPID = p.id AND q.szName = 'levelup'
-                    WHERE p.name LIKE 'bot%%'
+                    WHERE <<BOT_P_2>>
                     GROUP BY p.id
                     ORDER BY hunting_complete DESC, hunting_current DESC,
                               hunting_remain ASC, p.level DESC
                     LIMIT %s
-                """, (rank_limit,))
+                """), (rank_limit,))
             elif rtype == "shops":
                 # An open stall exists only in the game core's memory, so this is
                 # the one ranking the database cannot answer. The live status file
@@ -7232,35 +7282,35 @@ def api_bot_rankings():
                     ORDER BY level DESC
                 """).format(placeholders), tuple(keeper_ids))
             elif rtype == "skills":
-                cur.execute("""
+                cur.execute(bot_sql("""
                     SELECT id, name, level, job, gold, skill_group, skill_level
                     FROM player.player
-                    WHERE name LIKE 'bot%%' AND skill_group > 0
+                    WHERE <<BOT_2>> AND skill_group > 0
                     ORDER BY level DESC
                     LIMIT 400
-                """)
+                """))
             elif rtype == "plus9":
                 # Equipment stores its refine in the vnum: base + 0..9. Anything
                 # below 12000 is wearable; the tables above that are materials and
                 # consumables, whose vnums ending in 9 mean nothing of the sort.
-                cur.execute("""
+                cur.execute(bot_sql("""
                     SELECT p.id, p.name, p.level, p.job, p.gold,
                            i.vnum as weapon_vnum, i.window as item_window
                     FROM player.item i
                     JOIN player.player p ON p.id = i.owner_id
-                    WHERE p.name LIKE 'bot%%' AND i.vnum < 12000
+                    WHERE <<BOT_P_2>> AND i.vnum < 12000
                       AND MOD(i.vnum, 10) = 9
                     ORDER BY i.vnum DESC, p.level DESC
                     LIMIT %s
-                """, (rank_limit,))
+                """), (rank_limit,))
             else: # level
-                cur.execute("""
+                cur.execute(bot_sql("""
                     SELECT id, name, level, job, exp, gold
                     FROM player.player
-                    WHERE name LIKE 'bot%%'
+                    WHERE <<BOT_2>>
                     ORDER BY level DESC, exp DESC
                     LIMIT %s
-                """, (rank_limit,))
+                """), (rank_limit,))
 
             rows = cur.fetchall()
             rankings = []
@@ -7526,8 +7576,8 @@ def season_data():
             rows = []
             if active:
                 cur.execute(
-                    "SELECT id, name, level, job, horse_level FROM player.player "
-                    "WHERE name LIKE 'bot%%' AND id IN %s", (tuple(sorted(active)),))
+                    bot_sql("SELECT id, name, level, job, horse_level FROM player.player "
+                    "WHERE <<BOT_2>> AND id IN %s"), (tuple(sorted(active)),))
                 for p in cur.fetchall():
                     pid = int(p["id"])
                     m = metins.get(pid, 0)
@@ -7550,14 +7600,14 @@ def season_data():
             # Every tile is {name, level}, whatever "level" means for that tile,
             # so the template does not need a branch per record.
             recs = {}
-            cur.execute("SELECT name, level FROM player.player "
-                        "WHERE name LIKE 'bot%' ORDER BY level DESC, exp DESC LIMIT 1")
+            cur.execute(bot_sql("SELECT name, level FROM player.player "
+                        "WHERE <<BOT_1>> ORDER BY level DESC, exp DESC LIMIT 1"))
             recs["level"] = cur.fetchone()
-            cur.execute("SELECT name, horse_level AS level FROM player.player "
-                        "WHERE name LIKE 'bot%' ORDER BY horse_level DESC LIMIT 1")
+            cur.execute(bot_sql("SELECT name, horse_level AS level FROM player.player "
+                        "WHERE <<BOT_1>> ORDER BY horse_level DESC LIMIT 1"))
             recs["horse"] = cur.fetchone()
-            cur.execute("SELECT name, gold AS level FROM player.player "
-                        "WHERE name LIKE 'bot%' ORDER BY gold DESC LIMIT 1")
+            cur.execute(bot_sql("SELECT name, gold AS level FROM player.player "
+                        "WHERE <<BOT_1>> ORDER BY gold DESC LIMIT 1"))
             recs["gold"] = cur.fetchone()
             for key, how, extra in (
                     ("metins", "STONE_KILL", ""),
@@ -7565,9 +7615,9 @@ def season_data():
                     ("refines", "REFINE SUCCESS",
                      "AND l.hint REGEXP '" + SEASON_REFINE_PATTERN + "' ")):
                 cur.execute(
-                    "SELECT p.name, COUNT(*) AS level FROM log.log l "
+                    bot_sql("SELECT p.name, COUNT(*) AS level FROM log.log l "
                     "JOIN player.player p ON p.id = l.who "
-                    "WHERE l.how = %s AND p.name LIKE 'bot%%' " + extra +
+                    "WHERE l.how = %s AND <<BOT_P_2>> ") + extra +
                     "GROUP BY l.who ORDER BY level DESC LIMIT 1", (how,))
                 recs[key] = cur.fetchone()
             out["records"] = {k: v for k, v in recs.items() if v}
