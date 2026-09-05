@@ -1,12 +1,12 @@
 {
   "schema": 1,
   "channel": "stable",
-  "publishedAt": "2026-09-05T12:39:13Z",
-  "statusMessage": "Aktualizacja 1.25.3 - WAZNA. Jesli panel po aktualizacji pokazuje stara wersje albo brakuje w nim nowych zakladek, to jest ta poprawka: panel czytal numer z pliku, ktorego zadna aktualizacja nie ruszala, a przebudowa obrazu nawet z --no-cache nic nie dawala. Ten sam problem mialo dziewiec innych plikow, w tym schemat bazy panelu i quest teleportacji.",
+  "publishedAt": "2026-09-05T13:11:49Z",
+  "statusMessage": "Aktualizacja 1.25.4. Bot przenoszony na inna mape zabieral ze soba otwarty stragan, a szyld byl zdejmowany dopiero w miejscu docelowym - dlatego widziano boty z szyldem sklepu w lochu. Aktualizacje wracaja do kilkunastu sekund: poprzednia paczka niosla 4952 pliki zamiast 200. Dziennik launchera przestal byc czesciowo nieczytelny.",
   "server": {
-    "version": "1.25.3",
-    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v1.25.3/metin2-server-update-1.25.3.zip",
-    "sha256": "164518FE21F3948F9397F437357AAFD00FB9684E93523B6EECB44074A548D902"
+    "version": "1.25.4",
+    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v1.25.4/metin2-server-update-1.25.4.zip",
+    "sha256": "0BDF172B86F2BA5CA2DD01B740E786A5C4B9F929212F92E33509EF387EEC1F74"
   },
   "support": {
     "contactUrl": "https://discord.gg/pt5tvnrN6",

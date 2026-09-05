@@ -17,6 +17,33 @@ every version here.
 
 ---
 
+## 1.25.4 — 2026-09-05
+
+### Naprawione
+
+- **Bot z szyldem sklepu biegający po lochu.** Przenosiny między mapami zwalniały
+  wszystko, czego bot nie może zabrać ze sobą — wypisywały z grupy, kasowały cel,
+  zsiadały z konia i odwoływały go, żeby nie został przy portalu — ale **sklepu
+  nie ruszały**. Bot przeniesiony z otwartą ladą zabierał ją ze sobą, a sklep
+  zamykał się dopiero na nowej mapie. Silnik rozsyła wtedy pusty szyld tylko do
+  tych, którzy są w zasięgu wzroku **w tamtej chwili** — czyli do przypadkowych
+  osób w miejscu docelowym. Ludzie, którzy ten szyld naprawdę widzieli, zostawali
+  na rynku i nie dostawali niczego, więc szyld zostawał u nich przyklejony do
+  postaci. Stragan jest teraz zamykany tam, gdzie został postawiony.
+- **Aktualizacje trwały cztery minuty zamiast kilkunastu sekund.** Paczka 1.25.3
+  niosła 4952 pliki zamiast ~200, bo wzorzec obejmujący zawartość `/static`
+  zaciągał 4768 wygenerowanych ikon z kontekstu obrazu — a każdy z nich jest
+  jeszcze kopiowany do kopii zapasowej. Wysyłane jest teraz samo źródło.
+- **Dziennik launchera był częściowo nieczytelny.** Skrypt akcji działa ukryty, z
+  wyjściem przekierowanym do pliku, więc pisał stroną kodową konsoli, a launcher
+  czytał ten plik jako UTF-8. Dlatego w jednym logu stały obok siebie linie
+  poprawne i rozsypane. Obie strony mówią teraz tym samym kodowaniem, a to, co
+  trafia do pliku, jest dodatkowo zapisywane bez polskich znaków — bo ten plik
+  ląduje w Notatniku i we wklejkach, gdzie ogonki i tak nie przechodzą. Okno
+  launchera zostaje z ogonkami, tam wyświetlają się poprawnie.
+
+---
+
 ## 1.25.3 — 2026-09-05
 
 > Jeśli po aktualizacji panel nadal pokazuje starą wersję albo brakuje w nim
