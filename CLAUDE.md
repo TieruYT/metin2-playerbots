@@ -13,7 +13,9 @@ The engine source is **not in this repository** and never will be — see
 | `linux-port/overlays/playerbot/src/game/src/` | The playerbot AI, split into implementation fragments (see below). `playerbot_manager.cpp` is the tick and whatever has not been lifted out yet. |
 | `linux-port/overlays/playerbot/src/game/src/playerbot_world_rules.h` | Pure travel policy, no engine types. Unit-tested. The model for extracting logic. |
 | `linux-port/patches/` | Patches applied to the pristine engine source. |
-| `linux-port/docker/panel/app/admin_panel.py` | Flask admin panel. |
+| `files/admin_panel.py` | Flask admin panel. The copy under
+`linux-port/docker/panel/app/` is staged there by `prepare-context.sh` and is
+gitignored -- editing that one changes the running panel and commits nothing. |
 | `tests/playerbot_world_rules_test.cpp` | The only C++ unit test. |
 
 Reference copies of the engine, needed to check any API before using it:
@@ -189,6 +191,35 @@ PLAYERBOT: autospawn requested=750 registered_started=511 in Chunjo
   `ATTR_BLOCK|ATTR_OBJECT` and charges `PLAYERBOT_NAV_WATER_PENALTY` per wet
   cell instead, so a bridge is used and the desert shallows are walked round.
   `tools/analyse_map_bridges.py` measures this for any map.
+- **Reading a spawn file: `group.txt` and `group_group.txt` are not the same
+  shape.** In `group.txt` a member line is `<idx> "<name>" <mob vnum>` and the
+  mob is the **last** field; in `group_group.txt` it is `<idx> <group vnum>
+  <probability>` and the group is the **middle** one. Taking the last field of
+  both - which reads a probability as a group id - makes every `r` line in every
+  regen.txt resolve to nothing, and the map then looks empty. It is not: Orc
+  Valley alone has 4041 spawn points over 32 mob types. A regen line's type is
+  its first field, `m`/`b`/`e` naming a mob directly, `g` a group, `r` a
+  group_group; the id is the last field of that line.
+- **Where the refine materials come from.** The 407 recipes in
+  `player.refine_proto` name 84 distinct materials, and Orc Valley (map 64,
+  `map_n_threeway`) carries ten of them - the Orc Amulet from Elite Orc (631)
+  and Big Bald Orc (651), the Esoteric Guide from 701/751, Orc Tooth, Snake
+  Tail, Curse Book and the rest. What was in shortage was not the drop but the
+  killing: bots warp in at one point and wandering, which is what rotates them
+  between hunting hubs, runs only on a tick with nothing to fight. On a map with
+  four thousand spawns that tick never comes. Measure where the population
+  actually stands before concluding a map has no monsters worth farming.
+- Drop tables answer three different questions and only one of them uses vnums.
+  `mob_drop_item.txt` is per-mob and by vnum; `etc_drop_item.txt` and
+  `common_drop_item.txt` key on the **Korean item name**, and the etc table is
+  reached through `mob_proto` column 33 (`DROP_ITEM`), one designated item per
+  mob. Grepping a vnum finds nothing in two of the three. The chance is
+  `prob * 10000 * PERCENT_LVDELTA * rate / 100` against `number(1, 4000000)` -
+  and the `PRIV_ITEM_DROP` term in `GetDropPct` is defeated by an operator
+  precedence bug in the engine, so it never applies.
+- Shellfish (27987) and the three pearls (27992-27994) are hardcoded in
+  `fishing.cpp` and `char_item.cpp`, not in `fishing.txt`. They carry 26 and 14
+  recipes respectively, so fishing is the only route past the high refines.
 - Fishing: the rod goes in `WEAR_WEAPON`; bait is **not** consumed from the pouch
   but written into the rod's socket 2 by using a bait item. A cast bites after
   10–40 s and then leaves a 6 s window; `fishing::Compute` peaks ~3 s after the
