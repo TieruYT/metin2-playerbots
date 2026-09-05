@@ -664,6 +664,20 @@ namespace
 	// two in step is the whole job of this pair of helpers, and doing it from a
 	// single place is what makes it possible to run the release *before* the
 	// subsystems that can claim the tick.
+	// Take back a shop sign the engine has broadcast for a shop that does not
+	// exist. CloseMyShop does this itself, but only for a shop it can find -
+	// which is exactly the case this is for.
+	void ClearPlayerBotShopSign(LPCHARACTER ch)
+	{
+		if (!ch)
+			return;
+		TPacketGCShopSign p;
+		p.bHeader = HEADER_GC_SHOP_SIGN;
+		p.dwVID = ch->GetVID();
+		p.szSign[0] = '\0';
+		ch->PacketAround(&p, sizeof(TPacketGCShopSign));
+	}
+
 	void ClosePlayerBotShop(LPCHARACTER ch, TPlayerBotAIState& state, DWORD dwNow,
 			const char* reason)
 	{
@@ -699,7 +713,11 @@ namespace
 			// the state say something untrue.
 			if (ch && !state.vecShopOffers.empty())
 			{
+				// The shop went away without this manager closing it - the engine
+				// drops one on stun, on death and when the character is destroyed.
+				// Whatever did it, the sign may still be over the bot's head.
 				state.vecShopOffers.clear();
+				ClearPlayerBotShopSign(ch);
 			}
 			return false;
 		}
@@ -926,6 +944,11 @@ namespace
 					rp ? rp->dwAntiFlags : 0, first && first->IsEquipped() ? 1 : 0,
 					first && first->isLocked() ? 1 : 0, first ? 1 : 0,
 					(int)strlen(sign), (int)(ch->GetGold() / 1000));
+			// The sign is already on every client in view - OpenMyShop sends it
+			// before it creates the shop, and nothing takes it back when the
+			// creation fails. Left alone, this bot walks off wearing a stall
+			// nobody can open.
+			ClearPlayerBotShopSign(ch);
 			state.dwNextShopKeepTime = dwNow + number(60000, 180000);
 			return false;
 		}
