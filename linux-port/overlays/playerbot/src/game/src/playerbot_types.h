@@ -377,14 +377,20 @@ namespace
 	const long PLAYERBOT_MAP_ORC_VALLEY = 64;
 	// Not the map's own empire spawn point, which is where this used to be.
 	// map_n_threeway is a three-empire border map and each corner is walled off:
-	// from the Chunjo spawn a bot can reach 17 of the map's 532 spawn groups, and
-	// none of the twelve hunting hubs. Thirteen bots sat there at exactly the
+	// from the Chunjo spawn a bot could reach 17 of the map's 532 spawn groups
+	// and none of the twelve hunting hubs. Thirteen bots sat there at exactly the
 	// entry level, never advancing, while planning routes that could not exist -
 	// 7812 of 8259 "unreachable" lines in one session came from that corner.
 	//
 	// These two are hub coordinates from regen.txt, so they are standable, and
-	// they are inside the map's largest connected region: 161 spawn groups, the
-	// whole main hunting ground. Verified with tools/analyse_map_reach.py.
+	// they are where the entrance opens onto the map's central island.
+	//
+	// The rest of the map used to be unreachable from here as well - 161 spawn
+	// groups of 532 - because the navigation refused water and every one of the
+	// twenty-two bridges in this delta is water with the block bit cleared. With
+	// that fixed the whole map is one piece and all 532 groups are reachable, so
+	// these coordinates are now simply the way in rather than the only island a
+	// bot could use. Measured with tools/analyse_map_bridges.py.
 	const long PLAYERBOT_ORC_VALLEY_ARRIVAL_X = 327200;
 	const long PLAYERBOT_ORC_VALLEY_ARRIVAL_Y = 742300;
 	const long PLAYERBOT_DESERT_ARRIVAL_X = 221900;

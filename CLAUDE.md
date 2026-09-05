@@ -179,6 +179,16 @@ PLAYERBOT: autospawn requested=750 registered_started=511 in Chunjo
   `uint32` size and a block expanding to 128×128 `uint32` attributes, one per
   50 world units. `ATTR_BLOCK = 1<<0`, `ATTR_WATER = 1<<1`. Decoder and a terrain
   dump: `tools/decode_server_attr.py`.
+- **`ATTR_WATER` is terrain, not a wall.** The engine tests it in exactly one
+  place -- whether there is water in front of a fishing rod -- and never for
+  movement. A river carries `BLOCK|WATER`; a bridge deck or a ford carries
+  `WATER` with the block bit cleared, and that is how a map says "cross here".
+  Orc Valley is 23 islands joined by 22 such crossings, so the navigation
+  treating water as blocking left every bot on the island the entrance opens
+  onto: 17.6% of the walkable ground, 161 of 532 spawn groups. It blocks on
+  `ATTR_BLOCK|ATTR_OBJECT` and charges `PLAYERBOT_NAV_WATER_PENALTY` per wet
+  cell instead, so a bridge is used and the desert shallows are walked round.
+  `tools/analyse_map_bridges.py` measures this for any map.
 - Fishing: the rod goes in `WEAR_WEAPON`; bait is **not** consumed from the pouch
   but written into the rod's socket 2 by using a bait item. A cast bites after
   10–40 s and then leaves a 6 s window; `fishing::Compute` peaks ~3 s after the

@@ -31,6 +31,11 @@ namespace
 	// bridges and walls, this guarantees that a character standing on a valid
 	// native cell can always attach to the planning graph.
 	const int PLAYERBOT_NAV_CELL = 50;
+	// What a step through water costs on top of the ordinary ten. High enough
+	// that a bot walks round a lake it could wade across, low enough that a
+	// twelve-cell bridge - which is the only way off an island - is never worth
+	// refusing: crossing one costs 240 against a detour measured in thousands.
+	const int PLAYERBOT_NAV_WATER_PENALTY = 20;
 	const int PLAYERBOT_NAV_NATIVE_SAMPLE = 50;
 	const int PLAYERBOT_NAV_CLUSTER_CELLS = 16;
 	const int PLAYERBOT_NAV_MAX_PORTALS_PER_NEIGHBOR = 4;
@@ -86,7 +91,26 @@ namespace
 		if (!tree || !tree->GetAttributePtr())
 			return true;
 
-		return tree->IsAttr(x, y, ATTR_BLOCK | ATTR_WATER | ATTR_OBJECT);
+		// ATTR_BLOCK is the map's statement that nothing may stand here, and it
+		// is the only one the engine itself tests for movement. ATTR_WATER
+		// describes the terrain: a river carries both bits, a bridge deck over
+		// that river carries water without block, and so does a shallow shore.
+		// Refusing water refused the bridges - see IsPlayerBotPositionWater.
+		return tree->IsAttr(x, y, ATTR_BLOCK | ATTR_OBJECT);
+	}
+
+	// Passable, but wet. Orc Valley is islands in a delta and its twenty-two
+	// bridges are the only cells joining them; the desert's shallows are eighty
+	// thousand cells of water nobody needs to wade through. Both are walkable and
+	// only one of them should be attractive, so this feeds a path cost rather
+	// than a wall.
+	bool IsPlayerBotPositionWater(long lMapIndex, long x, long y)
+	{
+		LPSECTREE tree = SECTREE_MANAGER::instance().Get(lMapIndex, x, y);
+		if (!tree || !tree->GetAttributePtr())
+			return false;
+		return tree->IsAttr(x, y, ATTR_WATER) &&
+				!tree->IsAttr(x, y, ATTR_BLOCK);
 	}
 
 	bool IsPlayerBotSafeZone(long lMapIndex, long x, long y)
@@ -173,6 +197,7 @@ namespace
 
 				const size_t cellCount = (size_t)m_width * (size_t)m_height;
 				m_blocked.assign(cellCount, 1);
+				m_water.assign(cellCount, 0);
 				m_clearance.assign(cellCount, 0);
 				m_component.assign(cellCount, 0);
 
@@ -182,6 +207,7 @@ namespace
 					for (int gx = 0; gx < m_width; ++gx)
 					{
 						bool blocked = false;
+						bool wet = false;
 						const long cellX = m_baseX + gx * PLAYERBOT_NAV_CELL;
 						const long cellY = m_baseY + gy * PLAYERBOT_NAV_CELL;
 
@@ -201,11 +227,14 @@ namespace
 									blocked = true;
 									break;
 								}
+								if (IsPlayerBotPositionWater(mapIndex, cellX + ox, cellY + oy))
+									wet = true;
 							}
 						}
 
 						const int index = Index(gx, gy);
 						m_blocked[index] = blocked ? 1 : 0;
+						m_water[index] = (!blocked && wet) ? 1 : 0;
 						if (!blocked)
 							++walkableCount;
 					}
@@ -537,8 +566,11 @@ namespace
 						if (m_clearance[nextIndex] <= 1) wallPenalty = 8;
 						else if (m_clearance[nextIndex] == 2) wallPenalty = 3;
 						else if (m_clearance[nextIndex] == 3) wallPenalty = 1;
+						const int waterPenalty =
+								m_water[nextIndex] ? PLAYERBOT_NAV_WATER_PENALTY : 0;
 						const int laneJitter = (int)(PlayerBotNavHash(seed ^ (DWORD)nextIndex) & 1U);
-						const int newCost = current.g + moveCost[direction] + wallPenalty + laneJitter;
+						const int newCost = current.g + moveCost[direction] + wallPenalty +
+								waterPenalty + laneJitter;
 
 						if (m_nodeToken[nextIndex] == m_searchToken && newCost >= m_nodeCost[nextIndex])
 							continue;
@@ -1216,8 +1248,11 @@ namespace
 						if (m_clearance[nextCell] <= 1) wallPenalty = 8;
 						else if (m_clearance[nextCell] == 2) wallPenalty = 3;
 						else if (m_clearance[nextCell] == 3) wallPenalty = 1;
+						const int waterPenalty =
+								m_water[nextCell] ? PLAYERBOT_NAV_WATER_PENALTY : 0;
 						const int laneJitter = (int)(PlayerBotNavHash(seed ^ (DWORD)nextCell) & 1U);
-						const int newCost = current.g + moveCost[direction] + wallPenalty + laneJitter;
+						const int newCost = current.g + moveCost[direction] + wallPenalty +
+								waterPenalty + laneJitter;
 						if (m_nodeToken[nextCell] == token && newCost >= m_nodeCost[nextCell])
 							continue;
 
@@ -1363,6 +1398,9 @@ namespace
 			int m_width;
 			int m_height;
 			std::vector<BYTE> m_blocked;
+			// Walkable, but water: a bridge deck or a shallow. Costs extra to cross
+			// so that dry ground wins wherever there is a choice.
+			std::vector<BYTE> m_water;
 			std::vector<BYTE> m_clearance;
 			std::vector<DWORD> m_component;
 			std::vector<uint16_t> m_nodeToken;

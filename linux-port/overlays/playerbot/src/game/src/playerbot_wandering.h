@@ -16,12 +16,17 @@ namespace
 {
 	// A hub is only worth walking to if the navigation can actually get there.
 	//
-	// Orc Valley's entrance opens into a strip that is cut off from most of the
-	// map. All twelve of its hand-picked hubs sit outside that strip, so a bot
-	// planned an impossible route, gave up after three tries, advanced to the
-	// next hub and planned another impossible route - twelve times, then round
-	// again. Twelve bots on that one map produced 7812 of the 8259 "unreachable"
-	// lines in a session, and never reached a hunting ground.
+	// Orc Valley taught this. Its entrance opens onto one island of a river
+	// delta, and while the navigation refused water - which is to say, refused
+	// the bridges - all twelve of its hand-picked hubs sat on the far side of a
+	// crossing. A bot planned an impossible route, gave up after three tries,
+	// advanced to the next hub and planned another impossible route, twelve
+	// times, then round again: twelve bots on that one map produced 7812 of the
+	// 8259 "unreachable" lines in a session and never reached a hunting ground.
+	//
+	// That map is whole again, but the check stays, and not only as a memorial:
+	// the Monkey Dungeon really is chambered, with 7.5% of its walkable ground
+	// reachable from where a bot comes in, and any map may be built that way.
 	//
 	// Asking first costs a component lookup; the alternative costs a full A*
 	// that is guaranteed to fail.
@@ -314,18 +319,23 @@ namespace
 		else if (IsPlayerBotFrontierMap(ch->GetMapIndex()))
 		{
 			// Densest spawn clusters of each map, snapped onto a real regen.txt
-			// coordinate so a hub can never be planted inside an obstacle.
-			// All twelve are in the one region a bot can reach; the two that used
-			// to close this list sat across four to seven kilometres of open
-			// water and could never be walked to. Nothing on this map is ever
-			// placed on a water cell - not one of its 532 spawns, not one of its
-			// 16 NPCs - so those gaps are water, not bridges the attributes
-			// happened to paint over.
-			const TPlayerBotMapPoint orcValleyHubs[12] = {
-				{ 347800, 726700 }, { 317000, 726900 }, { 313100, 731700 },
-				{ 346400, 733700 }, { 319200, 734700 }, { 337000, 734800 },
-				{ 327200, 742300 }, { 332100, 749800 }, { 330800, 758100 },
-				{ 336300, 760100 }, { 323800, 745700 }, { 311000, 728300 }
+			// coordinate so a hub can never be planted inside an obstacle, and
+			// verified walkable and inside the arrival point's region.
+			//
+			// Orc Valley's list used to hold twelve points inside a 37x35 km box,
+			// because that box was the one island a bot could reach while the
+			// navigation refused the bridges over the delta. The map's 532 spawn
+			// groups are spread over 133x131 km, and the old list reached 128 of
+			// them. These sixteen reach 250: generated from regen.txt by spawn
+			// density, spaced at least 12000 units apart so they cover the map
+			// rather than crowd its busiest corner.
+			const TPlayerBotMapPoint orcValleyHubs[16] = {
+				{ 315800, 732600 }, { 342600, 729800 }, { 335500, 758000 },
+				{ 328000, 743600 }, { 277800, 793500 }, { 347700, 797500 },
+				{ 334000, 800200 }, { 343200, 743100 }, { 391700, 696600 },
+				{ 330500, 727300 }, { 292200, 751000 }, { 365100, 777800 },
+				{ 271500, 683700 }, { 297600, 716400 }, { 302500, 777000 },
+				{ 336500, 703600 }
 			};
 			const TPlayerBotMapPoint desertHubs[12] = {
 				{ 291300, 515700 }, { 237500, 525900 }, { 264600, 526100 },
@@ -335,10 +345,16 @@ namespace
 			};
 			const bool inDesert = ch->GetMapIndex() == PLAYERBOT_MAP_DESERT;
 			const TPlayerBotMapPoint* hubs = inDesert ? desertHubs : orcValleyHubs;
+			// Taken from the array rather than written out, so the two lists are
+			// free to be different lengths - and to change length again without
+			// anybody having to remember three call sites.
+			const size_t hubCount = inDesert
+					? sizeof(desertHubs) / sizeof(desertHubs[0])
+					: sizeof(orcValleyHubs) / sizeof(orcValleyHubs[0]);
 			const DWORD pid = ch->GetPlayerID();
 			bool bHubReachable = false;
-			const size_t hubIndex = PickReachablePlayerBotHub(ch, hubs, 12,
-					(pid + state.uMetinHotspotIndex) % 12, bHubReachable);
+			const size_t hubIndex = PickReachablePlayerBotHub(ch, hubs, hubCount,
+					(pid + state.uMetinHotspotIndex) % hubCount, bHubReachable);
 			if (!bHubReachable)
 			{
 				// Nothing on the list can be reached from where this bot is. Work
@@ -366,8 +382,8 @@ namespace
 					// can actually be reached from here instead.
 					++state.uMetinHotspotIndex;
 					bool bNextReachable = false;
-					const size_t nextIndex = PickReachablePlayerBotHub(ch, hubs, 12,
-							(pid + state.uMetinHotspotIndex) % 12, bNextReachable);
+					const size_t nextIndex = PickReachablePlayerBotHub(ch, hubs, hubCount,
+							(pid + state.uMetinHotspotIndex) % hubCount, bNextReachable);
 					if (bNextReachable && nextIndex != hubIndex)
 					{
 						long nextOffsetX = 0, nextOffsetY = 0;
