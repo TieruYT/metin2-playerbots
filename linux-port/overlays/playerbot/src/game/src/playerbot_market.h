@@ -201,8 +201,16 @@ namespace
 						ch->GetGold() - (int)candidate.dwPrice <
 							(int)PLAYERBOT_SHOPPING_GOLD_FLOOR)
 					continue;
-				if (!WantsPlayerBotStallItem(ch, FindPlayerBotStallItem(keeper,
-						candidate.dwVnum, candidate.bRefine)))
+				LPITEM candidateItem = FindPlayerBotStallItem(keeper,
+						candidate.dwVnum, candidate.bRefine);
+				if (!WantsPlayerBotStallItem(ch, candidateItem))
+					continue;
+				// Room for this particular thing, not room in general. The engine
+				// refuses the whole purchase when the item does not fit, and a
+				// weapon is three cells against the two the trip checked for -
+				// so a bot with a two-cell gap would ask for a sword, be refused,
+				// and ask again.
+				if (ch->GetEmptyInventory(candidateItem->GetSize()) < 0)
 					continue;
 				outPick.keeper = keeper;
 				outPick.dwVnum = candidate.dwVnum;
@@ -329,12 +337,22 @@ namespace
 
 		if (keeper && havePick && pick.keeper == keeper)
 		{
-			BuyFromPlayerBotStall(ch, pick);
-			// Look again at once rather than at the next browse: a bot that came
-			// for two materials should get both before it walks off, and its
-			// purse and bag have just changed.
+			if (!BuyFromPlayerBotStall(ch, pick))
+			{
+				// The engine said no - no room for that size, not enough gold,
+				// the line sold to somebody else while this bot walked over - and
+				// it says so at a log level nobody runs with. Whatever it was, it
+				// will be just as true on the next tick, so asking again only
+				// produces one Shop::Buy per second until the trip times out.
+				// Which is precisely what an operator photographed.
+				EndPlayerBotMarketTrip(ch, state, "refused");
+				return false;
+			}
+			// Bought. A bot that came for two things gets the second without
+			// walking off, but through the ordinary browse interval rather than
+			// on this same tick.
 			state.dwMarketStallVID = 0;
-			state.dwMarketBrowseTime = dwNow;
+			state.dwMarketBrowseTime = dwNow + PLAYERBOT_MARKET_BROWSE_INTERVAL;
 		}
 		return true;
 	}

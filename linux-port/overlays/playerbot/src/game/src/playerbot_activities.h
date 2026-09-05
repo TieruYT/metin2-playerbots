@@ -27,8 +27,21 @@ namespace
 
 	bool CanPlayerBotAdvanceHorse(LPCHARACTER ch)
 	{
-		return ch && ch->GetHorseLevel() < 21 &&
-				ch->GetLevel() >= GetPlayerBotNextHorseRequiredLevel(ch->GetHorseLevel());
+		if (!ch || ch->GetHorseLevel() >= 21)
+			return false;
+		// A horse at exactly ten is what the battle horse trial asks for, and one
+		// more medal makes it eleven - after which no medal, quest or NPC in this
+		// world will ever put it back. So a bot that could still win the battle
+		// horse keeps its medals until the stable keeper has handed the scroll
+		// over, which sets the horse to eleven itself and starts the ladder again.
+		//
+		// This also stops it farming medals it must not spend: every other caller
+		// of this function - the Monkey Dungeon expedition, buying a medal off a
+		// stall, the goal that walks it to the stable - reads the same answer and
+		// leaves it free to be out in the desert earning the thing instead.
+		if (IsPlayerBotBattleHorseCandidate(ch))
+			return false;
+		return ch->GetLevel() >= GetPlayerBotNextHorseRequiredLevel(ch->GetHorseLevel());
 	}
 
 	void GetPlayerBotNpcApproach(DWORD playerID, long npcX, long npcY, DWORD salt,

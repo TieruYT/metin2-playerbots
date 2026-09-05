@@ -938,6 +938,12 @@ void CPlayerBotManager::Update()
 				LPCHARACTER quickTarget = state.dwTargetVID != 0
 						? CHARACTER_MANAGER::instance().Find(state.dwTargetVID) : NULL;
 				ExecutePlayerBotBasicAttack(ch, quickTarget, state, dwNow);
+				// This pass lands about half of all killing blows, and the full
+				// tick cannot count them later: it replaces a target it finds
+				// dead before it reaches the attack block, so the credit there
+				// only ever sees a live monster. Without this line the battle
+				// horse trial counted roughly every other kill.
+				NotePlayerBotBattleHorseKill(ch, state, quickTarget);
 			}
 			continue;
 		}
