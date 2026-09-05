@@ -377,6 +377,36 @@ namespace
 				: 1;
 	}
 
+	// A warp that half worked, and the only kind of damage a bot cannot walk off.
+	//
+	// The frontier maps carry warp NPCs of their own and a bot that strays into
+	// one's trigger radius is handed to whatever map it points at. When that map
+	// belongs to the other core, the warp goes half way: the character's
+	// coordinates are set to the destination and the placement into a sector
+	// fails, so it stands in Orc Valley carrying a position in Milgyo. The
+	// engine notices and says so - "SECTREE DIFFER: botsimon 56x111 was 56x112" -
+	// and then the ordinary logout saves the coordinates it cannot use:
+	//
+	//     PlayerLoad: cannot find valid location 553600 x 144100 (name: botsimon)
+	//
+	// From then on the character is refused at every login. It is not stuck, or
+	// idle, or lost - it is gone, and the only sign is that the world runs fewer
+	// bots than it was asked for. Eighty-five had accumulated this way, 10% of
+	// the population, all of them saved at one identical coordinate.
+	//
+	// The recovery branch at the end of ManagePlayerBotWorldTravel cannot help:
+	// it reads GetMapIndex(), which still says Orc Valley, because the sector is
+	// the half of the warp that failed. So the mismatch itself is what has to be
+	// looked for, while the bot is still logged in and can still be moved.
+	bool IsPlayerBotPositionOffItsMap(LPCHARACTER ch)
+	{
+		if (!ch || !ch->GetSectree())
+			return false;
+		const int byPosition = SECTREE_MANAGER::instance().GetMapIndex(
+				ch->GetX(), ch->GetY());
+		return byPosition > 0 && byPosition != (int)ch->GetMapIndex();
+	}
+
 	bool TransitionPlayerBotMap(LPCHARACTER ch, TPlayerBotAIState& state,
 			long targetMap, long targetX, long targetY, DWORD dwNow, const char* reason)
 	{
@@ -438,6 +468,15 @@ namespace
 		state.dwDungeonEnteredTime = targetMap == PLAYERBOT_MAP_MONKEY_EASY ? dwNow : 0;
 		state.dwM3EnteredTime = targetMap == PLAYERBOT_MAP_CHUNJO_M3 ? dwNow : 0;
 		state.dwFrontierEnteredTime = IsPlayerBotFrontierMap(targetMap) ? dwNow : 0;
+		// Everybody enters Orc Valley at the same point, so without this the
+		// whole population lands on the doorstep and stays there - the rotation
+		// that would move it on runs only on a tick with nothing to fight, and
+		// that map has four thousand spawn points. Start the walk to this bot's
+		// own hub on arrival instead of after the first camp timer expires.
+		state.lCampX = targetX;
+		state.lCampY = targetY;
+		state.dwCampSince = dwNow;
+		state.dwRelocateSince = IsPlayerBotFrontierMap(targetMap) ? dwNow : 0;
 		if (targetMap == PLAYERBOT_MAP_CHUNJO_M3)
 			state.dwNextRemoteRefineReturnTime = 0;
 		sys_log(0, "PLAYERBOT_WORLD: transitioned pid=%u name=%s from=%ld to=%ld pos=(%ld,%ld) reason=%s",
@@ -459,10 +498,63 @@ namespace
 		// Warp NPCs trigger at 300 units and expect a real client reconnect. Switch
 		// server-side at 900 units so a bot descriptor never enters that code path,
 		// while the character still visibly walks all the way to the portal area.
-		if (DISTANCE_APPROX(ch->GetX() - portalX, ch->GetY() - portalY) <= 900)
+		const int distance = DISTANCE_APPROX(ch->GetX() - portalX, ch->GetY() - portalY);
+		if (distance <= 900)
+		{
+			state.dwPortalWalkSince = 0;
+			state.iPortalWalkBest = 0;
 			return TransitionPlayerBotMap(ch, state, targetMap, targetX, targetY, dwNow, reason);
+		}
 
-		MovePlayerBot(ch, portalX, portalY, dwNow, 24, true, true);
+		// Walking to a portal has to be able to fail, and this is what it looked
+		// like when it could not.
+		//
+		// The old body ignored what MovePlayerBot returned and ended in an
+		// unconditional "return true", so a bot whose route could not be planned
+		// reported a successful travel step - and travel claims the tick, so
+		// nothing below it in the update ever ran again. Four of them were found
+		// standing at the Bokjung teleporter: no route (route=0/0), no movement,
+		// nothing in the log but their goal flipping between LEVEL_UP and BIOLOGIST
+		// every six seconds as the planner and this branch overwrote each other.
+		// The inactivity watchdog reset them 209 times in an evening and every
+		// reset delivered them straight back into the same decision.
+		//
+		// Neither the map nor the route was at fault: 99.9% of Bokjung is one
+		// walkable component and that portal is reachable from where they stood.
+		// The navigation has several paths that stand still and report success - a
+		// deferred plan when the per-tick planning budget is spent, and the
+		// back-off window after a failure. Any of them, entered every tick, freezes
+		// a bot for good once the caller treats them as progress.
+		//
+		// So progress is what is measured, not the return value. A bot that has not
+		// moved for PLAYERBOT_PORTAL_WALK_TIMEOUT hands the tick back, and that is
+		// all it takes: the update falls through to hunting and wandering, the bot
+		// ends up somewhere else, and the next attempt plans from there.
+		if (state.dwPortalWalkSince == 0 ||
+				distance + PLAYERBOT_PORTAL_WALK_PROGRESS <= state.iPortalWalkBest ||
+				distance >= state.iPortalWalkBest + PLAYERBOT_PORTAL_WALK_PROGRESS)
+		{
+			state.dwPortalWalkSince = dwNow;
+			state.iPortalWalkBest = distance;
+		}
+		else if (dwNow - state.dwPortalWalkSince >= PLAYERBOT_PORTAL_WALK_TIMEOUT)
+		{
+			state.dwPortalWalkSince = 0;
+			state.iPortalWalkBest = 0;
+			PlayerBotLogThrottled("portal_stuck", dwNow,
+					"PLAYERBOT_WORLD: portal walk stalled pid=%u name=%s map=%ld pos=(%ld,%ld) portal=(%ld,%ld) distance=%d reason=%s",
+					ch->GetPlayerID(), ch->GetName(), ch->GetMapIndex(),
+					ch->GetX(), ch->GetY(), portalX, portalY, distance,
+					reason ? reason : "?");
+			return false;
+		}
+
+		// Mounted all the way up to it. A teleporter is scenery to a bot - the warp
+		// happens server-side and nothing is said to anybody - so the dismount
+		// MovePlayerBot performs on arrival at an ordinary destination buys nothing
+		// here. It was 1362 of one evening's dismounts, each followed by a remount
+		// on the far side three seconds later.
+		MovePlayerBot(ch, portalX, portalY, dwNow, 24, true, true, false, true);
 		return true;
 	}
 
@@ -856,6 +948,9 @@ namespace
 			return false; // stay and fight; departure was handled before victim yielding
 
 		// Anything else means the bot was moved somewhere no branch above owns:
+		// see IsPlayerBotPositionOffItsMap for the case where the move only half
+		// happened and the map index still reads as the one the bot is standing
+		// on. Both end here, and both are put back in Bokjung.
 		// the frontier maps carry real warp NPCs of their own, and walking inside
 		// one's trigger radius hands the character to a map the AI has no plan
 		// for. Nothing would ever bring it back, so it would sit there for good.

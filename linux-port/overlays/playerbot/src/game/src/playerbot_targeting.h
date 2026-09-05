@@ -356,6 +356,79 @@ namespace
 		return true;
 	}
 
+	void ResetPlayerBotFightProgress(TPlayerBotAIState& state)
+	{
+		state.dwFightProgressVID = 0;
+		state.dwFightStartTime = 0;
+		state.dwFightLastProgressTime = 0;
+		state.iLastFightHP = 0;
+	}
+
+	// The fight that goes nowhere.
+	//
+	// A stalled Metin has been released for a long time. An ordinary monster had
+	// no such rule: the only ways out of a fight were killing it, dying, or
+	// failing three times to walk to it. None of the three happens when the two
+	// of them heal as fast as they hurt each other - botserqet spent an evening
+	// on one Black Orc at 3261 of 5114 health, drinking a red potion every time
+	// the bar dropped, winning nothing and losing nothing. An operator watching
+	// asked whether it would ever decide it was too weak and go and find
+	// something easier. It would not.
+	//
+	// So it gets the test the stones get, and the same shape: progress means
+	// half a per cent of the monster's health, which no rounding can fake, and
+	// the best health ever reached is what improvement is measured against - a
+	// monster that regenerates between blows makes no progress however many
+	// times the same points are taken off it again.
+	//
+	// The loser goes on the failed list rather than merely being dropped.
+	// Without that the very next scan picks the same monster, being the nearest,
+	// and the stalemate resumes with the clock reset.
+	bool ShouldPlayerBotAbandonFight(LPCHARACTER ch, LPCHARACTER target,
+			TPlayerBotAIState& state, DWORD dwNow)
+	{
+		if (!ch || !target || target->IsStone() || target->IsDead() ||
+				!target->IsMonster())
+			return false;
+
+		const DWORD vid = (DWORD)target->GetVID();
+		if (state.dwFightProgressVID != vid)
+		{
+			state.dwFightProgressVID = vid;
+			state.dwFightStartTime = dwNow;
+			state.dwFightLastProgressTime = dwNow;
+			state.iLastFightHP = target->GetHP();
+			return false;
+		}
+
+		const int meaningfulDamage = std::max(1, target->GetMaxHP() / 200);
+		if (target->GetHP() + meaningfulDamage <= state.iLastFightHP)
+		{
+			state.iLastFightHP = target->GetHP();
+			state.dwFightLastProgressTime = dwNow;
+		}
+
+		if (dwNow - state.dwFightStartTime < PLAYERBOT_FIGHT_INITIAL_GRACE ||
+				dwNow - state.dwFightLastProgressTime < PLAYERBOT_FIGHT_STALL_TIMEOUT)
+			return false;
+
+		sys_log(0, "PLAYERBOT_AI: abandoned stalled fight pid=%u name=%s level=%u target=%s target_level=%u hp=%d/%d best_hp=%d fight_ms=%u cooldown_ms=%u",
+				ch->GetPlayerID(), ch->GetName(), ch->GetLevel(),
+				target->GetName(), target->GetLevel(),
+				target->GetHP(), target->GetMaxHP(), state.iLastFightHP,
+				(unsigned int)(dwNow - state.dwFightStartTime),
+				(unsigned int)PLAYERBOT_FIGHT_FAILED_COOLDOWN);
+		state.mapFailedTargets[vid] = dwNow + PLAYERBOT_FIGHT_FAILED_COOLDOWN;
+		state.dwTargetVID = 0;
+		ch->SetVictim(NULL);
+		ch->Stop();
+		ClearPlayerBotRoute(state, true);
+		SetPlayerBotAction(state, BOT_ACTION_IDLE, dwNow);
+		state.dwNextWanderTime = dwNow + number(1000, 2500);
+		ResetPlayerBotFightProgress(state);
+		return true;
+	}
+
 	bool IsTargetClaimedByAnotherBot(LPCHARACTER owner, DWORD dwTargetVID)
 	{
 		if (!owner || dwTargetVID == 0)
@@ -604,6 +677,15 @@ namespace
 			std::vector<TTargetCandidate> m_targets;
 	};
 
+	// Worth the swing, or scenery? See PLAYERBOT_TRIVIAL_LEVEL_GAP. Stones are
+	// never scenery - a Metin is judged by its own rules elsewhere.
+	bool IsPlayerBotWorthwhilePrey(LPCHARACTER ch, int iMobLevel, bool bIsStone)
+	{
+		if (!ch || bIsStone)
+			return true;
+		return iMobLevel + PLAYERBOT_TRIVIAL_LEVEL_GAP >= (int)ch->GetLevel();
+	}
+
 	LPCHARACTER FindDistributedTarget(LPCHARACTER ch, TPlayerBotAIState& state, DWORD dwNow)
 	{
 		if (!ch || !ch->GetSectree() ||
@@ -727,39 +809,59 @@ namespace
 		// stone scoring and reservations below.
 		if (state.bBotRole != BOT_ROLE_METIN_HUNTER)
 		{
-			DWORD closestObjectiveVID = 0;
-			DWORD closestLocalVID = 0;
-			int closestObjectiveDistance = INT_MAX;
-			int closestLocalDistance = INT_MAX;
-			for (size_t i = 0; i < targets.size(); ++i)
+			// Twice: the first pass will not look at anything too far beneath the
+			// bot to be worth a swing, the second takes whatever is here. A quest
+			// objective is always worth it, whatever its level - that is what the
+			// errand is for.
+			DWORD chainedVID = 0;
+			for (int pass = 0; pass < 2 && chainedVID == 0; ++pass)
 			{
-				if (targets[i].bIsStone || targets[i].distance > PLAYERBOT_LOCAL_CHAIN_RANGE ||
-						IsTargetClaimedByAnotherBot(ch, targets[i].dwVID))
-					continue;
-				if (targets[i].bPriorityObjective &&
-						targets[i].distance < closestObjectiveDistance)
+				const bool bWorthwhileOnly = (pass == 0);
+				DWORD closestObjectiveVID = 0;
+				DWORD closestLocalVID = 0;
+				int closestObjectiveDistance = INT_MAX;
+				int closestLocalDistance = INT_MAX;
+				for (size_t i = 0; i < targets.size(); ++i)
 				{
-					closestObjectiveDistance = targets[i].distance;
-					closestObjectiveVID = targets[i].dwVID;
+					if (targets[i].bIsStone || targets[i].distance > PLAYERBOT_LOCAL_CHAIN_RANGE ||
+							IsTargetClaimedByAnotherBot(ch, targets[i].dwVID))
+						continue;
+					if (targets[i].bPriorityObjective &&
+							targets[i].distance < closestObjectiveDistance)
+					{
+						closestObjectiveDistance = targets[i].distance;
+						closestObjectiveVID = targets[i].dwVID;
+					}
+					if (bWorthwhileOnly && !IsPlayerBotWorthwhilePrey(
+							ch, targets[i].level, targets[i].bIsStone))
+						continue;
+					if (targets[i].distance < closestLocalDistance)
+					{
+						closestLocalDistance = targets[i].distance;
+						closestLocalVID = targets[i].dwVID;
+					}
 				}
-				if (targets[i].distance < closestLocalDistance)
-				{
-					closestLocalDistance = targets[i].distance;
-					closestLocalVID = targets[i].dwVID;
-				}
+				chainedVID = closestObjectiveVID != 0
+						? closestObjectiveVID : closestLocalVID;
 			}
-			const DWORD chainedVID = closestObjectiveVID != 0
-					? closestObjectiveVID : closestLocalVID;
 			if (chainedVID != 0)
 				return CHARACTER_MANAGER::instance().Find(chainedVID);
 		}
 
 		std::vector<DWORD> availableTargets;
+		std::vector<DWORD> worthwhileTargets;
 		for (size_t i = 0; i < targets.size(); ++i)
 		{
-			if (!IsTargetClaimedByAnotherBot(ch, targets[i].dwVID))
-				availableTargets.push_back(targets[i].dwVID);
+			if (IsTargetClaimedByAnotherBot(ch, targets[i].dwVID))
+				continue;
+			availableTargets.push_back(targets[i].dwVID);
+			if (IsPlayerBotWorthwhilePrey(ch, targets[i].level, targets[i].bIsStone))
+				worthwhileTargets.push_back(targets[i].dwVID);
 		}
+		// Same rule for the wider pick, same fallback: a map that holds nothing
+		// but monsters a bot has outgrown still gives it something to do.
+		if (!worthwhileTargets.empty())
+			availableTargets.swap(worthwhileTargets);
 
 		// Prefer a target no other bot has claimed. Randomizing inside a bounded
 		// nearest-candidate window spreads bots without sending them across the map.

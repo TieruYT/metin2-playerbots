@@ -426,7 +426,7 @@ namespace
 
 	void UpdatePlayerBotTravelMount(LPCHARACTER ch, TPlayerBotAIState& state,
 			long destX, long destY, bool allowHorse, DWORD dwNow,
-			bool fightOnHorse = false)
+			bool fightOnHorse = false, bool keepHorseAtDestination = false)
 	{
 		if (!ch)
 			return;
@@ -435,9 +435,14 @@ namespace
 		// target it may legitimately hit from the saddle, so keep (or take) the
 		// horse regardless of how near the destination is. SetPlayerBotRidingForTravel
 		// still refuses gracefully when the horse is spent, leaving the bot on foot.
-		if (fightOnHorse)
+		//
+		// A portal wants the saddle kept for a different reason. The dismount below
+		// exists so a bot walks up to an NPC on foot, the way a player does before
+		// talking to one; a teleporter is not talked to at all.
+		if (fightOnHorse || keepHorseAtDestination)
 		{
-			SetPlayerBotRidingForTravel(ch, state, true, dwNow, "mounted_combat");
+			SetPlayerBotRidingForTravel(ch, state, true, dwNow,
+					fightOnHorse ? "mounted_combat" : "riding_to_portal");
 			return;
 		}
 
@@ -468,7 +473,8 @@ namespace
 
 	bool MovePlayerBot(LPCHARACTER ch, long destX, long destY, DWORD dwNow,
 			int targetSnapRadius = 4, bool flexibleTargetSnap = false,
-			bool allowHorse = false, bool fightOnHorse = false)
+			bool allowHorse = false, bool fightOnHorse = false,
+			bool keepHorseAtDestination = false)
 	{
 		if (!ch)
 			return false;
@@ -525,7 +531,7 @@ namespace
 		if (newGoal)
 			state.bRouteAllowsHorse = allowHorse;
 		UpdatePlayerBotTravelMount(ch, state, destX, destY,
-				state.bRouteAllowsHorse, dwNow, fightOnHorse);
+				state.bRouteAllowsHorse, dwNow, fightOnHorse, keepHorseAtDestination);
 		if (newGoal)
 		{
 			ClearPlayerBotRoute(state, false);

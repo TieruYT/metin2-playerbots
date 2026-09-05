@@ -32,6 +32,7 @@
 #include "vector.h"
 #include "utils.h"
 #include <queue>
+#include <set>
 #include <algorithm>
 #include <cstdlib>
 #include <climits>
@@ -1111,6 +1112,14 @@ void CPlayerBotManager::Update()
 			ResetPlayerBotStoneProgress(state);
 		}
 
+		// And the same question for an ordinary monster, which until now could
+		// hold a bot for as long as the two of them healed at the same rate.
+		if (!bFightingMetin && curTarget && !curTarget->IsDead() &&
+				ShouldPlayerBotAbandonFight(ch, curTarget, state, dwNow))
+			curTarget = NULL;
+		else if (curTarget == NULL && state.dwFightProgressVID != 0)
+			ResetPlayerBotFightProgress(state);
+
 		const bool bNeedsProfession = ch->GetLevel() >= 5 && ch->GetSkillGroup() == 0;
 		// Losing essential gear at the real blacksmith is urgent. Do not leave the
 		// bot fighting with a starter weapon until the ordinary 3-8 minute shop
@@ -1294,6 +1303,25 @@ void CPlayerBotManager::Update()
 		if (ManagePlayerBotCombatBuffs(ch, state, dwNow))
 			continue;
 		if (HandlePlayerBotMultiPull(ch, state, dwNow))
+			continue;
+		// Before anything else looks at where this bot is: a half-completed warp
+		// leaves the position and the sector disagreeing, and the next logout
+		// saves coordinates no login can ever load.
+		if (IsPlayerBotPositionOffItsMap(ch))
+		{
+			sys_log(0, "PLAYERBOT_WORLD: position off its map pid=%u name=%s map=%ld pos=(%ld,%ld) belongs_to=%d",
+					ch->GetPlayerID(), ch->GetName(), ch->GetMapIndex(),
+					ch->GetX(), ch->GetY(),
+					SECTREE_MANAGER::instance().GetMapIndex(ch->GetX(), ch->GetY()));
+			if (TransitionPlayerBotMap(ch, state, PLAYERBOT_MAP_CHUNJO_M2,
+					PLAYERBOT_M2_FROM_M3_X, PLAYERBOT_M2_FROM_M3_Y, dwNow,
+					"half_warp_recovery"))
+				continue;
+		}
+		// Before target acquisition on purpose: a bot that has stood in the same
+		// place for five minutes is walked to the next hunting hub, and it can
+		// only do that on a tick where nothing else picks a monster for it.
+		if (ManagePlayerBotRelocation(ch, state, dwNow))
 			continue;
 
 		LPCHARACTER target = state.dwTargetVID != 0

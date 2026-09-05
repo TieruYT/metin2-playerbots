@@ -55,6 +55,96 @@ namespace
 		return firstIndex;
 	}
 
+	void ManagePlayerBotWandering(LPCHARACTER ch, TPlayerBotAIState& state, DWORD dwNow);
+
+	// A frontier map is worked, not squatted on.
+	//
+	// Wandering is what rotates a bot between hunting hubs, and in the tick it
+	// runs only on an update where nothing was worth attacking. Orc Valley has
+	// 4041 spawn points, so on that map there is always something in reach and
+	// the rotation never came round: bots warped to the arrival point, found a
+	// monster, and stayed. Twenty-four bots on the map, twenty-one of them at
+	// the two hubs beside the entrance, inside a box thirty kilometres across -
+	// while the Elite Orcs that carry the Orc Amulet, two hundred and sixty-five
+	// spawns of them, stood on islands nobody visited. The market cannot trade
+	// what the world never drops, and the world does not drop what nobody kills.
+	//
+	// So a bot that has not moved a hub's width in five minutes is walked to the
+	// next hub even though there is something here to kill. It has to claim
+	// the tick while it walks: otherwise target acquisition picks the monster it
+	// has been standing next to and the walk never takes a step.
+	bool ManagePlayerBotRelocation(LPCHARACTER ch, TPlayerBotAIState& state, DWORD dwNow)
+	{
+		if (!ch || !IsPlayerBotFrontierMap(ch->GetMapIndex()))
+		{
+			state.dwCampSince = 0;
+			state.dwRelocateSince = 0;
+			return false;
+		}
+		// A follower goes where its leader goes. Two members deciding separately
+		// to walk off is how a party comes apart.
+		if (ch->GetParty() && ch->GetParty()->GetLeaderCharacter() != ch)
+			return false;
+
+		const int fromCamp = DISTANCE_APPROX(ch->GetX() - state.lCampX,
+				ch->GetY() - state.lCampY);
+
+		if (state.dwRelocateSince != 0)
+		{
+			// Arrived, or long enough trying. Either way this is home now.
+			//
+			// "Arrived" has to mean the hub, not a fixed number of paces. An
+			// earlier draft ended the leg after one hub's width, which on a map
+			// this size is halfway to nowhere: the far side of Orc Valley is
+			// sixty-four thousand units from the entrance, so a bot needed five
+			// separate legs with five minutes of standing still between them.
+			// Measured after forty minutes of that: eight of the sixteen hubs
+			// had somebody on them and every one of the eight was in the middle.
+			const bool bHaveDestination = state.lRouteMapIndex == ch->GetMapIndex() &&
+					(state.lRouteDestX != 0 || state.lRouteDestY != 0);
+			const bool bArrived = bHaveDestination
+					? DISTANCE_APPROX(ch->GetX() - state.lRouteDestX,
+							ch->GetY() - state.lRouteDestY) <= PLAYERBOT_RELOCATE_ARRIVED
+					: fromCamp >= PLAYERBOT_RELOCATE_DISTANCE;
+			if (bArrived ||
+					dwNow - state.dwRelocateSince >= PLAYERBOT_RELOCATE_TIMEOUT)
+			{
+				state.lCampX = ch->GetX();
+				state.lCampY = ch->GetY();
+				state.dwCampSince = dwNow;
+				state.dwRelocateSince = 0;
+				return false;
+			}
+			state.dwNextWanderTime = dwNow;
+			ManagePlayerBotWandering(ch, state, dwNow);
+			return true;
+		}
+
+		if (state.dwCampSince == 0 || fromCamp > PLAYERBOT_RELOCATE_DISTANCE)
+		{
+			// Already a hub away under its own steam, which is the ordinary case
+			// and the whole point. Note where it is and let it hunt.
+			state.lCampX = ch->GetX();
+			state.lCampY = ch->GetY();
+			state.dwCampSince = dwNow;
+			return false;
+		}
+		if (dwNow - state.dwCampSince < PLAYERBOT_CAMP_TIMEOUT)
+			return false;
+
+		sys_log(0, "PLAYERBOT_TRAVEL: moving on pid=%u name=%s map=%ld camped=%us pos=(%ld,%ld)",
+				ch->GetPlayerID(), ch->GetName(), ch->GetMapIndex(),
+				(unsigned int)((dwNow - state.dwCampSince) / 1000),
+				ch->GetX(), ch->GetY());
+		state.dwRelocateSince = dwNow;
+		state.dwTargetVID = 0;
+		ch->SetVictim(NULL);
+		ClearPlayerBotRoute(state, true);
+		state.dwNextWanderTime = dwNow;
+		ManagePlayerBotWandering(ch, state, dwNow);
+		return true;
+	}
+
 	void ManagePlayerBotWandering(LPCHARACTER ch, TPlayerBotAIState& state, DWORD dwNow)
 	{
 		if (!ch)

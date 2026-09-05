@@ -124,6 +124,78 @@ namespace
 		return PlayerBotIsShortOfRefineMaterial(ch, 0);
 	}
 
+	// Every material any recipe in the game consumes, collected once. There is
+	// no iterator over the recipe table, so the ids are walked; what comes back
+	// is the only list worth trading, because a counter slot spent on something
+	// no anvil asks for is a slot the market cannot use. Eighty-four of them in
+	// this world, against two hundred and forty items of type ITEM_MATERIAL.
+	const std::set<DWORD>& GetPlayerBotRefineMaterialVnums()
+	{
+		static std::set<DWORD> s_materials;
+		static bool s_loaded = false;
+		if (!s_loaded)
+		{
+			s_loaded = true;
+			for (DWORD id = 1; id <= PLAYERBOT_REFINE_RECIPE_MAX_ID; ++id)
+			{
+				const TRefineTable* recipe =
+						CRefineManager::instance().GetRefineRecipe(id);
+				if (!recipe)
+					continue;
+				for (int m = 0; m < recipe->material_count; ++m)
+					if (recipe->materials[m].vnum != 0)
+						s_materials.insert(recipe->materials[m].vnum);
+			}
+			sys_log(0, "PLAYERBOT_ECONOMY: %u refine materials are worth a counter slot",
+					(unsigned int)s_materials.size());
+		}
+		return s_materials;
+	}
+
+	bool IsPlayerBotTradeableMaterial(LPITEM item)
+	{
+		if (!item || item->GetType() != ITEM_MATERIAL)
+			return false;
+		const std::set<DWORD>& materials = GetPlayerBotRefineMaterialVnums();
+		return materials.find(item->GetVnum()) != materials.end();
+	}
+
+	// Junk goes to the general-goods merchant on the next town visit, and for a
+	// refine material that was the end of it. Five hundred and twenty-six bots
+	// on this world are short of one; the top of that list is three hundred and
+	// seventeen bots wanting fourteen hundred Orc Amulets between them, against
+	// five in existence. A material its finder did not personally need was being
+	// destroyed at the rate it dropped, which is why a counter carried one only
+	// when somebody happened to have a spare, and why an evening's whole market
+	// saw four material purchases.
+	//
+	// So a spare is kept and put on the counter instead, where the bot that
+	// needs it walks up and buys it. Nothing is added to any NPC: the supply is
+	// what the world already drops, and the trade is between bots.
+	//
+	// Bounded, or a bag would fill - there are ninety cells and no shortage of
+	// materials to find. The cap counts every material cell, the ones held for
+	// this bot's own anvil included, because those are already spoken for above:
+	// a material on the wishlist never reaches this test.
+	bool IsPlayerBotSurplusMaterial(LPCHARACTER ch, LPITEM item)
+	{
+		if (!ch || !item || !IsPlayerBotTradeableMaterial(item))
+			return true;
+
+		// Cell order decides, so the same spares stay put from one town visit
+		// to the next rather than the bag reshuffling itself every trip.
+		size_t ahead = 0;
+		const WORD ownCell = item->GetCell();
+		for (WORD cell = 0; cell < ownCell && cell < INVENTORY_MAX_NUM; ++cell)
+		{
+			LPITEM other = ch->GetInventoryItem(cell);
+			if (other && other != item && IsPlayerBotTradeableMaterial(other) &&
+					++ahead >= PLAYERBOT_MATERIAL_STOCK_SLOTS)
+				return true;
+		}
+		return false;
+	}
+
 	bool IsPlayerBotJunkItem(LPCHARACTER ch, LPITEM item)
 	{
 		if (!ch || !item || item->IsEquipped() || item->isLocked())
@@ -206,10 +278,14 @@ namespace
 				(vnum >= 50187 && vnum <= 50196))
 			return false;
 
-		// Preserve only materials on this bot's current two-attempt refine wishlist.
-		// Unneeded materials no longer fill the inventory forever.
+		// What this bot is about to refine with stays in its bag. A spare that
+		// some recipe wants stays too, as stock for its own counter - see
+		// IsPlayerBotSurplusMaterial for why that is worth eight cells.
 		if (item->GetType() == ITEM_MATERIAL)
-			return !PlayerBotNeedsRefineMaterial(ch, vnum);
+			return !PlayerBotNeedsRefineMaterial(ch, vnum) &&
+					IsPlayerBotSurplusMaterial(ch, item);
+		// The rest of the 30000 block is eight gift boxes and two quest items.
+		// No counter would carry those, so there junk still means junk.
 		if (vnum >= 30000 && vnum <= 30200)
 			return !PlayerBotNeedsRefineMaterial(ch, vnum);
 		if (vnum >= 70038 && vnum <= 70060)

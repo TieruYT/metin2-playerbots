@@ -17,6 +17,14 @@ namespace
 	// Ordinary grinders chain into a nearby free pack before considering a
 	// distant high-score target. Claims still spread a crowd over different mobs.
 	const int PLAYERBOT_LOCAL_CHAIN_RANGE = 2500;
+	// How far below itself a bot still counts a monster as prey. The engine's own
+	// experience table settles the number: aiPercentByDeltaLev pays 70% at nine
+	// levels down, 50% at ten and one per cent from fifteen. So nine is the last
+	// step before the reward halves, and a level-19 bot swinging at one of Joan's
+	// level-1 stray dogs earns a hundredth of a kill - which is the "boty bija
+	// psy" the Discord keeps reporting. Anything lower is passed over while
+	// something worth the swing is in reach, and taken when nothing else is.
+	const int PLAYERBOT_TRIVIAL_LEVEL_GAP = 9;
 	const int PLAYERBOT_MELEE_RANGE = 250;
 	const int PLAYERBOT_MELEE_SPLASH_RANGE = 300;
 	const size_t PLAYERBOT_MAX_MELEE_TARGETS = 4;
@@ -87,6 +95,14 @@ namespace
 	// lowest observed HP at a deliberately cheap cadence, give a newcomer time to
 	// change the outcome, and only then let the bot look for a productive target.
 	const DWORD PLAYERBOT_STONE_PROGRESS_CHECK_INTERVAL = 4000;
+	// The same three numbers for an ordinary monster. Slightly more patient than
+	// the stone timings: a stone stands still and takes what it is given, while
+	// a monster that fights back can leave a bot chasing it round a tree for a
+	// few seconds without that meaning the fight is hopeless.
+	const DWORD PLAYERBOT_FIGHT_INITIAL_GRACE = 20000;
+	const DWORD PLAYERBOT_FIGHT_STALL_TIMEOUT = 30000;
+	const DWORD PLAYERBOT_FIGHT_FAILED_COOLDOWN = 120000;
+
 	const DWORD PLAYERBOT_STONE_INITIAL_GRACE = 18000;
 	const DWORD PLAYERBOT_STONE_SOLO_STALL_TIMEOUT = 26000;
 	const DWORD PLAYERBOT_STONE_GROUP_STALL_TIMEOUT = 42000;
@@ -161,6 +177,14 @@ namespace
 	const int PLAYERBOT_SHOPPING_RANGE = 1800;
 	// Gold a bot will not spend on the market; potions and gear come first.
 	const DWORD PLAYERBOT_SHOPPING_GOLD_FLOOR = 200000;
+	// How many refine-material cells a bot carries as stock for its own counter.
+	// They stack, so this is eight cells out of ninety however many pieces are
+	// held - and eight is one full stall, which is as much as it can display.
+	const size_t PLAYERBOT_MATERIAL_STOCK_SLOTS = 8;
+	// Recipe ids are sparse - four hundred and seven of them scattered up to
+	// 759 - and the manager offers no way to iterate, so this is where the walk
+	// that collects their materials stops.
+	const DWORD PLAYERBOT_REFINE_RECIPE_MAX_ID = 1000;
 	// Going shopping, as opposed to buying whatever happens to be within twenty
 	// metres. A bot that is short of something walks over to the stall ring and
 	// reads the counters; this is how long it may spend on that before it goes
@@ -325,6 +349,24 @@ namespace
 	const long PLAYERBOT_M1_TO_M2_PORTAL_Y = 215100;
 	const long PLAYERBOT_M2_ARRIVAL_X = 111800;
 	const long PLAYERBOT_M2_ARRIVAL_Y = 216100;
+	// How long a bot may stand at a portal without getting any closer to it
+	// before travel gives the tick back. Twenty seconds is far longer than any
+	// replan takes and far shorter than the hours four bots spent frozen at the
+	// Bokjung teleporter.
+	// How long a closed stall keeps taking its sign back, and how often. A stall
+	// sign is cleared with PacketAround, which reaches whoever is in view at that
+	// instant and nobody else - so a player who walks up a second later sees a
+	// bot wearing a shop that no longer exists. Six seconds of repeats covers the
+	// approach without turning into chatter: seventy closures in twenty-five
+	// minutes across the whole world is what this is spread over.
+	const DWORD PLAYERBOT_SHOP_SIGN_CLEAR_WINDOW = 6000;
+	const DWORD PLAYERBOT_SHOP_SIGN_CLEAR_INTERVAL = 1500;
+
+	const DWORD PLAYERBOT_PORTAL_WALK_TIMEOUT = 20000;
+	// What counts as having moved. Below this the bot is standing still, whether
+	// the navigation deferred the plan, backed off, or quietly reported success.
+	const int PLAYERBOT_PORTAL_WALK_PROGRESS = 150;
+
 	const long PLAYERBOT_M2_TO_M1_PORTAL_X = 113000;
 	const long PLAYERBOT_M2_TO_M1_PORTAL_Y = 213600;
 	const long PLAYERBOT_M1_RETURN_X = 87600;
@@ -391,8 +433,24 @@ namespace
 	// that fixed the whole map is one piece and all 532 groups are reachable, so
 	// these coordinates are now simply the way in rather than the only island a
 	// bot could use. Measured with tools/analyse_map_bridges.py.
-	const long PLAYERBOT_ORC_VALLEY_ARRIVAL_X = 327200;
-	const long PLAYERBOT_ORC_VALLEY_ARRIVAL_Y = 742300;
+	// Where a Chunjo character actually comes out, which is not where the bots
+	// were being put. Orc Valley has four teleporter NPCs in its npc.txt - one
+	// per empire at cells (1472,73), (131,746) and (640,1436), and a fourth in
+	// the middle of the map at (767,792) that belongs to nobody. The arrival
+	// used to be (712,767): the middle one. Every bot in the world therefore
+	// materialised on the central island, and since wandering only runs on a
+	// tick with nothing to fight - on a map with 4041 spawn points, never - that
+	// is where they stayed. Amulet Orka has no spawn within 22000 units of that
+	// spot; nor has the Esoteric Guide. Between them 493 bots were short of
+	// those two materials while standing on the one island that does not drop
+	// them.
+	//
+	// This is the engine's own answer: Town.txt is read as a general spawn point
+	// followed by three empire pairs (SECTREE_MANAGER::LoadMapRegion), and the
+	// second pair - empire 2, Chunjo - is cell (144,743). The desert was already
+	// set this way, which is how the discrepancy showed up at all.
+	const long PLAYERBOT_ORC_VALLEY_ARRIVAL_X = 270400;
+	const long PLAYERBOT_ORC_VALLEY_ARRIVAL_Y = 739900;
 	const long PLAYERBOT_DESERT_ARRIVAL_X = 221900;
 	const long PLAYERBOT_DESERT_ARRIVAL_Y = 502700;
 	// Leave through the Chunjo gate NPC beside the arrival point, not through the
@@ -403,8 +461,12 @@ namespace
 	// The bot walks to the exit before it is warped out, so this has to be in the
 	// same region as the arrival - an exit on the far side of a wall would strand
 	// every bot that ever entered.
-	const long PLAYERBOT_ORC_VALLEY_EXIT_X = 319200;
-	const long PLAYERBOT_ORC_VALLEY_EXIT_Y = 734700;
+	// npc.txt cell (131,746): teleporter 10009, the Chunjo gate, a few steps from
+	// where Town.txt puts a Chunjo character down. The desert names its own gate
+	// the same way - npc 10010 at cell (149,135) - and that pairing is the one
+	// this file follows.
+	const long PLAYERBOT_ORC_VALLEY_EXIT_X = 269100;
+	const long PLAYERBOT_ORC_VALLEY_EXIT_Y = 740200;
 	const long PLAYERBOT_DESERT_EXIT_X = 219700;
 	const long PLAYERBOT_DESERT_EXIT_Y = 499900;
 	// Ordinary spawns are levels 18-25 in Orc Valley and 26-30 in the Desert, but
@@ -415,6 +477,23 @@ namespace
 	// Bokjung keeps everyone up to 29.
 	const BYTE PLAYERBOT_DESERT_MIN_LEVEL = 30;
 	const BYTE PLAYERBOT_DESERT_MAX_LEVEL = 36;
+	// One distance decides both halves of this: how far away counts as somewhere
+	// else, and how far a forced march goes before the bot may settle again.
+	// Twelve thousand is the spacing Orc Valley's hunting hubs were generated
+	// at, so it means exactly "one hub over".
+	//
+	// It has to be that large. An earlier draft reset the anchor whenever the
+	// bot strayed thirty metres, which would have let a bot circling one corner
+	// of the map for an hour keep claiming it had moved.
+	const int PLAYERBOT_RELOCATE_DISTANCE = 12000;
+	const DWORD PLAYERBOT_CAMP_TIMEOUT = 300000;
+	// How close counts as arrived, and the give-up. A route that cannot be
+	// walked must not suppress combat for the rest of the bot's life; three
+	// minutes is long enough to cross this delta and short enough that a bot
+	// stuck against a wall goes back to hunting.
+	const int PLAYERBOT_RELOCATE_ARRIVED = 2000;
+	const DWORD PLAYERBOT_RELOCATE_TIMEOUT = 180000;
+
 	const BYTE PLAYERBOT_ORC_VALLEY_MIN_LEVEL = 36;
 	const BYTE PLAYERBOT_ORC_VALLEY_MAX_LEVEL = 55;
 	// Neither map sells anything, so a visit is bounded and ends in Bokjung.
@@ -918,7 +997,19 @@ namespace
 			bLastStatusParty(255),
 			dwNextGuildCheckTime(0),
 			dwLastKillCreditedVID(0),
-			bFoundedGuild(false)
+			bFoundedGuild(false),
+			dwShopSignClearUntil(0),
+			dwNextShopSignClearTime(0),
+			dwPortalWalkSince(0),
+			iPortalWalkBest(0),
+			dwFightProgressVID(0),
+			dwFightStartTime(0),
+			dwFightLastProgressTime(0),
+			iLastFightHP(0),
+			lCampX(0),
+			lCampY(0),
+			dwCampSince(0),
+			dwRelocateSince(0)
 		{
 		}
 
@@ -1104,6 +1195,27 @@ namespace
 		// minutes later - and the bot would found a second guild under the
 		// second name. This is the only thing that knows it already has one.
 		bool bFoundedGuild;
+		// Where this bot has been standing, since when, and whether it is
+		// currently being walked off it. See ManagePlayerBotRelocation.
+		// The fight in progress: which monster, since when, the lowest health it
+		// has been brought to, and when that last improved. See
+		// ShouldPlayerBotAbandonFight.
+		// The walk to a portal: when it stopped making progress, and the closest
+		// it has been. See MovePlayerBotToWorldPortal.
+		// How long to keep taking the stall sign back after a stall closes, and
+		// when the next repeat is due. See ManagePlayerBotShopLifetime.
+		DWORD dwShopSignClearUntil;
+		DWORD dwNextShopSignClearTime;
+		DWORD dwPortalWalkSince;
+		int iPortalWalkBest;
+		DWORD dwFightProgressVID;
+		DWORD dwFightStartTime;
+		DWORD dwFightLastProgressTime;
+		int iLastFightHP;
+		long lCampX;
+		long lCampY;
+		DWORD dwCampSince;
+		DWORD dwRelocateSince;
 	};
 
 	typedef std::map<DWORD, TPlayerBotAIState> TPlayerBotAIStateMap;

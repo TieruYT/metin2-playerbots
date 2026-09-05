@@ -471,9 +471,12 @@ namespace
 		if (item->GetVnum() == PLAYERBOT_HORSE_MEDAL_VNUM)
 			return CanPlayerBotSellHorseMedals(ch, merchant) ? 900 : -1;
 		// Refine materials: what every other bot is short of and would otherwise
-		// have to farm for an hour.
-		if (item->GetRefinedVnum() == 0 && item->GetType() == ITEM_MATERIAL)
+		// have to farm for an hour. Only the ones some recipe actually consumes
+		// rank this high - the rest of ITEM_MATERIAL is scenery to an anvil.
+		if (IsPlayerBotTradeableMaterial(item))
 			return 500;
+		if (item->GetRefinedVnum() == 0 && item->GetType() == ITEM_MATERIAL)
+			return 200;
 		// Skill books. No bot reads one - that is still unwritten - so they are
 		// pure stock, and a player will want them.
 		if (item->GetType() == ITEM_SKILLBOOK)
@@ -586,8 +589,7 @@ namespace
 		for (size_t i = 0; i < outScored.size(); ++i)
 		{
 			LPITEM item = ch->GetInventoryItem(outScored[i].second);
-			const bool isMaterial = item && item->GetType() == ITEM_MATERIAL &&
-					item->GetRefinedVnum() == 0;
+			const bool isMaterial = IsPlayerBotTradeableMaterial(item);
 			if (isMaterial && materials.size() < reserved)
 				materials.push_back(outScored[i]);
 			else
@@ -740,8 +742,15 @@ namespace
 		state.dwNextShopKeepTime = dwNow +
 				number(PLAYERBOT_SHOP_REST_MIN, PLAYERBOT_SHOP_REST_MAX);
 		if (bHadShop)
+		{
+			// CloseMyShop takes the sign back from whoever is in view at this
+			// instant. Somebody arriving a moment later is not, which is how a bot
+			// comes to be seen running about wearing a stall nobody can open.
+			state.dwShopSignClearUntil = dwNow + PLAYERBOT_SHOP_SIGN_CLEAR_WINDOW;
+			state.dwNextShopSignClearTime = dwNow;
 			sys_log(0, "PLAYERBOT_SHOP: closed pid=%u name=%s reason=%s",
 					ch->GetPlayerID(), ch->GetName(), reason);
+		}
 	}
 
 	// Runs at the very top of the tick, ahead of the inactivity watchdog and the
@@ -765,7 +774,24 @@ namespace
 				// drops one on stun, on death and when the character is destroyed.
 				// Whatever did it, the sign may still be over the bot's head.
 				state.vecShopOffers.clear();
-				ClearPlayerBotShopSign(ch);
+				state.dwShopSignClearUntil = dwNow + PLAYERBOT_SHOP_SIGN_CLEAR_WINDOW;
+				state.dwNextShopSignClearTime = dwNow;
+			}
+			// And keep taking it back for a few seconds, because one broadcast only
+			// reaches the clients that happened to be watching when it went out.
+			if (state.dwShopSignClearUntil != 0)
+			{
+				if (dwNow >= state.dwShopSignClearUntil)
+				{
+					state.dwShopSignClearUntil = 0;
+					state.dwNextShopSignClearTime = 0;
+				}
+				else if (dwNow >= state.dwNextShopSignClearTime)
+				{
+					state.dwNextShopSignClearTime =
+							dwNow + PLAYERBOT_SHOP_SIGN_CLEAR_INTERVAL;
+					ClearPlayerBotShopSign(ch);
+				}
 			}
 			return false;
 		}
