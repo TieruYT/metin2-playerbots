@@ -749,6 +749,79 @@ GM_REQUEST = os.path.join(GM_SPOOL, "gm.request")
 # files only while they boot.
 #
 # Same spool, same shape as the rates and the game master ranks.
+# ---- how the bots behave ----------------------------------------------------
+# The same spool once more, but this one needs no helper on the other side: the
+# game core reads this file itself, every five seconds, and applies whatever it
+# says on the next planning tick. Nothing restarts and nobody is disconnected,
+# which is the entire point -- "fewer anglers" used to cost a rebuild.
+#
+# 100 is neutral for every weight and is what the core assumes for anything the
+# file does not mention, so deleting the file puts the world back exactly as the
+# build shipped it.
+AI_SPOOL     = _env_path("M2PANEL_AI_SPOOL", "/opt/m2spool")
+AI_WEIGHTS   = os.path.join(AI_SPOOL, "playerbot_weights.tsv")
+AI_W_MIN, AI_W_MAX, AI_W_NEUTRAL = 25, 250, 100
+
+# Name, emoji, and the order they are shown in -- which is the order the core
+# tests them in, so the page reads top to bottom like the bot decides.
+AI_WEIGHT_KEYS = [
+    ("RESTOCK", "🧪"),
+    ("REFINE",  "🔨"),
+    ("SKILL",   "📖"),
+    ("HORSE",   "🐎"),
+    ("BIOLOG",  "🧬"),
+    ("METIN",   "🗿"),
+    ("PARTY",   "👥"),
+    ("HUNTING", "🏹"),
+    ("LEVEL",   "⚔️"),
+    ("FISHING", "🎣"),
+    ("TRADE",   "🏪"),
+]
+
+
+def read_ai_weights():
+    """What the file says now. Anything missing or unreadable is neutral."""
+    vals = {k: AI_W_NEUTRAL for k, _ in AI_WEIGHT_KEYS}
+    try:
+        with open(AI_WEIGHTS, encoding="utf-8", errors="replace") as fh:
+            for line in fh:
+                line = line.split("#", 1)[0].strip()
+                if not line:
+                    continue
+                parts = line.replace("\t", " ").split()
+                if len(parts) < 2:
+                    continue
+                name = parts[0].upper()
+                if name not in vals:
+                    continue
+                try:
+                    vals[name] = max(AI_W_MIN, min(AI_W_MAX, int(parts[1])))
+                except ValueError:
+                    pass
+    except OSError:
+        pass
+    return vals
+
+
+def write_ai_weights(vals):
+    """Replace the file in one step.
+
+    Written beside the target and renamed over it, because the game core reads
+    it on its own five-second timer and must never catch it half-written -- a
+    truncated line would silently reset a weight to neutral.
+    """
+    body = ["# Metin2 playerbots -- goal weights.",
+            "# 25 = rarely, 100 = as the game was built, 250 = often.",
+            "# The game core re-reads this within five seconds. Nothing restarts.",
+            ""]
+    for name, _ in AI_WEIGHT_KEYS:
+        body.append("%s\t%d" % (name, vals[name]))
+    tmp = AI_WEIGHTS + ".tmp"
+    with open(tmp, "w", encoding="utf-8", newline="\n") as fh:
+        fh.write("\n".join(body) + "\n")
+    os.replace(tmp, AI_WEIGHTS)
+
+
 LANG_SPOOL   = _env_path("M2PANEL_LANG_SPOOL", "/opt/m2spool")
 LANG_REQUEST = os.path.join(LANG_SPOOL, "lang.request")
 LANG_STATUS  = os.path.join(LANG_SPOOL, "lang.status")
@@ -2437,6 +2510,94 @@ T["tip_lang"]["pl"] = "Zmień język tego panelu. Język w grze pozostaje bez zm
 T["tip_logout"]["pl"] = "Zakończ sesję administratora w panelu. Konto w grze pozostaje bez zmian."
 T["about_goal"]["pl"] = "Lokalny świat Metin2 rozwijany jako hobbystyczne środowisko dla autonomicznych botów graczy."
 
+
+# --- Module 5: the goal weights. Four languages like the rest of the panel;
+#     the labels are one word each on purpose, because eleven sliders with a
+#     paragraph apiece is a wall nobody reads.
+T.update({
+ "ai_nav":       {"en":"🧠 Bot behaviour","pl":"🧠 Zachowanie botów",
+                  "de":"🧠 Bot-Verhalten","tr":"🧠 Bot davranışı"},
+ "ai_open":      {"en":"🧠 Open bot behaviour","pl":"🧠 Otwórz zachowanie botów",
+                  "de":"🧠 Bot-Verhalten öffnen","tr":"🧠 Bot davranışını aç"},
+ "ai_dash_hint": {"en":"Decide what the bots spend their time on \u2014 more metin hunters, fewer anglers, a busier market. Takes effect within five seconds, nothing restarts.",
+                  "pl":"Zdecyduj, na co boty poświęcają czas \u2014 więcej łowców metinów, mniej wędkarzy, ruchliwszy targ. Działa w ciągu pięciu sekund, nic się nie restartuje.",
+                  "de":"Entscheide, womit die Bots ihre Zeit verbringen \u2014 mehr Metin-Jäger, weniger Angler, ein belebterer Markt. Wirkt binnen fünf Sekunden, nichts startet neu.",
+                  "tr":"Botların vaktini neye harcayacağını sen seç \u2014 daha çok metin avcısı, daha az balıkçı, daha hareketli pazar. Beş saniyede etkili olur, hiçbir şey yeniden başlamaz."},
+ "ai_intro":     {"en":"Every number here is a preference, not an order. 100 is exactly how the server was built; 25 means a quarter as many bots choose it, 250 two and a half times as many. Surviving a losing fight, choosing a profession and finding a weapon are never affected \u2014 those are not preferences.",
+                  "pl":"Każda liczba to preferencja, nie rozkaz. 100 to dokładnie tak, jak serwer został zbudowany; 25 znaczy, że wybierze to cztery razy mniej botów, a 250 \u2014 dwa i pół raza więcej. Ucieczka z przegranej walki, wybór profesji i zdobycie broni nigdy nie podlegają tym suwakom \u2014 to nie są preferencje.",
+                  "de":"Jede Zahl hier ist eine Vorliebe, kein Befehl. 100 ist genau so, wie der Server gebaut wurde; 25 heißt, ein Viertel so viele Bots wählen es, 250 zweieinhalbmal so viele. Überleben, Berufswahl und Waffensuche bleiben unberührt \u2014 das sind keine Vorlieben.",
+                  "tr":"Buradaki her sayı bir tercih, emir değil. 100, sunucunun yapıldığı hâldir; 25 dörtte bir kadar bot bunu seçer, 250 iki buçuk katı. Hayatta kalma, meslek seçimi ve silah bulma bunlardan etkilenmez \u2014 onlar tercih değildir."},
+ "ai_live":      {"en":"Saved. The bots pick this up within five seconds \u2014 no restart, nobody is disconnected.",
+                  "pl":"Zapisano. Boty odczytają to w ciągu pięciu sekund \u2014 bez restartu, nikt nie zostaje rozłączony.",
+                  "de":"Gespeichert. Die Bots übernehmen das binnen fünf Sekunden \u2014 kein Neustart, niemand fliegt raus.",
+                  "tr":"Kaydedildi. Botlar bunu beş saniye içinde alır \u2014 yeniden başlatma yok, kimse düşmez."},
+ "ai_failed":    {"en":"Could not write the file \u2014 the shared spool directory is not mounted in this container.",
+                  "pl":"Nie udało się zapisać pliku \u2014 współdzielony katalog spool nie jest podmontowany w tym kontenerze.",
+                  "de":"Datei konnte nicht geschrieben werden \u2014 das gemeinsame Spool-Verzeichnis ist in diesem Container nicht eingebunden.",
+                  "tr":"Dosya yazılamadı \u2014 paylaşılan spool dizini bu kapsayıcıda bağlı değil."},
+ "ai_save":      {"en":"Save","pl":"Zapisz","de":"Speichern","tr":"Kaydet"},
+ "ai_reset":     {"en":"Everything back to 100","pl":"Wszystko z powrotem na 100","de":"Alles zurück auf 100","tr":"Hepsini 100'e döndür"},
+ "ai_rare":      {"en":"rarely","pl":"rzadko","de":"selten","tr":"nadiren"},
+ "ai_often":     {"en":"often","pl":"często","de":"oft","tr":"sık"},
+ "ai_neutral":   {"en":"as built","pl":"jak w grze","de":"wie gebaut","tr":"yapıldığı gibi"},
+
+ "aiw_RESTOCK":  {"en":"Buying potions","pl":"Kupowanie mikstur","de":"Tränke kaufen","tr":"İksir alma"},
+ "aih_RESTOCK":  {"en":"Going back to town the moment the red potions run low.",
+                  "pl":"Powrót do miasta, gdy tylko kończą się czerwone mikstury.",
+                  "de":"Zurück in die Stadt, sobald die roten Tränke knapp werden.",
+                  "tr":"Kırmızı iksirler azalır azalmaz kasabaya dönmek."},
+ "aiw_REFINE":   {"en":"The blacksmith","pl":"Kowal","de":"Der Schmied","tr":"Demirci"},
+ "aih_REFINE":   {"en":"Upgrading weapons and armour instead of hunting.",
+                  "pl":"Ulepszanie broni i pancerza zamiast polowania.",
+                  "de":"Waffen und Rüstung aufwerten statt zu jagen.",
+                  "tr":"Avlanmak yerine silah ve zırh yükseltmek."},
+ "aiw_SKILL":    {"en":"Skill books","pl":"Księgi umiejętności","de":"Skillbücher","tr":"Yetenek kitapları"},
+ "aih_SKILL":    {"en":"Reading books to push a skill from master towards grand master.",
+                  "pl":"Czytanie ksiąg, by pchnąć umiejętność z M w stronę G.",
+                  "de":"Bücher lesen, um einen Skill von M Richtung G zu bringen.",
+                  "tr":"Bir yeteneği M'den G'ye taşımak için kitap okumak."},
+ "aiw_HORSE":    {"en":"The horse","pl":"Koń","de":"Das Pferd","tr":"At"},
+ "aih_HORSE":    {"en":"The stable, and the medal hunt in the Monkey Dungeon.",
+                  "pl":"Stajnia i polowanie na medale w Lochu Małp.",
+                  "de":"Der Stall und die Medaillenjagd im Affenverlies.",
+                  "tr":"Ahır ve Maymun Zindanı'ndaki madalya avı."},
+ "aiw_BIOLOG":   {"en":"The Biologist","pl":"Biolog","de":"Der Biologe","tr":"Biyolog"},
+ "aih_BIOLOG":   {"en":"Collecting for the Biologist rather than levelling.",
+                  "pl":"Zbieranie dla Biologa zamiast bicia poziomów.",
+                  "de":"Für den Biologen sammeln statt zu leveln.",
+                  "tr":"Seviye yerine Biyolog için toplamak."},
+ "aiw_METIN":    {"en":"Metin stones","pl":"Kamienie Metin","de":"Metinsteine","tr":"Metin taşları"},
+ "aih_METIN":    {"en":"Hunting metins instead of ordinary monsters.",
+                  "pl":"Polowanie na metiny zamiast na zwykłe potwory.",
+                  "de":"Metins jagen statt gewöhnlicher Monster.",
+                  "tr":"Sıradan canavar yerine metin avlamak."},
+ "aiw_PARTY":    {"en":"Parties","pl":"Grupy (PT)","de":"Gruppen","tr":"Gruplar"},
+ "aih_PARTY":    {"en":"Fighting together rather than each bot for itself.",
+                  "pl":"Walka razem, a nie każdy bot na własną rękę.",
+                  "de":"Gemeinsam kämpfen statt jeder für sich.",
+                  "tr":"Herkes kendi başına değil, birlikte savaşmak."},
+ "aiw_HUNTING":  {"en":"Hunting missions","pl":"Misje polowania","de":"Jagdmissionen","tr":"Av görevleri"},
+ "aih_HUNTING":  {"en":"The level-up hunt on the map the mission points at.",
+                  "pl":"Polowanie na awans na mapie, którą wskazuje misja.",
+                  "de":"Die Aufstiegsjagd auf der Karte, die die Mission nennt.",
+                  "tr":"Görevin gösterdiği haritada seviye avı."},
+ "aiw_LEVEL":    {"en":"Plain grinding","pl":"Zwykłe bicie potworów","de":"Schlichtes Grinden","tr":"Düz grind"},
+ "aih_LEVEL":    {"en":"What a bot does when nothing else is asking for it. Raise this and the errands lose.",
+                  "pl":"To, co bot robi, gdy nic innego się nie dopomina. Podnieś, a sprawunki przegrają.",
+                  "de":"Was ein Bot tut, wenn nichts anderes ruft. Höher, und die Besorgungen verlieren.",
+                  "tr":"Başka bir şey çağırmadığında botun yaptığı şey. Yükselt, işler geri kalır."},
+ "aiw_FISHING":  {"en":"Fishing","pl":"Wędkowanie","de":"Angeln","tr":"Balık tutma"},
+ "aih_FISHING":  {"en":"How many bots take up fishing at all. Decided once per bot, so a change reaches the next generation of anglers.",
+                  "pl":"Ilu botów w ogóle łowi. Rozstrzygane raz na bota, więc zmiana obejmuje kolejne pokolenie wędkarzy.",
+                  "de":"Wie viele Bots überhaupt angeln. Einmal pro Bot entschieden, eine Änderung trifft also die nächsten Angler.",
+                  "tr":"Kaç botun balık tuttuğu. Bot başına bir kez belirlenir, değişiklik sonraki balıkçılara işler."},
+ "aiw_TRADE":    {"en":"Market stalls","pl":"Stragany","de":"Marktstände","tr":"Pazar tezgahları"},
+ "aih_TRADE":    {"en":"How many bots keep a private shop open. Merchants always do, whatever this says.",
+                  "pl":"Ilu botów trzyma otwarty stragan. Handlarze robią to zawsze, niezależnie od tego suwaka.",
+                  "de":"Wie viele Bots einen Laden offen halten. Händler tun es immer, egal was hier steht.",
+                  "tr":"Kaç botun tezgahı açık tuttuğu. Tüccarlar bundan bağımsız olarak hep açar."},
+})
+
 CATS = ["all","weapon","armor","usable","ds","metin","special","other"]
 
 def lang():
@@ -3533,6 +3694,11 @@ TPL_DASH = BASE.replace("__BODY__", """
 <a class="btn" href="{{url_for('rates')}}" title="{{t('tip_rates')}}">{{t('rates_open')}}</a>
 </div>
 <div class="card">
+<h3 class="help">{{t('ai_nav')}}</h3>
+<p class="muted">{{t('ai_dash_hint')}}</p>
+<a class="btn" href="{{url_for('ai_weights')}}">{{t('ai_open')}}</a>
+</div>
+<div class="card">
 <h3 class="help" title="{{t('tip_reset')}}">🔗 {{t('reset_title')}}</h3>
 <p class="muted">{{t('reset_hint')}}</p>
 <form method="post" action="{{url_for('admin_resetlink')}}">
@@ -3798,6 +3964,49 @@ function m2rates(e,d,y){
 
 # every state apply_rates.sh can leave behind has a sentence of its own
 RATE_STATES = ("running", "ok", "unsupported", "failed", "no_restart")
+
+# The bot behaviour sliders. One range input per weight, each with the sentence
+# that says what it actually changes -- an unlabelled slider called "BIOLOG" is
+# a number, not a control. No %-formatting anywhere in here: BASE is full of
+# CSS percentages and would eat it.
+TPL_AI = BASE.replace("__BODY__", """
+<p><a href="{{url_for('dash')}}">{{t('back_players')}}</a></p>
+<div class="card">
+<h3>{{t('ai_nav')}}</h3>
+<p class="muted">{{t('ai_intro')}}</p>
+</div>
+
+<div class="card">
+<form method="post">
+<input type="hidden" name="_csrf" value="{{csrf_token}}">
+{% for name, emoji in keys %}
+<div style="margin-bottom:18px">
+  <h3 style="margin:0 0 2px">{{emoji}} {{t('aiw_' ~ name)}}
+      <span class="badge" id="v_{{name}}">{{cur[name]}}</span></h3>
+  <p class="muted" style="margin:0 0 6px">{{t('aih_' ~ name)}}</p>
+  <input type="range" name="{{name}}" id="s_{{name}}" min="{{wmin}}" max="{{wmax}}"
+         step="5" value="{{cur[name]}}" style="width:100%"
+         oninput="document.getElementById('v_{{name}}').textContent=this.value">
+  <div class="muted" style="display:flex;justify-content:space-between;font-size:12px">
+    <span>{{wmin}} — {{t('ai_rare')}}</span>
+    <span>{{wneutral}} — {{t('ai_neutral')}}</span>
+    <span>{{wmax}} — {{t('ai_often')}}</span>
+  </div>
+</div>
+{% endfor %}
+<button type="button" onclick="m2aiReset()">{{t('ai_reset')}}</button>
+<button class="big" style="margin-top:10px">{{t('ai_save')}}</button>
+</form></div>
+<script>
+function m2aiReset(){
+  document.querySelectorAll('input[type=range]').forEach(function(s){
+    s.value = {{wneutral}};
+    document.getElementById('v_' + s.name).textContent = s.value;
+  });
+}
+</script>""")
+
+
 
 MAP_I18N = {
  "pl": {
@@ -6695,6 +6904,41 @@ def rates():
     st = rates_status().get("state", "")
     return render_template_string(TPL_RATES, cur=cur_rates, presets=RATE_PRESETS,
                                   state_msg=t("rates_st_" + st) if st in RATE_STATES else "")
+
+
+@app.route("/ai", methods=["GET", "POST"])
+@login_required
+def ai_weights():
+    """The goal weights the running game core reads for itself.
+
+    Unlike the rates page there is nothing to restart and no helper to wake:
+    the core stats this file every five seconds and applies it on the next
+    planning tick, so saving is the whole operation.
+    """
+    if request.method == "POST":
+        # (the global before_request hook has already checked the CSRF token)
+        vals = {}
+        for name, _ in AI_WEIGHT_KEYS:
+            try:
+                v = int(request.form.get(name, AI_W_NEUTRAL))
+            except (TypeError, ValueError):
+                v = AI_W_NEUTRAL
+            # Clamped rather than rejected. A slider cannot send anything out of
+            # range, so a value that is out of range came from somewhere else and
+            # the sane answer is the nearest legal one, not an error page.
+            vals[name] = max(AI_W_MIN, min(AI_W_MAX, v))
+        try:
+            write_ai_weights(vals)
+        except OSError:
+            flash(t("ai_failed"), "error")
+            return redirect(url_for("ai_weights"))
+        flash(t("ai_live"))
+        return redirect(url_for("ai_weights"))
+
+    return render_template_string(TPL_AI, cur=read_ai_weights(),
+                                  keys=AI_WEIGHT_KEYS, wmin=AI_W_MIN,
+                                  wmax=AI_W_MAX, wneutral=AI_W_NEUTRAL)
+
 
 # =============================================================================
 #  The patch log, and the update page.

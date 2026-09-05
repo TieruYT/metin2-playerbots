@@ -177,8 +177,11 @@ namespace
 		if (!CanPlayerBotUseFishingRod(ch))
 			return false;
 		const DWORD roll = PlayerBotNavHash(ch->GetPlayerID() ^ 0x46495348U) % 100U;
-		return state.bPersonality == BOT_PERSONALITY_CAREFUL_COLLECTOR
-				? roll < 20U : roll < 2U;
+		// Twenty collectors in a hundred and two of everyone else, stretched or
+		// shrunk by the FISHING weight. At the neutral 100 the two thresholds are
+		// exactly the ones this has always used.
+		const int chance = state.bPersonality == BOT_PERSONALITY_CAREFUL_COLLECTOR ? 20 : 2;
+		return PlayerBotWeightedRoll(roll, chance, PLAYERBOT_WEIGHT_FISHING);
 	}
 
 	// Anglers spread out along the shoreline rather than stacking on one tile.

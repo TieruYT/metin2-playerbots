@@ -356,7 +356,13 @@ namespace
 		// stays what it was: an occasional thing one bot in ten does with a spare.
 		if (IsPlayerBotMerchant(state))
 			return true;
-		return (PlayerBotNavHash(ch->GetPlayerID() ^ 0x53484f50U) % 10U) == 0;
+		// One bot in ten, stretched or shrunk by the TRADE weight. Drawn against a
+		// thousand rather than ten so that the weight has somewhere to move: the
+		// odds at the neutral 100 are the same one in ten as before, over a
+		// different tenth of the population.
+		return PlayerBotWeightedRoll(
+				PlayerBotNavHash(ch->GetPlayerID() ^ 0x53484f50U) % 1000U,
+				100, PLAYERBOT_WEIGHT_TRADE);
 	}
 
 	// What a bot asks for what it puts up. A refined item has no price in the

@@ -35,6 +35,7 @@
 #include <climits>
 #include <cstdio>
 #include <cstring>
+#include <sys/stat.h>
 
 extern int passes_per_sec;
 
@@ -43,6 +44,7 @@ extern int passes_per_sec;
 extern void SendShout(const char* szText, BYTE bEmpire);
 
 #include "playerbot_types.h"
+#include "playerbot_config.h"
 #include "playerbot_swing_timing.h"
 #include "playerbot_navigation.h"
 #include "playerbot_world_memory.h"
@@ -54,6 +56,7 @@ extern void SendShout(const char* szText, BYTE bEmpire);
 #include "playerbot_combat.h"
 #include "playerbot_economy.h"
 #include "playerbot_travel.h"
+#include "playerbot_planner.h"
 #include "playerbot_town.h"
 #include "playerbot_market.h"
 #include "playerbot_loot.h"
@@ -268,79 +271,6 @@ namespace
 						ch->GetPlayerID(), ch->GetName(), finder.m_pSoloCandidate->GetPlayerID());
 			}
 		}
-	}
-
-	bool HasPlayerBotUsableSkillBook(LPCHARACTER ch)
-	{
-		if (!ch || !ch->IsItemLoaded() || ch->GetSkillGroup() == 0)
-			return false;
-		for (WORD cell = 0; cell < INVENTORY_MAX_NUM; ++cell)
-		{
-			LPITEM item = ch->GetInventoryItem(cell);
-			const DWORD skillVnum = GetPlayerBotSkillBookSkillVnum(item);
-			if (IsPlayerBotOwnSkill(ch, skillVnum) &&
-					ch->GetSkillMasterType(skillVnum) == SKILL_MASTER &&
-					ch->GetSkillLevel(skillVnum) >= 20 && ch->GetSkillLevel(skillVnum) < 30)
-				return true;
-		}
-		return false;
-	}
-
-	void PlanPlayerBotLongTermGoal(LPCHARACTER ch, TPlayerBotAIState& state, DWORD dwNow)
-	{
-		if (!ch || dwNow < state.dwNextGoalPlanTime)
-			return;
-		state.dwNextGoalPlanTime = dwNow + PLAYERBOT_GOAL_PLAN_INTERVAL + number(0, 1500);
-
-		const bool canAdvanceHorse = state.bVisitingStable ||
-				ShouldPlayerBotPursueHorseExpedition(ch, dwNow);
-		const bool hasBiologistMission = GetActivePlayerBotBiologistMission(ch) != NULL;
-		const bool hasHuntingMission = GetActivePlayerBotHuntingMission(ch) != NULL;
-		const bool canRefine = HasPlayerBotRefineOpportunity(ch);
-		const bool canReadBook = HasPlayerBotUsableSkillBook(ch);
-		BYTE goal = BOT_GOAL_LEVEL_UP;
-		if (state.bRecoveringAfterDeath || state.bTacticalRetreat ||
-				(ch->GetMaxHP() > 0 && ch->GetHP() * 100 < ch->GetMaxHP() * 35))
-			goal = BOT_GOAL_SURVIVE;
-		else if (ch->GetLevel() >= 5 && ch->GetSkillGroup() == 0)
-			goal = BOT_GOAL_CHOOSE_PROFESSION;
-		else if (ch->GetWear(WEAR_WEAPON) == NULL)
-			goal = BOT_GOAL_GET_EQUIPMENT;
-		else if (state.bVisitingStable)
-			goal = BOT_GOAL_HORSE;
-		else if (state.bVisitingShop && state.bTownNeedBlacksmith)
-			goal = BOT_GOAL_REFINE;
-		else if (NeedsPlayerBotPotions(ch))
-			goal = BOT_GOAL_RESTOCK;
-		else if (state.bAmbition == BOT_AMBITION_EQUIPMENT && canRefine)
-			goal = BOT_GOAL_REFINE;
-		else if (state.bAmbition == BOT_AMBITION_SKILLS && canReadBook)
-			goal = BOT_GOAL_MASTER_SKILL;
-		else if (state.bAmbition == BOT_AMBITION_HORSE && canAdvanceHorse)
-			goal = BOT_GOAL_HORSE;
-		else if (state.bAmbition == BOT_AMBITION_BIOLOGIST && hasBiologistMission)
-			goal = BOT_GOAL_BIOLOGIST;
-		else if (state.bAmbition == BOT_AMBITION_METINS &&
-				state.bBotRole == BOT_ROLE_METIN_HUNTER)
-			goal = BOT_GOAL_HUNT_METIN;
-		else if (state.bBotRole == BOT_ROLE_PARTY_FIGHTER && ch->GetParty())
-			goal = BOT_GOAL_PARTY_CHALLENGE;
-		else if (canAdvanceHorse)
-			goal = BOT_GOAL_HORSE;
-		else if (hasBiologistMission && ch->GetPlayerID() % 3 != 0)
-			goal = BOT_GOAL_BIOLOGIST;
-		else if (hasHuntingMission)
-			goal = BOT_GOAL_HUNTING;
-		else if (hasBiologistMission)
-			goal = BOT_GOAL_BIOLOGIST;
-		else if (canRefine)
-			goal = BOT_GOAL_REFINE;
-		else if (canReadBook)
-			goal = BOT_GOAL_MASTER_SKILL;
-		else if (state.bBotRole == BOT_ROLE_METIN_HUNTER)
-			goal = BOT_GOAL_HUNT_METIN;
-
-		SetPlayerBotGoal(ch, state, goal, dwNow);
 	}
 
 	void ManagePlayerBotSpiritStones(LPCHARACTER ch, TPlayerBotAIState& state, DWORD dwNow)
@@ -940,6 +870,10 @@ void CPlayerBotManager::OnDescriptorDestroyed(LPDESC d)
 void CPlayerBotManager::Update()
 {
 	const DWORD dwNow = get_dword_time();
+
+	// Once for the whole population: the panel may have moved a weight since
+	// the last tick, and every bot planned below must see the same numbers.
+	RefreshPlayerBotWeights(dwNow);
 
 	static DWORD s_dwTick = 0;
 	++s_dwTick;

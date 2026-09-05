@@ -59,10 +59,13 @@ PANEL_SRC="${PANEL_SRC:-$HERE/../../files}"
 REPO_ROOT="${REPO_ROOT:-$(cd "$HERE/../.." && pwd)}"
 PLAYERBOT_OVERLAY="$REPO_ROOT/linux-port/overlays/playerbot"
 PLAYERBOT_SRC="$PLAYERBOT_OVERLAY/src/game/src"
-PLAYERBOT_CORE_PATCH="$PLAYERBOT_OVERLAY/patches/0001-core-integration.patch"
-PLAYERBOT_ECONOMY_PATCH="$PLAYERBOT_OVERLAY/patches/0002-economy-yang-x5.patch"
-PLAYERBOT_LOG_PATCH="$PLAYERBOT_OVERLAY/patches/0003-suppress-refine-find-log.patch"
-PLAYERBOT_SHOP_PATCH="$PLAYERBOT_OVERLAY/patches/0004-private-shop-guard.patch"
+PLAYERBOT_PATCH_DIR="$PLAYERBOT_OVERLAY/patches"
+# The core patch is named because the validation below greps for what it adds;
+# every other patch in the directory is found rather than listed. Naming them
+# used to cost four edits apiece, and one of those edits had already been
+# forgotten: 0004 was applied but never hashed into the build digest, so a
+# change to it would not have invalidated a cached image.
+PLAYERBOT_CORE_PATCH="$PLAYERBOT_PATCH_DIR/0001-core-integration.patch"
 PLAYERBOT_SEED_GENERATOR="$PLAYERBOT_OVERLAY/tools/generate_seed.py"
 PLAYERBOT_SEED="$PLAYERBOT_OVERLAY/sql/playerbots_seed.sql"
 PLAYERBOT_MIGRATOR="$HERE/mariadb/playerbot/apply.sh"
@@ -102,6 +105,16 @@ for f in "$PLAYERBOT_SRC"/playerbot_*.h "$PLAYERBOT_SRC"/playerbot_*.cpp; do
   [ -e "$f" ] || continue
   PLAYERBOT_SOURCES="$PLAYERBOT_SOURCES $f"
 done
+
+# Applied in file-name order, which is what the numbering is for: 0001 lays down
+# the integration every later patch is written against.
+PLAYERBOT_PATCHES=""
+for f in "$PLAYERBOT_PATCH_DIR"/[0-9][0-9][0-9][0-9]-*.patch; do
+  [ -e "$f" ] || continue
+  PLAYERBOT_PATCHES="$PLAYERBOT_PATCHES $f"
+done
+[ -n "$PLAYERBOT_PATCHES" ] || die "no engine patches found in $PLAYERBOT_PATCH_DIR"
+[ -s "$PLAYERBOT_CORE_PATCH" ] || die "the Playerbot core integration patch is missing: $PLAYERBOT_CORE_PATCH"
 [ -n "$PLAYERBOT_SOURCES" ] || die "no Playerbot overlay sources found in $PLAYERBOT_SRC"
 # playerbot_manager.cpp is the one file the integration patch cannot work
 # without, so its absence is a different failure from "the directory is empty".
@@ -109,10 +122,7 @@ done
 
 for p in \
   $PLAYERBOT_SOURCES \
-  "$PLAYERBOT_CORE_PATCH" \
-  "$PLAYERBOT_ECONOMY_PATCH" \
-  "$PLAYERBOT_LOG_PATCH" \
-  "$PLAYERBOT_SHOP_PATCH" \
+  $PLAYERBOT_PATCHES \
   "$PLAYERBOT_SEED_GENERATOR" \
   "$PLAYERBOT_SEED" \
   "$PLAYERBOT_MIGRATOR" \
@@ -169,28 +179,19 @@ info "$(du -sh "$GAME_CTX/server" | cut -f1)"
 # patch uses zero-context hunks so it never rewrites the legacy CP949 comments;
 # the dry-run and post-apply checks make application errors fatal.
 say "Playerbot server overlay"
-if ! (cd "$GAME_CTX/server" && \
-      patch --batch --forward --fuzz=0 -p1 --dry-run < "$PLAYERBOT_CORE_PATCH"); then
-  die "the Playerbot core integration patch does not apply cleanly to the staged port source"
-fi
-if ! (cd "$GAME_CTX/server" && \
-      patch --batch --forward --fuzz=0 -p1 --dry-run < "$PLAYERBOT_ECONOMY_PATCH"); then
-  die "the Playerbot economy patch does not apply cleanly to the staged port source"
-fi
-if ! (cd "$GAME_CTX/server" && \
-      patch --batch --forward --fuzz=0 -p1 --dry-run < "$PLAYERBOT_LOG_PATCH"); then
-  die "the Playerbot log-noise patch does not apply cleanly to the staged port source"
-fi
-if ! (cd "$GAME_CTX/server" && \
-      patch --batch --forward --fuzz=0 -p1 --dry-run < "$PLAYERBOT_SHOP_PATCH"); then
-  die "the private-shop guard patch does not apply cleanly to the staged port source"
-fi
-(cd "$GAME_CTX/server" && \
-  patch --batch --forward --fuzz=0 -p1 < "$PLAYERBOT_CORE_PATCH" && \
-  patch --batch --forward --fuzz=0 -p1 < "$PLAYERBOT_ECONOMY_PATCH" && \
-  patch --batch --forward --fuzz=0 -p1 < "$PLAYERBOT_LOG_PATCH" && \
-  patch --batch --forward --fuzz=0 -p1 < "$PLAYERBOT_SHOP_PATCH") \
-  || die "the Playerbot source overlay could not be applied"
+# Every patch is dry-run first, all of them, before any of them is applied for
+# real. A half-patched context is worse than an unpatched one: it compiles.
+for p in $PLAYERBOT_PATCHES; do
+  if ! (cd "$GAME_CTX/server" && \
+        patch --batch --forward --fuzz=0 -p1 --dry-run < "$p"); then
+    die "engine patch does not apply cleanly to the staged port source: $(basename "$p")"
+  fi
+done
+for p in $PLAYERBOT_PATCHES; do
+  (cd "$GAME_CTX/server" && patch --batch --forward --fuzz=0 -p1 < "$p") \
+    || die "engine patch could not be applied: $(basename "$p")"
+  info "patch $(basename "$p")"
+done
 
 for f in $PLAYERBOT_SOURCES; do
   cp -a "$f" "$GAME_CTX/server/game/src/$(basename "$f")"
@@ -223,9 +224,11 @@ for f in $PLAYERBOT_SOURCES; do
 done
 
 {
-  printf 'core_patch=%s\n' "$(git hash-object "$PLAYERBOT_CORE_PATCH")"
-  printf 'economy_patch=%s\n' "$(git hash-object "$PLAYERBOT_ECONOMY_PATCH")"
-  printf 'log_patch=%s\n' "$(git hash-object "$PLAYERBOT_LOG_PATCH")"
+  # Every patch, by name, so that adding one or editing any of them changes the
+  # digest. This is where 0004 was missing.
+  for p in $PLAYERBOT_PATCHES; do
+    printf 'patch_%s=%s\n' "$(basename "$p")" "$(git hash-object "$p")"
+  done
   # Every overlay source, sorted, so a changed or added file always invalidates
   # a stale build. Missing one here is the failure that does not announce
   # itself: the context looks fine and the image is simply not rebuilt.

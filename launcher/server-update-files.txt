@@ -30,10 +30,11 @@ linux-port/overlays/playerbot/tools/generate_seed.py
 # sides disagree.
 linux-port/overlays/playerbot/src/game/src/playerbot_*
 linux-port/docker/game/src/server/game/src/playerbot_*
-linux-port/overlays/playerbot/patches/0001-core-integration.patch
-# Lets a character wearing armour open a private shop, which the stock
-# guard rejected outright - bots and players alike.
-linux-port/overlays/playerbot/patches/0004-private-shop-guard.patch
+# The engine patches, by pattern for the same reason as the sources above: a
+# new one must not need an edit here to reach the people running the server.
+# The launcher applies whatever it finds in that directory and decides for
+# itself which of them the installed tree already has.
+linux-port/overlays/playerbot/patches/*.patch
 # Assigns maps to game cores. The bots' route now includes Orc Valley, and
 # a server-side bot cannot cross between cores, so this must ship with it.
 linux-port/docker/game/bin/m2-render-config
