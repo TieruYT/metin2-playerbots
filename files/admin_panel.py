@@ -2598,6 +2598,45 @@ T.update({
                   "tr":"Kaç botun tezgahı açık tuttuğu. Tüccarlar bundan bağımsız olarak hep açar."},
 })
 
+
+# --- Module 6: the weekly season and the all-time records.
+T.update({
+ "se_nav":       {"en":"🏆 Weekly season","pl":"🏆 Sezon tygodniowy",
+                  "de":"🏆 Wochensaison","tr":"🏆 Haftalık sezon"},
+ "se_open":      {"en":"🏆 Open the season","pl":"🏆 Otwórz sezon",
+                  "de":"🏆 Saison öffnen","tr":"🏆 Sezonu aç"},
+ "se_dash_hint": {"en":"Who did the most this week, and every record the world has ever set.",
+                  "pl":"Kto zrobił najwięcej w tym tygodniu i wszystkie rekordy, jakie świat ustanowił.",
+                  "de":"Wer diese Woche am meisten geschafft hat, und jeder Rekord, den die Welt je aufgestellt hat.",
+                  "tr":"Bu hafta en çok kim başardı ve dünyanın şimdiye kadarki tüm rekorları."},
+ "se_intro":     {"en":"Seven days of metins, bosses and refines that landed on +7 or better. Level, horse and gold are shown for context but are deliberately not scored: they are what a bot IS, not what it did this week.",
+                  "pl":"Siedem dni metinów, bossów i ulepszeń, które weszły na +7 lub wyżej. Poziom, koń i yang są pokazane dla kontekstu, ale celowo nie liczą się do wyniku: to jest to, KIM bot jest, a nie co zrobił w tym tygodniu.",
+                  "de":"Sieben Tage Metins, Bosse und Aufwertungen, die auf +7 oder besser gelandet sind. Level, Pferd und Yang stehen als Kontext dabei, zählen aber bewusst nicht: sie sagen, was ein Bot IST, nicht was er diese Woche getan hat.",
+                  "tr":"Yedi günlük metin, boss ve +7 ve üzerine oturan yükseltmeler. Seviye, at ve yang bağlam için gösterilir ama bilerek puana girmez: onlar botun NE olduğunu söyler, bu hafta ne yaptığını değil."},
+ "se_back_map":  {"en":"Live map","pl":"Mapa na żywo","de":"Live-Karte","tr":"Canlı harita"},
+ "se_records":   {"en":"Server records","pl":"Rekordy serwera","de":"Serverrekorde","tr":"Sunucu rekorları"},
+ "se_records_h": {"en":"All time, since the world was created.","pl":"Od początku istnienia świata.",
+                  "de":"Seit Bestehen der Welt.","tr":"Dünyanın kurulduğu günden beri."},
+ "se_empty":     {"en":"Nobody has done anything countable in the last seven days.",
+                  "pl":"Nikt nie zrobił niczego policzalnego w ciągu ostatnich siedmiu dni.",
+                  "de":"In den letzten sieben Tagen hat niemand etwas Zählbares getan.",
+                  "tr":"Son yedi günde kimse sayılabilir bir şey yapmadı."},
+ "se_score":     {"en":"Score","pl":"Wynik","de":"Punkte","tr":"Puan"},
+ "se_metins":    {"en":"Metins","pl":"Metiny","de":"Metins","tr":"Metinler"},
+ "se_bosses":    {"en":"Bosses","pl":"Bossy","de":"Bosse","tr":"Bosslar"},
+ "se_refines":   {"en":"+7 and up","pl":"+7 i wyżej","de":"+7 und mehr","tr":"+7 ve üzeri"},
+ "se_deaths":    {"en":"Deaths","pl":"Zgony","de":"Tode","tr":"Ölümler"},
+ "se_level":     {"en":"Level","pl":"Poziom","de":"Level","tr":"Seviye"},
+ "se_horse":     {"en":"Horse","pl":"Koń","de":"Pferd","tr":"At"},
+ "se_bot":       {"en":"Bot","pl":"Bot","de":"Bot","tr":"Bot"},
+ "se_r_level":   {"en":"Highest level","pl":"Najwyższy poziom","de":"Höchstes Level","tr":"En yüksek seviye"},
+ "se_r_metins":  {"en":"Most metins","pl":"Najwięcej metinów","de":"Meiste Metins","tr":"En çok metin"},
+ "se_r_bosses":  {"en":"Most bosses","pl":"Najwięcej bossów","de":"Meiste Bosse","tr":"En çok boss"},
+ "se_r_refines": {"en":"Most +7 and up","pl":"Najwięcej +7 i wyżej","de":"Meiste +7 und mehr","tr":"En çok +7 ve üzeri"},
+ "se_r_horse":   {"en":"Best horse","pl":"Najlepszy koń","de":"Bestes Pferd","tr":"En iyi at"},
+ "se_r_gold":    {"en":"Most yang","pl":"Najwięcej yang","de":"Meiste Yang","tr":"En çok yang"},
+})
+
 CATS = ["all","weapon","armor","usable","ds","metin","special","other"]
 
 def lang():
@@ -3694,6 +3733,11 @@ TPL_DASH = BASE.replace("__BODY__", """
 <a class="btn" href="{{url_for('rates')}}" title="{{t('tip_rates')}}">{{t('rates_open')}}</a>
 </div>
 <div class="card">
+<h3 class="help">{{t('se_nav')}}</h3>
+<p class="muted">{{t('se_dash_hint')}}</p>
+<a class="btn" href="{{url_for('season')}}">{{t('se_open')}}</a>
+</div>
+<div class="card">
 <h3 class="help">{{t('ai_nav')}}</h3>
 <p class="muted">{{t('ai_dash_hint')}}</p>
 <a class="btn" href="{{url_for('ai_weights')}}">{{t('ai_open')}}</a>
@@ -3964,6 +4008,64 @@ function m2rates(e,d,y){
 
 # every state apply_rates.sh can leave behind has a sentence of its own
 RATE_STATES = ("running", "ok", "unsupported", "failed", "no_restart")
+
+# The season table and the record tiles. Public, like the live map: this is the
+# page an operator links to, not an admin tool.
+TPL_SEASON = BASE.replace("__BODY__", """
+<p><a href="{{url_for('live_map')}}">&larr; {{t('se_back_map')}}</a></p>
+<div class="card">
+<h3>{{t('se_nav')}}</h3>
+<p class="muted">{{t('se_intro')}}</p>
+{% if s.error %}<p class="muted">{{s.error}}</p>{% endif %}
+</div>
+
+<div class="card">
+<h3>{{t('se_records')}}</h3>
+<p class="muted">{{t('se_records_h')}}</p>
+<div style="display:flex;flex-wrap:wrap;gap:10px">
+{% for key, label in [('level','se_r_level'), ('metins','se_r_metins'),
+                      ('bosses','se_r_bosses'), ('refines','se_r_refines'),
+                      ('horse','se_r_horse'), ('gold','se_r_gold')] %}
+  {% if s.records.get(key) %}
+  <div style="flex:1 1 150px;border:1px solid rgba(128,128,128,.35);border-radius:8px;padding:10px">
+    <div class="muted" style="font-size:12px">{{t(label)}}</div>
+    <div style="font-size:20px;font-weight:700">{{ '{:,}'.format(s.records[key]['level']|int).replace(',', ' ') }}</div>
+    <div class="muted">{{s.records[key]['name']}}</div>
+  </div>
+  {% endif %}
+{% endfor %}
+</div>
+</div>
+
+<div class="card">
+<h3>{{t('se_nav')}} &mdash; {{s.days}} dni</h3>
+{% if not s.rows %}
+<p class="muted">{{t('se_empty')}}</p>
+{% else %}
+<div style="overflow-x:auto">
+<table style="width:100%;border-collapse:collapse">
+<tr style="text-align:left">
+  <th>#</th><th>{{t('se_bot')}}</th><th>{{t('se_score')}}</th>
+  <th>{{t('se_metins')}}</th><th>{{t('se_bosses')}}</th><th>{{t('se_refines')}}</th>
+  <th>{{t('se_deaths')}}</th><th>{{t('se_level')}}</th><th>{{t('se_horse')}}</th>
+</tr>
+{% for r in s.rows %}
+<tr style="border-top:1px solid rgba(128,128,128,.25)">
+  <td class="muted">{{loop.index}}</td>
+  <td><b>{{r.name}}</b></td>
+  <td><b>{{r.score}}</b></td>
+  <td>{{r.metins}}</td><td>{{r.bosses}}</td><td>{{r.refines}}</td>
+  <td class="muted">{{r.deaths}}</td>
+  <td class="muted">{{r.level}}</td>
+  <td class="muted">{{r.horse}}</td>
+</tr>
+{% endfor %}
+</table>
+</div>
+{% endif %}
+</div>""")
+
+
 
 # The bot behaviour sliders. One range input per weight, each with the sentence
 # that says what it actually changes -- an unlabelled slider called "BIOLOG" is
@@ -6939,6 +7041,138 @@ def ai_weights():
                                   keys=AI_WEIGHT_KEYS, wmin=AI_W_MIN,
                                   wmax=AI_W_MAX, wneutral=AI_W_NEUTRAL)
 
+
+
+# =============================================================================
+#  The weekly season, and the server records.
+# =============================================================================
+#
+# Nothing here is counted by the game core, and nothing needs to be: the server
+# has been writing every metin break, every boss, every successful refine and
+# every death into log.log with the character id since the world was created.
+# The season is therefore a question asked of data that already exists, which is
+# why it works backwards over the whole history instead of starting on the day
+# the feature shipped.
+#
+# What is deliberately NOT scored is everything that is a state rather than an
+# event: a level, a horse, the gold in the bag. Those cannot be attributed to
+# the last seven days without a snapshot nobody took, and scoring them would
+# rank a bot this week for what it did in August. They sit beside the score as
+# context, and they are what the all-time records are made of.
+
+SEASON_DAYS = 7
+SEASON_CACHE_SECONDS = 60
+
+# What each event is worth. Metins are the common currency; a boss is worth a
+# morning of them, and a refine that lands on +7 or better is rarer than either.
+SEASON_POINTS_METIN = 150
+SEASON_POINTS_BOSS = 500
+SEASON_POINTS_REFINE = 200
+
+# The plus levels that count as an achievement rather than a Tuesday. The log
+# records the item name with its new level appended -- "Bojowa Tarcza+4" -- so
+# this is the one place the panel reads a name to learn a number.
+SEASON_REFINE_PATTERN = "[+][789]$"
+
+_season_cache = {"at": 0.0, "data": None}
+
+
+def _season_counts(cur, how, since, extra=""):
+    """One event kind, per character, inside the window."""
+    cur.execute(
+        "SELECT who, COUNT(*) AS n FROM log.log "
+        "WHERE how = %s AND time >= %s " + extra + " GROUP BY who",
+        (how, since))
+    return {int(r["who"]): int(r["n"]) for r in cur.fetchall()}
+
+
+def season_data():
+    """The season table and the all-time records, cached for a minute.
+
+    Cached because the refine query has to look through a third of a million
+    rows to find the handful that landed on +7, and the answer does not change
+    quickly enough for anyone to notice a minute of staleness.
+    """
+    now = time.time()
+    if (_season_cache["data"] is not None
+            and now - _season_cache["at"] < SEASON_CACHE_SECONDS):
+        return _season_cache["data"]
+
+    since = (datetime.datetime.now()
+             - datetime.timedelta(days=SEASON_DAYS)).strftime("%Y-%m-%d %H:%M:%S")
+    out = {"rows": [], "records": {}, "days": SEASON_DAYS, "error": ""}
+    try:
+        with db() as c, c.cursor() as cur:
+            metins = _season_counts(cur, "STONE_KILL", since)
+            bosses = _season_counts(cur, "BOSS_KILL", since)
+            refines = _season_counts(cur, "REFINE SUCCESS", since,
+                                     "AND hint REGEXP '" + SEASON_REFINE_PATTERN + "' ")
+            deaths = _season_counts(cur, "DEAD_BY_NPC", since)
+
+            # Only the characters that did something this week need naming: a
+            # world with a thousand bots must not fetch a thousand rows to show
+            # fifty of them.
+            active = set(metins) | set(bosses) | set(refines)
+            rows = []
+            if active:
+                cur.execute(
+                    "SELECT id, name, level, job, horse_level FROM player.player "
+                    "WHERE name LIKE 'bot%%' AND id IN %s", (tuple(sorted(active)),))
+                for p in cur.fetchall():
+                    pid = int(p["id"])
+                    m = metins.get(pid, 0)
+                    b = bosses.get(pid, 0)
+                    r = refines.get(pid, 0)
+                    rows.append({
+                        "pid": pid,
+                        "name": p["name"],
+                        "level": int(p["level"] or 0),
+                        "horse": int(p["horse_level"] or 0),
+                        "metins": m, "bosses": b, "refines": r,
+                        "deaths": deaths.get(pid, 0),
+                        "score": (m * SEASON_POINTS_METIN + b * SEASON_POINTS_BOSS
+                                  + r * SEASON_POINTS_REFINE),
+                    })
+            rows.sort(key=lambda x: (-x["score"], -x["metins"], x["name"]))
+            out["rows"] = rows[:50]
+
+            # --- the all-time records --------------------------------------
+            # Every tile is {name, level}, whatever "level" means for that tile,
+            # so the template does not need a branch per record.
+            recs = {}
+            cur.execute("SELECT name, level FROM player.player "
+                        "WHERE name LIKE 'bot%' ORDER BY level DESC, exp DESC LIMIT 1")
+            recs["level"] = cur.fetchone()
+            cur.execute("SELECT name, horse_level AS level FROM player.player "
+                        "WHERE name LIKE 'bot%' ORDER BY horse_level DESC LIMIT 1")
+            recs["horse"] = cur.fetchone()
+            cur.execute("SELECT name, gold AS level FROM player.player "
+                        "WHERE name LIKE 'bot%' ORDER BY gold DESC LIMIT 1")
+            recs["gold"] = cur.fetchone()
+            for key, how, extra in (
+                    ("metins", "STONE_KILL", ""),
+                    ("bosses", "BOSS_KILL", ""),
+                    ("refines", "REFINE SUCCESS",
+                     "AND l.hint REGEXP '" + SEASON_REFINE_PATTERN + "' ")):
+                cur.execute(
+                    "SELECT p.name, COUNT(*) AS level FROM log.log l "
+                    "JOIN player.player p ON p.id = l.who "
+                    "WHERE l.how = %s AND p.name LIKE 'bot%%' " + extra +
+                    "GROUP BY l.who ORDER BY level DESC LIMIT 1", (how,))
+                recs[key] = cur.fetchone()
+            out["records"] = {k: v for k, v in recs.items() if v}
+    except Exception as e:
+        out["error"] = str(e)
+
+    _season_cache["at"] = now
+    _season_cache["data"] = out
+    return out
+
+
+@app.route("/season")
+def season():
+    """Public on purpose: this is the page an operator links to, not an admin tool."""
+    return render_template_string(TPL_SEASON, s=season_data())
 
 # =============================================================================
 #  The patch log, and the update page.
