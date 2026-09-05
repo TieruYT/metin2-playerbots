@@ -27,8 +27,12 @@ ATTR_WATER = 1 << 1
 ATTR_OBJECT = 1 << 7
 
 # Big enough that a 600-unit bridge is several pixels wide on the large frontier
-# maps rather than one, since looking at the bridges is the point.
-TILE = 512
+# maps rather than one, since looking at the bridges is the point - and big
+# enough now that a town wall is a line rather than a smudge. At 1024 a pixel
+# covers one native cell on the guild map, two on the kingdom maps and three on
+# the frontier, which is the resolution at which buildings, roads and the shape
+# of a shoreline survive the downsample.
+TILE = 1024
 
 # index -> (folder, base_x, base_y, width, height) -- the bounds the panel uses.
 MAPS = [
@@ -40,13 +44,27 @@ MAPS = [
     (64, "map_n_threeway", 256000, 665600, 153600, 153600),
 ]
 
-COLOUR_LAND = (58, 74, 44)
-COLOUR_LAND_ALT = (68, 84, 50)
-COLOUR_WATER = (30, 58, 92)
-# Walkable water. Warm against the blue so a crossing reads at a glance.
-COLOUR_CROSSING = (196, 158, 66)
-COLOUR_BLOCK = (26, 24, 18)
-COLOUR_OUTSIDE = (14, 12, 8)
+# Sand and dark earth rather than the old dark green. Two reasons, both about
+# reading the thing: the overlays drawn on top of this are warm colours - deaths
+# red, stones pink - and they were competing with a dark background instead of
+# sitting on it; and a light ground makes the blocked terrain the ink, so walls,
+# buildings and the rim of an island draw themselves.
+COLOUR_LAND = (214, 190, 145)
+# Land with something solid standing in it - one wall of a house, the kerb of a
+# road - where the majority of the pixel is still open ground. Without this tone
+# every thin structure was averaged away into plain land, which is most of what
+# a town is made of.
+COLOUR_LAND_EDGE = (168, 143, 106)
+COLOUR_WATER = (62, 118, 170)
+# Walkable water: a bridge deck or a ford. Pale against the blue so a crossing
+# reads at a glance, the way it does on the client's own map.
+COLOUR_CROSSING = (236, 219, 176)
+COLOUR_BLOCK = (58, 45, 35)
+COLOUR_OUTSIDE = (38, 34, 30)
+# How far into a pixel a solid cell has to reach before the pixel is drawn as
+# edge rather than as open ground. One cell in eight: enough that a wall shows,
+# little enough that a lone rock in a field does not.
+EDGE_FRACTION = 8
 
 
 def load(path):
@@ -119,8 +137,15 @@ def render(root, folder, base_x, base_y, width, height):
                 pixels[px, py] = COLOUR_WATER
             elif kind == "block":
                 pixels[px, py] = COLOUR_BLOCK
+            elif tally["block"] * EDGE_FRACTION >= tally["land"]:
+                # Open ground with a structure standing in it. Drawing this as
+                # plain land is what used to erase every town.
+                pixels[px, py] = COLOUR_LAND_EDGE
             else:
-                pixels[px, py] = COLOUR_LAND_ALT if ((px ^ py) & 8) else COLOUR_LAND
+                # Flat, on purpose. The regular dot pattern a viewer sees over
+                # the ground is the heat overlay's own grid; a second one baked
+                # into the terrain would be read as data that is not there.
+                pixels[px, py] = COLOUR_LAND
 
     image = image.convert("P", palette=Image.ADAPTIVE, colors=16)
     buffer = _io.BytesIO()
