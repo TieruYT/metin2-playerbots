@@ -15,8 +15,12 @@ files/speed_boost.quest
 # two: files/ is the source and linux-port/docker/panel/app/ is the build
 # context the image is actually made from, and an update that refreshed only
 # one of them would leave the running panel behind the sources.
+# Only the source copy travels. start-server.ps1 stages it into
+# panel/app/static on the way to the build, and the staged directory also holds
+# 4700 generated item icons that are not in the source tree - shipping it whole
+# would put seventeen megabytes of them into every update and overwrite an
+# operator's own regenerated set.
 files/static/*
-linux-port/docker/panel/app/static/*
 linux-port/docker/docker-compose.yml
 linux-port/docker/.env.example
 linux-port/docker/mariadb/initdb.d/10-import-dumps.sh
