@@ -210,11 +210,35 @@ namespace
 		long long score = 1;
 		if (item->GetType() == ITEM_WEAPON)
 		{
-			score += (long long)(item->GetValue(3) + item->GetValue(4) + 2 * item->GetValue(5)) * 1000;
-			const DWORD vnum = item->GetVnum();
-			const bool specialLevel30 = IsPlayerBotSpecialLevel30WeaponVnum(vnum);
-			if (specialLevel30)
-				score += 350000; // Average-damage level-30 families stay meaningful.
+			// What the engine's own damage code reads: value 3 and 4 are the
+			// damage roll and value 5 is an attack bonus counted twice
+			// (battle.cpp). Refining raises these, so a refined weapon is already
+			// worth more here without anything being said about the refine.
+			long long attack = (long long)(item->GetValue(3) + item->GetValue(4) +
+					2 * item->GetValue(5));
+
+			// And then how often it lands, because a swing is not a swing.
+			// GET_ATTACK_SPEED halves the interval for a dagger, and a bow's roll
+			// is doubled before anything else touches it - so on both, the same
+			// numbers are worth twice what the tooltip suggests. A level-30
+			// dagger showing 40-44 outdamages a level-30 sword showing 57-73.
+			//
+			// The per-race animation speeds would sharpen this further, but they
+			// are in the client's animation data, not in anything the server
+			// reads, so only the two rules the engine states outright are used.
+			const BYTE weaponSubType = item->GetSubType();
+			if (weaponSubType == WEAPON_DAGGER || weaponSubType == WEAPON_BOW)
+				attack *= 2;
+			score += attack * 1000;
+
+			// A level-30 average-damage weapon used to be handed a flat 350000
+			// here. Damage is scored at a thousand a point, so that was more than
+			// any weapon in the game is worth and no bot ever replaced one: an
+			// FMS at +4 scored 524000 against 208000 for a level-36 sword at +7,
+			// which is the better weapon by the numbers above. These weapons are
+			// still protected from a merchant - IsPlayerBotJunkItem says a
+			// level-30 weapon is never junk - but protecting them is not the same
+			// as pretending nothing can beat them.
 
 			if (ch)
 			{
