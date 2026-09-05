@@ -404,10 +404,12 @@ namespace
 				continue;
 			if (type == APPLY_MAX_HP && value >= PLAYERBOT_VALUABLE_HP_BONUS)
 				return true;
-			// A shield is bought for what it stops, not for its defence number.
+			// A shield is bought for what it stops, not for its defence number,
+			// and what it is bought for is immunity to stun - "NNO". This used to
+			// say block or reflect, which was a guess.
 			if (item->GetType() == ITEM_ARMOR &&
 					item->GetSubType() == ARMOR_SHIELD &&
-					(type == APPLY_BLOCK || type == APPLY_REFLECT_MELEE))
+					type == APPLY_IMMUNE_STUN)
 				return true;
 		}
 		return false;

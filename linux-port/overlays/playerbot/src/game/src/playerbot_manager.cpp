@@ -55,6 +55,7 @@ extern void SendShout(const char* szText, BYTE bEmpire);
 #include "playerbot_skills.h"
 #include "playerbot_combat.h"
 #include "playerbot_economy.h"
+#include "playerbot_bonus.h"
 #include "playerbot_travel.h"
 #include "playerbot_planner.h"
 #include "playerbot_town.h"

@@ -147,6 +147,16 @@ namespace
 	const BYTE PLAYERBOT_BONUS_MIN_LEVEL = 30;
 	// What the bot keeps: roughly one strong offensive line, or two decent ones.
 	const int PLAYERBOT_BONUS_KEEP_SCORE = 240;
+	// MAX_NORM_ATTR_NUM in item_manager.h. Named here because the loop that fills
+	// an item has to know it, and reading it from the engine header would tie a
+	// tuning constant to a build detail.
+	const int PLAYERBOT_BONUS_MAX_LINES = 5;
+	// The rolls that finish an item for its slot. Thirty percent average damage
+	// on a level-30 weapon, fifteen hundred health on armour or jewellery, five
+	// percent critical on jewellery - the numbers a player stops rerolling at.
+	const long PLAYERBOT_BONUS_KEEP_AVERAGE = 30;
+	const long PLAYERBOT_BONUS_KEEP_HP = 1500;
+	const long PLAYERBOT_BONUS_KEEP_CRIT = 5;
 	const int PLAYERBOT_BONUS_STONES_PER_VISIT = 3;
 	// Effectively once per town visit. A four-second cadence like the refiner's
 	// would let one stop at the blacksmith burn a quarter of a million yang.

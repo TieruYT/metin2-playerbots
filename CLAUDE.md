@@ -79,6 +79,7 @@ dependency order at the top of `playerbot_manager.cpp`:
 | File | What |
 |---|---|
 | `playerbot_types.h` | Tuning constants, enums, `TPlayerBotAIState`, the state map, and the two goal/action transitions every subsystem makes. |
+| `playerbot_config.h` | The weights an operator moves in the panel while the world runs. Re-read from a file every five seconds; neutral when it is missing. |
 | `playerbot_world_rules.h` | Pure travel policy. No engine types, unit-tested. |
 | `playerbot_navigation.h` | Where a bot may stand and whether two points connect. Calls nothing above it. |
 | `playerbot_world_memory.h` | What the population has learned about the world, as opposed to about itself. |
@@ -88,8 +89,10 @@ dependency order at the top of `playerbot_manager.cpp`:
 | `playerbot_missions.h` | The Biologist's collections and the level-up hunt, driven without a quest dialog. |
 | `playerbot_skills.h` | The character sheet: stat points, the job's skill order, keeping buffs up. |
 | `playerbot_combat.h` | How a swing or a cast is sent: the packets a bot has no client to generate. |
-| `playerbot_economy.h` | Money and bag: junk, merchants, the blacksmith, bonus rerolling, market stalls. |
+| `playerbot_economy.h` | Money and bag: junk, merchants, the blacksmith, market stalls. |
+| `playerbot_bonus.h` | The bonus lines on worn gear: what a line is worth, what finishes an item, and what a bot will pay to change it. |
 | `playerbot_travel.h` | Where a bot ought to be, and crossing between maps. |
+| `playerbot_planner.h` | Which long-term goal wins: the candidates, their base priorities, and the three gates no weight can touch. |
 | `playerbot_town.h` | A town visit end to end, as a state machine that survives being interrupted. |
 | `playerbot_loot.h` | Picking things up, in and out of a fight, without sweeping the floor. |
 | `playerbot_survival.h` | Saving progress, breaking off a losing fight, and the walk back after dying. |
@@ -112,6 +115,7 @@ moving it would only mean declaring all of them somewhere else.
 
 Find a subsystem by its entry point rather than by line number:
 
+- Planning: `PlanPlayerBotLongTermGoal`, `GetPlayerBotWeight`, `RefreshPlayerBotWeights`
 - Navigation/travel: `MovePlayerBot`, `TransitionPlayerBotMap` (an instant warp),
   `MovePlayerBotToWorldPortal` (walks), `ManagePlayerBotWorldTravel`
 - Combat: `FindDistributedTarget`, `ExecutePlayerBotBasicAttack`,
