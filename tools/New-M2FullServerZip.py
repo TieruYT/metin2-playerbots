@@ -12,7 +12,7 @@ import io, os, re, secrets, sys, zipfile
 
 SRC = ("C:/Users/dawio/Downloads/Metin2_Singleplayer_Server_r40250_FIXED/"
        "Metin2_Singleplayer_Server_r40250_FIXED")
-OUT = "C:/Users/dawio/Downloads/Metin2_Singleplayer_Server_r40250_FIXED_1.25.0.zip"
+OUT = "C:/Users/dawio/Downloads/Metin2_Singleplayer_Server_r40250_FIXED_1.25.2.zip"
 ROOT = "Metin2_Singleplayer_Server_r40250_FIXED"
 
 # Local state, not part of the product.
