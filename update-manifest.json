@@ -1,12 +1,12 @@
 {
   "schema": 1,
   "channel": "stable",
-  "publishedAt": "2026-09-05T17:35:00Z",
-  "statusMessage": "Aktualizacja 1.25.5. Boty w Dolinie Orkow staly tylko na srodku mapy: nawigacja traktowala kazda wode jak sciane, a most nad rzeka to wlasnie woda bez blokady - z wejscia bot mial 17,6% terenu i 161 z 532 grup potworow, teraz cala mape. Miejsca lowieckie Doliny obejmuja 250 grup zamiast 128. Ze straganow znikl szrot na poziom 29 i nizej przy +4, lada wymaga co najmniej dwoch pozycji, a boty chodza na zakupy pod stragany. Mapa w panelu pokazuje mosty i brody.",
+  "publishedAt": "2026-09-05T19:10:00Z",
+  "statusMessage": "Aktualizacja 1.25.6. Poprawka do 1.25.5: bot, ktoremu silnik odmowil zakupu na straganie, pytal o to samo raz na sekunde az do konca wyprawy - teraz odmowa konczy wyprawe, a pozycje, ktora nie zmiesci sie w plecaku, bot pomija z gory. Proba o konia bojowego liczyla mniej wiecej co drugie zabicie i gubila wszystkie dobite przez druzyne: zmierzone 2,6 na 7,7 zabicia na minute. Bot z medalem w plecaku nie awansuje juz konia na jedenastke, bo tracil przez to bojowca bezpowrotnie.",
   "server": {
-    "version": "1.25.5",
-    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v1.25.5/metin2-server-update-1.25.5.zip",
-    "sha256": "DE0F96EB73935A5F4290CEA7E379C0F3A15D34BDAA96280A539C6B622A3236D0"
+    "version": "1.25.6",
+    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v1.25.6/metin2-server-update-1.25.6.zip",
+    "sha256": "4B21F34BF85838927D05D1B72ADD69EF45E0334263F77296CDDC9ED49B8D541B"
   },
   "support": {
     "contactUrl": "https://discord.gg/pt5tvnrN6",

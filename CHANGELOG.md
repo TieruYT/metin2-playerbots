@@ -17,6 +17,41 @@ every version here.
 
 ---
 
+## 1.25.6 — 2026-09-05
+
+### Naprawione
+
+- **Bot w kółko próbował kupić to samo z tego samego straganu.** Regresja z
+  1.25.5. Kiedy silnik odrzucał zakup, bot pytał o dokładnie to samo w następnym
+  ticku — czyli raz na sekundę, aż wyprawa wygasła po półtorej minuty, po czym
+  zaczynał od nowa. W dzienniku wyglądało to jak `Shop::Buy pos 0` bez końca.
+  Silnik odmawia po cichu: „pełny plecak" i „za mało pieniędzy" zapisuje na
+  poziomie logowania, którego nikt nie włącza, więc z zewnątrz widać było tylko
+  powtarzane żądanie. Teraz odmowa kończy wyprawę, a bot z góry pomija pozycję,
+  która mu się nie zmieści — **broń zajmuje trzy komórki plecaka, a wcześniej
+  sprawdzane były dwie**.
+- **Próba o konia bojowego liczyła mniej więcej co drugie zabicie.** Bot bije w
+  dwóch miejscach: w pełnym cyklu decyzyjnym i w tańszym, pośrednim — a ten
+  drugi nie zaliczał niczego. Pełny cykl nie mógł tego nadrobić, bo zabity cel
+  jest podmieniany na żywego, zanim kod dojdzie do zaliczania. Do tego przepadały
+  wszystkie zabicia dobite przez towarzyszy z grupy, więc bot polujący w drużynie
+  potrafił nie ruszyć licznika ani razu. Zmierzone na żywym świecie: **2,6 → 7,7
+  zabicia na minutę**.
+- **Bot z medalem w plecaku tracił konia bojowego bezpowrotnie.** Próba wymaga
+  konia dokładnie na dziesiątym poziomie, a nic nie powstrzymywało bota przed
+  oddaniem kolejnego medalu i awansem na jedenastkę — po którym żaden medal,
+  quest ani NPC już nie cofnie. Drabina zatrzymuje się teraz na dziesiątce,
+  dopóki bojowiec jest do zdobycia. To nie jest zakleszczenie: odbiór sam ustawia
+  konia na jedenaście i drabina rusza dalej. Przy okazji bot przestaje zbierać i
+  kupować medale, których i tak nie może wydać.
+
+### Warto wiedzieć
+
+- Cały łańcuch konia bojowego przeszedł na żywym świecie **pierwszy raz**:
+  medale u stajennego, dziesiąty poziom konia, wyjazd na pustynię, sto zabić
+  Czarnych Wichrów, powrót, opłata 500 000 yang i zwój przyzwania w plecaku.
+  Wcześniej zatrzymywał się na liczniku zabić i nikt nigdy nie dotarł do końca.
+
 ## 1.25.5 — 2026-09-05
 
 ### Naprawione
