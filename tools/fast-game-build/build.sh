@@ -69,9 +69,29 @@ for relative in "$@"; do
         exit 1
     fi
     destination="/src/server/game/src/$relative"
-    docker exec "$BUILDER_CONTAINER" mkdir -p "$(dirname "$destination")"
+    # Every container path goes through "sh -lc" with the path inside the quoted
+    # string, and that is not a style choice. Git Bash rewrites a bare argument
+    # that looks like a Unix path into a Windows one, so "docker exec ... touch
+    # /src/server/game/src/input_db.cpp" touched C:/Program Files/Git/src/...
+    # instead - silently, with a zero exit status. docker cp is unaffected and
+    # preserves the source mtime, which for a file checked out of git is older
+    # than the object built from it, so make declared the file up to date and
+    # the build produced a byte-identical binary.
+    #
+    # That is how a fixed autospawn sat in the repository for four days while
+    # the running world spawned bots from the contiguous PID range the fix had
+    # replaced: 362 bots started out of 750 asked for, and the 262 identities at
+    # the end of the cohort could never start at all. The touch is what makes a
+    # rebuild a rebuild; it has to actually land.
+    docker exec "$BUILDER_CONTAINER" sh -lc "mkdir -p \"\$(dirname '$destination')\""
     docker cp "$SOURCE_ROOT/$relative" "$BUILDER_CONTAINER:$destination"
-    docker exec "$BUILDER_CONTAINER" touch "$destination"
+    docker exec "$BUILDER_CONTAINER" sh -lc "touch '$destination'"
+    stamped="$(docker exec "$BUILDER_CONTAINER" sh -lc "date -r '$destination' +%s" 2>/dev/null || echo 0)"
+    now="$(docker exec "$BUILDER_CONTAINER" sh -lc "date +%s" 2>/dev/null || echo 0)"
+    if [ "$stamped" -gt 0 ] && [ "$now" -gt 0 ] && [ $((now - stamped)) -gt 60 ]; then
+        echo "BLAD: $relative nie zostal odswiezony w builderze - make go pominie." >&2
+        exit 1
+    fi
 done
 
 docker exec "$BUILDER_CONTAINER" sh -lc \
