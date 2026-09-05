@@ -243,6 +243,11 @@ namespace
 	// share/conf/mob_names.txt. Chunjo uses the empire-specific easy monkey
 	// dungeon (map 25); map 107 is a different global dungeon whose coordinates
 	// do not match the Bokjung portal target.
+	// The level at which a horse stops being transport and becomes a weapon.
+	// Below it a bot always dismounts to fight; at or above it the target
+	// decides.
+	const BYTE PLAYERBOT_BATTLE_HORSE_LEVEL = 11;
+
 	const long PLAYERBOT_MAP_CHUNJO_M1 = 21;
 	const long PLAYERBOT_MAP_CHUNJO_M2 = 23;
 	const long PLAYERBOT_MAP_CHUNJO_M3 = 24;

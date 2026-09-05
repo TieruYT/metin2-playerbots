@@ -359,9 +359,31 @@ namespace
 				targetY = hubs[hubIndex].y + offsetY;
 				if (DISTANCE_APPROX(ch->GetX() - targetX, ch->GetY() - targetY) < 1400)
 				{
+					// Standing on the hub. Wandering only runs when there is
+					// nothing left to fight here, so a seven-hundred-unit nudge
+					// followed by another ten seconds of waiting is how a bot ends
+					// up guarding one respawn for an hour. Take the next hub that
+					// can actually be reached from here instead.
 					++state.uMetinHotspotIndex;
-					targetX = ch->GetX() + number(-700, 700);
-					targetY = ch->GetY() + number(-700, 700);
+					bool bNextReachable = false;
+					const size_t nextIndex = PickReachablePlayerBotHub(ch, hubs, 12,
+							(pid + state.uMetinHotspotIndex) % 12, bNextReachable);
+					if (bNextReachable && nextIndex != hubIndex)
+					{
+						long nextOffsetX = 0, nextOffsetY = 0;
+						GetPlayerBotStableOffset(pid,
+								(inDesert ? 0x44455348U : 0x4f524348U) + (DWORD)nextIndex,
+								150, 700, nextOffsetX, nextOffsetY);
+						targetX = hubs[nextIndex].x + nextOffsetX;
+						targetY = hubs[nextIndex].y + nextOffsetY;
+					}
+					else
+					{
+						// Walled into a pocket with nowhere else to go. Work the
+						// ground here rather than plan a route that cannot exist.
+						targetX = ch->GetX() + number(-700, 700);
+						targetY = ch->GetY() + number(-700, 700);
+					}
 				}
 			}
 		}

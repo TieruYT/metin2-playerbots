@@ -1199,10 +1199,14 @@ void CPlayerBotManager::Update()
 		if (HandlePlayerBotTownVisit(ch, state, dwNow))
 			continue;
 
-		// A normal horse is for transport only. Dismount before target selection,
-		// buffs and combat so level-1 horses never produce mounted attack attempts.
-		// Combat-horse behaviour will be introduced separately at horse level 11.
-		if (ch->IsRiding() &&
+		// A normal horse is for transport only, so it goes before target
+		// selection, buffs and combat: a level-1 horse must never produce a
+		// mounted attack. A battle horse is a different animal and stays - this
+		// line used to dismount it too, which is why a rider was seen hacking a
+		// metin on foot with its horse standing beside it. Whether it actually
+		// fights from the saddle is then the target's business, decided where
+		// the target is known.
+		if (ch->IsRiding() && !CanPlayerBotEverFightOnHorse(ch) &&
 				SetPlayerBotRidingForTravel(ch, state, false, dwNow, "combat_ready"))
 			continue;
 
@@ -1362,6 +1366,18 @@ void CPlayerBotManager::Update()
 		{
 			state.dwNavFailedTargetVID = 0;
 			state.bNavFailedTargetCount = 0;
+		}
+
+		// In range, target known: this is the one place that can say whether the
+		// fight itself happens from the saddle. Mount for the ones that should,
+		// climb down for the ones that should not - a bot that walked up on foot
+		// would otherwise never get back on, however good its horse.
+		if (CanPlayerBotEverFightOnHorse(ch))
+		{
+			const bool wantsSaddle = CanPlayerBotFightOnHorse(ch, target);
+			if (wantsSaddle != ch->IsRiding())
+				SetPlayerBotRidingForTravel(ch, state, wantsSaddle, dwNow,
+						wantsSaddle ? "mounted_combat" : "dismount_for_target");
 		}
 
 		ch->SetVictim(target);

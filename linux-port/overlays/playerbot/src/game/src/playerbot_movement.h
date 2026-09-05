@@ -393,14 +393,22 @@ namespace
 	// A battle horse (level 11+) lets its rider strike from the saddle. Bots that
 	// own one should ride into a fight instead of dismounting on the approach, but
 	// only when the weapon and target actually make mounted combat sensible.
+	// Could this bot fight from the saddle at all, whatever it ends up facing?
+	// The horse and the weapon decide that much on their own, and the tick has
+	// to know it before a target exists - that is the moment it decides whether
+	// to climb down.
+	bool CanPlayerBotEverFightOnHorse(LPCHARACTER ch)
+	{
+		if (!ch || ch->GetHorseLevel() < PLAYERBOT_BATTLE_HORSE_LEVEL)
+			return false;
+		LPITEM weapon = ch->GetWear(WEAR_WEAPON);
+		return weapon && weapon->GetType() == ITEM_WEAPON &&
+				weapon->GetSubType() != WEAPON_BOW;
+	}
+
 	bool CanPlayerBotFightOnHorse(LPCHARACTER ch, LPCHARACTER target)
 	{
-		if (!ch || ch->GetHorseLevel() < 11)
-			return false;
-
-		LPITEM weapon = ch->GetWear(WEAR_WEAPON);
-		if (!weapon || weapon->GetType() != ITEM_WEAPON ||
-				weapon->GetSubType() == WEAPON_BOW)
+		if (!CanPlayerBotEverFightOnHorse(ch))
 			return false;
 
 		// Against Metins a battle horse is priority #1: the rider keeps hacking the
