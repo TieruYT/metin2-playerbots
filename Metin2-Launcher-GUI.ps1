@@ -52,6 +52,38 @@ if ($SelfTest) {
 
 [Windows.Forms.Application]::EnableVisualStyles()
 
+# The session log is opened in Notepad and pasted into chat, and Polish letters
+# do not survive either. Everything written to the file is transliterated; the
+# on-screen box is left alone, because it renders them correctly and there is no
+# reason to make the window worse to fix the file. A character that is neither
+# ASCII nor in the table - including the replacement character left behind by an
+# older, mis-encoded log - becomes a question mark rather than disappearing.
+$script:M2_ASCII_MAP = @{
+    [char]0x0105 = 'a'; [char]0x0107 = 'c'; [char]0x0119 = 'e'; [char]0x0142 = 'l'
+    [char]0x0144 = 'n'; [char]0x00F3 = 'o'; [char]0x015B = 's'; [char]0x017A = 'z'
+    [char]0x017C = 'z'
+    [char]0x0104 = 'A'; [char]0x0106 = 'C'; [char]0x0118 = 'E'; [char]0x0141 = 'L'
+    [char]0x0143 = 'N'; [char]0x00D3 = 'O'; [char]0x015A = 'S'; [char]0x0179 = 'Z'
+    [char]0x017B = 'Z'
+    [char]0x2013 = '-'; [char]0x2014 = '-'; [char]0x2026 = '...'
+    [char]0x2018 = "'"; [char]0x2019 = "'"; [char]0x201C = '"'; [char]0x201D = '"'
+    [char]0x00A0 = ' '
+}
+
+function ConvertTo-M2AsciiLine {
+    param([string]$Text)
+    if ([string]::IsNullOrEmpty($Text)) { return $Text }
+    $builder = New-Object Text.StringBuilder
+    foreach ($ch in $Text.ToCharArray()) {
+        if ($script:M2_ASCII_MAP.ContainsKey($ch)) {
+            [void]$builder.Append($script:M2_ASCII_MAP[$ch])
+        }
+        elseif ([int]$ch -lt 128) { [void]$builder.Append($ch) }
+        else { [void]$builder.Append('?') }
+    }
+    return $builder.ToString()
+}
+
 function Write-LocalLog {
     # -FileOnly keeps very chatty build output (apt, unpacking) in the session
     # log without flooding the small on-screen box.
@@ -60,7 +92,9 @@ function Write-LocalLog {
         [switch]$FileOnly
     )
     $line = '{0}  {1}' -f (Get-Date -Format 'yyyy-MM-dd HH:mm:ss'), $Message
-    [IO.File]::AppendAllText($sessionLog, $line + [Environment]::NewLine, [Text.UTF8Encoding]::new($false))
+    [IO.File]::AppendAllText($sessionLog,
+        (ConvertTo-M2AsciiLine $line) + [Environment]::NewLine,
+        [Text.UTF8Encoding]::new($false))
     if (-not $FileOnly -and $script:logBox -and -not $script:logBox.IsDisposed) {
         $script:logBox.AppendText($line + [Environment]::NewLine)
         # Keep the box bounded so a long build cannot grow it without limit.

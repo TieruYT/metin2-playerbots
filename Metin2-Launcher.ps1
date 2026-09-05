@@ -9,6 +9,18 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
+
+# The GUI runs this script hidden with its stdout redirected into a file and
+# reads that file back as UTF-8. Without this the redirect gets the console's
+# OEM code page instead, and every Polish letter this script prints reaches the
+# log broken - "Serwer dzia?a w wersji", while the GUI's own lines beside them
+# are fine. Both ends speak UTF-8 now.
+try {
+    [Console]::OutputEncoding = [Text.UTF8Encoding]::new($false)
+    $OutputEncoding = [Text.UTF8Encoding]::new($false)
+}
+catch { }
+
 $serverRoot = [IO.Path]::GetFullPath($PSScriptRoot)
 $modulePath = Join-Path $serverRoot 'launcher\Metin2Launcher.psm1'
 $diagnosticsModulePath = Join-Path $serverRoot 'launcher\Metin2Launcher.Diagnostics.psm1'
