@@ -642,6 +642,19 @@ namespace
 		if (NeedsPlayerBotProgressionHelmet(ch))
 			bought = BuyPlayerBotProgressionGear(ch,
 					GetPlayerBotProgressionHelmetVnum(ch), "helmet") || bought;
+		// The three slots nothing ever filled. A bot wore a bracelet, a necklace
+		// or an earring only when one happened to drop for it, because no ladder
+		// asked for them - so most of them went their whole lives with three
+		// empty slots on the character sheet.
+		if (NeedsPlayerBotProgressionWrist(ch))
+			bought = BuyPlayerBotProgressionGear(ch,
+					GetPlayerBotProgressionWristVnum(ch), "wrist") || bought;
+		if (NeedsPlayerBotProgressionNecklace(ch))
+			bought = BuyPlayerBotProgressionGear(ch,
+					GetPlayerBotProgressionNecklaceVnum(ch), "necklace") || bought;
+		if (NeedsPlayerBotProgressionEarring(ch))
+			bought = BuyPlayerBotProgressionGear(ch,
+					GetPlayerBotProgressionEarringVnum(ch), "earring") || bought;
 		return sold || bought;
 	}
 

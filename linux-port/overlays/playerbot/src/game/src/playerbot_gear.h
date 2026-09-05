@@ -101,7 +101,26 @@ namespace
 		return true;
 	}
 
-	long long ScorePlayerBotApply(BYTE bType, long lValue)
+	// The stat this character fights with. A warrior swings with strength and a
+	// shaman casts with intelligence, so the same earring is a good piece for one
+	// and jewellery for the other. Sura splits: the weaponry build hits with
+	// strength, the black-magic one with intelligence, and the skill group is
+	// what says which - the same question the weapon ladder already asks it.
+	BYTE GetPlayerBotPrimaryStatApply(LPCHARACTER ch)
+	{
+		if (!ch)
+			return APPLY_NONE;
+		switch (ch->GetJob())
+		{
+			case JOB_WARRIOR:  return APPLY_STR;
+			case JOB_ASSASSIN: return APPLY_DEX;
+			case JOB_SURA:     return ch->GetSkillGroup() == 2 ? APPLY_INT : APPLY_STR;
+			case JOB_SHAMAN:   return APPLY_INT;
+			default:           return APPLY_NONE;
+		}
+	}
+
+	long long ScorePlayerBotApply(BYTE bType, long lValue, LPCHARACTER ch = NULL)
 	{
 		switch (bType)
 		{
@@ -111,12 +130,29 @@ namespace
 			case APPLY_MAX_HP:
 				return (long long)lValue * 10;
 			case APPLY_MAX_SP:
+			// The sprint bar, and the reason a bot would otherwise wear the
+			// level-0 bracelet for ever: ten points of it through the catch-all
+			// of fifty scored five hundred, more than anything the line offers
+			// below level 46. It is not a combat stat for a player either.
+			case APPLY_MAX_STAMINA:
 				return (long long)lValue * 3;
 			case APPLY_CON:
 			case APPLY_STR:
 			case APPLY_DEX:
 			case APPLY_INT:
-				return (long long)lValue * 250;
+			{
+				// 250 for all four was the class-blind figure, and it is still
+				// what an unknown character gets. Knowing the class, the stat it
+				// fights with is worth twice that and the two it does not use
+				// half. Constitution stays in between for everybody: nobody
+				// builds around it and nobody is sorry to have it.
+				const BYTE primary = GetPlayerBotPrimaryStatApply(ch);
+				long long weight = 250;
+				if (primary != APPLY_NONE)
+					weight = (bType == primary) ? 500
+							: (bType == APPLY_CON ? 300 : 120);
+				return (long long)lValue * weight;
+			}
 			case APPLY_ATT_SPEED:
 				return (long long)lValue * 200;
 			case APPLY_MOV_SPEED:
@@ -206,10 +242,12 @@ namespace
 		}
 
 		for (int i = 0; i < ITEM_APPLY_MAX_NUM; ++i)
-			score += ScorePlayerBotApply(item->GetProto()->aApplies[i].bType, item->GetProto()->aApplies[i].lValue);
+			score += ScorePlayerBotApply(item->GetProto()->aApplies[i].bType,
+					item->GetProto()->aApplies[i].lValue, ch);
 
 		for (int i = 0; i < ITEM_ATTRIBUTE_MAX_NUM; ++i)
-			score += ScorePlayerBotApply(item->GetAttributeType(i), item->GetAttributeValue(i));
+			score += ScorePlayerBotApply(item->GetAttributeType(i),
+					item->GetAttributeValue(i), ch);
 
 		if (item->GetImmuneFlag() != 0)
 			score += 1000;
@@ -712,6 +750,120 @@ namespace
 			}
 		}
 		return false;
+	}
+
+	// What a proto is worth to this character, before anything has been rolled
+	// on it. The ladders below compare candidates they cannot hold yet.
+	long long ScorePlayerBotProtoApplies(const TItemTable* proto, LPCHARACTER ch)
+	{
+		if (!proto)
+			return 0;
+		long long score = 0;
+		for (int i = 0; i < ITEM_APPLY_MAX_NUM; ++i)
+			score += ScorePlayerBotApply(proto->aApplies[i].bType,
+					proto->aApplies[i].lValue, ch);
+		return score;
+	}
+
+	// Bracelets, necklaces and earrings. Not a ladder in the sense the other
+	// slots are: the earring line rotates dexterity, strength, constitution and
+	// intelligence as it climbs, so the newest tier a bot qualifies for is the
+	// right one only for the class that tier favours. Worth decides, and the
+	// required level only breaks a tie - which for the bracelets and necklaces,
+	// whose lines climb straight, comes to the same answer as before.
+	DWORD GetPlayerBotProgressionAccessoryVnum(LPCHARACTER ch, DWORD baseVnum,
+			DWORD stride, int tiers)
+	{
+		if (!ch)
+			return 0;
+		DWORD bestVnum = 0;
+		long long bestScore = -1;
+		int bestLevel = -1;
+		for (int tier = 0; tier < tiers; ++tier)
+		{
+			const DWORD candidateVnum = baseVnum + (DWORD)tier * stride;
+			TItemTable* proto = ITEM_MANAGER::instance().GetTable(candidateVnum);
+			if (!proto)
+				continue;
+			const int reqLevel = GetPlayerBotProtoLevelLimit(proto);
+			if (reqLevel > (int)ch->GetLevel())
+				continue;
+			const long long score = ScorePlayerBotProtoApplies(proto, ch);
+			if (score > bestScore || (score == bestScore && reqLevel > bestLevel))
+			{
+				bestVnum = candidateVnum;
+				bestScore = score;
+				bestLevel = reqLevel;
+			}
+		}
+		return bestVnum;
+	}
+
+	// Twelve tiers each, which is the whole of every one of the three families
+	// below level 80: the next entries after them sit at 85 and above, past
+	// anything this world levels to.
+	DWORD GetPlayerBotProgressionWristVnum(LPCHARACTER ch)
+	{
+		return GetPlayerBotProgressionAccessoryVnum(ch, 14000, 20, 12);
+	}
+
+	DWORD GetPlayerBotProgressionNecklaceVnum(LPCHARACTER ch)
+	{
+		return GetPlayerBotProgressionAccessoryVnum(ch, 16000, 20, 12);
+	}
+
+	DWORD GetPlayerBotProgressionEarringVnum(LPCHARACTER ch)
+	{
+		return GetPlayerBotProgressionAccessoryVnum(ch, 17000, 20, 12);
+	}
+
+	// The other slots ask "is what I am wearing for a lower level than what I
+	// could buy". That question is wrong here, because a better earring can be
+	// an older one. This asks what the slot is actually worth instead.
+	bool NeedsPlayerBotProgressionAccessory(LPCHARACTER ch, BYTE wearCell,
+			DWORD desiredVnum)
+	{
+		if (!ch || desiredVnum == 0)
+			return false;
+		const TItemTable* desired = ITEM_MANAGER::instance().GetTable(desiredVnum);
+		if (!desired)
+			return false;
+		const long long wanted = ScorePlayerBotProtoApplies(desired, ch);
+		for (int pass = 0; pass < 2; ++pass)
+		{
+			const int count = pass == 0 ? 1 : INVENTORY_MAX_NUM;
+			for (int index = 0; index < count; ++index)
+			{
+				LPITEM item = pass == 0 ? ch->GetWear(wearCell)
+						: ch->GetInventoryItem(index);
+				if (!item || !IsPlayerBotEquipmentCandidate(ch, item) ||
+						item->FindEquipCell(ch) != wearCell)
+					continue;
+				if (item->GetLevelLimit() > ch->GetLevel())
+					continue;
+				if (ScorePlayerBotProtoApplies(item->GetProto(), ch) >= wanted)
+					return false;
+			}
+		}
+		return true;
+	}
+
+	bool NeedsPlayerBotProgressionWrist(LPCHARACTER ch)
+	{
+		return NeedsPlayerBotProgressionAccessory(ch, WEAR_WRIST,
+				GetPlayerBotProgressionWristVnum(ch));
+	}
+
+	bool NeedsPlayerBotProgressionNecklace(LPCHARACTER ch)
+	{
+		return NeedsPlayerBotProgressionAccessory(ch, WEAR_NECK,
+				GetPlayerBotProgressionNecklaceVnum(ch));
+	}
+
+	bool NeedsPlayerBotProgressionEarring(LPCHARACTER ch)
+	{
+		return NeedsPlayerBotProgressionAccessory(ch, WEAR_EAR,
+				GetPlayerBotProgressionEarringVnum(ch));
 	}
 
 	bool NeedsPlayerBotProgressionWeapon(LPCHARACTER ch)
