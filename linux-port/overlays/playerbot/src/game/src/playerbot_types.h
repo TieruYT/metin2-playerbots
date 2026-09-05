@@ -146,6 +146,35 @@ namespace
 	// polish its bonus lines is money the bot needs for the next weapon.
 	const BYTE PLAYERBOT_BONUS_MIN_LEVEL = 30;
 	// What the bot keeps: roughly one strong offensive line, or two decent ones.
+	// --- Guilds and who a bot has got on with -------------------------------
+	// Forty is what a player needs at the Village Guard, and the fee is what the
+	// engine charges in CInputMain::GuildCreate - CreateGuild itself charges
+	// nothing, so a caller that is not the packet handler has to pay it.
+	const BYTE PLAYERBOT_GUILD_MIN_LEVEL = 40;
+	const DWORD PLAYERBOT_GUILD_CREATE_FEE = 200000;
+	// What a bot must still have afterwards. Founding a guild and then being
+	// unable to buy a potion is not an ambition, it is a bug.
+	const DWORD PLAYERBOT_GUILD_GOLD_RESERVE = 100000;
+	// One eligible bot in twelve founds one. Any more and the world fills with
+	// guilds of one member, which is the opposite of the point.
+	const DWORD PLAYERBOT_GUILD_FOUNDER_SHARE = 12;
+	const size_t PLAYERBOT_GUILD_NAMES_PER_EMPIRE = 2;
+	// The lowest grade, which is what an ordinary member joins at.
+	const int PLAYERBOT_GUILD_MEMBER_GRADE = 15;
+	const int PLAYERBOT_GUILD_INVITE_RANGE = 3000;
+	const DWORD PLAYERBOT_GUILD_INVITES_PER_PASS = 3;
+	const DWORD PLAYERBOT_GUILD_CHECK_INTERVAL = 120000;
+
+	// How many acquaintances a bot keeps, and how much any one of them can be
+	// worth. Small on purpose: this is looked at on every party check, and a bot
+	// that has hunted with two hundred others should remember the handful it got
+	// on with rather than all of them.
+	const size_t PLAYERBOT_FRIEND_SLOTS = 8;
+	const int PLAYERBOT_FRIEND_MAX_AFFINITY = 100;
+	const int PLAYERBOT_FRIEND_PARTY_POINTS = 4;
+	const int PLAYERBOT_FRIEND_GIFT_POINTS = 10;
+	const int PLAYERBOT_FRIEND_TRADE_POINTS = 6;
+
 	const int PLAYERBOT_BONUS_KEEP_SCORE = 240;
 	// MAX_NORM_ATTR_NUM in item_manager.h. Named here because the loop that fills
 	// an item has to know it, and reading it from the engine header would tie a
@@ -646,6 +675,18 @@ namespace
 		BOT_AMBITION_TRADE
 	};
 
+	// One acquaintance. Affinity only: the specification also wants hostility,
+	// from PvP kills and stolen bosses, and this world has neither PvP nor a
+	// hook that could honestly attribute a stolen kill - so a hostility counter
+	// would be a field that is always zero.
+	struct TPlayerBotFriend
+	{
+		DWORD dwPID;
+		int iAffinity;
+		DWORD dwLastInteractionTime;
+		TPlayerBotFriend() : dwPID(0), iAffinity(0), dwLastInteractionTime(0) {}
+	};
+
 	struct TPlayerBotAIState
 	{
 		TPlayerBotAIState() :
@@ -787,7 +828,9 @@ namespace
 			bLastStatusAction(255),
 			bLastStatusGoal(255),
 			bLastStatusTownPhase(255),
-			bLastStatusParty(255)
+			bLastStatusParty(255),
+			dwNextGuildCheckTime(0),
+			bFoundedGuild(false)
 		{
 		}
 
@@ -951,6 +994,15 @@ namespace
 		std::map<DWORD, DWORD> mapFailedTargets;
 		std::map<DWORD, DWORD> mapBuffActiveUntil;
 		std::vector<PIXEL_POSITION> vecMultiPullCenters;
+		// Not in the initialiser list: it default-constructs empty, which is what
+		// a bot that has not met anybody yet is.
+		std::vector<TPlayerBotFriend> vecFriends;
+		DWORD dwNextGuildCheckTime;
+		// CGuild's constructor adds the master through the database, so
+		// GetGuild() is still NULL when the next upkeep pass comes round two
+		// minutes later - and the bot would found a second guild under the
+		// second name. This is the only thing that knows it already has one.
+		bool bFoundedGuild;
 	};
 
 	typedef std::map<DWORD, TPlayerBotAIState> TPlayerBotAIStateMap;

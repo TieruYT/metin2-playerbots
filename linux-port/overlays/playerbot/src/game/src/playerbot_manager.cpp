@@ -11,6 +11,8 @@
 #include "db.h"
 #include "event.h"
 #include "fishing.h"
+#include "guild.h"
+#include "guild_manager.h"
 #include "input.h"
 #include "item.h"
 #include "item_manager.h"
@@ -58,6 +60,7 @@ extern void SendShout(const char* szText, BYTE bEmpire);
 #include "playerbot_bonus.h"
 #include "playerbot_travel.h"
 #include "playerbot_planner.h"
+#include "playerbot_guild.h"
 #include "playerbot_town.h"
 #include "playerbot_market.h"
 #include "playerbot_loot.h"
@@ -190,7 +193,9 @@ namespace
 		// Find a nearby bot with an open party or start one
 		struct TPartyFinder
 		{
-			TPartyFinder(LPCHARACTER me) : m_me(me), m_pTargetParty(NULL), m_pSoloCandidate(NULL) {}
+			TPartyFinder(LPCHARACTER me, const TPlayerBotAIState& st)
+				: m_me(me), m_state(st), m_pTargetParty(NULL),
+				  m_pSoloCandidate(NULL), m_iSoloAffinity(-1) {}
 			bool operator()(LPENTITY ent)
 			{
 				if (!ent || !ent->IsType(ENTITY_CHARACTER))
@@ -234,19 +239,30 @@ namespace
 							}
 						}
 					}
-					else if (!cp && !m_pSoloCandidate)
+					else if (!cp)
 					{
-						m_pSoloCandidate = candidate;
+						// Whoever it has got on with best, rather than whoever the
+						// sector happened to hand over first. A bot that has hunted
+						// with somebody before will look for them again.
+						const int affinity = GetPlayerBotAffinity(
+								m_state, candidate->GetPlayerID());
+						if (affinity > m_iSoloAffinity)
+						{
+							m_iSoloAffinity = affinity;
+							m_pSoloCandidate = candidate;
+						}
 					}
 				}
 				return true;
 			}
 			LPCHARACTER m_me;
+			const TPlayerBotAIState& m_state;
 			LPPARTY m_pTargetParty;
 			LPCHARACTER m_pSoloCandidate;
+			int m_iSoloAffinity;
 		};
 
-		TPartyFinder finder(ch);
+		TPartyFinder finder(ch, state);
 		ch->GetSectree()->ForEachAround(finder);
 
 		if (finder.m_pTargetParty)
@@ -268,8 +284,12 @@ namespace
 				newParty->Join(finder.m_pSoloCandidate->GetPlayerID());
 				newParty->Link(finder.m_pSoloCandidate);
 				state.dwPartyExpireTime = dwNow + number(300000, 900000); // 5 to 15 mins
-				sys_log(0, "PLAYERBOT_AI: created party pid=%u name=%s partner_pid=%u",
-						ch->GetPlayerID(), ch->GetName(), finder.m_pSoloCandidate->GetPlayerID());
+				RememberPlayerBotEncounter(ch, finder.m_pSoloCandidate,
+						PLAYERBOT_FRIEND_PARTY_POINTS, dwNow);
+				sys_log(0, "PLAYERBOT_AI: created party pid=%u name=%s partner_pid=%u affinity=%d",
+						ch->GetPlayerID(), ch->GetName(),
+						finder.m_pSoloCandidate->GetPlayerID(),
+						GetPlayerBotAffinity(state, finder.m_pSoloCandidate->GetPlayerID()));
 			}
 		}
 	}
@@ -1041,6 +1061,7 @@ void CPlayerBotManager::Update()
 
 		ManagePlayerBotSkillBooks(ch, state, dwNow);
 		ManagePlayerBotSpiritStones(ch, state, dwNow);
+		ManagePlayerBotGuild(ch, state, dwNow);
 		ManagePlayerBotParty(ch, state, dwNow);
 		// The regular levelup.quest opens a selection dialog. A fake descriptor
 		// cannot press its Confirm button, so accept/claim that official mission
