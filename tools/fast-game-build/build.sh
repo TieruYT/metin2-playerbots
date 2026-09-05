@@ -15,6 +15,44 @@ if ! docker container inspect "$BUILDER_CONTAINER" >/dev/null 2>&1; then
 fi
 docker start "$BUILDER_CONTAINER" >/dev/null
 
+# This build replaces the engine binary and nothing else. Everything else in the
+# image - the CONFIG renderer, the entrypoint, the rates, the quests, the share
+# tree - comes from the runtime base, which setup.sh built once. So a change to
+# any of those is invisible here, and worse than invisible: rebuilding puts the
+# old copy back over a correct image.
+#
+# That is not hypothetical. The map split that moved Orc Valley onto the core
+# the bots live on landed on 2 September; the base on the machine where this was
+# found dated from 30 August, and every fast build since had been restoring the
+# old split behind it. Bots stood at the teleporter making seven thousand
+# impossible warp requests a minute while the fix sat in the repository.
+#
+# The base cannot be refreshed from here: it is built on top of the builder
+# stage, so rebuilding it is the full engine compile this tool exists to skip.
+# Saying so is enough - the operator runs setup.sh when it matters.
+GAME_CONTEXT="$REPO_ROOT/linux-port/docker/game"
+if base_created="$(docker image inspect "$RUNTIME_BASE" --format '{{.Created}}' 2>/dev/null)"; then
+    base_epoch="$(date -d "$base_created" +%s 2>/dev/null || echo 0)"
+    newest=0
+    newest_file=""
+    while IFS= read -r candidate; do
+        stamp="$(date -r "$candidate" +%s 2>/dev/null || echo 0)"
+        if [ "$stamp" -gt "$newest" ]; then
+            newest="$stamp"
+            newest_file="$candidate"
+        fi
+    done <<EOF
+$(find "$GAME_CONTEXT" -type f -not -path "$GAME_CONTEXT/src/*" 2>/dev/null)
+EOF
+    if [ "$base_epoch" -gt 0 ] && [ "$newest" -gt "$base_epoch" ]; then
+        echo "UWAGA: baza $RUNTIME_BASE jest starsza niz kontekst obrazu." >&2
+        echo "  baza:  $base_created" >&2
+        echo "  nowszy plik: ${newest_file#$REPO_ROOT/}" >&2
+        echo "  Ten build podmienia tylko silnik, wiec ta zmiana NIE trafi do obrazu" >&2
+        echo "  - a jesli obraz juz ja mial, zostanie cofnieta. Uruchom setup.sh." >&2
+    fi
+fi
+
 if [ "$#" -eq 0 ]; then
     set -- playerbot_manager.cpp
 fi
