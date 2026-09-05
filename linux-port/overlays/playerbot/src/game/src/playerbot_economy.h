@@ -623,7 +623,8 @@ namespace
 
 		const TRefineTable* recipe = CRefineManager::instance().GetRefineRecipe(
 				item->GetRefineSet());
-		if (!recipe || ch->GetGold() < ch->ComputeRefineFee(recipe->cost))
+		if (!recipe || ch->GetGold() - GetPlayerBotReservedGold(ch) <
+				ch->ComputeRefineFee(recipe->cost))
 			return false;
 
 		for (int i = 0; i < recipe->material_count; ++i)

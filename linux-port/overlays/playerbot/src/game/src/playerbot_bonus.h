@@ -166,7 +166,8 @@ namespace
 			return false;
 		if (ch->CountSpecifyItem(vnum) > 0)
 			return true;
-		if (ch->GetGold() < (int)(PLAYERBOT_BONUS_GOLD_FLOOR + PLAYERBOT_BONUS_STONE_PRICE))
+		if (ch->GetGold() - GetPlayerBotReservedGold(ch) <
+				(int)(PLAYERBOT_BONUS_GOLD_FLOOR + PLAYERBOT_BONUS_STONE_PRICE))
 			return false;
 		if (ch->GetEmptyInventory(1) < 0)
 			return false;
@@ -204,7 +205,8 @@ namespace
 		state.dwNextBonusCheckTime = dwNow + PLAYERBOT_BONUS_INTERVAL;
 		if (ch->GetLevel() < PLAYERBOT_BONUS_MIN_LEVEL)
 			return false;
-		if (ch->GetGold() < (int)(PLAYERBOT_BONUS_GOLD_FLOOR + PLAYERBOT_BONUS_STONE_PRICE))
+		if (ch->GetGold() - GetPlayerBotReservedGold(ch) <
+				(int)(PLAYERBOT_BONUS_GOLD_FLOOR + PLAYERBOT_BONUS_STONE_PRICE))
 			return false;
 
 		const BYTE wearSlots[] = {

@@ -144,7 +144,8 @@ namespace
 		state.dwNextShoppingTime = dwNow + number(
 				PLAYERBOT_SHOPPING_INTERVAL_MIN, PLAYERBOT_SHOPPING_INTERVAL_MAX);
 
-		if (ch->GetGold() <= (int)PLAYERBOT_SHOPPING_GOLD_FLOOR)
+		if (ch->GetGold() - GetPlayerBotReservedGold(ch) <=
+				(int)PLAYERBOT_SHOPPING_GOLD_FLOOR)
 			return false;
 		if (ch->GetEmptyInventory(2) < 0)
 			return false;

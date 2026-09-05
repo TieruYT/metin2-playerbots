@@ -109,6 +109,11 @@ namespace
 	// window has to outlast a gap without outlasting the walk back to town.
 	const DWORD PLAYERBOT_BUFF_COMBAT_WINDOW = 60000;
 	const BYTE PLAYERBOT_PRECIOUS_REFINE = 6;
+	// The lowest refine an ordinary spare may carry and still be worth a counter
+	// slot. Below it nobody wants the thing: the market code buys medals,
+	// level-30 weapons and big bonus rolls, and a person walking the market sees
+	// a row of +1 armours and calls it junk - which it is.
+	const BYTE PLAYERBOT_SHOP_MIN_GEAR_REFINE = 4;
 	// A bonus line big enough to make an item worth selling whatever else it is.
 	// A thousand health is roughly what a good armour of the level range adds, so
 	// anything at or above it was rolled well rather than ordinarily.
@@ -243,6 +248,22 @@ namespace
 	// share/conf/mob_names.txt. Chunjo uses the empire-specific easy monkey
 	// dungeon (map 25); map 107 is a different global dungeon whose coordinates
 	// do not match the Bokjung portal target.
+	// --- Earning the battle horse ------------------------------------------
+	// The stable keeper's quest, with the three things this world cannot
+	// support taken out - see playerbot_battle_horse.h for which and why.
+	const BYTE PLAYERBOT_BATTLE_HORSE_MIN_LEVEL = 35;
+	const BYTE PLAYERBOT_BATTLE_HORSE_FROM_HORSE_LEVEL = 10;
+	const int PLAYERBOT_BATTLE_HORSE_KILLS = 100;
+	const DWORD PLAYERBOT_BATTLE_HORSE_FEE = 500000;
+	// The Black Wind band, which is what the desert on this server is stocked
+	// with. The quest names 2105 and 2107; neither is spawned anywhere here.
+	const DWORD PLAYERBOT_BATTLE_HORSE_MOB_FIRST = 401;
+	const DWORD PLAYERBOT_BATTLE_HORSE_MOB_LAST = 404;
+	// "Zdjecie Konia", taken away, and "Ksiega Opanc. Konia", handed over.
+	const DWORD PLAYERBOT_HORSE_PHOTO_VNUM = 50051;
+	const DWORD PLAYERBOT_BATTLE_HORSE_BOOK_VNUM = 50052;
+	const char* PLAYERBOT_BATTLE_HORSE_KILLS_FLAG = "playerbot.battle_horse_kills";
+
 	// The level at which a horse stops being transport and becomes a weapon.
 	// Below it a bot always dismounts to fight; at or above it the target
 	// decides.
@@ -834,6 +855,7 @@ namespace
 			bLastStatusTownPhase(255),
 			bLastStatusParty(255),
 			dwNextGuildCheckTime(0),
+			dwLastKillCreditedVID(0),
 			bFoundedGuild(false)
 		{
 		}
@@ -1001,6 +1023,11 @@ namespace
 		// a bot that has not met anybody yet is.
 		std::vector<TPlayerBotFriend> vecFriends;
 		DWORD dwNextGuildCheckTime;
+		// The last corpse this bot was credited for. The engine has no "you
+		// killed it" hook, so a kill is read off a target that has gone from
+		// alive to dead under the bot's own blow - and a bot standing over the
+		// body must not be credited again on the next tick.
+		DWORD dwLastKillCreditedVID;
 		// CGuild's constructor adds the master through the database, so
 		// GetGuild() is still NULL when the next upkeep pass comes round two
 		// minutes later - and the bot would found a second guild under the

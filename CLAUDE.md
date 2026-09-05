@@ -80,6 +80,7 @@ dependency order at the top of `playerbot_manager.cpp`:
 |---|---|
 | `playerbot_types.h` | Tuning constants, enums, `TPlayerBotAIState`, the state map, and the two goal/action transitions every subsystem makes. |
 | `playerbot_log.h` | Saying something once for three hundred bots: a tag, a minute, and a count of what was swallowed. |
+| `playerbot_battle_horse.h` | Earning the horse that can fight: the desert trial, and what the stable keeper does at the end of it. |
 | `playerbot_config.h` | The weights an operator moves in the panel while the world runs. Re-read from a file every five seconds; neutral when it is missing. |
 | `playerbot_world_rules.h` | Pure travel policy. No engine types, unit-tested. |
 | `playerbot_navigation.h` | Where a bot may stand and whether two points connect. Calls nothing above it. |

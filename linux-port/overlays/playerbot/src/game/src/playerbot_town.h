@@ -455,7 +455,20 @@ namespace
 		// pure stock, and a player will want them.
 		if (item->GetType() == ITEM_SKILLBOOK)
 			return 400;
-		return 1;
+
+		// Ordinary spare gear, and only if somebody could want it. This used to
+		// be "return 1" for absolutely everything else, which is how counters
+		// filled up with +1, +2 and +3 spares: a bot with eight of those and
+		// nothing better put all eight out. There are nineteen hundred such
+		// pieces in this world's bags against two hundred at +4 or better, so
+		// that one line decided what the whole market looked like.
+		const BYTE type = item->GetType();
+		if (type == ITEM_WEAPON || type == ITEM_ARMOR)
+			return item->GetRefineLevel() >= PLAYERBOT_SHOP_MIN_GEAR_REFINE ? 100 : -1;
+
+		// Whatever is left is the bot's own business, not goods. A stall with two
+		// things worth buying beats one padded out to eight.
+		return -1;
 	}
 
 	// Everything this bot can legitimately part with, best first. OpenMyShop
@@ -916,6 +929,14 @@ namespace
 			state.dwNextShopKeepTime = dwNow + number(60000, 180000);
 			return false;
 		}
+
+		// A keeper is not hunting. The tick has held it at its counter since the
+		// stall opened - the shop hook runs before skills and claims the tick -
+		// so nothing casts while a shop is up. What is seen glowing over a shaman
+		// minding a stall is an aura from before it sat down, running its minutes
+		// out. Drop them: it reads as a bot playing the game while it keeps shop,
+		// and it is upkeep spent on standing still.
+		ch->RemoveGoodAffect();
 
 		state.dwShopOpenedTime = dwNow;
 		state.dwShopCloseTime = dwNow + (IsPlayerBotMerchant(state)

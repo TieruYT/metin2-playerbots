@@ -53,6 +53,7 @@ extern void SendShout(const char* szText, BYTE bEmpire);
 #include "playerbot_navigation.h"
 #include "playerbot_world_memory.h"
 #include "playerbot_movement.h"
+#include "playerbot_battle_horse.h"
 #include "playerbot_gear.h"
 #include "playerbot_activities.h"
 #include "playerbot_missions.h"
@@ -1443,9 +1444,13 @@ void CPlayerBotManager::Update()
 			continue;
 
 		if (ExecutePlayerBotAttackSkill(ch, target, state, dwNow))
+		{
+			NotePlayerBotBattleHorseKill(ch, state, target);
 			continue;
+		}
 
 		ExecutePlayerBotBasicAttack(ch, target, state, dwNow);
+		NotePlayerBotBattleHorseKill(ch, state, target);
 
 	}
 

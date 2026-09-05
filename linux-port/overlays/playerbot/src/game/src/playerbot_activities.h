@@ -46,8 +46,10 @@ namespace
 			state.dwNextHorseCheckTime = dwNow + 3000;
 
 		const BYTE horseLevel = ch->GetHorseLevel();
-		if (!CanPlayerBotAdvanceHorse(ch) ||
-				ch->CountSpecifyItem(PLAYERBOT_HORSE_MEDAL_VNUM) <= 0)
+		const bool bBattleHorseWaiting = IsPlayerBotBattleHorseEarned(ch) &&
+				ch->GetGold() >= (int)PLAYERBOT_BATTLE_HORSE_FEE;
+		if (!bBattleHorseWaiting && (!CanPlayerBotAdvanceHorse(ch) ||
+				ch->CountSpecifyItem(PLAYERBOT_HORSE_MEDAL_VNUM) <= 0))
 		{
 			state.bVisitingStable = false;
 			state.dwNextHorseActionTime = 0;
@@ -114,6 +116,17 @@ namespace
 		}
 		if (dwNow < state.dwNextHorseActionTime)
 			return true;
+
+		// The trial first: a bot that has earned the battle horse is here to
+		// collect it, not to hand in a medal it does not have.
+		if (CollectPlayerBotBattleHorse(ch))
+		{
+			state.bVisitingStable = false;
+			state.dwNextHorseActionTime = 0;
+			state.dwNextHorseCheckTime = dwNow + number(30000, 60000);
+			ClearPlayerBotRoute(state, true);
+			return false;
+		}
 
 		if (ch->CountSpecifyItem(PLAYERBOT_HORSE_MEDAL_VNUM) <= 0)
 		{

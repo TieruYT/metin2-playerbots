@@ -183,6 +183,12 @@ namespace
 	{
 		if (!ch)
 			return 0;
+		// A bot working on its battle horse hunts where the trial is, whatever
+		// its level would otherwise say. By level 36 it would be off to Orc
+		// Valley, and the Black Wind band it needs lives in the desert.
+		if (IsPlayerBotOnBattleHorseTrial(ch))
+			return PLAYERBOT_MAP_DESERT;
+
 		const BYTE level = ch->GetLevel();
 		if (level >= PLAYERBOT_ORC_VALLEY_MIN_LEVEL && level <= PLAYERBOT_ORC_VALLEY_MAX_LEVEL)
 			return PLAYERBOT_MAP_ORC_VALLEY;
