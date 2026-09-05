@@ -1,18 +1,26 @@
 #ifndef __INC_METIN2_PLAYERBOT_MARKET_H__
 #define __INC_METIN2_PLAYERBOT_MARKET_H__
 
-// Buying from another bot's stall.
+// Buying from another bot's stall, and going out of one's way to do it.
 //
 // The stalls existed already; nobody ever bought from one, so a well-refined
 // spare sat on a counter until its keeper packed up and eventually vendored it.
-// This closes the loop: a bot in Bokjung with money in its pocket walks the
-// market strip and buys what it actually needs - a refine material it is short
-// of, or a piece of gear better than what it is wearing.
+// This closes the loop: a bot with money in its pocket walks the market strip
+// and buys what it actually needs - a refine material it is short of, a horse
+// medal, or a piece of gear better than what it is wearing.
+//
+// The first version only bought from a counter that happened to be within
+// twenty metres of wherever the bot was standing. That is not shopping, and it
+// showed: twelve purchases in half an hour across seven hundred bots, all of
+// them accidents of where a town errand had left somebody. So a bot that is
+// short of something now walks to the ring, picks the nearest counter with that
+// something on it, walks up to that counter, and buys there - which is also
+// what a market is supposed to look like from the outside.
 //
 // It reads the offer from the seller's own AI state rather than from CShop,
-// whose item list is private. That is not a workaround: our stalls carry
-// exactly one item and we are the ones who put it there, so the recorded offer
-// is exactly what is on the counter.
+// whose item list is private. That is not a workaround: we are the ones who put
+// the items on the counter, in that order, so the recorded offer is exactly
+// what is on it and its index is the index CShopManager::Buy expects.
 //
 // The purchase itself goes through the engine's ordinary path. Setting the shop
 // owner is what a client does when a player clicks a stall, and everything
@@ -22,7 +30,8 @@
 // An implementation fragment in the sense playerbot_types.h describes: it
 // defines objects, relies on the engine headers playerbot_manager.cpp includes
 // above it, and reopens the same anonymous namespace. Include it exactly once,
-// after playerbot_town.h.
+// after playerbot_town.h - that file puts the goods on the counters and owns
+// the walk into town this one borrows.
 
 namespace
 {
@@ -117,46 +126,55 @@ namespace
 				GetPlayerBotEquipmentScore(worn, ch);
 	}
 
-	bool ManagePlayerBotShopping(LPCHARACTER ch, TPlayerBotAIState& state, DWORD dwNow)
+	// Is there anything at all a market could sell this bot? Asked before the
+	// walk, so it has to be answerable without reading a single counter: these
+	// are the three things a bot is reliably short of and a stall reliably has.
+	bool PlayerBotWantsAnythingFromMarket(LPCHARACTER ch)
 	{
-		if (!ch || !ch->IsItemLoaded() || ch->IsDead())
+		if (!ch)
 			return false;
-		// A keeper minding its own counter is not also a customer.
-		if (ch->GetMyShop())
-			return false;
-		// bVisitingShop is deliberately not in this list. A bot standing anywhere
-		// near the market is on a town errand almost by definition, so excluding
-		// them left the market with no customers at all - browsing a stall while
-		// in town for potions is the whole idea, not a conflict with it.
-		if (state.bVisitingBiologist || state.bVisitingStable ||
-				state.bRecoveringAfterDeath || state.bTacticalRetreat ||
-				state.bMultiPullActive || state.bFishingSession)
-			return false;
-		// Stalls stand in both towns now - most of them in Joan, round the village
-		// guard - so a buyer looks wherever it happens to be. Restricting this to
-		// Bokjung would have left nine stalls in ten with nobody to sell to.
-		if (ch->GetMapIndex() != PLAYERBOT_MAP_CHUNJO_M1 &&
-				ch->GetMapIndex() != PLAYERBOT_MAP_CHUNJO_M2)
-			return false;
-		if (dwNow < state.dwNextShoppingTime)
-			return false;
+		// A refine material for something it is carrying below its target. This
+		// is the common case by a long way - half the counters in this world are
+		// materials, because half of what a bot needs is.
+		if (PlayerBotNeedsAnyRefineMaterial(ch))
+			return true;
+		// A horse medal, while there is still a horse to raise.
+		if (CanPlayerBotAdvanceHorse(ch))
+			return true;
+		// And the level-30 weapon it would otherwise cross the world to farm.
+		return ch->GetLevel() >= 30 && !HasPlayerBotSpecialLevel30Weapon(ch, false);
+	}
 
-		state.dwNextShoppingTime = dwNow + number(
-				PLAYERBOT_SHOPPING_INTERVAL_MIN, PLAYERBOT_SHOPPING_INTERVAL_MAX);
+	// One line of one counter: what a buyer decided it wants, where it is, and
+	// which slot number CShopManager::Buy will need.
+	struct TPlayerBotStallPick
+	{
+		LPCHARACTER keeper;
+		DWORD dwVnum;
+		DWORD dwPrice;
+		BYTE bSlot;
+		BYTE bRefine;
 
-		if (ch->GetGold() - GetPlayerBotReservedGold(ch) <=
-				(int)PLAYERBOT_SHOPPING_GOLD_FLOOR)
-			return false;
-		if (ch->GetEmptyInventory(2) < 0)
-			return false;
-		if (!ch->GetSectree())
+		TPlayerBotStallPick()
+			: keeper(NULL), dwVnum(0), dwPrice(0), bSlot(0), bRefine(0)
+		{
+		}
+	};
+
+	// The nearest counter in reach with something on it this bot would rather
+	// have than its money. Nearest rather than best: the counters are all within
+	// the same ring, so walking past three of them to reach a fourth buys nothing
+	// extra, and a bot that goes to the closest one gets there before the keeper
+	// packs up.
+	bool FindPlayerBotStallPick(LPCHARACTER ch, TPlayerBotStallPick& outPick)
+	{
+		if (!ch || !ch->GetSectree())
 			return false;
 
 		CCollectPlayerBotStalls collector(ch, PLAYERBOT_SHOPPING_RANGE);
 		ch->GetSectree()->ForEachAround(collector);
-		if (collector.m_stalls.empty())
-			return false;
 
+		int bestDistance = -1;
 		for (size_t i = 0; i < collector.m_stalls.size(); ++i)
 		{
 			LPCHARACTER keeper = collector.m_stalls[i];
@@ -167,12 +185,14 @@ namespace
 			if (it == s_mapPlayerBotAIStates.end() || it->second.vecShopOffers.empty())
 				continue;
 
-			// A counter holds several things now. Walk it and take the first the
+			const int distance = DISTANCE_APPROX(ch->GetX() - keeper->GetX(),
+					ch->GetY() - keeper->GetY());
+			if (bestDistance >= 0 && distance >= bestDistance)
+				continue; // a nearer counter has already offered something
+
+			// A counter holds several things. Walk it and take the first line the
 			// buyer actually wants; the index is the slot, because the offers were
 			// recorded in the order they were handed to OpenMyShop.
-			BYTE slot = 0;
-			LPITEM offer = NULL;
-			DWORD price = 0;
 			for (size_t k = 0; k < it->second.vecShopOffers.size(); ++k)
 			{
 				const TPlayerBotShopOffer& candidate = it->second.vecShopOffers[k];
@@ -181,50 +201,205 @@ namespace
 						ch->GetGold() - (int)candidate.dwPrice <
 							(int)PLAYERBOT_SHOPPING_GOLD_FLOOR)
 					continue;
-				LPITEM candidateItem = FindPlayerBotStallItem(keeper,
-						candidate.dwVnum, candidate.bRefine);
-				if (!WantsPlayerBotStallItem(ch, candidateItem))
+				if (!WantsPlayerBotStallItem(ch, FindPlayerBotStallItem(keeper,
+						candidate.dwVnum, candidate.bRefine)))
 					continue;
-				slot = (BYTE)k;
-				offer = candidateItem;
-				price = candidate.dwPrice;
+				outPick.keeper = keeper;
+				outPick.dwVnum = candidate.dwVnum;
+				outPick.dwPrice = candidate.dwPrice;
+				outPick.bSlot = (BYTE)k;
+				outPick.bRefine = candidate.bRefine;
+				bestDistance = distance;
 				break;
 			}
-			if (!offer)
-				continue;
+		}
+		return bestDistance >= 0;
+	}
 
-			const DWORD vnum = offer->GetVnum();
-			const BYTE refine = offer->GetRefineLevel();
-			const int goldBefore = ch->GetGold();
+	// Exactly what a client does when a player clicks a stall, in the same order.
+	// Both halves are required and neither is optional: CShopManager::Buy returns
+	// immediately unless the buyer is registered as a guest of the shop (AddGuest
+	// is what sets ch->GetShop()) *and* has the shop owner set. Setting only the
+	// owner, which is the obvious half, silently bought nothing at all.
+	bool BuyFromPlayerBotStall(LPCHARACTER ch, const TPlayerBotStallPick& pick)
+	{
+		if (!ch || !pick.keeper)
+			return false;
+		LPSHOP shop = pick.keeper->GetMyShop();
+		if (!shop || ch->GetShop() || ch->GetExchange())
+			return false;
+		if (!shop->AddGuest(ch, pick.keeper->GetVID(), false))
+			return false;
 
-			// Exactly what a client does when a player clicks a stall, in the same
-			// order. Both halves are required and neither is optional:
-			// CShopManager::Buy returns immediately unless the buyer is registered
-			// as a guest of the shop (AddGuest is what sets ch->GetShop()) *and*
-			// has the shop owner set. Setting only the owner, which is the obvious
-			// half, silently bought nothing at all.
-			LPSHOP shop = keeper->GetMyShop();
-			if (!shop || ch->GetShop() || ch->GetExchange())
-				continue;
-			if (!shop->AddGuest(ch, keeper->GetVID(), false))
-				continue;
-			ch->SetShopOwner(keeper);
-			CShopManager::instance().Buy(ch, slot);
-			// Leaving either of these set would point this bot at a character it
-			// is no longer standing next to.
-			ch->SetShopOwner(NULL);
-			shop->RemoveGuest(ch);
+		const int goldBefore = ch->GetGold();
+		ch->SetShopOwner(pick.keeper);
+		CShopManager::instance().Buy(ch, pick.bSlot);
+		// Leaving either of these set would point this bot at a character it is no
+		// longer standing next to.
+		ch->SetShopOwner(NULL);
+		shop->RemoveGuest(ch);
 
-			if (ch->GetGold() < goldBefore)
+		if (ch->GetGold() >= goldBefore)
+			return false;
+
+		sys_log(0, "PLAYERBOT_MARKET: bought pid=%u name=%s from=%s slot=%u vnum=%u refine=%u asked=%u paid=%d gold=%d",
+				ch->GetPlayerID(), ch->GetName(), pick.keeper->GetName(),
+				(unsigned int)pick.bSlot, pick.dwVnum, (unsigned int)pick.bRefine,
+				pick.dwPrice, goldBefore - ch->GetGold(), ch->GetGold());
+		return true;
+	}
+
+	// Ending a trip says why, the way closing a stall does. Without it the only
+	// measurable thing about shopping was the purchases, and a market with no
+	// purchases could equally mean nobody set off, nobody arrived, or nobody
+	// found anything - three different faults with three different fixes.
+	void EndPlayerBotMarketTrip(LPCHARACTER ch, TPlayerBotAIState& state,
+			const char* reason)
+	{
+		if (ch && state.bMarketTrip)
+			sys_log(0, "PLAYERBOT_MARKET: trip over pid=%u name=%s reason=%s pos=(%ld,%ld)",
+					ch->GetPlayerID(), ch->GetName(), reason, ch->GetX(), ch->GetY());
+		state.bMarketTrip = false;
+		state.dwMarketTripUntil = 0;
+		state.dwMarketBrowseTime = 0;
+		state.dwMarketStallVID = 0;
+	}
+
+	// Money it may actually spend, and somewhere to put what it buys. Both are
+	// re-asked every tick of a trip: a bot whose bag filled up on the way has
+	// nothing left to go to the market for.
+	bool CanPlayerBotAffordMarket(LPCHARACTER ch)
+	{
+		return ch && ch->GetGold() - GetPlayerBotReservedGold(ch) >
+					(int)PLAYERBOT_SHOPPING_GOLD_FLOOR &&
+				ch->GetEmptyInventory(2) >= 0;
+	}
+
+	// One tick of a shopping trip: read the counters now and then, walk to the
+	// one that has something, and buy when standing at it. Claims the tick for as
+	// long as the trip lasts, which is what keeps the bot walking instead of
+	// planning a hunt halfway across the market.
+	bool ContinuePlayerBotMarketTrip(LPCHARACTER ch, TPlayerBotAIState& state,
+			DWORD dwNow, long pitchX, long pitchY)
+	{
+		if (dwNow >= state.dwMarketTripUntil || !CanPlayerBotAffordMarket(ch))
+		{
+			EndPlayerBotMarketTrip(ch, state,
+					dwNow >= state.dwMarketTripUntil ? "timeout" : "broke");
+			return false;
+		}
+		SetPlayerBotAction(state, BOT_ACTION_MARKET, dwNow);
+
+		// The counters change while their customer is walking over - a keeper
+		// packs up, another opens - so what the bot is heading for is re-decided
+		// every couple of seconds rather than once at the start of the trip.
+		TPlayerBotStallPick pick;
+		bool havePick = false;
+		if (dwNow >= state.dwMarketBrowseTime)
+		{
+			state.dwMarketBrowseTime = dwNow + PLAYERBOT_MARKET_BROWSE_INTERVAL;
+			havePick = FindPlayerBotStallPick(ch, pick);
+			state.dwMarketStallVID = havePick ? pick.keeper->GetVID() : 0;
+			if (!havePick &&
+					DISTANCE_APPROX(ch->GetX() - pitchX, ch->GetY() - pitchY) <=
+						PLAYERBOT_SHOP_RING_RADIUS)
 			{
-				sys_log(0, "PLAYERBOT_MARKET: bought pid=%u name=%s from=%s slot=%u vnum=%u refine=%u asked=%u paid=%d gold=%d",
-						ch->GetPlayerID(), ch->GetName(), keeper->GetName(),
-						(unsigned int)slot, vnum, (unsigned int)refine, price,
-						goldBefore - ch->GetGold(), ch->GetGold());
-				return true;
+				// Standing in the ring with nothing on it worth buying. The trip
+				// is over rather than a bot loitering for another minute.
+				EndPlayerBotMarketTrip(ch, state, "nothing_on_offer");
+				return false;
 			}
 		}
-		return false;
+
+		// A keeper that has packed up since the last look stops being a
+		// destination, and the bot falls back on the middle of the ring.
+		LPCHARACTER keeper = state.dwMarketStallVID != 0
+				? CHARACTER_MANAGER::instance().Find(state.dwMarketStallVID) : NULL;
+		if (keeper && !keeper->GetMyShop())
+		{
+			keeper = NULL;
+			state.dwMarketStallVID = 0;
+		}
+
+		if (!MovePlayerBotTownLeg(ch, state, dwNow,
+				keeper ? keeper->GetX() : pitchX,
+				keeper ? keeper->GetY() : pitchY,
+				keeper ? PLAYERBOT_MARKET_STALL_APPROACH : PLAYERBOT_MARKET_ARRIVE))
+			return true; // still walking
+
+		if (keeper && havePick && pick.keeper == keeper)
+		{
+			BuyFromPlayerBotStall(ch, pick);
+			// Look again at once rather than at the next browse: a bot that came
+			// for two materials should get both before it walks off, and its
+			// purse and bag have just changed.
+			state.dwMarketStallVID = 0;
+			state.dwMarketBrowseTime = dwNow;
+		}
+		return true;
+	}
+
+	bool ManagePlayerBotShopping(LPCHARACTER ch, TPlayerBotAIState& state, DWORD dwNow)
+	{
+		if (!ch || !ch->IsItemLoaded() || ch->IsDead())
+			return false;
+		// A keeper minding its own counter is not also a customer.
+		if (ch->GetMyShop() || state.bVisitingBiologist || state.bVisitingStable ||
+				state.bRecoveringAfterDeath || state.bTacticalRetreat ||
+				state.bMultiPullActive || state.bFishingSession)
+		{
+			EndPlayerBotMarketTrip(ch, state, "busy");
+			return false;
+		}
+		// Stalls stand in both towns - most of them in Joan, round the village
+		// guard - and nowhere else, so the pitch is both the test for "is there a
+		// market here" and the place a shopping trip walks to.
+		long pitchX = 0, pitchY = 0;
+		if (!GetPlayerBotShopCentre(ch->GetMapIndex(), pitchX, pitchY) ||
+				!ch->GetSectree())
+		{
+			EndPlayerBotMarketTrip(ch, state, "left_town");
+			return false;
+		}
+
+		if (state.bMarketTrip)
+			return ContinuePlayerBotMarketTrip(ch, state, dwNow, pitchX, pitchY);
+
+		if (dwNow < state.dwNextShoppingTime)
+			return false;
+		state.dwNextShoppingTime = dwNow + number(
+				PLAYERBOT_SHOPPING_INTERVAL_MIN, PLAYERBOT_SHOPPING_INTERVAL_MAX);
+		if (!CanPlayerBotAffordMarket(ch))
+			return false;
+
+		// bVisitingShop does not stop a bot buying from a counter it is already
+		// standing beside - a bot anywhere near the market is on a town errand
+		// almost by definition, and excluding them left the market with no
+		// customers at all. It does stop it walking off across town: the errand
+		// owns the bot's feet until it is finished.
+		TPlayerBotStallPick pick;
+		const bool haveStallInReach = FindPlayerBotStallPick(ch, pick);
+		if (state.bVisitingShop)
+			return haveStallInReach && BuyFromPlayerBotStall(ch, pick);
+
+		// Something in reach, or a reason to go and look: either way it is a trip,
+		// so the bot walks up to the counter instead of buying from twenty metres
+		// off. That is the difference between a market and a vending machine.
+		if (!haveStallInReach && !PlayerBotWantsAnythingFromMarket(ch))
+			return false;
+		if (!haveStallInReach &&
+				DISTANCE_APPROX(ch->GetX() - pitchX, ch->GetY() - pitchY) >
+					PLAYERBOT_MARKET_TRIP_RANGE)
+			return false; // wants something, but the market is a hunt away
+
+		state.bMarketTrip = true;
+		state.dwMarketTripUntil = dwNow + PLAYERBOT_MARKET_TRIP_TIMEOUT;
+		state.dwMarketBrowseTime = dwNow + PLAYERBOT_MARKET_BROWSE_INTERVAL;
+		state.dwMarketStallVID = haveStallInReach ? pick.keeper->GetVID() : 0;
+		sys_log(0, "PLAYERBOT_MARKET: trip pid=%u name=%s map=%ld stall=%u pos=(%ld,%ld)",
+				ch->GetPlayerID(), ch->GetName(), ch->GetMapIndex(),
+				(unsigned int)state.dwMarketStallVID, ch->GetX(), ch->GetY());
+		return ContinuePlayerBotMarketTrip(ch, state, dwNow, pitchX, pitchY);
 	}
 }
 

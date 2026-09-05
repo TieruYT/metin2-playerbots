@@ -65,9 +65,14 @@ namespace
 		return false;
 	}
 
-	bool PlayerBotNeedsRefineMaterial(LPCHARACTER ch, DWORD materialVnum)
+	// Everything this bot wears or carries that is still below its refine target,
+	// against what those refines actually consume. A materialVnum of zero asks
+	// the looser question - short of anything at all - which is what decides
+	// whether walking to the market is worth the trip; a real vnum asks about the
+	// one thing on the counter in front of it.
+	bool PlayerBotIsShortOfRefineMaterial(LPCHARACTER ch, DWORD materialVnum)
 	{
-		if (!ch || materialVnum == 0)
+		if (!ch)
 			return false;
 
 		const BYTE wearSlots[] = {
@@ -96,12 +101,27 @@ namespace
 				continue;
 			for (int m = 0; m < recipe->material_count; ++m)
 			{
-				if (recipe->materials[m].vnum == materialVnum &&
-						ch->CountSpecifyItem(materialVnum) < recipe->materials[m].count * 2)
+				const DWORD vnum = recipe->materials[m].vnum;
+				if (vnum == 0 || recipe->materials[m].count == 0)
+					continue;
+				if (materialVnum != 0 && vnum != materialVnum)
+					continue;
+				if (ch->CountSpecifyItem(vnum) < recipe->materials[m].count * 2)
 					return true;
 			}
 		}
 		return false;
+	}
+
+	bool PlayerBotNeedsRefineMaterial(LPCHARACTER ch, DWORD materialVnum)
+	{
+		return materialVnum != 0 &&
+				PlayerBotIsShortOfRefineMaterial(ch, materialVnum);
+	}
+
+	bool PlayerBotNeedsAnyRefineMaterial(LPCHARACTER ch)
+	{
+		return PlayerBotIsShortOfRefineMaterial(ch, 0);
 	}
 
 	bool IsPlayerBotJunkItem(LPCHARACTER ch, LPITEM item)

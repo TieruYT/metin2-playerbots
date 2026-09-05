@@ -82,6 +82,7 @@ namespace
 			case BOT_ACTION_BIOLOGIST: return "robie misje Biologa";
 			case BOT_ACTION_STABLE: return "odwiedzam Stajennego";
 			case BOT_ACTION_STALL: return "prowadze stragan";
+			case BOT_ACTION_MARKET: return "jestem na zakupach";
 			default: return "mysle";
 		}
 	}
@@ -254,6 +255,12 @@ namespace
 					snprintf(status, statusSize, "%sLowie ryby - czekam na branie", prefix);
 				else
 					snprintf(status, statusSize, "%sZakladam przynete na wedke", prefix);
+				break;
+			case BOT_ACTION_MARKET:
+				if (state.dwMarketStallVID != 0)
+					snprintf(status, statusSize, "%sOgladam stragan", prefix);
+				else
+					snprintf(status, statusSize, "%sSzukam czegos na straganach", prefix);
 				break;
 			case BOT_ACTION_TRAVEL:
 				if (ch->GetMapIndex() == PLAYERBOT_MAP_CHUNJO_M1 &&

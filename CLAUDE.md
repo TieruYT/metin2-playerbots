@@ -97,6 +97,7 @@ dependency order at the top of `playerbot_manager.cpp`:
 | `playerbot_planner.h` | Which long-term goal wins: the candidates, their base priorities, and the three gates no weight can touch. |
 | `playerbot_guild.h` | Founding and recruiting a guild, and who a bot has got on with. |
 | `playerbot_town.h` | A town visit end to end, as a state machine that survives being interrupted. |
+| `playerbot_market.h` | Buying from another bot's counter: what is worth having, the walk to the stall, and the purchase. |
 | `playerbot_loot.h` | Picking things up, in and out of a fight, without sweeping the floor. |
 | `playerbot_survival.h` | Saving progress, breaking off a losing fight, and the walk back after dying. |
 | `playerbot_wandering.h` | What a bot does on a hunting map when nothing is asking for its attention. |

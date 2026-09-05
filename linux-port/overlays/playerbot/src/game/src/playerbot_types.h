@@ -114,6 +114,33 @@ namespace
 	// level-30 weapons and big bonus rolls, and a person walking the market sees
 	// a row of +1 armours and calls it junk - which it is.
 	const BYTE PLAYERBOT_SHOP_MIN_GEAR_REFINE = 4;
+	// And the level the piece is for. Of the 487 spares at +4 or +5 in this
+	// world's bags, 272 are for level 29 or below - level-26 bodies, level-25
+	// and lower weapons, level-17 boots, a handful of level-0 starter pieces -
+	// each of them one tier behind what its owner is already wearing and worth
+	// nothing to anybody who might walk past. The gear a player crosses a market
+	// for starts at level 30.
+	const int PLAYERBOT_SHOP_MIN_GEAR_LEVEL = 30;
+	// Two slots have nothing at all between the starter tier and level 41:
+	// shields and helmets go 0 -> 21 -> 41. The level-21 piece is therefore the
+	// best anyone under 41 can wear, which is why it is worth real money on a
+	// counter while a level-26 body armour - one tier below the level-34 a bot
+	// of that age is already wearing - is not.
+	const int PLAYERBOT_SHOP_TOP_SLOT_GEAR_LEVEL = 21;
+	// How many lines a counter needs before it is worth a sign. One is not a
+	// market stall: a player walks past, opens it, and finds a single spare.
+	// Eighteen of the thirty-four stalls this world opened in the fourteen
+	// minutes after a restart carried exactly one item.
+	//
+	// Two rather than three, measured rather than guessed. Three left eight
+	// stalls standing where the old rule had left thirty-four - and the seven
+	// with three lines or more were the same seven either way, so the extra
+	// strictness bought nothing except a quieter market.
+	const size_t PLAYERBOT_SHOP_MIN_ITEMS = 2;
+	// Unless that one line is the reason somebody would cross the market: a
+	// level-30 weapon, a horse medal, a big bonus roll, anything at +6 or better.
+	// This is the score at which a single item carries a stall on its own.
+	const int PLAYERBOT_SHOP_PRIZE_SCORE = 900;
 	// A bonus line big enough to make an item worth selling whatever else it is.
 	// A thousand health is roughly what a good armour of the level range adds, so
 	// anything at or above it was rolled well rather than ordinarily.
@@ -134,6 +161,27 @@ namespace
 	const int PLAYERBOT_SHOPPING_RANGE = 1800;
 	// Gold a bot will not spend on the market; potions and gear come first.
 	const DWORD PLAYERBOT_SHOPPING_GOLD_FLOOR = 200000;
+	// Going shopping, as opposed to buying whatever happens to be within twenty
+	// metres. A bot that is short of something walks over to the stall ring and
+	// reads the counters; this is how long it may spend on that before it goes
+	// back to whatever it was doing. Long enough to cross a town, short enough
+	// that a bot which cannot get there loses one errand and not its evening.
+	const DWORD PLAYERBOT_MARKET_TRIP_TIMEOUT = 90000;
+	// And how far away the stalls may be before it is not worth setting off:
+	// the whole of the town, so that a bot which has just finished its errands
+	// goes shopping while one that is out hunting stays where it is instead of
+	// walking the timeout out and turning round empty-handed. Joan's ring stands
+	// round the village guard, outside the town proper - the gate is 5750 from
+	// him and the far corner of the service area 10900 - so nine thousand, which
+	// was measured from the gate, excluded a bot standing at the blacksmith.
+	const int PLAYERBOT_MARKET_TRIP_RANGE = 12000;
+	// How often it re-reads the counters while it stands among them. The scan
+	// walks every entity in the surrounding sectors, so it is not a per-tick job.
+	const DWORD PLAYERBOT_MARKET_BROWSE_INTERVAL = 2000;
+	// How close it walks up to the stall it has picked. The engine would let it
+	// buy from twenty metres, but a market where the customers stand at the
+	// counters looks like a market.
+	const int PLAYERBOT_MARKET_STALL_APPROACH = 350;
 	const int PLAYERBOT_GEAR_SHARE_RANGE = 2200;
 	// Refining only runs while the bot is physically standing at the blacksmith.
 	// A real player can click several times during one visit; a three-second cadence
@@ -672,7 +720,11 @@ namespace
 		// who is actually trading. Appended, never inserted - the id goes into
 		// the status file the panel reads.
 		BOT_ACTION_STALL,
-		BOT_ACTION_FISHING
+		BOT_ACTION_FISHING,
+		// Walking the stall ring looking for something to buy. Distinct from
+		// BOT_ACTION_SHOP, which is the NPC merchant round, and from
+		// BOT_ACTION_STALL, which is standing behind a counter of one's own.
+		BOT_ACTION_MARKET
 	};
 
 	enum EPlayerBotPersonality
@@ -772,6 +824,9 @@ namespace
 			dwShopCloseTime(0),
 			dwNextShopKeepTime(0),
 			dwNextShoppingTime(0),
+			dwMarketTripUntil(0),
+			dwMarketBrowseTime(0),
+			dwMarketStallVID(0),
 			dwNextShopDebugTime(0),
 			dwMonkeyReversePortalBlockUntil(0),
 			dwNextLootPickupTime(0),
@@ -817,6 +872,7 @@ namespace
 			bLootThreatNearby(false),
 			bEquipPending(false),
 			bVisitingShop(false),
+			bMarketTrip(false),
 			bTownNeedMisc(false),
 			bTownNeedWeaponMerchant(false),
 			bTownNeedArmorMerchant(false),
@@ -922,6 +978,13 @@ namespace
 		DWORD dwShopCloseTime;
 		DWORD dwNextShopKeepTime;
 		DWORD dwNextShoppingTime;
+		// The shopping trip: when it must be over, when the counters may be read
+		// again, and which keeper the bot is currently walking up to. The stall is
+		// held as a VID rather than a position so that a keeper which packs up
+		// mid-walk simply stops being found.
+		DWORD dwMarketTripUntil;
+		DWORD dwMarketBrowseTime;
+		DWORD dwMarketStallVID;
 		// What this bot is currently selling, in the order the items sit on the
 		// counter - an index here is the index CShopManager::Buy expects. Not in
 		// the initialiser list: it default-constructs empty, which is the state a
@@ -972,6 +1035,8 @@ namespace
 		bool bLootThreatNearby;
 		bool bEquipPending;
 		bool bVisitingShop;
+		// On a shopping trip: walking to the stalls, or standing among them.
+		bool bMarketTrip;
 		bool bTownNeedMisc;
 		bool bTownNeedWeaponMerchant;
 		bool bTownNeedArmorMerchant;

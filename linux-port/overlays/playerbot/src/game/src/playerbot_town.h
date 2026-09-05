@@ -306,6 +306,14 @@ namespace
 		state.dwTownWaitUntil = 0;
 		state.dwNextShopCheckTime = dwNow +
 			(completed ? number(300000, 600000) : number(60000, 120000));
+		// Free, standing in town, errands done: the one moment this bot is the
+		// customer the market needs. The shopping timer is cleared rather than
+		// left where the visit pushed it - every check that ran during the visit
+		// advanced it by two to five minutes and then refused the trip, because a
+		// bot on an errand may buy from a counter beside it but may not walk off
+		// across town. Joan spent nine hundred bots that way and sent one
+		// shopper in fourteen minutes.
+		state.dwNextShoppingTime = dwNow;
 		state.dwTargetVID = 0;
 		state.bStuckCounter = 0;
 		if (ch)
@@ -415,6 +423,21 @@ namespace
 		return false;
 	}
 
+	// The two slots where a piece below level 30 is still the best a bot can get.
+	// Shields and helmets go straight from the starter tier to level 41, so the
+	// level-21 one is what everybody between 21 and 40 wears - which is why it
+	// sells, and why it is the exception to the rule below it. Every other slot
+	// has a tier in the twenties that is merely one step behind the thirties.
+	bool IsPlayerBotTopSlotLowLevelGear(LPITEM item)
+	{
+		if (!item || item->GetType() != ITEM_ARMOR)
+			return false;
+		const BYTE sub = item->GetSubType();
+		if (sub != ARMOR_SHIELD && sub != ARMOR_HEAD)
+			return false;
+		return item->GetLevelLimit() >= PLAYERBOT_SHOP_TOP_SLOT_GEAR_LEVEL;
+	}
+
 	// Horse medals are the one thing a bot farms for itself for hours. A trader
 	// has no such errand - it does not go to the Monkey Dungeon at all - and a
 	// bot whose horse is already at the level cap has nothing left to spend them
@@ -464,11 +487,36 @@ namespace
 		// that one line decided what the whole market looked like.
 		const BYTE type = item->GetType();
 		if (type == ITEM_WEAPON || type == ITEM_ARMOR)
-			return item->GetRefineLevel() >= PLAYERBOT_SHOP_MIN_GEAR_REFINE ? 100 : -1;
+		{
+			if (item->GetRefineLevel() < PLAYERBOT_SHOP_MIN_GEAR_REFINE)
+				return -1;
+			// The refine floor alone let the whole of the twenties through, and
+			// the twenties are what a bot has just stopped wearing: 272 of the
+			// 487 spares at +4 or +5 in this world are for level 29 or below.
+			// A +4 body armour for level 26, offered to a market whose customers
+			// are level 30 and up, is junk at any refine.
+			if (item->GetLevelLimit() < PLAYERBOT_SHOP_MIN_GEAR_LEVEL &&
+					!IsPlayerBotTopSlotLowLevelGear(item))
+				return -1;
+			return 100;
+		}
 
 		// Whatever is left is the bot's own business, not goods. A stall with two
 		// things worth buying beats one padded out to eight.
 		return -1;
+	}
+
+	// Is this worth putting a sign up for? Three lines make a stall; fewer than
+	// that only if one of them is the reason somebody would cross the market for
+	// it - a level-30 weapon, a big bonus roll, anything at +6, a horse medal.
+	// The caller passes the best score it has, because that is exactly what
+	// ScorePlayerBotShopStock spent its time working out.
+	bool IsPlayerBotStallWorthOpening(size_t lines, int bestScore)
+	{
+		if (lines == 0)
+			return false;
+		return lines >= PLAYERBOT_SHOP_MIN_ITEMS ||
+				bestScore >= PLAYERBOT_SHOP_PRIZE_SCORE;
 	}
 
 	// Everything this bot can legitimately part with, best first. OpenMyShop
@@ -837,15 +885,21 @@ namespace
 		if (!justFinishedInTown && !alreadyAtPitch)
 			return false;
 
+		// Sorted best first, so the head of the list is the best score there is.
 		std::vector<std::pair<int, WORD> > scored;
 		CollectPlayerBotShopItems(ch, scored, IsPlayerBotMerchant(state));
-		if (scored.empty())
+		if (!IsPlayerBotStallWorthOpening(scored.size(),
+				scored.empty() ? 0 : scored[0].first))
 		{
 			// Nothing worth a stall right now; look again after a hunt rather than
-			// re-scanning the whole inventory every tick.
-			state.dwNextShopKeepTime = dwNow + number(300000, 600000);
-			sys_log(0, "PLAYERBOT_SHOP: nothing to sell pid=%u name=%s",
-					ch->GetPlayerID(), ch->GetName());
+			// re-scanning the whole inventory every tick. A bot that is merely a
+			// line or two short is asked again sooner: it needs one more drop,
+			// not an evening, and it can only open while it happens to be in town.
+			state.dwNextShopKeepTime = dwNow + (scored.empty()
+					? number(300000, 600000) : number(120000, 240000));
+			sys_log(0, "PLAYERBOT_SHOP: nothing to sell pid=%u name=%s lines=%u best=%d",
+					ch->GetPlayerID(), ch->GetName(), (unsigned int)scored.size(),
+					scored.empty() ? 0 : scored[0].first);
 			return false;
 		}
 
@@ -881,6 +935,7 @@ namespace
 		const BYTE tableLimit = IsPlayerBotMerchant(state)
 				? PLAYERBOT_SHOP_MERCHANT_ITEMS : PLAYERBOT_SHOP_MAX_ITEMS;
 		BYTE tableCount = 0;
+		int bestScore = 0;
 		for (size_t i = 0; i < scored.size() && tableCount < tableLimit; ++i)
 		{
 			const WORD cell = scored[i].second;
@@ -903,11 +958,18 @@ namespace
 			offer.dwPrice = price;
 			offer.bRefine = item->GetRefineLevel();
 			offers.push_back(offer);
+			if (scored[i].first > bestScore)
+				bestScore = scored[i].first;
 			++tableCount;
 		}
-		if (tableCount == 0)
+		// Asked again here rather than trusting the scan above: the inventory
+		// moves between the two - a town errand happens in between - and a stall
+		// that loses two of its three lines on the way to the pitch should stay
+		// packed up rather than open with what is left.
+		if (!IsPlayerBotStallWorthOpening(tableCount, bestScore))
 		{
-			state.dwNextShopKeepTime = dwNow + number(300000, 600000);
+			state.dwNextShopKeepTime = dwNow + (tableCount == 0
+					? number(300000, 600000) : number(120000, 240000));
 			return false;
 		}
 
