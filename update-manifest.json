@@ -1,12 +1,12 @@
 {
   "schema": 1,
   "channel": "stable",
-  "publishedAt": "2026-09-05T20:10:00Z",
-  "statusMessage": "Aktualizacja 1.25.7. Bot sprzedawal konia bojowego kupcowi trzy minuty po tym, jak go zdobyl - regula zlomowania uznawala zwoj za szrot. Bot powyzej 36 poziomu przestawal ulepszac bron na zawsze, bo drabina sprzetu konczyla sie na broni na 36; teraz siega do 80 (miecz, luk, dzwonek), 87 (dwureczny) i 75 (sztylet), a zbroja do 66 zamiast 54. Boty z przemianowanym nickiem sa znowu widoczne na stronie - panel pyta o konto, nie o nick.",
+  "publishedAt": "2026-09-05T21:00:00Z",
+  "statusMessage": "Aktualizacja 1.25.8. Boty kupuja wreszcie bransolety, naszyjniki i kolczyki - te trzy sloty nie mialy zadnej drabiny, wiec ozdobe bot nosil tylko z dropu. Ozdoba dobierana jest do klasy, nie do poziomu: kolczyki rotuja statystyka, wiec szaman bierze ten z inteligencja, a nie nowszy z sila. Cala wycena sprzetu rozroznia teraz klasy. Do Lochu Malp prawie nikt nie chodzil, bo okno wyprawy mialo dokladnie dwa poziomy i zamykalo sie na zawsze - a suwak konia w panelu nie wplywal na wyprawy w ogole.",
   "server": {
-    "version": "1.25.7",
-    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v1.25.7/metin2-server-update-1.25.7.zip",
-    "sha256": "AA1B90E43752D4A9507A91D31F11E8852CE3632CF697F603DC6EBDC2010211B6"
+    "version": "1.25.8",
+    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v1.25.8/metin2-server-update-1.25.8.zip",
+    "sha256": "2E2C06F86BDC1C0325488F104D74A44947DFAD3388A8049DCCD95B25418609C9"
   },
   "support": {
     "contactUrl": "https://discord.gg/pt5tvnrN6",

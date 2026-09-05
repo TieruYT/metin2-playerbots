@@ -17,6 +17,43 @@ every version here.
 
 ---
 
+## 1.25.8 — 2026-09-05
+
+### Nowe
+
+- **Boty kupują wreszcie bransolety, naszyjniki i kolczyki.** Drabinę sprzętu
+  miało pięć slotów; te trzy nie miały żadnej, więc bot nosił ozdobę tylko
+  wtedy, gdy jakaś mu wypadła. Większość chodziła z trzema pustymi polami na
+  karcie postaci przez całe życie.
+- **Ozdoba jest dobierana do klasy, nie do poziomu.** Kolczyki rotują
+  statystyką w miarę wzrostu — zwinność, siła, kondycja, inteligencja — więc
+  najwyższy nie jest najlepszy dla każdego. Szaman na 62 poziomie bierze teraz
+  kolczyk z 54 poziomu, bo ten ma inteligencję, a ten nowszy dałby mu siłę.
+  Wojownik i sura walczący bronią biorą kolczyk z siłą, ninja ze zwinnością,
+  szaman i sura magiczny z inteligencją.
+- **Cała wycena sprzętu rozróżnia teraz klasy.** Siła, zwinność i inteligencja
+  były warte po tyle samo, kimkolwiek byłeś. Statystyka, którą klasa walczy,
+  jest teraz warta dwa razy tyle, a te nieużywane jedną piątą. Dotyczy to nie
+  tylko zakupów, ale i porównywania tego, co wypadło z potwora.
+
+### Naprawione
+
+- **Do Lochu Małp praktycznie nikt nie chodził, a suwak konia w panelu nic nie
+  robił.** Dwie osobne przyczyny. Warunek wyprawy wymaga poziomu 25, żeby koń
+  mógł wejść z zera na jedynkę, a pasmo lochu kończyło się na 26 — razem dawało
+  to okno **dokładnie dwa poziomy szerokie**, po którym drzwi zamykały się na
+  zawsze. Na testowym świecie 446 botów było powyżej pasma i 435 z nich miało
+  konia poniżej dziesiątki: odcięte od jedynego źródła medali, a przez to od
+  konia bojowego. Teraz powyżej pasma bot nadal przychodzi po medal, dopóki ma
+  konia do podniesienia, z trzykrotnie mniejszą szansą — i wychodzi, gdy tylko
+  medal ma. Druga przyczyna: waga HORSE była czytana wyłącznie przez planer
+  celów, a bramka, która faktycznie wysyła bota do lochu, nigdy o niej nie
+  słyszała. Teraz suwak działa.
+- **Boty kupowały najgorszą bransoletę w grze.** Wytrzymałość nie miała własnej
+  wagi i wpadała do domyślnego kosza, więc dziesięć jej punktów ze startowej
+  bransolety było warte więcej niż cokolwiek, co ta linia oferuje poniżej 46
+  poziomu. Wytrzymałość to pasek biegu — jest teraz warta tyle co punkty many.
+
 ## 1.25.7 — 2026-09-05
 
 ### Naprawione
