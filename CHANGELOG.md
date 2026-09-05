@@ -17,6 +17,79 @@ every version here.
 
 ---
 
+## 1.25.0 — 2026-09-05
+
+> **Wydanie eksperymentalne.** Wchodzi naraz kilka nowych systemów, które
+> dotykają tego, jak boty planują cały swój czas, a nie pojedynczej funkcji.
+> Baza danych nie jest ruszana i cofnięcie się do 1.24.9 nic nie psuje, ale
+> spodziewaj się, że coś będzie wymagało dostrojenia. Zgłoszenia są mile
+> widziane — szczególnie takie z opisem, co bot robił i gdzie.
+
+### Nowe
+
+- **Zachowanie botów regulujesz suwakami w panelu, na żywo.** Nowa strona
+  **🧠 Zachowanie botów** daje jedenaście wag: kupowanie mikstur, kowal, księgi
+  umiejętności, koń, Biolog, metiny, grupy, misje polowania, zwykłe bicie
+  potworów, wędkowanie i stragany. 100 to dokładnie tak, jak serwer był
+  zbudowany; 25 znaczy cztery razy rzadziej, 250 — dwa i pół raza częściej.
+  Zapis działa w ciągu pięciu sekund, **bez restartu i bez rozłączania kogokolwiek**.
+  Ucieczka z przegranej walki, wybór profesji i zdobycie broni nie podlegają
+  suwakom — to nie są preferencje.
+- **Sezon tygodniowy i rekordy serwera** pod adresem `/season`, dostępne bez
+  logowania. Metiny, bossy i ulepszenia, które weszły na +7 lub wyżej, z
+  ostatnich siedmiu dni, oraz kafle z rekordami od początku istnienia świata.
+  Statystyki liczą się **wstecz przez całą historię serwera**, bo silnik i tak
+  zapisywał te zdarzenia od pierwszego dnia — nie trzeba było niczego doliczać.
+- **Boty zakładają gildie.** Na 40. poziomie i za 200 000 yang, dokładnie jak
+  gracz u Strażnika Wsi. Mistrz gildii przyjmuje potem stojące obok boty tego
+  samego królestwa. Herbów jeszcze nie ma.
+- **Boty pamiętają, z kim polowały.** Wspólna grupa buduje znajomość, a przy
+  szukaniu drużyny bot wybiera teraz tego, z kim już mu się układało, zamiast
+  pierwszego napotkanego.
+
+### Naprawione
+
+- **Koń bojowy wreszcie może walczyć.** W pętli decyzji siedziało bezwarunkowe
+  zsiadanie wykonywane przed wyborem celu — napisane, zanim walka z siodła w
+  ogóle powstała. Bot dojeżdżał do metina konno i natychmiast lądował na ziemi.
+  Teraz zsiadają tylko te boty, które i tak nie mogą bić z konia, a decyzja
+  zapada tam, gdzie cel jest już znany — więc bot, który podszedł pieszo, potrafi
+  też **wsiąść** przed walką.
+- **Odporność na omdlenie (NNO) przestała być wyrzucana.** W wycenie bonusów nie
+  miała własnego przypadku i wpadała do gałęzi domyślnej, a wartość linii
+  immunitetu wynosi 1 — czyli najcenniejszy roll na tarczy w całej grze był dla
+  bota wart mniej niż punkt szybkości ruchu i szedł do przerzucenia. Doszły też
+  warunki zatrzymania: tarcza z NNO, broń na 30. poziom ze średnimi obrażeniami
+  od 30%, pancerz i biżuteria z 1500 PŻ **nie są już nigdy przerzucane**, choć
+  nadal mogą dostać kolejną linię.
+- **Piąta linia bonusów.** Silnik pozwala na pięć, a pętla kończyła na czterech —
+  każdy bot na świecie chodził o jedną linię uboższy. Na uruchomionym świecie
+  przedmiotów z pięcioma liniami przybyło z 7 do 108 w ciągu godziny.
+- **Boty przestają pilnować jednego respawnu.** Po dojściu na miejsce, na którym
+  nie ma już czego bić, planer przesuwał je o siedemset jednostek i czekał
+  kolejne 8–12 sekund, w kółko. Teraz idą do następnego miejsca, do którego da
+  się dojść. Dotyczy Doliny Orków i Pustyni Yongbi.
+- **Logi przestały zagłuszać serwer.** Katalog logów jednego rdzenia miał 4,5 GB
+  przy 126 MB pozostałych i rósł o 155–278 MB na godzinę, przy 43 wpisach SYSERR
+  na sekundę — a **żaden z nich nie sygnalizował usterki**. Cztery komunikaty
+  pisane z pętli przez każdego bota na mapie: dwa nasze, dwa silnika, wszystkie
+  na poziomie zapisywanym zawsze. Nasze mają teraz licznik i jedną linię na
+  minutę, komunikaty silnika zeszły na poziom diagnostyczny. Po zmianie: **50 MB
+  na godzinę i jeden wpis SYSERR na pięć sekund**.
+  Efektem ubocznym okazał się wyraźny wzrost tempa gry — przy niezmienionej
+  liczbie botów liczba zabić w oknie piętnastu minut wzrosła z ~265 do ~4100.
+  Zapisywanie tych logów kosztowało serwer więcej, niż ktokolwiek podejrzewał.
+
+### Zmienione
+
+- Kod botów rozbity na kolejne moduły: planowanie celów, wagi z panelu, bonusy,
+  gildie i wyciszanie logów mieszkają teraz w osobnych plikach.
+- Łatki silnika są wyszukiwane po wzorcu, a nie wymieniane z nazwy. Jedna z list
+  zdążyła się już rozjechać — łatka straganów była nakładana, ale nie wchodziła
+  do sumy kontrolnej budowania, więc jej zmiana nie unieważniała gotowego obrazu.
+
+---
+
 ## 1.24.9 — 2026-09-05
 
 ### Zmienione

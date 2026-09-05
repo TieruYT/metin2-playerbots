@@ -1,12 +1,12 @@
 {
   "schema": 1,
   "channel": "stable",
-  "publishedAt": "2026-09-04T23:20:02Z",
-  "statusMessage": "Aktualizacja 1.24.9: stragany wystawiaja bronie na 30 lvl, przedmioty z duzym bonusem, sprzet od +6, ulepszacze i ksiegi, a medale konne wreszcie da sie kupic. Plac handlowy zwezony do zasiegu, w ktorym gra pozwala kupowac - przy szerszym rynek nie dzialal wcale.",
+  "publishedAt": "2026-09-05T11:09:02Z",
+  "statusMessage": "Aktualizacja 1.25.0 - EKSPERYMENTALNA. Zachowanie botow ustawiasz suwakami w panelu na zywo, bez restartu. Sezon tygodniowy i rekordy serwera pod /season. Boty zakladaja gildie i pamietaja, z kim polowaly. Kon bojowy wreszcie walczy z siodla, NNO na tarczy nie jest juz wyrzucane, doszla piata linia bonusow, a boty przestaja pilnowac jednego respawnu. Logi przestaly dlawic serwer.",
   "server": {
-    "version": "1.24.9",
-    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v1.24.9/metin2-server-update-1.24.9.zip",
-    "sha256": "1741EA31974444E648DC11CA1FD84D62923F32D619A846614D8D81562CAEFB55"
+    "version": "1.25.0",
+    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v1.25.0/metin2-server-update-1.25.0.zip",
+    "sha256": "C0DCBB6422D62477680E6CFA3B232813FBDEB04B686E593D8A29CB340A11471F"
   },
   "support": {
     "contactUrl": "https://discord.gg/pt5tvnrN6",
