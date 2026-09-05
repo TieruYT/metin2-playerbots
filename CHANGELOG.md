@@ -17,6 +17,50 @@ every version here.
 
 ---
 
+## 1.25.1 — 2026-09-05
+
+> Dalej **wydanie eksperymentalne**, na tych samych zasadach co 1.25.0: baza nie
+> jest ruszana, powrót do poprzedniej wersji nic nie psuje.
+
+### Naprawione
+
+- **Stragany przestały wystawiać szrot.** W wycenie towaru siedziała łapanka
+  `return 1` na wszystko, co nie wpadło do żadnej sensownej kategorii — więc bot
+  z ośmioma spadami po +1 wystawiał całą ósemkę. W plecakach botów na
+  testowanym świecie leżało **1902 sztuki sprzętu +0…+3** wobec 219 sztuk od +4
+  wzwyż, czyli ta jedna linia decydowała o wyglądzie całego targu. Zwykły sprzęt
+  wchodzi teraz na ladę **od +4**, a co nie jest ani sprzętem, ani nazwaną
+  kategorią (broń na 30 lv, duży bonus, +6, medal konny, ulepszacz, księga) — nie
+  jest towarem w ogóle. Lady mają 1–8 pozycji zamiast ośmiu napchanych.
+- **Szyld sklepu, którego nie dało się otworzyć.** Silnik rozsyła szyld do
+  wszystkich w pobliżu **jedną linijkę przed** utworzeniem sklepu, a gdy tworzenie
+  się nie uda, nikt tego szyldu nie cofa: `CloseMyShop` kasuje go tylko wtedy, gdy
+  jest co zamykać. Postać odchodziła ze sklepem, którego nie da się kliknąć.
+  Teraz szyld jest zdejmowany zawsze, gdy sklep nie powstał albo zniknął bez
+  naszego udziału.
+- **Bot prowadzący stragan zdejmuje swoje buffy.** Nic nie rzucał — hak straganu
+  przerywa pętlę decyzji przed umiejętnościami — ale aura rzucona przed
+  siadnięciem do lady dopalała się jeszcze kilkanaście minut i wyglądała, jakby
+  postać grała, stojąc w sklepie.
+
+### Nowe
+
+- **Boty zdobywają konia bojowego.** Wzorem jest quest stajennego i większość
+  została: 35. poziom postaci, koń już na dziesiątce, sto zabitych potworów na
+  pustyni, 500 000 yang na koniec, wydana Księga Opancerzonego Konia i zabrane
+  Zdjęcie Konia. Trzech rzeczy nie dało się zachować i każda z nich to fakt o
+  tym świecie, a nie decyzja: potwory z questa (2105 i 2107) **nie są nigdzie
+  spawnowane**, więc próba liczy bandę Czarnego Wiatru z tej samej pustyni;
+  limitu pół godziny nie ma, bo bot poluje godzinami i nie ma komu przegrać; a
+  ośmiu do szesnastu godzin oczekiwania też nie, bo populacja, która nigdy się
+  nie wylogowuje, przeczekałaby je w logu.
+- **Bot, który zdobył konia, przestaje przepalać yang.** Pierwsza obserwacja na
+  żywo pokazała bota, który skończył próbę z 432 000 yang i w dwadzieścia minut
+  zszedł do 149 000 u kowala i na kamieniach bonusowych — konia nie odebrałby
+  nigdy. Kowal, kamienie i zakupy na targu omijają teraz odłożoną opłatę.
+
+---
+
 ## 1.25.0 — 2026-09-05
 
 > **Wydanie eksperymentalne.** Wchodzi naraz kilka nowych systemów, które

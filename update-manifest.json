@@ -1,12 +1,12 @@
 {
   "schema": 1,
   "channel": "stable",
-  "publishedAt": "2026-09-05T11:09:02Z",
-  "statusMessage": "Aktualizacja 1.25.0 - EKSPERYMENTALNA. Zachowanie botow ustawiasz suwakami w panelu na zywo, bez restartu. Sezon tygodniowy i rekordy serwera pod /season. Boty zakladaja gildie i pamietaja, z kim polowaly. Kon bojowy wreszcie walczy z siodla, NNO na tarczy nie jest juz wyrzucane, doszla piata linia bonusow, a boty przestaja pilnowac jednego respawnu. Logi przestaly dlawic serwer.",
+  "publishedAt": "2026-09-05T12:13:26Z",
+  "statusMessage": "Aktualizacja 1.25.1 - EKSPERYMENTALNA. Stragany przestaly wystawiac szrot +1/+2/+3 - zwykly sprzet wchodzi na lade dopiero od +4. Zniknal szyld sklepu, ktorego nie dalo sie otworzyc. Bot przy ladzie zdejmuje buffy. Boty zdobywaja konia bojowego: proba na pustyni bez limitu czasu, odbior u stajennego.",
   "server": {
-    "version": "1.25.0",
-    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v1.25.0/metin2-server-update-1.25.0.zip",
-    "sha256": "C0DCBB6422D62477680E6CFA3B232813FBDEB04B686E593D8A29CB340A11471F"
+    "version": "1.25.1",
+    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v1.25.1/metin2-server-update-1.25.1.zip",
+    "sha256": "2960DEC2E4ADD347EC15F616070F95981D309CD9097EC727A59EDB5292332142"
   },
   "support": {
     "contactUrl": "https://discord.gg/pt5tvnrN6",
