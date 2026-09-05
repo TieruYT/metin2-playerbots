@@ -388,9 +388,24 @@ namespace
 			return PLAYERBOT_SHOP_PRICE_PLUS8;
 		if (refine == 7)
 			return PLAYERBOT_SHOP_PRICE_PLUS7;
-		const DWORD unit = GetPlayerBotNpcSellUnitPrice(item);
-		const DWORD price = unit * (DWORD)item->GetCount() *
-				PLAYERBOT_SHOP_MATERIAL_MARKUP;
+		const DWORD npcUnit = GetPlayerBotNpcSellUnitPrice(item);
+		DWORD unit = npcUnit * PLAYERBOT_SHOP_MATERIAL_MARKUP;
+
+		// What the market has paid outranks what the merchant would. Clamped to
+		// a floor of the merchant's own price - below that the stall is a worse
+		// deal than the NPC for the seller - and a ceiling that keeps one bot's
+		// overpayment from pricing the material out of every other bot's reach.
+		size_t samples = 0;
+		const DWORD paid = GetPlayerBotSaleUnitPrice(item->GetVnum(), refine,
+				get_dword_time(), &samples);
+		if (paid != 0)
+		{
+			const DWORD floor = std::max<DWORD>(1, npcUnit);
+			const DWORD cap = npcUnit == 0 ? PLAYERBOT_SALE_PRICE_CAP_FLAT
+					: npcUnit * PLAYERBOT_SALE_PRICE_CAP_MULT;
+			unit = std::min(std::max(paid, floor), std::max(floor, cap));
+		}
+		const DWORD price = unit * (DWORD)item->GetCount();
 		return price == 0 ? 1U : price;
 	}
 
@@ -983,6 +998,7 @@ namespace
 			offer.dwVnum = item->GetVnum();
 			offer.dwPrice = price;
 			offer.bRefine = item->GetRefineLevel();
+			offer.wCount = item->GetCount();
 			offers.push_back(offer);
 			if (scored[i].first > bestScore)
 				bestScore = scored[i].first;

@@ -298,11 +298,27 @@ namespace
 		}
 	}
 
-	void ManagePlayerBotSpiritStones(LPCHARACTER ch, TPlayerBotAIState& state, DWORD dwNow)
+	// Kamien Duszy: the soul stone that goes into a weapon or armour socket.
+	// (Not the Kamien Duchowy that takes a skill past grand master - that is an
+	// ITEM_USE and never comes through here. The two are one word apart in
+	// Polish and used to be one word here, which is how this was named for the
+	// wrong one.)
+	//
+	// This used to write the stone into the socket with SetSocket and delete the
+	// stone: a free, certain insertion. A player gets a 30% roll and, on the
+	// other 70%, a cracked stone welded into the socket - ITEM_METIN under
+	// UseItemEx in char_item.cpp. Bots were fitting +4 stones at a rate no
+	// player could match, out of the same drops, and nothing they owned ever
+	// cracked.
+	//
+	// So the stone is used the way a player uses it. UseItemEx refuses an
+	// equipped target, so the gear comes off first and goes back on after; the
+	// socket is read back afterwards to learn which way the roll went.
+	void ManagePlayerBotSoulStones(LPCHARACTER ch, TPlayerBotAIState& state, DWORD dwNow)
 	{
-		if (!ch || !ch->IsItemLoaded() || dwNow < state.dwNextSpiritStoneTime)
+		if (!ch || !ch->IsItemLoaded() || dwNow < state.dwNextSoulStoneTime)
 			return;
-		state.dwNextSpiritStoneTime = dwNow + PLAYERBOT_SPIRIT_STONE_CHECK_INTERVAL;
+		state.dwNextSoulStoneTime = dwNow + PLAYERBOT_SOUL_STONE_CHECK_INTERVAL;
 
 		LPITEM bestStone = NULL;
 		LPITEM bestGear = NULL;
@@ -317,13 +333,16 @@ namespace
 			const DWORD kdVnum = item->GetVnum();
 			const int kdPlus = (kdVnum % 10);
 			const int stoneKind = kdVnum % 100;
-			const bool weaponStone = stoneKind >= 30 && stoneKind <= 36;
-			const bool armorStone = stoneKind >= 37 && stoneKind <= 43;
+			// The proto's own wear flags draw the line: 28030-28037 are WEAR_WEAPON
+			// and 28038-28043 WEAR_BODY. The old split put 37 - Kamien Potwora, the
+			// best PvE weapon stone there is - on the armour side, and SetSocket
+			// used to oblige. The native path refuses it.
+			const bool weaponStone = stoneKind >= 30 && stoneKind <= 37;
+			const bool armorStone = stoneKind >= 38 && stoneKind <= 43;
 			if (!weaponStone && !armorStone)
 				continue;
 
 			LPITEM targetGear = weaponStone ? ch->GetWear(WEAR_WEAPON) : ch->GetWear(WEAR_BODY);
-
 			if (!targetGear)
 				continue;
 
@@ -331,37 +350,83 @@ namespace
 			if (kdPlus >= 3 && gearRefine < 6)
 				continue;
 
+			// The engine refuses a second stone of one kind in one item, kind
+			// being value 5 of the stone's proto. Asking here saves the unequip.
+			bool sameKindAlready = false;
+			int openSocket = -1;
 			for (int socketIdx = 0; socketIdx < ITEM_SOCKET_MAX_NUM; ++socketIdx)
 			{
-				if (targetGear->GetSocket(socketIdx) == 1)
-				{
-					int score = kdPlus * 100 + targetGear->GetRefineLevel() * 10;
-					// PvE stones receive priority over class-vs-class stones in offline M1.
-					if (stoneKind == 30 || stoneKind == 31 || stoneKind == 32 ||
-							stoneKind == 38 || stoneKind == 40 || stoneKind == 41)
-						score += 500;
-					if (score > bestScore)
-					{
-						bestScore = score;
-						bestStone = item;
-						bestGear = targetGear;
-						bestSocket = socketIdx;
-					}
-					break;
-				}
+				const DWORD inSocket = (DWORD)targetGear->GetSocket(socketIdx);
+				if (inSocket == 1 && openSocket < 0)
+					openSocket = socketIdx;
+				if (inSocket <= 2 || inSocket == PLAYERBOT_BROKEN_SOUL_STONE_VNUM)
+					continue;
+				const TItemTable* seated = ITEM_MANAGER::instance().GetTable(inSocket);
+				if (seated && seated->alValues[5] == item->GetValue(5))
+					sameKindAlready = true;
+			}
+			if (openSocket < 0 || sameKindAlready)
+				continue;
+
+			int score = kdPlus * 100 + gearRefine * 10;
+			// Which stone, by what the school does with it. In a world of monsters
+			// the class stones (33-36) are last; Potwora is first for everybody;
+			// the blow schools take crit and pierce, the skill schools take the
+			// cooldown stone. On armour: health, then block, then defence.
+			const int style = GetPlayerBotSchoolStyle(ch);
+			switch (stoneKind)
+			{
+				case 37: score += 600; break;                          // Potwora
+				case 31: score += 500; break;                          // Smierci (kryt)
+				case 30: score += style > 0 ? 250 : 450; break;       // Penetracji
+				case 32: score += style > 0 ? 500 : 150; break;       // Powtorki
+				case 33: case 34: case 35: case 36: score += 50; break;
+				case 41: score += 600; break;                          // Witalnosci
+				case 38: score += 500; break;                          // Uchylenia
+				case 42: score += 400; break;                          // Obrony
+				case 39: score += 250; break;                          // Uniku
+				case 43: score += 200; break;                          // Przyspieszenia
+				case 40: score += style > 0 ? 150 : 50; break;        // Magii (PE)
+				default: break;
+			}
+			if (score > bestScore)
+			{
+				bestScore = score;
+				bestStone = item;
+				bestGear = targetGear;
+				bestSocket = openSocket;
 			}
 		}
 
-		if (bestStone && bestGear && bestSocket >= 0)
-		{
-			const DWORD kdVnum = bestStone->GetVnum();
-			const DWORD gearVnum = bestGear->GetVnum();
-			bestGear->SetSocket(bestSocket, kdVnum);
-			ITEM_MANAGER::instance().RemoveItem(bestStone, "PLAYERBOT_KD");
-			SetPlayerBotAction(state, BOT_ACTION_SOCKET_STONE, dwNow);
-			sys_log(0, "PLAYERBOT_AI: inserted spirit stone pid=%u name=%s kd_vnum=%u into gear_vnum=%u socket=%d score=%d",
-					ch->GetPlayerID(), ch->GetName(), kdVnum, gearVnum, bestSocket, bestScore);
-		}
+		if (!bestStone || !bestGear || bestSocket < 0)
+			return;
+
+		const DWORD kdVnum = bestStone->GetVnum();
+		const DWORD gearVnum = bestGear->GetVnum();
+		const WORD stoneCell = bestStone->GetCell();
+
+		// Off, so UseItemEx will look at it; and there has to be somewhere for
+		// it to go.
+		if (ch->GetEmptyInventory(bestGear->GetSize()) < 0)
+			return;
+		if (!ch->UnequipItem(bestGear) || bestGear->IsEquipped())
+			return;
+
+		// UseItemEx deletes the stone whichever way the roll goes, so nothing
+		// below may touch bestStone.
+		ch->UseItemEx(bestStone, TItemPos(INVENTORY, bestGear->GetCell()));
+		const DWORD after = (DWORD)bestGear->GetSocket(bestSocket);
+		const bool stoneGone = ch->GetInventoryItem(stoneCell) == NULL ||
+				ch->GetInventoryItem(stoneCell)->GetVnum() != kdVnum;
+		const char* outcome = after == kdVnum ? "SUCCESS"
+				: after == PLAYERBOT_BROKEN_SOUL_STONE_VNUM ? "CRACKED"
+				: stoneGone ? "CONSUMED" : "REFUSED";
+
+		ch->EquipItem(bestGear);
+		SetPlayerBotAction(state, BOT_ACTION_SOCKET_STONE, dwNow);
+		sys_log(0, "PLAYERBOT_AI: soul stone %s pid=%u name=%s kd_vnum=%u gear_vnum=%u socket=%d now=%u score=%d",
+				outcome, ch->GetPlayerID(), ch->GetName(), kdVnum, gearVnum,
+				bestSocket, after, bestScore);
 	}
 
 	bool SharePlayerBotUsefulItemWithParty(LPCHARACTER ch, TPlayerBotAIState& state, DWORD dwNow)
@@ -824,7 +889,7 @@ void CPlayerBotManager::OnPlayerLoaded(LPDESC d)
 		state.dwNextStatCheckTime = now + number(1000, 5000);
 		state.dwNextSkillCheckTime = now + number(1000, 5000);
 		state.dwNextSkillBookTime = now + number(3000, 12000);
-		state.dwNextSpiritStoneTime = now + number(3000, 15000);
+		state.dwNextSoulStoneTime = now + number(3000, 15000);
 		state.dwNextInventoryMaintenanceTime = now + number(
 				PLAYERBOT_INVENTORY_MAINTENANCE_MIN,
 				PLAYERBOT_INVENTORY_MAINTENANCE_MAX);
@@ -1070,7 +1135,7 @@ void CPlayerBotManager::Update()
 			continue;
 
 		ManagePlayerBotSkillBooks(ch, state, dwNow);
-		ManagePlayerBotSpiritStones(ch, state, dwNow);
+		ManagePlayerBotSoulStones(ch, state, dwNow);
 		ManagePlayerBotGuild(ch, state, dwNow);
 		ManagePlayerBotParty(ch, state, dwNow);
 		// The regular levelup.quest opens a selection dialog. A fake descriptor
@@ -1393,6 +1458,10 @@ void CPlayerBotManager::Update()
 			// after this pack dies. Existing routes are still advanced first inside
 			// ManagePlayerBotWandering; only an idle bot plans a fresh scouting leg.
 			state.dwNextWanderTime = dwNow;
+			// Nothing in sight: the one moment a material errand may take the
+			// bot somewhere on purpose instead of the wander picking a hub.
+			if (StartPlayerBotMaterialHunt(ch, state, dwNow))
+				continue;
 			ManagePlayerBotWandering(ch, state, dwNow);
 			continue;
 		}

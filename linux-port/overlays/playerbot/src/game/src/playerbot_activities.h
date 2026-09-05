@@ -289,6 +289,9 @@ namespace
 
 	// One item per pass. Gutting a fish and prying a shell open both run through
 	// UseItem, which frees the very inventory slot being iterated over.
+	// Defined in playerbot_economy.h, which this file precedes.
+	bool PlayerBotNeedsRefineMaterial(LPCHARACTER ch, DWORD materialVnum);
+
 	bool ProcessPlayerBotCatch(LPCHARACTER ch)
 	{
 		if (!ch)
@@ -304,6 +307,12 @@ namespace
 			const bool aliveFish = item->GetType() == ITEM_FISH &&
 					item->GetSubType() == FISH_ALIVE;
 			if (!aliveFish && vnum != PLAYERBOT_SHELLFISH_VNUM)
+				continue;
+			// A shellfish is two things: a shot at a pearl, and a refine material
+			// in its own right - twenty-six recipes on this proto consume one as
+			// it is. Prying open the one the bot's own anvil is about to ask for
+			// trades a certain material for a chance at a different one.
+			if (vnum == PLAYERBOT_SHELLFISH_VNUM && PlayerBotNeedsRefineMaterial(ch, vnum))
 				continue;
 			if (!ch->UseItem(TItemPos(INVENTORY, cell)))
 				continue;

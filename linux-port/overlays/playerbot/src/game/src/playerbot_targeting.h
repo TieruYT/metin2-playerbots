@@ -457,6 +457,8 @@ namespace
 		int level;
 		bool bIsStone;
 		bool bPriorityObjective;
+		// This monster's DROP_ITEM is a material the bot is short of.
+		bool bWantedDrop;
 		int score;
 
 		bool operator < (const TTargetCandidate& other) const
@@ -486,9 +488,13 @@ namespace
 				m_failedTargets(failedTargets),
 				m_dwNow(dwNow),
 				m_huntM2Bestials(owner && owner->GetMapIndex() == PLAYERBOT_MAP_CHUNJO_M2 &&
-						ShouldPlayerBotHuntM2Bestials(owner))
+						ShouldPlayerBotHuntM2Bestials(owner)),
+				m_pWantedDrops(NULL)
 			{
 			}
+
+			// The materials the owner is short of, computed once by the caller.
+			void SetWantedDrops(const std::set<DWORD>* pWanted) { m_pWantedDrops = pWanted; }
 
 			bool operator () (LPENTITY entity)
 			{
@@ -646,6 +652,21 @@ namespace
 					}
 				}
 
+				// A monster that drops what the bot is short of is worth walking past
+				// its neighbours for. This is what turns "needs an Orc Amulet" into
+				// killing orcs: the material errand used to end at the market, and a
+				// market where nobody kills orcs has no amulets on it.
+				tc.bWantedDrop = false;
+				if (!tc.bIsStone && m_pWantedDrops && !m_pWantedDrops->empty())
+				{
+					const DWORD drop = candidate->GetMobDropItemVnum();
+					if (drop != 0 && m_pWantedDrops->find(drop) != m_pWantedDrops->end())
+					{
+						tc.bWantedDrop = true;
+						baseScore += PLAYERBOT_WANTED_DROP_BONUS;
+					}
+				}
+
 				// Distance penalty: only 2 points per unit so level-appropriate mobs within 2000 distance beat low-level dogs
 				tc.score = baseScore - (distance * 2);
 				m_targets.push_back(tc);
@@ -674,6 +695,7 @@ namespace
 			const std::map<DWORD, DWORD>& m_failedTargets;
 			DWORD m_dwNow;
 			bool m_huntM2Bestials;
+			const std::set<DWORD>* m_pWantedDrops;
 			std::vector<TTargetCandidate> m_targets;
 	};
 
@@ -684,6 +706,113 @@ namespace
 		if (!ch || bIsStone)
 			return true;
 		return iMobLevel + PLAYERBOT_TRIVIAL_LEVEL_GAP >= (int)ch->GetLevel();
+	}
+
+	// The nearest living monster on the map whose DROP_ITEM is one of the
+	// wanted materials. Runs over a snapshot of every entity on the map, which
+	// is why the caller rations it.
+	class CFindPlayerBotWantedDrop
+	{
+		public:
+			CFindPlayerBotWantedDrop(LPCHARACTER seeker, const std::set<DWORD>& wanted,
+					int maxDistance)
+				: m_seeker(seeker), m_wanted(wanted), m_maxDistance(maxDistance),
+				  m_best(NULL), m_bestDistance(INT_MAX), m_dropVnum(0)
+			{
+			}
+
+			void operator()(LPENTITY entity)
+			{
+				if (!entity || !entity->IsType(ENTITY_CHARACTER))
+					return;
+				LPCHARACTER mob = static_cast<LPCHARACTER>(entity);
+				if (!mob->IsMonster() || mob->IsDead() || mob->IsStone())
+					return;
+				const DWORD drop = mob->GetMobDropItemVnum();
+				if (drop == 0 || m_wanted.find(drop) == m_wanted.end())
+					return;
+				const int distance = DISTANCE_APPROX(m_seeker->GetX() - mob->GetX(),
+						m_seeker->GetY() - mob->GetY());
+				if (distance > m_maxDistance || distance >= m_bestDistance)
+					return;
+				m_best = mob;
+				m_bestDistance = distance;
+				m_dropVnum = drop;
+			}
+
+			LPCHARACTER m_seeker;
+			const std::set<DWORD>& m_wanted;
+			int m_maxDistance;
+			LPCHARACTER m_best;
+			int m_bestDistance;
+			DWORD m_dropVnum;
+	};
+
+	// The material errand's second half. Preferring the right monster among the
+	// ones in sight only helps if one is in sight; a bot short of an Orc Amulet
+	// on the wrong island of Orc Valley has nothing to prefer. So when the bot
+	// has nothing to fight, and a material is wanted, and the scan is due, it
+	// looks across the whole map for the nearest monster that carries it and
+	// walks that way. Returns true when it set off, claiming the tick.
+	DWORD s_dwMaterialScanStamp = 0;
+	int s_iMaterialScansThisTick = 0;
+
+	bool StartPlayerBotMaterialHunt(LPCHARACTER ch, TPlayerBotAIState& state, DWORD dwNow)
+	{
+		if (!ch)
+			return false;
+		if (state.dwNextMaterialScanTime == 0)
+		{
+			// The first scan lands somewhere inside the interval, by pid, or
+			// every bot in the world takes its snapshot in the same second after a
+			// restart. Eight hundred and fifty of them did, once.
+			state.dwNextMaterialScanTime = dwNow + 1 +
+					PlayerBotNavHash(ch->GetPlayerID() ^ 0x4d415453U) %
+					PLAYERBOT_MATERIAL_SCAN_INTERVAL;
+			return false;
+		}
+		if (dwNow < state.dwNextMaterialScanTime)
+			return false;
+		if (ch->GetParty() && ch->GetParty()->GetLeaderCharacter() != ch)
+			return false;
+
+		// Nothing wanted is the common case and costs a walk over the bag, not
+		// over the map, so it is settled before the tick's scan budget is asked.
+		std::set<DWORD> wanted;
+		CollectPlayerBotWantedMaterials(ch, wanted);
+		if (wanted.empty())
+		{
+			state.dwNextMaterialScanTime = dwNow + PLAYERBOT_MATERIAL_SCAN_INTERVAL;
+			return false;
+		}
+		if (s_dwMaterialScanStamp != dwNow)
+		{
+			s_dwMaterialScanStamp = dwNow;
+			s_iMaterialScansThisTick = 0;
+		}
+		if (s_iMaterialScansThisTick >= PLAYERBOT_MATERIAL_SCANS_PER_TICK)
+			return false; // budget spent; the time is not consumed, so next tick
+		++s_iMaterialScansThisTick;
+		state.dwNextMaterialScanTime = dwNow + PLAYERBOT_MATERIAL_SCAN_INTERVAL;
+
+		LPSECTREE_MAP map = SECTREE_MANAGER::instance().GetMap(ch->GetMapIndex());
+		if (!map)
+			return false;
+
+		CFindPlayerBotWantedDrop finder(ch, wanted, PLAYERBOT_MATERIAL_HUNT_RANGE);
+		map->for_each(finder);
+		if (!finder.m_best || finder.m_bestDistance <= PLAYERBOT_SEARCH_RANGE)
+			return false; // nothing carries it here, or it is already in the scan
+
+		state.dwMaterialHuntVnum = finder.m_dropVnum;
+		SetPlayerBotAction(state, BOT_ACTION_TRAVEL, dwNow);
+		sys_log(0, "PLAYERBOT_HUNT: material errand pid=%u name=%s map=%ld wants=%u mob=%s distance=%d pos=(%ld,%ld)",
+				ch->GetPlayerID(), ch->GetName(), ch->GetMapIndex(), finder.m_dropVnum,
+				finder.m_best->GetName(), finder.m_bestDistance,
+				finder.m_best->GetX(), finder.m_best->GetY());
+		MovePlayerBot(ch, finder.m_best->GetX(), finder.m_best->GetY(), dwNow, 24, true, true);
+		state.dwNextWanderTime = dwNow + 8000;
+		return true;
 	}
 
 	LPCHARACTER FindDistributedTarget(LPCHARACTER ch, TPlayerBotAIState& state, DWORD dwNow)
@@ -770,6 +899,9 @@ namespace
 				partyChallengeMaxLevel, desiredQuestMobVnum, dwAvoidVID,
 				lAvoidX, lAvoidY, avoidRadius, state.mapFailedStones,
 				state.mapFailedTargets, dwNow);
+		std::set<DWORD> wantedDrops;
+		CollectPlayerBotWantedMaterials(ch, wantedDrops);
+		collector.SetWantedDrops(&wantedDrops);
 		ch->GetSectree()->ForEachAround(collector);
 		collector.Sort();
 
@@ -814,9 +946,12 @@ namespace
 			// objective is always worth it, whatever its level - that is what the
 			// errand is for.
 			DWORD chainedVID = 0;
-			for (int pass = 0; pass < 2 && chainedVID == 0; ++pass)
+			// Three passes now: first the monsters that drop something the bot
+			// is short of, then the ones worth a swing, then anything.
+			for (int pass = 0; pass < 3 && chainedVID == 0; ++pass)
 			{
-				const bool bWorthwhileOnly = (pass == 0);
+				const bool bWantedOnly = (pass == 0);
+				const bool bWorthwhileOnly = (pass <= 1);
 				DWORD closestObjectiveVID = 0;
 				DWORD closestLocalVID = 0;
 				int closestObjectiveDistance = INT_MAX;
@@ -832,6 +967,8 @@ namespace
 						closestObjectiveDistance = targets[i].distance;
 						closestObjectiveVID = targets[i].dwVID;
 					}
+					if (bWantedOnly && !targets[i].bWantedDrop)
+						continue;
 					if (bWorthwhileOnly && !IsPlayerBotWorthwhilePrey(
 							ch, targets[i].level, targets[i].bIsStone))
 						continue;
@@ -850,6 +987,7 @@ namespace
 
 		std::vector<DWORD> availableTargets;
 		std::vector<DWORD> worthwhileTargets;
+		std::vector<DWORD> wantedTargets;
 		for (size_t i = 0; i < targets.size(); ++i)
 		{
 			if (IsTargetClaimedByAnotherBot(ch, targets[i].dwVID))
@@ -857,10 +995,15 @@ namespace
 			availableTargets.push_back(targets[i].dwVID);
 			if (IsPlayerBotWorthwhilePrey(ch, targets[i].level, targets[i].bIsStone))
 				worthwhileTargets.push_back(targets[i].dwVID);
+			if (targets[i].bWantedDrop)
+				wantedTargets.push_back(targets[i].dwVID);
 		}
 		// Same rule for the wider pick, same fallback: a map that holds nothing
-		// but monsters a bot has outgrown still gives it something to do.
-		if (!worthwhileTargets.empty())
+		// but monsters a bot has outgrown still gives it something to do. And
+		// the same order: what it needs, then what is worth it, then anything.
+		if (!wantedTargets.empty())
+			availableTargets.swap(wantedTargets);
+		else if (!worthwhileTargets.empty())
 			availableTargets.swap(worthwhileTargets);
 
 		// Prefer a target no other bot has claimed. Randomizing inside a bounded

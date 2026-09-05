@@ -124,6 +124,50 @@ namespace
 		return PlayerBotIsShortOfRefineMaterial(ch, 0);
 	}
 
+	// Every material this bot is short of, in one set. The same walk as the
+	// question above, asked once per target scan instead of once per monster:
+	// a scan looks at dozens of candidates a second and each answer costs a
+	// pass over the bag.
+	void CollectPlayerBotWantedMaterials(LPCHARACTER ch, std::set<DWORD>& out)
+	{
+		out.clear();
+		if (!ch || !ch->IsItemLoaded())
+			return;
+		const BYTE wearSlots[] = {
+			WEAR_WEAPON, WEAR_BODY, WEAR_SHIELD, WEAR_HEAD,
+			WEAR_FOOTS, WEAR_WRIST, WEAR_NECK, WEAR_EAR
+		};
+		std::vector<LPITEM> gear;
+		for (size_t i = 0; i < sizeof(wearSlots) / sizeof(wearSlots[0]); ++i)
+			if (ch->GetWear(wearSlots[i]))
+				gear.push_back(ch->GetWear(wearSlots[i]));
+		for (WORD cell = 0; cell < INVENTORY_MAX_NUM; ++cell)
+		{
+			LPITEM candidate = ch->GetInventoryItem(cell);
+			if (IsPlayerBotEquipmentCandidate(ch, candidate))
+				gear.push_back(candidate);
+		}
+		for (size_t i = 0; i < gear.size(); ++i)
+		{
+			LPITEM item = gear[i];
+			if (!item || item->GetRefinedVnum() == 0 ||
+					item->GetRefineLevel() >= GetPlayerBotRefineTarget(ch, item))
+				continue;
+			const TRefineTable* recipe =
+					CRefineManager::instance().GetRefineRecipe(item->GetRefineSet());
+			if (!recipe)
+				continue;
+			for (int m = 0; m < recipe->material_count; ++m)
+			{
+				const DWORD vnum = recipe->materials[m].vnum;
+				if (vnum == 0 || recipe->materials[m].count == 0)
+					continue;
+				if (ch->CountSpecifyItem(vnum) < recipe->materials[m].count * 2)
+					out.insert(vnum);
+			}
+		}
+	}
+
 	// Every material any recipe in the game consumes, collected once. There is
 	// no iterator over the recipe table, so the ids are walked; what comes back
 	// is the only list worth trading, because a counter slot spent on something
@@ -152,9 +196,24 @@ namespace
 		return s_materials;
 	}
 
+	// The fisherman's keepsakes: kept whatever else is true, because they are
+	// the entire point of a fishing trip and the road to +7 and beyond. They are
+	// counted here so the stock cap below does not spend its eight cells on them.
+	bool IsPlayerBotFishingKeepsake(DWORD vnum)
+	{
+		return vnum == PLAYERBOT_SHELLFISH_VNUM ||
+				(vnum >= PLAYERBOT_PEARL_FIRST_VNUM && vnum <= PLAYERBOT_PEARL_LAST_VNUM);
+	}
+
+	// A refine material is whatever a recipe consumes, whatever type the proto
+	// gives it. The first version asked for ITEM_MATERIAL as well, and eight of
+	// the eighty-four are not: the fishbone is ITEM_RESOURCE, the shellfish and
+	// the blessing scroll are ITEM_USE, the three pearls are ITEM_RESOURCE. The
+	// fishbone alone is in thirteen recipes and was being sold as "the angler's
+	// pocket money".
 	bool IsPlayerBotTradeableMaterial(LPITEM item)
 	{
-		if (!item || item->GetType() != ITEM_MATERIAL)
+		if (!item)
 			return false;
 		const std::set<DWORD>& materials = GetPlayerBotRefineMaterialVnums();
 		return materials.find(item->GetVnum()) != materials.end();
@@ -190,6 +249,7 @@ namespace
 		{
 			LPITEM other = ch->GetInventoryItem(cell);
 			if (other && other != item && IsPlayerBotTradeableMaterial(other) &&
+					!IsPlayerBotFishingKeepsake(other->GetVnum()) &&
 					++ahead >= PLAYERBOT_MATERIAL_STOCK_SLOTS)
 				return true;
 		}
@@ -280,8 +340,10 @@ namespace
 
 		// What this bot is about to refine with stays in its bag. A spare that
 		// some recipe wants stays too, as stock for its own counter - see
-		// IsPlayerBotSurplusMaterial for why that is worth eight cells.
-		if (item->GetType() == ITEM_MATERIAL)
+		// IsPlayerBotSurplusMaterial for why that is worth eight cells. Judged by
+		// the recipe table, not by item type: that is what brings the fishbone
+		// and the blessing scroll in.
+		if (IsPlayerBotTradeableMaterial(item))
 			return !PlayerBotNeedsRefineMaterial(ch, vnum) &&
 					IsPlayerBotSurplusMaterial(ch, item);
 		// The rest of the 30000 block is eight gift boxes and two quest items.
@@ -534,6 +596,17 @@ namespace
 			const DWORD oldVnum = item->GetVnum();
 			const DWORD nextVnum = item->GetRefinedVnum();
 			const BYTE plusLevel = candidates[i].plusLevel;
+
+			// What comes off the anvil must still fit. See IsPlayerBotWearableAtLevel
+			// for why the engine will not stop this on its own.
+			if (!IsPlayerBotWearableAtLevel(ch, nextVnum))
+			{
+				PlayerBotLogThrottled("refine_outgrows", dwNow,
+						"PLAYERBOT_AI: refine would outgrow the bot pid=%u name=%s level=%u vnum=%u next=%u plus=%u",
+						ch->GetPlayerID(), ch->GetName(), ch->GetLevel(),
+						oldVnum, nextVnum, (unsigned int)plusLevel + 1);
+				continue;
+			}
 			const BYTE wearCell = candidates[i].wearCell;
 			const bool hasBackup = (wearCell != 255) ? HasPlayerBotBackupGear(ch, wearCell) : true;
 

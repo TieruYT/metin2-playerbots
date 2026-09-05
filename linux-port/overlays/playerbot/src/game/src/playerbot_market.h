@@ -154,9 +154,10 @@ namespace
 		DWORD dwPrice;
 		BYTE bSlot;
 		BYTE bRefine;
+		WORD wCount;
 
 		TPlayerBotStallPick()
-			: keeper(NULL), dwVnum(0), dwPrice(0), bSlot(0), bRefine(0)
+			: keeper(NULL), dwVnum(0), dwPrice(0), bSlot(0), bRefine(0), wCount(0)
 		{
 		}
 	};
@@ -217,6 +218,7 @@ namespace
 				outPick.dwPrice = candidate.dwPrice;
 				outPick.bSlot = (BYTE)k;
 				outPick.bRefine = candidate.bRefine;
+				outPick.wCount = candidate.wCount;
 				bestDistance = distance;
 				break;
 			}
@@ -250,10 +252,15 @@ namespace
 		if (ch->GetGold() >= goldBefore)
 			return false;
 
-		sys_log(0, "PLAYERBOT_MARKET: bought pid=%u name=%s from=%s slot=%u vnum=%u refine=%u asked=%u paid=%d gold=%d",
+		const int paid = goldBefore - ch->GetGold();
+		// A sale is the one measurement of demand there is. The asking price on
+		// a counter is what a seller hoped for; this is what a buyer did.
+		RememberPlayerBotSale(pick.dwVnum, pick.bRefine,
+				(DWORD)paid / std::max<DWORD>(1, pick.wCount), get_dword_time());
+		sys_log(0, "PLAYERBOT_MARKET: bought pid=%u name=%s from=%s slot=%u vnum=%u refine=%u count=%u asked=%u paid=%d gold=%d",
 				ch->GetPlayerID(), ch->GetName(), pick.keeper->GetName(),
 				(unsigned int)pick.bSlot, pick.dwVnum, (unsigned int)pick.bRefine,
-				pick.dwPrice, goldBefore - ch->GetGold(), ch->GetGold());
+				(unsigned int)pick.wCount, pick.dwPrice, paid, ch->GetGold());
 		return true;
 	}
 

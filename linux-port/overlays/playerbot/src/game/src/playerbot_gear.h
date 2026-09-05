@@ -120,6 +120,39 @@ namespace
 		}
 	}
 
+	// Which of the two ways of doing damage a school lives by. Warrior Body,
+	// Sura Weaponry and Ninja Dagger earn with ordinary blows; Warrior Mental,
+	// Sura Black Magic, Ninja Archer and both Shaman schools with skills. +1 for
+	// a skill school, -1 for a blow school, 0 before the profession is chosen -
+	// and 0 is a real answer, not a default: it means weight both the same.
+	int GetPlayerBotSchoolStyle(LPCHARACTER ch)
+	{
+		if (!ch || ch->GetSkillGroup() == 0)
+			return 0;
+		switch (ch->GetJob())
+		{
+			case JOB_WARRIOR:  return ch->GetSkillGroup() == 2 ? 1 : -1;
+			case JOB_SURA:     return ch->GetSkillGroup() == 2 ? 1 : -1;
+			case JOB_ASSASSIN: return ch->GetSkillGroup() == 2 ? 1 : -1;
+			case JOB_SHAMAN:   return 1;
+			default:           return 0;
+		}
+	}
+
+	// And of the skill schools, which ones roll the weapon's *magic* values.
+	// SetPolyVarForAttack (char_skill.cpp) hands every skill both numbers - wep
+	// from VALUE3/4 and mwep from VALUE1/2 - and the skill's own formula picks.
+	// Black Magic and both Shaman schools pick mwep; Mental and Archer are skill
+	// schools that still hit with wep.
+	bool IsPlayerBotMagicSchool(LPCHARACTER ch)
+	{
+		if (!ch || ch->GetSkillGroup() == 0)
+			return false;
+		if (ch->GetJob() == JOB_SHAMAN)
+			return true;
+		return ch->GetJob() == JOB_SURA && ch->GetSkillGroup() == 2;
+	}
+
 	long long ScorePlayerBotApply(BYTE bType, long lValue, LPCHARACTER ch = NULL)
 	{
 		switch (bType)
@@ -183,9 +216,30 @@ namespace
 			case APPLY_DEF_GRADE_BONUS:
 			case APPLY_DEF_GRADE:
 				return (long long)lValue * 300;
+			// Average damage is for ordinary blows and skill damage is for skills,
+			// and which of the two a bot wants depends on how its school earns.
+			// These used to be 500 and 50 - the skill bonus fell into the default
+			// bucket - so a Black Magic sura or a shaman rated a 10% skill roll
+			// below a single point of strength. Nothing is worth nothing to
+			// anybody: a Body warrior still casts, a shaman still swings. Undecided
+			// weights both equally.
 			case APPLY_NORMAL_HIT_DAMAGE_BONUS:
+			{
+				const int style = GetPlayerBotSchoolStyle(ch);
+				return (long long)lValue * (style < 0 ? 500 : style > 0 ? 250 : 400);
+			}
+			case APPLY_SKILL_DAMAGE_BONUS:
+			{
+				const int style = GetPlayerBotSchoolStyle(ch);
+				return (long long)lValue * (style > 0 ? 500 : style < 0 ? 250 : 400);
+			}
+			// Defending against ordinary blows is worth the same to everybody:
+			// every monster in this world swings.
 			case APPLY_NORMAL_HIT_DEFEND_BONUS:
 				return (long long)lValue * 500;
+			// A flat magic attack bonus is the magic schools' strength line.
+			case APPLY_MAGIC_ATT_GRADE:
+				return (long long)lValue * (IsPlayerBotMagicSchool(ch) ? 300 : 60);
 			case APPLY_IMMUNE_STUN:
 			case APPLY_IMMUNE_SLOW:
 			case APPLY_IMMUNE_FALL:
@@ -214,8 +268,23 @@ namespace
 			// damage roll and value 5 is an attack bonus counted twice
 			// (battle.cpp). Refining raises these, so a refined weapon is already
 			// worth more here without anything being said about the refine.
-			long long attack = (long long)(item->GetValue(3) + item->GetValue(4) +
+			const long long physical = (long long)(item->GetValue(3) + item->GetValue(4) +
 					2 * item->GetValue(5));
+
+			// Value 1 and 2 are the other roll: what SetPolyVarForAttack hands a
+			// skill as mwep, with the same value-5 bonus on top. Every bell and
+			// nearly every fan carries it, and so do 261 of the 311 swords - the
+			// sura ones. Scoring physical damage alone rated a Black Magic sura's
+			// sword by the half of it that sura never uses, and a shaman's bell by
+			// the half it uses only when it stops casting. The schools that cast
+			// take the magic roll with half the physical behind it; everybody else
+			// takes the physical with a quarter of the magic, because a Weaponry
+			// sura does still cast now and then.
+			const long long magical = (long long)(item->GetValue(1) + item->GetValue(2) +
+					2 * item->GetValue(5));
+			long long attack = IsPlayerBotMagicSchool(ch)
+					? magical + physical / 2
+					: physical + magical / 4;
 
 			// And then how often it lands, because a swing is not a swing.
 			// GET_ATTACK_SPEED halves the interval for a dagger, and a bow's roll
@@ -1005,6 +1074,29 @@ namespace
 		const int desiredLevel = GetPlayerBotProtoLevelLimit(desiredProto);
 		return item->GetLevelLimit() >= desiredLevel &&
 				item->GetLevelLimit() <= ch->GetLevel();
+	}
+
+	// Could this character put the item this vnum names on? Asked of a refine
+	// *result* before the anvil is used, because the engine will not ask.
+	// DoRefine checks the result's level limit only under !g_iUseLocale - "in
+	// korea only", says the comment - and this server runs with a locale, so a
+	// level-40 bot could turn its Upiorna Kusza +1 (level 40) into a +2 that
+	// needs 42, and then stand there unable to equip the weapon it just paid
+	// for. Twenty-four families on this proto raise their level with the plus;
+	// five of them - that crossbow, the Three Lords shield and the three
+	// level-52 bells - sit inside the levels bots reach.
+	bool IsPlayerBotWearableAtLevel(LPCHARACTER ch, DWORD vnum)
+	{
+		if (!ch || vnum == 0)
+			return false;
+		const TItemTable* proto = ITEM_MANAGER::instance().GetTable(vnum);
+		if (!proto)
+			return false;
+		for (int i = 0; i < ITEM_LIMIT_MAX_NUM; ++i)
+			if (proto->aLimits[i].bType == LIMIT_LEVEL &&
+					proto->aLimits[i].lValue > ch->GetLevel())
+				return false;
+		return true;
 	}
 
 	BYTE GetPlayerBotRefineTarget(LPCHARACTER ch, LPITEM item)

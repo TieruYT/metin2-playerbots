@@ -87,7 +87,10 @@ namespace
 	const DWORD PLAYERBOT_STAT_CHECK_INTERVAL = 1000;
 	const DWORD PLAYERBOT_SKILL_CHECK_INTERVAL = 1000;
 	const DWORD PLAYERBOT_SKILL_BOOK_CHECK_INTERVAL = 8000;
-	const DWORD PLAYERBOT_SPIRIT_STONE_CHECK_INTERVAL = 10000;
+	const DWORD PLAYERBOT_SOUL_STONE_CHECK_INTERVAL = 10000;
+	// What UseItemEx leaves in the socket when the 30% roll fails. Defined as a
+	// file-local const in char_item.cpp, so it is repeated here.
+	const DWORD PLAYERBOT_BROKEN_SOUL_STONE_VNUM = 28960;
 	const DWORD PLAYERBOT_PARTY_SHARE_INTERVAL = 20000;
 	const DWORD PLAYERBOT_GOAL_PLAN_INTERVAL = 5000;
 	const DWORD PLAYERBOT_STATUS_SNAPSHOT_INTERVAL = 2000;
@@ -361,6 +364,33 @@ namespace
 	// minutes across the whole world is what this is spread over.
 	const DWORD PLAYERBOT_SHOP_SIGN_CLEAR_WINDOW = 6000;
 	const DWORD PLAYERBOT_SHOP_SIGN_CLEAR_INTERVAL = 1500;
+
+	// The material errand. A bot short of a refine material scans its map for
+	// the nearest living monster whose DROP_ITEM is that material, and walks
+	// towards it when none is within ordinary search range. The scan snapshots
+	// every entity on the map, so it is rationed per bot; the range is how far a
+	// bot will set off for a monster it cannot yet see.
+	const DWORD PLAYERBOT_MATERIAL_SCAN_INTERVAL = 90000;
+	// How many map snapshots one manager update may take between all the bots.
+	// Same idea as the navigation's heavy-plan budget: the scan copies every
+	// entity on the map, and the first version let every bot with a shortage do
+	// it in the same tick after a restart - measured at 99.9% of a core.
+	const int PLAYERBOT_MATERIAL_SCANS_PER_TICK = 6;
+	const int PLAYERBOT_MATERIAL_HUNT_RANGE = 40000;
+	// What a monster carrying a wanted material adds to its target score. Above
+	// the sweet-spot level bonus of a fair fight and below the party-objective
+	// one, so it wins among equals and loses to an errand somebody is waiting on.
+	const int PLAYERBOT_WANTED_DROP_BONUS = 120000;
+
+	// Stall prices from what the market actually paid. Fewer sales than this and
+	// the counter falls back to the merchant-derived markup; the clamp keeps one
+	// wild purchase from pricing a material out of every other bot's reach.
+	const size_t PLAYERBOT_SALE_MEMORY = 8;
+	const size_t PLAYERBOT_SALE_MIN_SAMPLES = 2;
+	const DWORD PLAYERBOT_SALE_PRICE_CAP_MULT = 12;
+	const DWORD PLAYERBOT_SALE_PRICE_CAP_FLAT = 20000;
+	const DWORD PLAYERBOT_SALE_RECENT = 600000;
+	const DWORD PLAYERBOT_SALE_STALE = 3600000;
 
 	const DWORD PLAYERBOT_PORTAL_WALK_TIMEOUT = 20000;
 	// What counts as having moved. Below this the bot is standing still, whether
@@ -662,6 +692,9 @@ namespace
 		DWORD dwVnum;
 		DWORD dwPrice;
 		BYTE bRefine;
+		// A stall line is a whole stack, priced as one. What a buyer paid for the
+		// line only says something about the material once it is divided by this.
+		WORD wCount;
 	};
 
 	struct TPlayerBotBiologistMission
@@ -872,7 +905,7 @@ namespace
 			dwNextStatCheckTime(0),
 			dwNextSkillCheckTime(0),
 			dwNextSkillBookTime(0),
-			dwNextSpiritStoneTime(0),
+			dwNextSoulStoneTime(0),
 			dwNextProgressionChestCheckTime(0),
 			dwNextBuffCheckTime(0),
 			dwNextSkillCastTime(0),
@@ -998,6 +1031,8 @@ namespace
 			dwNextGuildCheckTime(0),
 			dwLastKillCreditedVID(0),
 			bFoundedGuild(false),
+			dwNextMaterialScanTime(0),
+			dwMaterialHuntVnum(0),
 			dwShopSignClearUntil(0),
 			dwNextShopSignClearTime(0),
 			dwPortalWalkSince(0),
@@ -1032,7 +1067,7 @@ namespace
 		DWORD dwNextStatCheckTime;
 		DWORD dwNextSkillCheckTime;
 		DWORD dwNextSkillBookTime;
-		DWORD dwNextSpiritStoneTime;
+		DWORD dwNextSoulStoneTime;
 		DWORD dwNextProgressionChestCheckTime;
 		DWORD dwNextBuffCheckTime;
 		DWORD dwNextSkillCastTime;
@@ -1204,6 +1239,10 @@ namespace
 		// it has been. See MovePlayerBotToWorldPortal.
 		// How long to keep taking the stall sign back after a stall closes, and
 		// when the next repeat is due. See ManagePlayerBotShopLifetime.
+		// The material errand: when this bot may next scan its map, and what it
+		// set off after. See StartPlayerBotMaterialHunt.
+		DWORD dwNextMaterialScanTime;
+		DWORD dwMaterialHuntVnum;
 		DWORD dwShopSignClearUntil;
 		DWORD dwNextShopSignClearTime;
 		DWORD dwPortalWalkSince;
