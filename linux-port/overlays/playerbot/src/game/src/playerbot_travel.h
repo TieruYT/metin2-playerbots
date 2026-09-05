@@ -172,6 +172,12 @@ namespace
 		return dwNow >= state.dwNextRemoteRefineReturnTime;
 	}
 
+	// Defined with the market-stall code in playerbot_town.h, which needs the
+	// town and therefore comes later. Declared rather than included, the way
+	// playerbot_gear.h declares GetPlayerBotNpcApproach.
+	void ClosePlayerBotShop(LPCHARACTER ch, TPlayerBotAIState& state, DWORD dwNow,
+			const char* reason);
+
 	bool IsPlayerBotFrontierMap(long mapIndex)
 	{
 		return mapIndex == PLAYERBOT_MAP_ORC_VALLEY || mapIndex == PLAYERBOT_MAP_DESERT;
@@ -382,6 +388,13 @@ namespace
 		if (wasRiding)
 			ch->StopRiding();
 		ch->HorseSummon(false);
+		// And the stall, for the same reason and in the same place: the sign has
+		// to be taken back on the map where it was put up. Closing it after the
+		// warp broadcasts the clear to whoever happens to be standing in the
+		// destination, while the people who actually saw it are still on the
+		// market - which is how a bot ends up in the Monkey Dungeon wearing a
+		// shop nobody can open.
+		ClosePlayerBotShop(ch, state, dwNow, "map_transition");
 		ClearPlayerBotRoute(state, true);
 		state.bVisitingShop = false;
 		state.bVisitingBiologist = false;
