@@ -100,12 +100,13 @@ namespace
 
 	// ----------------------------------------------------------------- guilds
 
-	// Two names per empire, as the specification lists them. Twelve characters
-	// is the engine's limit (GUILD_NAME_MAX_LEN) and every one of these fits.
+	// Two names per empire. Twelve characters is the engine's limit
+	// (GUILD_NAME_MAX_LEN); "KrwawiRycerze" was thirteen and would have been
+	// refused had a Shinsoo bot ever founded a guild, which none does.
 	const char* GetPlayerBotGuildName(BYTE bEmpire, size_t index)
 	{
-		static const char* kChunjo[] = { "ChunjoElite", "ZlotaGward" };
-		static const char* kShinsoo[] = { "CzerwSmoki", "KrwawiRycerze" };
+		static const char* kChunjo[] = { "BialyLotos", "CichyOrszak" };
+		static const char* kShinsoo[] = { "CzerwSmoki", "KrwawyRycerz" };
 		static const char* kJinno[] = { "NiebWilki", "SrebrnaStal" };
 		const char** pool = kChunjo;
 		if (bEmpire == 1)
