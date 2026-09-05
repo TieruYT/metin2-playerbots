@@ -2,8 +2,14 @@
 
 Not a screenshot of the game: this is drawn from the same server_attr the bots
 navigate by, so what a viewer sees is exactly what the bots can walk on. Land,
-water and blocked ground each get a colour, and the result is downsampled to a
-tile small enough to embed in the panel source.
+water, blocked ground and crossings each get a colour, and the result is
+downsampled to a tile small enough to embed in the panel source.
+
+A crossing is water with the block bit cleared - a bridge deck, or a ford. It
+matters enough to have its own colour and its own downsampling rule: Orc Valley
+is twenty-three islands joined by twenty-two bridges, and a map drawn without
+them shows a delta nobody could cross. The bot navigation reads the same
+distinction out of the same file, so the backdrop and the routes agree.
 """
 
 import base64
@@ -20,7 +26,9 @@ ATTR_BLOCK = 1 << 0
 ATTR_WATER = 1 << 1
 ATTR_OBJECT = 1 << 7
 
-TILE = 256
+# Big enough that a 600-unit bridge is several pixels wide on the large frontier
+# maps rather than one, since looking at the bridges is the point.
+TILE = 512
 
 # index -> (folder, base_x, base_y, width, height) -- the bounds the panel uses.
 MAPS = [
@@ -35,6 +43,8 @@ MAPS = [
 COLOUR_LAND = (58, 74, 44)
 COLOUR_LAND_ALT = (68, 84, 50)
 COLOUR_WATER = (30, 58, 92)
+# Walkable water. Warm against the blue so a crossing reads at a glance.
+COLOUR_CROSSING = (196, 158, 66)
 COLOUR_BLOCK = (26, 24, 18)
 COLOUR_OUTSIDE = (14, 12, 8)
 
@@ -70,19 +80,44 @@ def render(root, folder, base_x, base_y, width, height):
 
     image = Image.new("RGB", (TILE, TILE), COLOUR_OUTSIDE)
     pixels = image.load()
-    # Each tile pixel covers a square of world units; sample its centre.
+    # Each tile pixel covers a square of native cells, and every one of them is
+    # looked at rather than only the centre. A bridge is twelve cells wide and a
+    # pixel spans twelve, so centre sampling kept or dropped each bridge on a
+    # coin toss. A crossing anywhere under the pixel takes it; otherwise the
+    # commonest terrain in the square does, which keeps islands solid and
+    # shorelines where they are.
     for py in range(TILE):
-        wy = base_y + (py + 0.5) * height / TILE
-        cy = int((wy - base_y) // CELL_SIZE)
+        cy0 = int(py * height / TILE) // CELL_SIZE
+        cy1 = max(cy0 + 1, int((py + 1) * height / TILE) // CELL_SIZE)
         for px in range(TILE):
-            wx = base_x + (px + 0.5) * width / TILE
-            cx = int((wx - base_x) // CELL_SIZE)
-            a = attr(cx, cy)
-            if a is None:
+            cx0 = int(px * width / TILE) // CELL_SIZE
+            cx1 = max(cx0 + 1, int((px + 1) * width / TILE) // CELL_SIZE)
+            crossing = False
+            tally = {"land": 0, "water": 0, "block": 0}
+            seen = False
+            for cy in range(cy0, cy1):
+                for cx in range(cx0, cx1):
+                    a = attr(cx, cy)
+                    if a is None:
+                        continue
+                    seen = True
+                    if a & ATTR_BLOCK:
+                        tally["water" if (a & ATTR_WATER) else "block"] += 1
+                    elif a & ATTR_WATER:
+                        crossing = True
+                    elif a & ATTR_OBJECT:
+                        tally["block"] += 1
+                    else:
+                        tally["land"] += 1
+            if not seen:
                 continue
-            if a & ATTR_WATER:
+            if crossing:
+                pixels[px, py] = COLOUR_CROSSING
+                continue
+            kind = max(tally, key=tally.get)
+            if kind == "water":
                 pixels[px, py] = COLOUR_WATER
-            elif a & (ATTR_BLOCK | ATTR_OBJECT):
+            elif kind == "block":
                 pixels[px, py] = COLOUR_BLOCK
             else:
                 pixels[px, py] = COLOUR_LAND_ALT if ((px ^ py) & 8) else COLOUR_LAND
