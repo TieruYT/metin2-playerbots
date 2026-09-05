@@ -151,7 +151,17 @@ namespace
 		// Quest progress must survive every merchant visit. In particular, Horse
 		// Medals used to look like ordinary miscellaneous loot and could be sold
 		// before the world-travel state machine returned the bot to the Stable Boy.
-		if (vnum == PLAYERBOT_HORSE_MEDAL_VNUM || (vnum >= 50701 && vnum <= 50706))
+		//
+		// And so must what the progress was for. The battle horse scroll is the
+		// end of that whole chain - twenty-one medals, a hundred kills in the
+		// desert and 500 000 yang at the stable keeper - and it is a miscellaneous
+		// item like any other to the junk rule, which says "junk" unless told
+		// otherwise. The first bot ever to finish the trial sold it three minutes
+		// later, for its share of 1020 gold, and left the world with no battle
+		// horse in it at all.
+		if (vnum == PLAYERBOT_HORSE_MEDAL_VNUM ||
+				vnum == PLAYERBOT_BATTLE_HORSE_BOOK_VNUM ||
+				(vnum >= 50701 && vnum <= 50706))
 			return false;
 
 		// Fishing tackle and the catch worth keeping. Pearls are the entire point
