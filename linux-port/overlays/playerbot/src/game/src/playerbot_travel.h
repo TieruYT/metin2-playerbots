@@ -352,7 +352,12 @@ namespace
 		CPlayerBotNavigation& navigation = CPlayerBotNavigation::instance(targetMap);
 		if (!navigation.Init(targetMap))
 		{
-			sys_err("PLAYERBOT_WORLD: target navigation unavailable pid=%u name=%s map=%ld reason=%s",
+			// Tagged by the reason, so a reason nobody has seen before still
+			// speaks up inside the minute instead of hiding behind an old one.
+			char szTag[64];
+			snprintf(szTag, sizeof(szTag), "world_nav:%s", reason ? reason : "?");
+			PlayerBotLogThrottled(szTag, dwNow,
+					"PLAYERBOT_WORLD: target navigation unavailable pid=%u name=%s map=%ld reason=%s",
 					ch->GetPlayerID(), ch->GetName(), targetMap, reason ? reason : "?");
 			return false;
 		}

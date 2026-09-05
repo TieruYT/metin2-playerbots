@@ -1,0 +1,33 @@
+diff --git a/game/src/char_skill.cpp b/game/src/char_skill.cpp
+--- a/game/src/char_skill.cpp
++++ b/game/src/char_skill.cpp
+@@ -100,7 +100,7 @@
+ 	// 아직 쿨타임이 끝나지 않았다.
+ 	if (bUsed && dwNextSkillUsableTime > dwCur)
+ 	{
+-		sys_log(0, "cooltime is not over delta %u", dwNextSkillUsableTime - dwCur);
++		sys_log(1, "cooltime is not over delta %u", dwNextSkillUsableTime - dwCur);
+ 		iHitCount = 0;
+ 		return false;
+ 	}
+@@ -2457,7 +2457,7 @@
+ 		return false;
+ 
+ 	CSkillProto * pkSk = CSkillManager::instance().Get(dwVnum);
+-	sys_log(0, "%s: USE_SKILL: %d pkVictim %p", GetName(), dwVnum, get_pointer(pkVictim));
++	sys_log(1, "%s: USE_SKILL: %d pkVictim %p", GetName(), dwVnum, get_pointer(pkVictim));
+ 
+ 	if (!pkSk)
+ 		return false;
+diff --git a/game/src/questmanager.cpp b/game/src/questmanager.cpp
+--- a/game/src/questmanager.cpp
++++ b/game/src/questmanager.cpp
+@@ -468,7 +468,7 @@
+ 		//m_CurrentNPCRace = npc;
+ 		PC * pPC;
+ 
+-		sys_log(0, "CQuestManager::Kill QUEST_KILL_EVENT (pc=%d, npc=%d)", pc, npc);
++		sys_log(1, "CQuestManager::Kill QUEST_KILL_EVENT (pc=%d, npc=%d)", pc, npc);
+ 
+ 		if ((pPC = GetPC(pc)))
+ 		{

@@ -467,13 +467,14 @@ namespace
 		TPlayerBotAIState& state = s_mapPlayerBotAIStates[ch->GetPlayerID()];
 		if (!ch->GetSectree())
 		{
-			if (dwNow >= state.dwNextNavErrorLogTime)
-			{
-				state.dwNextNavErrorLogTime = dwNow + 10000;
-				sys_err("PLAYERBOT_NAV: missing sectree pid=%u name=%s map=%ld pos=(%ld,%ld) dest=(%ld,%ld)",
-						ch->GetPlayerID(), ch->GetName(), ch->GetMapIndex(), ch->GetX(), ch->GetY(),
-						destX, destY);
-			}
+			// Still an error - a character standing on no sector is wrong - but
+			// the old limiter was per bot, so three hundred bots kept it at
+			// thirty lines a second between them. One a minute for the whole
+			// population, with the count.
+			PlayerBotErrThrottled("nav_missing_sectree", dwNow,
+					"PLAYERBOT_NAV: missing sectree pid=%u name=%s map=%ld pos=(%ld,%ld) dest=(%ld,%ld)",
+					ch->GetPlayerID(), ch->GetName(), ch->GetMapIndex(), ch->GetX(), ch->GetY(),
+					destX, destY);
 			return false;
 		}
 

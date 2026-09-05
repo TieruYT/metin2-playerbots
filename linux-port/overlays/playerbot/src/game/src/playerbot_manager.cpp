@@ -37,6 +37,7 @@
 #include <climits>
 #include <cstdio>
 #include <cstring>
+#include <cstdarg>
 #include <sys/stat.h>
 
 extern int passes_per_sec;
@@ -46,6 +47,7 @@ extern int passes_per_sec;
 extern void SendShout(const char* szText, BYTE bEmpire);
 
 #include "playerbot_types.h"
+#include "playerbot_log.h"
 #include "playerbot_config.h"
 #include "playerbot_swing_timing.h"
 #include "playerbot_navigation.h"
