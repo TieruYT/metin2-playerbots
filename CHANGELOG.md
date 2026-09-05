@@ -17,6 +17,52 @@ every version here.
 
 ---
 
+## 1.25.7 — 2026-09-05
+
+### Naprawione
+
+- **Bot sprzedawał konia bojowego kupcowi trzy minuty po tym, jak go zdobył.**
+  Reguła złomowania mówi „to szrot", dopóki ktoś jej wyraźnie nie zaprzeczy.
+  Medal konny taki wyjątek miał od dawna, z komentarzem o tym, że postęp w
+  zadaniu musi przeżyć wizytę u kupca — nagroda, do której medal prowadzi, już
+  nie. Pierwszy bot w historii, który ukończył próbę (dwadzieścia jeden medali,
+  sto Czarnych Wichrów i 500 000 yang u stajennego), poszedł do miasta i sprzedał
+  zwój przyzwania za swoją część z 1020 sztuk złota. W całym świecie nie został
+  ani jeden.
+- **Bot powyżej 36 poziomu przestawał ulepszać broń — na zawsze.** Drabina
+  sprzętu sprawdzała tylko osiem stopni, a ósmy to w czterech z pięciu rodzin
+  broń na 36 poziom. Bot uznawał, że jest już uzbrojony, i nigdy nie sięgał
+  wyżej. Zgłoszony przypadek bota na 49 poziomie z bronią +0 nie był wyjątkiem,
+  tylko regułą. Po zmianie drabina sięga tam, dokąd sięga rodzina:
+
+  | broń | było | jest |
+  |---|---|---|
+  | miecz | 36 | **80** |
+  | dwuręczny | 36 | **87** |
+  | łuk | 36 | **80** |
+  | dzwonek | 36 | **80** |
+  | sztylet | 50 | **75** |
+
+  Zbroja dostała dwa brakujące stopnie i sięga teraz 66 zamiast 54. Tarcze i
+  buty już wcześniej dochodziły do końca swojej rodziny i nie były ruszane.
+  Hełmy poszły w drugą stronę — o jeden stopień w dół, bo ósmy sięgał po hełm
+  innej klasy; nic na tym nie tracimy, każda klasa dochodzi do swojego
+  najlepszego hełmu w czwartym stopniu.
+- **Boty z przemianowanym nickiem były niewidoczne na stronie.** Osiemnaście
+  zapytań panelu pytało, czy nick zaczyna się od „bot" — więc mapa na żywo,
+  wszystkie jedenaście rankingów, statystyki świata i strona sezonu przestawały
+  je liczyć, gdy ktoś zmienił im nazwy. Panel pyta teraz o to samo co silnik: o
+  konto `playerbot_NNN`, którego zmiana nicku nie dotyka. Stary test po nicku
+  został jako drugie ramię, żeby ręcznie zrobiony bot na zwykłym koncie nadal
+  był widoczny.
+
+### Warto wiedzieć
+
+- Wyższe stopnie broni (45 i dalej) oraz dwa nowe stopnie zbroi są na razie
+  potwierdzone tylko z danych — żaden bot nie ma jeszcze poziomu, żeby po nie
+  sięgnąć. Potwierdzone na żywym świecie zostały zakupy broni na 40 poziom,
+  stopnia, który wcześniej dla bota nie istniał.
+
 ## 1.25.6 — 2026-09-05
 
 ### Naprawione

@@ -1,12 +1,12 @@
 {
   "schema": 1,
   "channel": "stable",
-  "publishedAt": "2026-09-05T19:10:00Z",
-  "statusMessage": "Aktualizacja 1.25.6. Poprawka do 1.25.5: bot, ktoremu silnik odmowil zakupu na straganie, pytal o to samo raz na sekunde az do konca wyprawy - teraz odmowa konczy wyprawe, a pozycje, ktora nie zmiesci sie w plecaku, bot pomija z gory. Proba o konia bojowego liczyla mniej wiecej co drugie zabicie i gubila wszystkie dobite przez druzyne: zmierzone 2,6 na 7,7 zabicia na minute. Bot z medalem w plecaku nie awansuje juz konia na jedenastke, bo tracil przez to bojowca bezpowrotnie.",
+  "publishedAt": "2026-09-05T20:10:00Z",
+  "statusMessage": "Aktualizacja 1.25.7. Bot sprzedawal konia bojowego kupcowi trzy minuty po tym, jak go zdobyl - regula zlomowania uznawala zwoj za szrot. Bot powyzej 36 poziomu przestawal ulepszac bron na zawsze, bo drabina sprzetu konczyla sie na broni na 36; teraz siega do 80 (miecz, luk, dzwonek), 87 (dwureczny) i 75 (sztylet), a zbroja do 66 zamiast 54. Boty z przemianowanym nickiem sa znowu widoczne na stronie - panel pyta o konto, nie o nick.",
   "server": {
-    "version": "1.25.6",
-    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v1.25.6/metin2-server-update-1.25.6.zip",
-    "sha256": "4B21F34BF85838927D05D1B72ADD69EF45E0334263F77296CDDC9ED49B8D541B"
+    "version": "1.25.7",
+    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v1.25.7/metin2-server-update-1.25.7.zip",
+    "sha256": "AA1B90E43752D4A9507A91D31F11E8852CE3632CF697F603DC6EBDC2010211B6"
   },
   "support": {
     "contactUrl": "https://discord.gg/pt5tvnrN6",
