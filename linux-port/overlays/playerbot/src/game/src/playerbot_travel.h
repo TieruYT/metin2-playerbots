@@ -299,8 +299,21 @@ namespace
 		// also empties it: a bot already inside re-evaluates the same call every
 		// tick, so the one that levels past the band finishes what it is doing
 		// and walks out rather than waiting for the thirty-minute timeout.
-		if (ch->GetLevel() < PLAYERBOT_MONKEY_MIN_LEVEL ||
-				ch->GetLevel() > PLAYERBOT_MONKEY_MAX_LEVEL)
+		if (ch->GetLevel() < PLAYERBOT_MONKEY_MIN_LEVEL)
+			return false;
+
+		// Past the band it was a door that shut for good, and on a world with a
+		// raised experience rate almost everybody went through it before the roll
+		// had ever picked them: 446 bots above level 26, and 435 of those still
+		// on a horse below ten - locked out of the only source of medals there
+		// is, and with it out of the battle horse, permanently.
+		//
+		// So the band ends the *stay*, not the errand. Above it a bot still comes
+		// for a medal while it has a horse left to raise, at a third of the
+		// chance so the dungeon fills with a trickle of older bots rather than a
+		// crowd, and the ordinary exit rule walks it home as soon as it has one.
+		const bool bPastMonkeyBand = ch->GetLevel() > PLAYERBOT_MONKEY_MAX_LEVEL;
+		if (bPastMonkeyBand && ch->GetHorseLevel() >= 10)
 			return false;
 
 		// A combat horse matters most to Warriors and weapon Suras, but it must be
@@ -336,10 +349,18 @@ namespace
 				stateIt->second.bAmbition == BOT_AMBITION_HORSE && !hasCombatHorse)
 			chance = std::min<BYTE>(55, chance + 15);
 
+		if (bPastMonkeyBand)
+			chance = (BYTE)std::max(1, (int)chance / 3);
+
 		const DWORD window = dwNow / (30U * 60U * 1000U);
 		const DWORD seed = ch->GetPlayerID() ^ (window * 0x9e3779b9U) ^
 				((DWORD)(ch->GetHorseLevel() + 1) * 0x85ebca6bU);
-		return (PlayerBotNavHash(seed ^ 0x484f5253U) % 100U) < chance;
+		// Through the weight, not past it. An operator who raises HORSE in the
+		// panel is asking for exactly this - more bots in the dungeon - and until
+		// now the slider moved the goal planner while the gate that actually
+		// sends them ignored it, so nothing he did had any effect.
+		return PlayerBotWeightedRoll(PlayerBotNavHash(seed ^ 0x484f5253U) % 100U,
+				chance, PLAYERBOT_WEIGHT_HORSE);
 	}
 
 	int GetPlayerBotDesiredHorseMedalStock(LPCHARACTER ch)
