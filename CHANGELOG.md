@@ -17,6 +17,23 @@ every version here.
 
 ---
 
+## 1.25.2 — 2026-09-05
+
+### Naprawione
+
+- **Panel po aktualizacji zostawał stary.** Panel istnieje w dwóch kopiach:
+  `files/admin_panel.py` jest źródłem, a `linux-port/docker/panel/app/admin_panel.py`
+  jest tym, z czego powstaje obraz. Przepisuje jedną na drugą `prepare-context.sh`,
+  który — jak `start-server.ps1` sam odnotowuje w trzech miejscach — **nigdy nie
+  uruchamia się u gracza**. Skrypt startowy nadrabiał to dla źródeł botów, dla
+  Makefile i dla seeda SQL, a o panelu zapomniano. Efekt: aktualizacje 1.25.0 i
+  1.25.1 przynosiły poprawny panel w `files/`, a obraz i tak budował się ze
+  starej kopii — więc suwaki zachowania botów i strona sezonu **nie pojawiały
+  się mimo zainstalowanej nowej wersji**. Skrypt startowy synchronizuje teraz
+  panel tak samo jak resztę, a obie kopie w paczce są zgodne.
+
+---
+
 ## 1.25.1 — 2026-09-05
 
 > Dalej **wydanie eksperymentalne**, na tych samych zasadach co 1.25.0: baza nie

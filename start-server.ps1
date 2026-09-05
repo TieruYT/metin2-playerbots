@@ -502,6 +502,26 @@ if ((Test-Path -LiteralPath $overlaySource -PathType Container) -and
             $syncedFiles++
         }
     }
+    # Same again for the panel. files/admin_panel.py is the source and
+    # panel/app/admin_panel.py is what the image is built from; prepare-context.sh
+    # copies one to the other and does not run here either. Without this an
+    # update can carry a perfectly good panel and the player still gets the old
+    # one - which is exactly what 1.25.0 and 1.25.1 did with the behaviour
+    # sliders and the season page.
+    $panelSource = Join-Path $PSScriptRoot 'files\admin_panel.py'
+    $panelStaged = Join-Path $PSScriptRoot 'linux-port\docker\panel\app\admin_panel.py'
+    if ((Test-Path -LiteralPath $panelSource -PathType Leaf) -and
+        (Test-Path -LiteralPath (Split-Path -Parent $panelStaged) -PathType Container)) {
+        $panelHash = $null
+        if (Test-Path -LiteralPath $panelStaged -PathType Leaf) {
+            $panelHash = (Get-FileHash -LiteralPath $panelStaged -Algorithm SHA256).Hash
+        }
+        if ($panelHash -ne (Get-FileHash -LiteralPath $panelSource -Algorithm SHA256).Hash) {
+            Copy-Item -LiteralPath $panelSource -Destination $panelStaged -Force
+            $syncedFiles++
+        }
+    }
+
     # The migrate container mounts mariadb/playerbot, so the seed it applies is a
     # copy of the overlay's, staged by prepare-context.sh - which never runs
     # here. Left alone it stays at whatever the distribution shipped.

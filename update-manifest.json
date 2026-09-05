@@ -1,12 +1,12 @@
 {
   "schema": 1,
   "channel": "stable",
-  "publishedAt": "2026-09-05T12:13:26Z",
-  "statusMessage": "Aktualizacja 1.25.1 - EKSPERYMENTALNA. Stragany przestaly wystawiac szrot +1/+2/+3 - zwykly sprzet wchodzi na lade dopiero od +4. Zniknal szyld sklepu, ktorego nie dalo sie otworzyc. Bot przy ladzie zdejmuje buffy. Boty zdobywaja konia bojowego: proba na pustyni bez limitu czasu, odbior u stajennego.",
+  "publishedAt": "2026-09-05T12:19:32Z",
+  "statusMessage": "Aktualizacja 1.25.2 - WAZNA. Panel po aktualizacji zostawal stary: obraz budowal sie z drugiej, nieodswiezanej kopii admin_panel.py, wiec suwaki zachowania botow i strona sezonu nie pojawialy sie mimo zainstalowanej nowej wersji. Jesli masz 1.25.0 lub 1.25.1 i nie widzisz nowych zakladek - to jest ta poprawka.",
   "server": {
-    "version": "1.25.1",
-    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v1.25.1/metin2-server-update-1.25.1.zip",
-    "sha256": "2960DEC2E4ADD347EC15F616070F95981D309CD9097EC727A59EDB5292332142"
+    "version": "1.25.2",
+    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v1.25.2/metin2-server-update-1.25.2.zip",
+    "sha256": "3E507B694612653B75448A6C2F76923E259A6EFF62F5B5F11179201448B005A7"
   },
   "support": {
     "contactUrl": "https://discord.gg/pt5tvnrN6",
