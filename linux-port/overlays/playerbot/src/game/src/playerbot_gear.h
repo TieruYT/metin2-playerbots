@@ -534,7 +534,17 @@ namespace
 
 		DWORD bestVnum = familyBase;
 		int bestLevel = -1;
-		for (int tier = 0; tier < 8; ++tier)
+		// Twenty tiers, not eight. Eight stopped at familyBase+70, which is the
+		// level-36 weapon in four of the five families - so every bot past 36
+		// wanted nothing better than what it was already holding and stopped
+		// upgrading for good. One was reported still swinging a +0 at level 49.
+		//
+		// Twenty is safe as well as sufficient: checked against item_proto, all
+		// five families keep the same weapon subtype for twenty tiers, and only a
+		// strictly higher requirement wins - so a family that runs out early stops
+		// contributing, and the special level-30 weapons sitting at the far end of
+		// three of these ranges can never displace a higher-level piece.
+		for (int tier = 0; tier < 20; ++tier)
 		{
 			const DWORD candidateVnum = familyBase + tier * 10;
 			TItemTable* proto = ITEM_MANAGER::instance().GetTable(candidateVnum);
@@ -567,7 +577,12 @@ namespace
 		}
 		DWORD bestVnum = baseVnum;
 		int bestLevel = -1;
-		for (int tier = 0; tier < 8; ++tier)
+		// Ten tiers, not eight. Each class's body armour runs base+0 to base+90 -
+		// levels 0, 9, 18, 26, 34, 42, 48, 54, 61, 66 - and eight of them stopped
+		// at 54, so the last two pieces were unreachable however high a bot got.
+		// Ten is also the ceiling: base+100 begins a different series with its own
+		// numbering, and the classes are 200 apart, so this cannot reach one.
+		for (int tier = 0; tier < 10; ++tier)
 		{
 			const DWORD candidateVnum = baseVnum + tier * 10;
 			TItemTable* proto = ITEM_MANAGER::instance().GetTable(candidateVnum);
@@ -623,7 +638,14 @@ namespace
 		}
 		DWORD bestVnum = baseVnum;
 		int bestLevel = -1;
-		for (int tier = 0; tier < 8; ++tier)
+		// Seven, and seven is the whole family: helmet ranges are 140 vnums apart
+		// and the stride is 20, so the eighth tier was the next class's first
+		// helmet. Nothing came of that - those entries are level-0 items and a
+		// level-0 item cannot outrank a real one - but a ladder has no business
+		// reading another class's gear to decide what this one should wear.
+		// Nothing is lost either: every class reaches its best helmet by the
+		// fourth tier (level 41 for a warrior, level 80 for the other three).
+		for (int tier = 0; tier < 7; ++tier)
 		{
 			const DWORD candidateVnum = baseVnum + tier * 20;
 			TItemTable* proto = ITEM_MANAGER::instance().GetTable(candidateVnum);
