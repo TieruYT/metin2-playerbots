@@ -12,7 +12,7 @@ Versions are `MAJOR.MINOR.PATCH`:
   command that no longer exists, a manual step during the update. These say so
   at the top, in full, before anything else.
 
-Updating never touches your database. Characters, accounts and settings survive
+Updating never touche    s your database. Characters, accounts and settings survive
 every version here.
 
 ---
