@@ -8,9 +8,8 @@
 // them in a font that has no diacritics, so an accented character comes out as
 // a box.
 //
-// The text is recomputed only when something it depends on actually changed -
-// several hundred bots re-broadcasting an identical line every tick is a lot of
-// packets for no new information.
+// Overhead chat currently repeats the bot's name every five seconds for testing.
+// The activity text remains available for the admin panel's status snapshot.
 //
 // An implementation fragment in the sense playerbot_types.h describes: it
 // defines objects, relies on the engine headers playerbot_manager.cpp includes
@@ -18,6 +17,8 @@
 
 namespace
 {
+	const DWORD PLAYERBOT_NICK_CHAT_INTERVAL = 5000;
+
 	// Whether a real player is close enough for any of this to be seen. The
 	// overhead text exists for them, so with nobody watching there is nothing
 	// to broadcast.
@@ -293,32 +294,12 @@ namespace
 		if (!ch)
 			return;
 
-		const BYTE inParty = ch->GetParty() ? 1 : 0;
-		const DWORD relevantTargetVID = state.bCurrentAction == BOT_ACTION_FIGHT
-				? state.dwTargetVID : 0;
-		const BYTE relevantTownPhase = state.bVisitingShop
-				? state.bTownVisitPhase : BOT_TOWN_PHASE_NONE;
-		const bool changed =
-				state.bLastStatusAction != state.bCurrentAction ||
-				state.bLastStatusGoal != state.bLongTermGoal ||
-				state.bLastStatusTownPhase != relevantTownPhase ||
-				state.bLastStatusParty != inParty ||
-				state.dwLastStatusTargetVID != relevantTargetVID;
-		const bool keepAliveDue = dwNow >= state.dwNextChatTime;
-		if (!changed && !keepAliveDue)
+		if (dwNow < state.dwNextChatTime)
 			return;
 		if (dwNow < state.dwNextStatusProbeTime)
 			return;
-		if (state.dwLastStatusChatTime != 0 &&
-				dwNow - state.dwLastStatusChatTime < 2500)
-		{
-			state.dwNextStatusProbeTime = state.dwLastStatusChatTime + 2500;
-			return;
-		}
 
-		// Do not make 350 bots fill the chat window or spend time formatting text
-		// nobody can see. A player entering the area gets the current state within
-		// three seconds; state changes are otherwise published immediately.
+		// Only broadcast when a nearby player can see the overhead text.
 		CCheckNearbyHumanPlayer humanChecker(ch, 2500);
 		if (ch->GetSectree())
 			ch->GetSectree()->ForEachAround(humanChecker);
@@ -328,17 +309,13 @@ namespace
 			return;
 		}
 
-		char szStatus[160];
-		BuildPlayerBotStatusText(ch, state, szStatus, sizeof(szStatus));
-		SendPlayerBotOverheadChat(ch, szStatus);
+		// char szStatus[160];
+		// BuildPlayerBotStatusText(ch, state, szStatus, sizeof(szStatus));
+		// SendPlayerBotOverheadChat(ch, szStatus);
+		SendPlayerBotOverheadChat(ch, ch->GetName());
 		state.dwLastStatusChatTime = dwNow;
-		state.dwNextStatusProbeTime = dwNow + 2500;
-		state.dwNextChatTime = dwNow + number(9000, 14000);
-		state.bLastStatusAction = state.bCurrentAction;
-		state.bLastStatusGoal = state.bLongTermGoal;
-		state.bLastStatusTownPhase = relevantTownPhase;
-		state.bLastStatusParty = inParty;
-		state.dwLastStatusTargetVID = relevantTargetVID;
+		state.dwNextStatusProbeTime = dwNow + PLAYERBOT_NICK_CHAT_INTERVAL;
+		state.dwNextChatTime = dwNow + PLAYERBOT_NICK_CHAT_INTERVAL;
 	}
 }
 

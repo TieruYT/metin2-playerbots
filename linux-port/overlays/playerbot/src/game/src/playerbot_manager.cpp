@@ -1132,10 +1132,8 @@ void CPlayerBotManager::Update()
 			continue;
 
 		TPlayerBotAIState& state = s_mapPlayerBotAIStates[it->first];
-		// Actions are set in many branches that deliberately end the current AI
-		// tick early. Publishing at the beginning of the next tick keeps the UI
-		// independent of those branches and still makes every change visible in
-		// at most one second.
+		// Keep overhead chat ahead of branches that claim the AI tick so the
+		// five-second nickname timer also runs during travel and activities.
 		if (d->IsPhase(PHASE_GAME) && !ch->IsDead())
 			ManagePlayerBotStatusOverhead(ch, state, dwNow);
 

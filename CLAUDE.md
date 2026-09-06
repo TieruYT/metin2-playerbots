@@ -310,8 +310,11 @@ implemented differently from what it describes.
 
 ## Conventions
 
-- Comments explain *why*, in English, in the voice of the surrounding code.
-  Prefer explaining the constraint that forced the shape over restating the code.
+- Do not add unnecessary comments. Comments explain *why*, in English, in the
+  voice of the surrounding code — the constraint that forced the shape, not a
+  restatement of the next line.
+- Do not write spaghetti. Put the change in the subsystem that already owns
+  that behaviour; one path, no extra wrappers, flags, or duplicated control flow.
 - Log with the `PLAYERBOT_<AREA>:` prefix and include `pid=` and `name=`.
 - Player-visible bot strings are Polish, ASCII-only (no diacritics).
 - Tune with named constants at the top of the namespace, not inline literals.
