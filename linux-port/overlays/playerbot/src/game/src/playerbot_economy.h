@@ -1152,21 +1152,8 @@ namespace
 		CompactPlayerBotPotionStacks(ch);
 		SellPlayerBotExcessPotions(ch);
 
-		// Count red and blue potions
-		size_t redCount = 0;
-		size_t blueCount = 0;
-		for (WORD cell = 0; cell < INVENTORY_MAX_NUM; ++cell)
-		{
-			LPITEM item = ch->GetInventoryItem(cell);
-			if (!item)
-				continue;
-
-			const DWORD vnum = item->GetVnum();
-			if (vnum == 27001 || vnum == 27002 || vnum == 27003 || vnum == 27051)
-				redCount += item->GetCount();
-			else if (vnum == 27004 || vnum == 27005 || vnum == 27006 || vnum == 27052)
-				blueCount += item->GetCount();
-		}
+		DWORD redCount = CountPlayerBotPotionSupply(ch, PLAYERBOT_POTION_SUPPLY_HP);
+		DWORD blueCount = CountPlayerBotPotionSupply(ch, PLAYERBOT_POTION_SUPPLY_SP);
 
 		// Miscellaneous loot belongs to Handlarka. Weapons and wearable equipment
 		// are deliberately left for their own specialist merchants.
@@ -1184,79 +1171,49 @@ namespace
 
 		if (botLvl <= 10)
 		{
-			if (redCount < 30 && ch->GetGold() >= 300)
+			if (redCount < 30 && BuyPlayerBotFromNearbyNpcShop(ch, 27001, "potion"))
 			{
-				ch->PointChange(POINT_GOLD, -240);
-				ch->AutoGiveItem(27001, 30); // Red Potion (S) 30x
-				boughtRed += 30;
+				const DWORD now = CountPlayerBotPotionSupply(ch, PLAYERBOT_POTION_SUPPLY_HP);
+				boughtRed += now - redCount;
+				redCount = now;
 			}
-			if (isMage && blueCount < 20 && ch->GetGold() >= 400)
+			if (isMage && blueCount < 20 && BuyPlayerBotFromNearbyNpcShop(ch, 27004, "potion"))
 			{
-				ch->PointChange(POINT_GOLD, -360);
-				ch->AutoGiveItem(27004, 15); // Blue Potion (S) 15x
-				boughtBlue += 15;
+				const DWORD now = CountPlayerBotPotionSupply(ch, PLAYERBOT_POTION_SUPPLY_SP);
+				boughtBlue += now - blueCount;
+				blueCount = now;
 			}
 		}
 		else
 		{
-			// Unit prices are the ones the old fixed purchases implied: 20 yang for
-			// a Red Potion (M), 32 for a Blue Potion (M).
 			const DWORD RED_TARGET = 800;
 			const DWORD BLUE_TARGET = 600;
 			// From forty the bot buys the big (D) potions, not the medium (S).
-			// A level-47 bot heals in the hundreds per hit and a medium potion
-			// is a sip; "na tych poziomach to juz duze potki u handlarki", as
-			// the Discord put it. The unit prices follow the same rule as the
-			// medium ones - what the old fixed purchases implied - scaled by the
-			// proto's sell-price ratio (160/96, 480/288) and rounded up.
+			// One shop row at a time, the largest stack the counter holds and
+			// the purse can pay. AutoGiveItem used to mint hundreds onto the
+			// floor of a full bag; CShop::Buy refuses that.
 			const bool bBig = botLvl >= PLAYERBOT_BIG_POTION_MIN_LEVEL;
 			const DWORD RED_VNUM = bBig ? 27003 : 27002;
 			const DWORD BLUE_VNUM = bBig ? 27006 : 27005;
-			const DWORD RED_UNIT = bBig ? 40 : 20;
-			const DWORD BLUE_UNIT = bBig ? 64 : 32;
-			// And never more than the bag can hold, because AutoGiveItem does not
-			// refuse a full one - it fills whatever stack has room and puts the
-			// rest on the ground at the bot's feet, paid for. A stack is 200. The
-			// estimate below counts the headroom of one partial stack plus every
-			// free cell, which is at most what the engine will find, never more.
-			const int freeCells = std::max(0, ch->GetEmptyInventory(1) < 0 ? 0 :
-					CountPlayerBotFreeInventoryCells(ch));
-			const DWORD redRoom = (DWORD)freeCells * 200 + (200 - redCount % 200) % 200;
-			const DWORD blueRoom = (DWORD)freeCells * 200 + (200 - blueCount % 200) % 200;
-			// Standing at the merchant already: fill the belt right up whatever the
-			// level, because this costs nothing extra. The decision to make the
-			// trip at all lives in NeedsPlayerBotPotions and is far stricter.
-			// Never spend more than half the purse, so shopping can't leave the
-			// bot unable to afford a refine.
-			if (redCount < RED_TARGET && ch->GetGold() >= 1200)
+			for (int n = 0; n < 8 && redCount < RED_TARGET && ch->GetGold() >= 1200; ++n)
 			{
-				const DWORD want = (DWORD)(RED_TARGET - redCount);
-				const DWORD affordable = (DWORD)(ch->GetGold() / 2 / RED_UNIT);
-				DWORD buy = want < affordable ? want : affordable;
-				if (buy > redRoom)
-					buy = redRoom;
-				if (buy > 0)
-				{
-					ch->PointChange(POINT_GOLD, -(int)(buy * RED_UNIT));
-					ch->AutoGiveItem(RED_VNUM, buy);
-					boughtRed += buy;
-				}
+				if (!BuyPlayerBotFromNearbyNpcShop(ch, RED_VNUM, "potion"))
+					break;
+				const DWORD now = CountPlayerBotPotionSupply(ch, PLAYERBOT_POTION_SUPPLY_HP);
+				if (now <= redCount)
+					break;
+				boughtRed += now - redCount;
+				redCount = now;
 			}
-			// Skills spend SP continuously, so a warrior wants a reserve too. It
-			// simply must never be the thing that forbids travelling.
-			if (blueCount < BLUE_TARGET && ch->GetGold() >= 1200)
+			for (int n = 0; n < 8 && blueCount < BLUE_TARGET && ch->GetGold() >= 1200; ++n)
 			{
-				const DWORD want = (DWORD)(BLUE_TARGET - blueCount);
-				const DWORD affordable = (DWORD)(ch->GetGold() / 2 / BLUE_UNIT);
-				DWORD buy = want < affordable ? want : affordable;
-				if (buy > blueRoom)
-					buy = blueRoom;
-				if (buy > 0)
-				{
-					ch->PointChange(POINT_GOLD, -(int)(buy * BLUE_UNIT));
-					ch->AutoGiveItem(BLUE_VNUM, buy);
-					boughtBlue += buy;
-				}
+				if (!BuyPlayerBotFromNearbyNpcShop(ch, BLUE_VNUM, "potion"))
+					break;
+				const DWORD now = CountPlayerBotPotionSupply(ch, PLAYERBOT_POTION_SUPPLY_SP);
+				if (now <= blueCount)
+					break;
+				boughtBlue += now - blueCount;
+				blueCount = now;
 			}
 		}
 
@@ -1268,11 +1225,22 @@ namespace
 					(unsigned int)redCount, (unsigned int)blueCount,
 					(int)(ch->GetGold() / 1000));
 
-		// Even the level-one shoes add movement speed. Missing footwear is therefore
-		// a progression problem, not cosmetic equipment.
+		// Wooden bracelet, leather shoes, wooden necklace, wooden earrings.
+		// That is the whole of Handlarka's accessory counter (shop 3). Asking
+		// for the next tier was a miss: those vnums belong to NPC 9008, who
+		// is not on the map.
+		if (NeedsPlayerBotProgressionWrist(ch))
+			BuyPlayerBotProgressionGear(ch,
+					GetPlayerBotProgressionWristVnum(ch), "wrist");
 		if (NeedsPlayerBotProgressionBoots(ch))
 			BuyPlayerBotProgressionGear(ch,
 					GetPlayerBotProgressionBootsVnum(ch), "boots");
+		if (NeedsPlayerBotProgressionNecklace(ch))
+			BuyPlayerBotProgressionGear(ch,
+					GetPlayerBotProgressionNecklaceVnum(ch), "necklace");
+		if (NeedsPlayerBotProgressionEarring(ch))
+			BuyPlayerBotProgressionGear(ch,
+					GetPlayerBotProgressionEarringVnum(ch), "earring");
 
 		return true;
 	}
@@ -1319,19 +1287,6 @@ namespace
 		if (NeedsPlayerBotProgressionHelmet(ch))
 			bought = BuyPlayerBotProgressionGear(ch,
 					GetPlayerBotProgressionHelmetVnum(ch), "helmet") || bought;
-		// The three slots nothing ever filled. A bot wore a bracelet, a necklace
-		// or an earring only when one happened to drop for it, because no ladder
-		// asked for them - so most of them went their whole lives with three
-		// empty slots on the character sheet.
-		if (NeedsPlayerBotProgressionWrist(ch))
-			bought = BuyPlayerBotProgressionGear(ch,
-					GetPlayerBotProgressionWristVnum(ch), "wrist") || bought;
-		if (NeedsPlayerBotProgressionNecklace(ch))
-			bought = BuyPlayerBotProgressionGear(ch,
-					GetPlayerBotProgressionNecklaceVnum(ch), "necklace") || bought;
-		if (NeedsPlayerBotProgressionEarring(ch))
-			bought = BuyPlayerBotProgressionGear(ch,
-					GetPlayerBotProgressionEarringVnum(ch), "earring") || bought;
 		return sold || bought;
 	}
 

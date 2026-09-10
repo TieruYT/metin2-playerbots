@@ -168,13 +168,12 @@ namespace
 		state.bTownNeedSkillReset = !inM2 && ShouldPlayerBotResetSkills(ch, state, dwNow);
 		state.bTownNeedMisc = HasPlayerBotJunkForMerchant(ch, BOT_MERCHANT_MISC) ||
 				NeedsPlayerBotPotions(ch) || HasPlayerBotExcessPotions(ch) ||
-				NeedsPlayerBotProgressionBoots(ch);
+				NeedsPlayerBotAccessoryShopGoods(ch);
 		state.bTownNeedWeaponMerchant = HasPlayerBotJunkForMerchant(
 				ch, BOT_MERCHANT_WEAPON) || ch->GetWear(WEAR_WEAPON) == NULL ||
 				NeedsPlayerBotProgressionWeapon(ch) || NeedsPlayerBotArrows(ch);
 		state.bTownNeedArmorMerchant = HasPlayerBotJunkForMerchant(ch, BOT_MERCHANT_ARMOR) ||
-				NeedsPlayerBotProgressionArmor(ch) || NeedsPlayerBotProgressionShield(ch) ||
-				NeedsPlayerBotProgressionHelmet(ch);
+				NeedsPlayerBotArmorShopGoods(ch);
 		state.bTownNeedBlacksmith = HasPlayerBotRefineOpportunity(ch);
 		state.bTownNeedSafebox = HasPlayerBotSafeboxDeposit(ch);
 		if (!state.bTownNeedTrainer && !state.bTownNeedSkillReset && !state.bTownNeedMisc &&

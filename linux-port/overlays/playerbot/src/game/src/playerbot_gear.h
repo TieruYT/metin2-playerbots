@@ -1004,26 +1004,8 @@ namespace
 
 	DWORD GetPlayerBotProgressionBootsVnum(LPCHARACTER ch)
 	{
-		if (!ch)
-			return 0;
-		DWORD bestVnum = 15000;
-		int bestLevel = -1;
-		for (int tier = 0; tier < 12; ++tier)
-		{
-			const DWORD candidateVnum = 15000 + tier * 20;
-			TItemTable* proto = ITEM_MANAGER::instance().GetTable(candidateVnum);
-			if (!proto)
-				continue;
-			const int reqLevel = GetPlayerBotProtoLevelLimit(proto);
-			// Strictly higher, so a level-0 starter belonging to the next class
-			// can never displace a piece this character actually qualifies for.
-			if (reqLevel <= (int)ch->GetLevel() && reqLevel > bestLevel)
-			{
-				bestVnum = candidateVnum;
-				bestLevel = reqLevel;
-			}
-		}
-		return bestVnum;
+		// Handlarka (NPC 9003) stocks leather shoes and nothing above them.
+		return ch ? 15000 : 0;
 	}
 
 	bool HasPlayerBotProgressionGear(LPCHARACTER ch, DWORD desiredVnum, int wearCell)
@@ -1054,7 +1036,8 @@ namespace
 	}
 
 	// What a proto is worth to this character, before anything has been rolled
-	// on it. The ladders below compare candidates they cannot hold yet.
+	// on it. NeedsPlayerBotProgressionAccessory compares a slot to the
+	// Handlarka row that way: a better earring can be an older one.
 	long long ScorePlayerBotProtoApplies(const TItemTable* proto, LPCHARACTER ch)
 	{
 		if (!proto)
@@ -1066,56 +1049,22 @@ namespace
 		return score;
 	}
 
-	// Bracelets, necklaces and earrings. Not a ladder in the sense the other
-	// slots are: the earring line rotates dexterity, strength, constitution and
-	// intelligence as it climbs, so the newest tier a bot qualifies for is the
-	// right one only for the class that tier favours. Worth decides, and the
-	// required level only breaks a tie - which for the bracelets and necklaces,
-	// whose lines climb straight, comes to the same answer as before.
-	DWORD GetPlayerBotProgressionAccessoryVnum(LPCHARACTER ch, DWORD baseVnum,
-			DWORD stride, int tiers)
-	{
-		if (!ch)
-			return 0;
-		DWORD bestVnum = 0;
-		long long bestScore = -1;
-		int bestLevel = -1;
-		for (int tier = 0; tier < tiers; ++tier)
-		{
-			const DWORD candidateVnum = baseVnum + (DWORD)tier * stride;
-			TItemTable* proto = ITEM_MANAGER::instance().GetTable(candidateVnum);
-			if (!proto)
-				continue;
-			const int reqLevel = GetPlayerBotProtoLevelLimit(proto);
-			if (reqLevel > (int)ch->GetLevel())
-				continue;
-			const long long score = ScorePlayerBotProtoApplies(proto, ch);
-			if (score > bestScore || (score == bestScore && reqLevel > bestLevel))
-			{
-				bestVnum = candidateVnum;
-				bestScore = score;
-				bestLevel = reqLevel;
-			}
-		}
-		return bestVnum;
-	}
-
-	// Twelve tiers each, which is the whole of every one of the three families
-	// below level 80: the next entries after them sit at 85 and above, past
-	// anything this world levels to.
+	// One row each: what Handlarka actually sells (shop 3). The rest of each
+	// family sits on NPC 9008, which is not spawned - a third keeper next to
+	// the two the square already has.
 	DWORD GetPlayerBotProgressionWristVnum(LPCHARACTER ch)
 	{
-		return GetPlayerBotProgressionAccessoryVnum(ch, 14000, 20, 12);
+		return ch ? 14000 : 0;
 	}
 
 	DWORD GetPlayerBotProgressionNecklaceVnum(LPCHARACTER ch)
 	{
-		return GetPlayerBotProgressionAccessoryVnum(ch, 16000, 20, 12);
+		return ch ? 16000 : 0;
 	}
 
 	DWORD GetPlayerBotProgressionEarringVnum(LPCHARACTER ch)
 	{
-		return GetPlayerBotProgressionAccessoryVnum(ch, 17000, 20, 12);
+		return ch ? 17000 : 0;
 	}
 
 	// The other slots ask "is what I am wearing for a lower level than what I
@@ -1195,6 +1144,24 @@ namespace
 	{
 		return ch && !HasPlayerBotProgressionGear(
 				ch, GetPlayerBotProgressionBootsVnum(ch), WEAR_FOOTS);
+	}
+
+	// Body, shield and helmet. Bracelets, boots and jewellery are Handlarka's
+	// - NPC 9008 would stand next to this keeper, and spawning it made three
+	// figures where the square had two.
+	bool NeedsPlayerBotArmorShopGoods(LPCHARACTER ch)
+	{
+		return NeedsPlayerBotProgressionArmor(ch) ||
+				NeedsPlayerBotProgressionShield(ch) ||
+				NeedsPlayerBotProgressionHelmet(ch);
+	}
+
+	bool NeedsPlayerBotAccessoryShopGoods(LPCHARACTER ch)
+	{
+		return NeedsPlayerBotProgressionWrist(ch) ||
+				NeedsPlayerBotProgressionNecklace(ch) ||
+				NeedsPlayerBotProgressionEarring(ch) ||
+				NeedsPlayerBotProgressionBoots(ch);
 	}
 
 	// "Full eq" as a player says it: every slot filled and nothing on the
@@ -1368,27 +1335,140 @@ namespace
 		return 6;
 	}
 
-	bool BuyPlayerBotProgressionGear(LPCHARACTER ch, DWORD vnum, const char* category)
+	// What a player does at an NPC counter: open that keeper's shop, click a
+	// slot that exists, close it. AutoGiveItem was paying proto gold for a
+	// vnum the ladder wanted whether or not the counter held it, so a
+	// level-66 warrior left Joan in Black Steel the armour dealer has never
+	// stocked. Stall buying already went through CShopManager::Buy; this is
+	// that path for an NPC shop.
+	struct TPlayerBotNpcShopOffer
 	{
-		if (!ch || vnum == 0)
+		LPCHARACTER pkKeeper;
+		LPSHOP pkShop;
+		BYTE bSlot;
+		DWORD dwPrice;
+		BYTE bCount;
+
+		TPlayerBotNpcShopOffer() :
+			pkKeeper(NULL), pkShop(NULL), bSlot(0), dwPrice(0), bCount(0) {}
+	};
+
+	class CFindPlayerBotNpcShopOffer
+	{
+		public:
+			CFindPlayerBotNpcShopOffer(LPCHARACTER buyer, DWORD vnum) :
+				m_buyer(buyer), m_vnum(vnum), m_bestDistance(INT_MAX),
+				m_bestCount(0)
+			{
+			}
+
+			void operator()(LPENTITY entity)
+			{
+				if (!entity || !entity->IsType(ENTITY_CHARACTER) || !m_buyer)
+					return;
+				LPCHARACTER npc = (LPCHARACTER)entity;
+				if (!npc || npc == m_buyer || npc->IsPC() || npc->IsDead())
+					return;
+				const int distance = DISTANCE_APPROX(
+						m_buyer->GetX() - npc->GetX(),
+						m_buyer->GetY() - npc->GetY());
+				if (distance >= SHOP_MAX_DISTANCE)
+					return;
+				LPSHOP shop = CShopManager::instance().GetByNPCVnum(npc->GetRaceNum());
+				if (!shop || shop->IsPCShop())
+					return;
+				// CShopEx does not fill m_itemVector; those keepers look empty
+				// here, which is the same as "this counter does not sell it".
+
+				const bool otherEmpire = m_buyer->GetEmpire() != npc->GetEmpire();
+				const std::vector<CShop::SHOP_ITEM>& items = shop->GetItemVector();
+				for (size_t slot = 0; slot < items.size() && slot <= 0xFF; ++slot)
+				{
+					const CShop::SHOP_ITEM& row = items[slot];
+					if (row.vnum != m_vnum || row.count == 0)
+						continue;
+					DWORD price = row.price;
+					if (otherEmpire)
+						price *= 3;
+					if (m_buyer->GetGold() < (int)price)
+						continue;
+					if (row.count < m_bestCount)
+						continue;
+					if (row.count == m_bestCount && distance >= m_bestDistance)
+						continue;
+					m_bestCount = row.count;
+					m_bestDistance = distance;
+					m_offer.pkKeeper = npc;
+					m_offer.pkShop = shop;
+					m_offer.bSlot = (BYTE)slot;
+					m_offer.dwPrice = price;
+					m_offer.bCount = row.count;
+				}
+			}
+
+			const TPlayerBotNpcShopOffer& GetOffer() const { return m_offer; }
+
+		private:
+			LPCHARACTER m_buyer;
+			DWORD m_vnum;
+			int m_bestDistance;
+			BYTE m_bestCount;
+			TPlayerBotNpcShopOffer m_offer;
+	};
+
+	void ClosePlayerBotNpcShop(LPCHARACTER ch)
+	{
+		if (!ch)
+			return;
+		if (ch->GetShop())
+			CShopManager::instance().StopShopping(ch);
+		ch->SetShopOwner(NULL);
+	}
+
+	bool BuyPlayerBotFromNearbyNpcShop(LPCHARACTER ch, DWORD vnum, const char* category)
+	{
+		if (!ch || vnum == 0 || !ch->GetSectree() || !ch->GetDesc())
 			return false;
 		TItemTable* proto = ITEM_MANAGER::instance().GetTable(vnum);
 		if (!proto || ch->GetEmptyInventory(std::max(1, (int)proto->bSize)) < 0)
 			return false;
 
-		long long price = proto->dwShopBuyPrice > 0 ? proto->dwShopBuyPrice : proto->dwGold;
-		price = std::max<long long>(100, price);
-		if (ch->GetGold() < price)
+		CFindPlayerBotNpcShopOffer finder(ch, vnum);
+		ch->GetSectree()->ForEachAround(finder);
+		const TPlayerBotNpcShopOffer& offer = finder.GetOffer();
+		if (!offer.pkKeeper || !offer.pkShop)
+		{
+			PlayerBotLogThrottled("npc_shop_miss", get_dword_time(),
+					"PLAYERBOT_GEAR: npc shop has no vnum=%u pid=%u name=%s category=%s",
+					vnum, ch->GetPlayerID(), ch->GetName(),
+					category ? category : "gear");
+			return false;
+		}
+
+		ClosePlayerBotNpcShop(ch);
+		if (!CShopManager::instance().StartShopping(ch, offer.pkKeeper))
+		{
+			ClosePlayerBotNpcShop(ch);
+			return false;
+		}
+
+		const int goldBefore = ch->GetGold();
+		CShopManager::instance().Buy(ch, offer.bSlot);
+		ClosePlayerBotNpcShop(ch);
+		if (ch->GetGold() >= goldBefore)
 			return false;
 
-		LPITEM item = ch->AutoGiveItem(vnum, 1, -1, false);
-		if (!item)
-			return false;
-		ch->PointChange(POINT_GOLD, -price);
-		sys_log(0, "PLAYERBOT_GEAR: bought progression %s pid=%u name=%s vnum=%u required_level=%d price=%lld",
-				category ? category : "gear", ch->GetPlayerID(), ch->GetName(), vnum,
-				item->GetLevelLimit(), price);
+		const int paid = goldBefore - ch->GetGold();
+		sys_log(0, "PLAYERBOT_GEAR: bought npc %s pid=%u name=%s vnum=%u count=%u slot=%u npc=%u required_level=%d price=%d",
+				category ? category : "gear", ch->GetPlayerID(), ch->GetName(),
+				vnum, offer.bCount, offer.bSlot, offer.pkKeeper->GetRaceNum(),
+				GetPlayerBotProtoLevelLimit(proto), paid);
 		return true;
+	}
+
+	bool BuyPlayerBotProgressionGear(LPCHARACTER ch, DWORD vnum, const char* category)
+	{
+		return BuyPlayerBotFromNearbyNpcShop(ch, vnum, category);
 	}
 
 	// Arrows this bot can nock now. A progression chest hands an archer the
@@ -1857,42 +1937,12 @@ namespace
 		if (ch->GetGold() < smallPrice)
 			RaisePlayerBotEmergencyGold(ch, smallPrice, "arrows");
 
-		int bundle = 0;
-		long long price = GetPlayerBotNpcPurchasePrice(
-				proto, PLAYERBOT_ARROW_LARGE_BUNDLE);
-		if (price > 0 && ch->GetGold() >= price)
-			bundle = PLAYERBOT_ARROW_LARGE_BUNDLE;
-		else
-		{
-			price = smallPrice;
-			if (price > 0 && ch->GetGold() >= price)
-				bundle = PLAYERBOT_ARROW_SMALL_BUNDLE;
-		}
-		if (bundle == 0)
+		if (ch->GetGold() < smallPrice)
 			return false;
-		// AutoGiveItem hands the item back even when it had nowhere to put it:
-		// with no free cell the bundle goes on the ground at the bot's feet, the
-		// bot pays, still "needs arrows", and buys again on the next pass - a
-		// market square carpeted in Wooden Arrows, twenty purchases an hour per
-		// archer. The junk sale has already run by now; a bag still full holds
-		// things worth keeping, and the arrows wait for the next visit.
-		if (ch->GetEmptyInventory(1) < 0)
-		{
-			sys_log(0, "PLAYERBOT_GEAR: no room for arrows pid=%u name=%s arrows=%d",
-					ch->GetPlayerID(), ch->GetName(), CountPlayerBotArrows(ch));
-			return false;
-		}
 
-		LPITEM arrows = ch->AutoGiveItem(
-				PLAYERBOT_WOODEN_ARROW_VNUM, bundle, -1, false);
-		if (!arrows)
+		if (!BuyPlayerBotFromNearbyNpcShop(ch, PLAYERBOT_WOODEN_ARROW_VNUM, "arrows"))
 			return false;
-		ch->PointChange(POINT_GOLD, -price);
-		const bool equipped = EnsurePlayerBotArrowsEquipped(ch);
-		sys_log(0, "PLAYERBOT_GEAR: bought wooden arrows pid=%u name=%s vnum=%u count=%d price=%lld equipped=%d",
-				ch->GetPlayerID(), ch->GetName(), PLAYERBOT_WOODEN_ARROW_VNUM,
-				bundle, price, equipped ? 1 : 0);
-		return true;
+		return EnsurePlayerBotArrowsEquipped(ch);
 	}
 
 	bool EquipFirstAvailablePlayerBotWeapon(LPCHARACTER ch)
@@ -1932,16 +1982,19 @@ namespace
 		if (ch->GetGold() < price)
 			return false;
 
-		LPITEM weapon = ch->AutoGiveItem(vnum, 1, -1, false);
-		if (!weapon)
+		if (!BuyPlayerBotFromNearbyNpcShop(ch, vnum, "emergency_weapon"))
 			return false;
 
-		ch->PointChange(POINT_GOLD, -price);
-		const bool equipped = ch->EquipItem(weapon);
-
-		sys_log(0, "PLAYERBOT_AI: bought emergency weapon pid=%u name=%s vnum=%u price=%lld equipped=%d",
-				ch->GetPlayerID(), ch->GetName(), vnum, price, equipped ? 1 : 0);
-		return equipped;
+		for (WORD cell = 0; cell < INVENTORY_MAX_NUM; ++cell)
+		{
+			LPITEM weapon = ch->GetInventoryItem(cell);
+			if (!weapon || weapon->GetVnum() != vnum)
+				continue;
+			if (ch->CanEquipNow(weapon, TItemPos(INVENTORY, cell)) &&
+					ch->EquipItem(weapon))
+				return true;
+		}
+		return ch->GetWear(WEAR_WEAPON) != NULL;
 	}
 
 	bool PrepareWeapon(LPCHARACTER ch, TPlayerBotAIState& state, DWORD dwNow)
