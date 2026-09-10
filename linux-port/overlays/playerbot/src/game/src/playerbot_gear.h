@@ -1036,7 +1036,8 @@ namespace
 	}
 
 	// What a proto is worth to this character, before anything has been rolled
-	// on it. The ladders below compare candidates they cannot hold yet.
+	// on it. NeedsPlayerBotProgressionAccessory compares a slot to the
+	// Handlarka row that way: a better earring can be an older one.
 	long long ScorePlayerBotProtoApplies(const TItemTable* proto, LPCHARACTER ch)
 	{
 		if (!proto)
@@ -1046,40 +1047,6 @@ namespace
 			score += ScorePlayerBotApply(proto->aApplies[i].bType,
 					proto->aApplies[i].lValue, ch);
 		return score;
-	}
-
-	// Bracelets, necklaces and earrings. Not a ladder in the sense the other
-	// slots are: the earring line rotates dexterity, strength, constitution and
-	// intelligence as it climbs, so the newest tier a bot qualifies for is the
-	// right one only for the class that tier favours. Worth decides, and the
-	// required level only breaks a tie - which for the bracelets and necklaces,
-	// whose lines climb straight, comes to the same answer as before.
-	DWORD GetPlayerBotProgressionAccessoryVnum(LPCHARACTER ch, DWORD baseVnum,
-			DWORD stride, int tiers)
-	{
-		if (!ch)
-			return 0;
-		DWORD bestVnum = 0;
-		long long bestScore = -1;
-		int bestLevel = -1;
-		for (int tier = 0; tier < tiers; ++tier)
-		{
-			const DWORD candidateVnum = baseVnum + (DWORD)tier * stride;
-			TItemTable* proto = ITEM_MANAGER::instance().GetTable(candidateVnum);
-			if (!proto)
-				continue;
-			const int reqLevel = GetPlayerBotProtoLevelLimit(proto);
-			if (reqLevel > (int)ch->GetLevel())
-				continue;
-			const long long score = ScorePlayerBotProtoApplies(proto, ch);
-			if (score > bestScore || (score == bestScore && reqLevel > bestLevel))
-			{
-				bestVnum = candidateVnum;
-				bestScore = score;
-				bestLevel = reqLevel;
-			}
-		}
-		return bestVnum;
 	}
 
 	// One row each: what Handlarka actually sells (shop 3). The rest of each
