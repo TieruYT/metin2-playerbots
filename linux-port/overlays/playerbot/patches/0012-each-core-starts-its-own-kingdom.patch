@@ -1,0 +1,49 @@
+diff --git a/game/src/input_db.cpp b/game/src/input_db.cpp
+--- a/game/src/input_db.cpp
++++ b/game/src/input_db.cpp
+@@ -31,0 +32 @@
++#include "playerbot_empire_rules.h"
+@@ -1364,5 +1365,14 @@
+-	// MapLocations is the first point at which map 21 is known to this core.
+-	// Spawn the initial descriptors here; OnPlayerLoaded then starts the regular
+-	// manager update event.  Keeping this in Update() creates a startup deadlock,
+-	// because there is no update event before the first bot has been loaded.
+-	if (map_allow_find(21) && CPlayerBotManager::instance().GetCount() == 0)
++	// MapLocations is the first point at which this core knows which maps it
++	// hosts. Spawn the initial descriptors here; OnPlayerLoaded then starts the
++	// regular manager update event.  Keeping this in Update() creates a startup
++	// deadlock, because there is no update event before the first bot has been
++	// loaded.
++	//
++	// Each kingdom's four maps sit on one core (m2-render-config: Shinsoo on
++	// first, Chunjo on game1, Jinno on game2), so a core starts the kingdoms
++	// whose village map it holds and no others - which is what keeps one bot to
++	// one owner without any process asking another. The budget is the operator's
++	// single number, split between the kingdoms that actually have registered
++	// identities: with only Chunjo seeded it all goes to Chunjo, exactly as it
++	// did when this block named map 21.
++	if (CPlayerBotManager::instance().GetCount() == 0)
+@@ -1379,2 +1389,5 @@
+-		const size_t spawned = CPlayerBotManager::instance().SpawnRegistered(
+-				(size_t)autoSpawnCount, 2);
++		int registered[playerbot_empire_rules::EMPIRE_COUNT];
++		int want[playerbot_empire_rules::EMPIRE_COUNT];
++		CPlayerBotManager::instance().CountRegisteredPerEmpire(
++				registered, playerbot_empire_rules::EMPIRE_COUNT);
++		playerbot_empire_rules::SplitPopulation(autoSpawnCount, registered, want);
+@@ -1382,2 +1395,13 @@
+-		sys_log(0, "PLAYERBOT: autospawn requested=%d registered_started=%u in Chunjo",
+-				autoSpawnCount, (unsigned int)spawned);
++		for (int empire = playerbot_empire_rules::EMPIRE_SHINSOO;
++				empire <= playerbot_empire_rules::EMPIRE_JINNO; ++empire)
++		{
++			const long lVillage = playerbot_empire_rules::GetHomeMap(
++					empire, playerbot_empire_rules::MAP_ROLE_M1);
++			if (lVillage == 0 || !map_allow_find(lVillage) || want[empire] <= 0)
++				continue;
++			const size_t spawned = CPlayerBotManager::instance().SpawnRegistered(
++					(size_t)want[empire], (BYTE)empire);
++			sys_log(0, "PLAYERBOT: autospawn empire=%d village=%ld requested=%d registered=%d started=%u",
++					empire, lVillage, want[empire], registered[empire],
++					(unsigned int)spawned);
++		}

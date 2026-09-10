@@ -62,6 +62,7 @@ linux-port/docker/game/src/server/game/src/playerbot_*
 linux-port/docker/game/src/server/game/src/char.cpp
 linux-port/docker/game/src/server/game/src/char_battle.cpp
 linux-port/docker/game/src/server/game/src/char_state.cpp
+linux-port/docker/game/src/server/game/src/input_db.cpp
 linux-port/docker/game/src/server/game/src/cmd.cpp
 linux-port/docker/game/src/server/game/src/cmd_gm.cpp
 linux-port/docker/game/src/server/game/src/item_manager.cpp

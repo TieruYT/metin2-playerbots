@@ -891,7 +891,6 @@ namespace
 CPlayerBotManager::CPlayerBotManager()
 	: m_dwNextSpawnBatchTime(0),
 	  m_uSpawnBatchSize(0),
-	  m_bPendingSpawnEmpire(0),
 	  m_dwSpawnWindowStarted(0),
 	  m_uSpawnWindowTotal(0),
 	  m_dwNextTopUpTime(0),
@@ -908,8 +907,24 @@ CPlayerBotManager::~CPlayerBotManager()
 
 bool CPlayerBotManager::Spawn(DWORD dwPlayerID, BYTE bEmpire)
 {
-	if (dwPlayerID == 0 || bEmpire != 2)
+	if (dwPlayerID == 0)
 		return false;
+
+	// The kingdom comes from the registry, never from the caller. A PID whose
+	// seeded character is Jinno starts as Jinno or does not start at all -
+	// this is the guard that stops a bad call turning a character into a bot
+	// of somebody else's empire, and it is why the argument is only checked.
+	const BYTE bRegisteredEmpire = GetRegisteredEmpire(dwPlayerID);
+	if (bRegisteredEmpire == 0)
+		bEmpire = 0;
+	else if (bEmpire != 0 && bEmpire != bRegisteredEmpire)
+	{
+		sys_err("PLAYERBOT_AUTH: refused pid=%u asked empire=%u but the registry says %u",
+				dwPlayerID, bEmpire, bRegisteredEmpire);
+		return false;
+	}
+	else
+		bEmpire = bRegisteredEmpire;
 
 	// A bot descriptor has no authenticated account session.  Never let a raw
 	// PID turn an ordinary player into a server-controlled character: only the
@@ -975,7 +990,7 @@ bool CPlayerBotManager::LoadRegisteredBots()
 	m_mapBotAccounts.clear();
 
 	const char* query =
-			"SELECT l.pid, a.id, a.login "
+			"SELECT l.pid, a.id, a.login, pi.empire "
 			"FROM common.playerbot_seed_state AS l "
 			"JOIN player.player AS p ON p.id=l.pid "
 			"JOIN account.account AS a ON a.id=p.account_id "
@@ -1005,7 +1020,7 @@ bool CPlayerBotManager::LoadRegisteredBots()
 			// brings back the same world; newcomers come next, so growing the
 			// slider is how fresh characters enter it; the benched veterans
 			// last. A fresh install is one tier and unchanged.
-			"AND pi.empire=2 ORDER BY "
+			"AND pi.empire IN (1,2,3) ORDER BY "
 			"CASE WHEN p.level>4 AND p.last_play>NOW()-INTERVAL 7 DAY THEN 0 "
 			"WHEN p.level<=4 THEN 1 ELSE 2 END, l.pid";
 
@@ -1023,11 +1038,15 @@ bool CPlayerBotManager::LoadRegisteredBots()
 		DWORD pid = 0;
 		if (row[0])
 			str_to_number(pid, row[0]);
-		if (pid != 0)
+		unsigned int empire = 0;
+		if (row[3])
+			str_to_number(empire, row[3]);
+		if (pid != 0 && empire >= 1 && empire <= 3)
 		{
 			m_setRegisteredBots.insert(pid);
 			TPlayerBotAccount account;
 			account.dwID = 0;
+			account.bEmpire = (BYTE)empire;
 			if (row[1])
 				str_to_number(account.dwID, row[1]);
 			if (row[2])
@@ -1043,8 +1062,13 @@ bool CPlayerBotManager::LoadRegisteredBots()
 		return false;
 	}
 
-	sys_log(0, "PLAYERBOT_AUTH: loaded %u registered bot identities",
-			(unsigned int)m_setRegisteredBots.size());
+	int perEmpire[playerbot_empire_rules::EMPIRE_COUNT];
+	CountRegisteredPerEmpire(perEmpire, playerbot_empire_rules::EMPIRE_COUNT);
+	sys_log(0, "PLAYERBOT_AUTH: loaded %u registered bot identities (shinsoo=%d chunjo=%d jinno=%d)",
+			(unsigned int)m_setRegisteredBots.size(),
+			perEmpire[playerbot_empire_rules::EMPIRE_SHINSOO],
+			perEmpire[playerbot_empire_rules::EMPIRE_CHUNJO],
+			perEmpire[playerbot_empire_rules::EMPIRE_JINNO]);
 	ReportPlayerBotRegistryShortfall((unsigned int)m_setRegisteredBots.size());
 	return true;
 }
@@ -1102,6 +1126,33 @@ void CPlayerBotManager::ReportPlayerBotRegistryShortfall(unsigned int usable)
 			(unsigned int)value[8]);
 }
 
+BYTE CPlayerBotManager::GetRegisteredEmpire(DWORD dwPlayerID)
+{
+	if (!LoadRegisteredBots())
+		return 0;
+	TPlayerBotAccountMap::const_iterator it = m_mapBotAccounts.find(dwPlayerID);
+	return it == m_mapBotAccounts.end() ? 0 : it->second.bEmpire;
+}
+
+void CPlayerBotManager::CountRegisteredPerEmpire(int* out, int size)
+{
+	for (int i = 0; i < size; ++i)
+		out[i] = 0;
+	// The bootstrap asks for these counts before it asks for any spawn, so this
+	// is the call that loads the registry. Without it the split had nothing to
+	// divide and every kingdom was allotted nothing - measured: the core came
+	// up with no bots at all and not one PLAYERBOT line in the log.
+	if (!LoadRegisteredBots())
+		return;
+	for (TPlayerBotAccountMap::const_iterator it = m_mapBotAccounts.begin();
+			it != m_mapBotAccounts.end(); ++it)
+	{
+		const int empire = (int)it->second.bEmpire;
+		if (empire > 0 && empire < size)
+			++out[empire];
+	}
+}
+
 bool CPlayerBotManager::IsRegistered(DWORD dwPlayerID)
 {
 	return LoadRegisteredBots() &&
@@ -1116,27 +1167,35 @@ bool CPlayerBotManager::IsRegistered(DWORD dwPlayerID)
 // a minute later.
 size_t CPlayerBotManager::SpawnRegistered(size_t count, BYTE bEmpire)
 {
-	if (count == 0 || bEmpire != 2 || !LoadRegisteredBots())
+	if (count == 0 || bEmpire < 1 || bEmpire > 3 || !LoadRegisteredBots())
 		return 0;
 
-	m_dequePendingSpawns.clear();
+	// Only this kingdom's identities, and added to whatever is already waiting
+	// rather than replacing it: a core that hosted two kingdoms' villages would
+	// otherwise throw the first queue away when it asked for the second.
 	size_t selected = 0;
 	for (TRegisteredPlayerBotSet::const_iterator it = m_setRegisteredBots.begin();
-			it != m_setRegisteredBots.end() && selected < count; ++it, ++selected)
+			it != m_setRegisteredBots.end() && selected < count; ++it)
+	{
+		if (GetRegisteredEmpire(*it) != bEmpire)
+			continue;
+		if (m_setScheduledBots.find(*it) != m_setScheduledBots.end())
+			continue;
 		m_dequePendingSpawns.push_back(*it);
+		m_setScheduledBots.insert(*it);
+		++selected;
+	}
 
 	const size_t batches = std::max<size_t>(1, PLAYERBOT_SPAWN_WINDOW / PLAYERBOT_SPAWN_BATCH_INTERVAL);
-	m_uSpawnBatchSize = std::max<size_t>(1, (selected + batches - 1) / batches);
-	m_bPendingSpawnEmpire = bEmpire;
+	m_uSpawnBatchSize = std::max<size_t>(1,
+			(m_setScheduledBots.size() + batches - 1) / batches);
 	m_dwSpawnWindowStarted = get_dword_time();
-	m_uSpawnWindowTotal = selected;
+	m_uSpawnWindowTotal = m_setScheduledBots.size();
 	m_dwNextSpawnBatchTime = 0;
-	sys_log(0, "PLAYERBOT: staggered spawn scheduled=%u batch=%u every=%ums window=%ums",
-			(unsigned int)selected, (unsigned int)m_uSpawnBatchSize,
+	sys_log(0, "PLAYERBOT: staggered spawn empire=%u scheduled=%u total=%u batch=%u every=%ums window=%ums",
+			(unsigned int)bEmpire, (unsigned int)selected,
+			(unsigned int)m_uSpawnWindowTotal, (unsigned int)m_uSpawnBatchSize,
 			PLAYERBOT_SPAWN_BATCH_INTERVAL, PLAYERBOT_SPAWN_WINDOW);
-	// The first batch goes now: Update runs off an event that OnPlayerLoaded
-	// starts, so somebody has to be asked for before anybody can drain the
-	// queue.
 	SpawnPendingBatch(get_dword_time());
 	return selected;
 }
@@ -1153,7 +1212,7 @@ void CPlayerBotManager::SpawnPendingBatch(DWORD dwNow)
 	{
 		const DWORD pid = m_dequePendingSpawns.front();
 		m_dequePendingSpawns.pop_front();
-		Spawn(pid, m_bPendingSpawnEmpire);
+		Spawn(pid, GetRegisteredEmpire(pid));
 		++sent;
 	}
 	if (m_dequePendingSpawns.empty())
@@ -1176,8 +1235,7 @@ void CPlayerBotManager::SpawnPendingBatch(DWORD dwNow)
 // missing bots come back the way they arrived rather than all in one tick.
 void CPlayerBotManager::TopUpMissingBots(DWORD dwNow)
 {
-	// Not while the first fill is still running, and not before there was one.
-	if (m_uSpawnWindowTotal == 0 || !m_dequePendingSpawns.empty())
+	if (m_setScheduledBots.empty() || !m_dequePendingSpawns.empty())
 		return;
 	if (m_dwNextTopUpTime != 0 && dwNow < m_dwNextTopUpTime)
 		return;
@@ -1185,11 +1243,13 @@ void CPlayerBotManager::TopUpMissingBots(DWORD dwNow)
 	if (!LoadRegisteredBots())
 		return;
 
-	size_t considered = 0, live = 0;
+	// Counted against exactly the identities this core asked for. It used to be
+	// "the first N of the registry", which is the same set only while the
+	// registry holds one kingdom - with three it is somebody else's prefix.
+	size_t live = 0;
 	std::deque<DWORD> missing;
-	for (TRegisteredPlayerBotSet::const_iterator it = m_setRegisteredBots.begin();
-			it != m_setRegisteredBots.end() && considered < m_uSpawnWindowTotal;
-			++it, ++considered)
+	for (std::set<DWORD>::const_iterator it = m_setScheduledBots.begin();
+			it != m_setScheduledBots.end(); ++it)
 	{
 		if (CHARACTER_MANAGER::instance().FindByPID(*it) != NULL)
 			++live;
@@ -1201,10 +1261,9 @@ void CPlayerBotManager::TopUpMissingBots(DWORD dwNow)
 
 	m_dequePendingSpawns = missing;
 	m_uSpawnBatchSize = std::max<size_t>(1, m_uSpawnBatchSize);
-	m_bPendingSpawnEmpire = 2;
 	m_dwNextSpawnBatchTime = 0;
 	sys_log(0, "PLAYERBOT: topping up asked=%u live=%u missing=%u",
-			(unsigned int)m_uSpawnWindowTotal, (unsigned int)live,
+			(unsigned int)m_setScheduledBots.size(), (unsigned int)live,
 			(unsigned int)missing.size());
 	SpawnPendingBatch(dwNow);
 }

@@ -148,5 +148,47 @@ int main()
 	assert(GetTeleportFee(55) == 11000);
 	assert(!CanUseTeleporter(10) && CanUseTeleporter(11));
 
+	// --- one budget split between the kingdoms that have identities
+	{
+		int registered[EMPIRE_COUNT] = { 0, 0, 0, 0 };
+		int want[EMPIRE_COUNT] = { 0, 0, 0, 0 };
+
+		// What runs today: only Chunjo is seeded, so it gets the whole budget
+		// and the slider means exactly what it has always meant.
+		registered[EMPIRE_CHUNJO] = 1012;
+		SplitPopulation(970, registered, want);
+		assert(want[EMPIRE_SHINSOO] == 0 && want[EMPIRE_JINNO] == 0);
+		assert(want[EMPIRE_CHUNJO] == 970);
+
+		// Three kingdoms, plenty of identities: equal thirds, nothing lost to
+		// the division.
+		registered[EMPIRE_SHINSOO] = registered[EMPIRE_JINNO] = 1000;
+		SplitPopulation(970, registered, want);
+		assert(want[EMPIRE_SHINSOO] + want[EMPIRE_CHUNJO] + want[EMPIRE_JINNO] == 970);
+		assert(want[EMPIRE_SHINSOO] >= 323 && want[EMPIRE_SHINSOO] <= 324);
+
+		// A kingdom short of identities takes what it has and the rest is
+		// handed to the kingdoms that can carry it - never left unspawned.
+		registered[EMPIRE_SHINSOO] = 30;
+		registered[EMPIRE_JINNO] = 30;
+		SplitPopulation(970, registered, want);
+		assert(want[EMPIRE_SHINSOO] == 30 && want[EMPIRE_JINNO] == 30);
+		assert(want[EMPIRE_CHUNJO] == 910);
+		assert(want[EMPIRE_SHINSOO] + want[EMPIRE_CHUNJO] + want[EMPIRE_JINNO] == 970);
+
+		// Never more than exists, whatever the budget says.
+		registered[EMPIRE_CHUNJO] = 40;
+		SplitPopulation(970, registered, want);
+		assert(want[EMPIRE_SHINSOO] == 30 && want[EMPIRE_CHUNJO] == 40 && want[EMPIRE_JINNO] == 30);
+
+		// Nothing seeded at all, and a budget of nothing: no bots, no crash.
+		registered[EMPIRE_SHINSOO] = registered[EMPIRE_CHUNJO] = registered[EMPIRE_JINNO] = 0;
+		SplitPopulation(970, registered, want);
+		assert(want[EMPIRE_SHINSOO] == 0 && want[EMPIRE_CHUNJO] == 0 && want[EMPIRE_JINNO] == 0);
+		registered[EMPIRE_CHUNJO] = 500;
+		SplitPopulation(0, registered, want);
+		assert(want[EMPIRE_CHUNJO] == 0);
+	}
+
 	return 0;
 }

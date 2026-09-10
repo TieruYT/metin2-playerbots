@@ -158,17 +158,27 @@ stranded=$(db -e "
       FROM player.player p
       JOIN account.account a ON a.id = p.account_id
      WHERE LEFT(a.login, 10) = 'playerbot_'
-       AND p.map_index NOT IN (21, 23, 24, 25, 108, 109, 61, 63, 64, 104, 65, 71);
+       AND p.map_index NOT IN (1, 3, 4, 5, 21, 23, 24, 25, 41, 43, 44, 45,
+                               108, 109, 61, 63, 64, 104, 65, 71);
 ")
 if [ -n "$stranded" ] && [ "$stranded" -gt 0 ] 2>/dev/null; then
+    # Back to its OWN kingdom's second map, not always Chunjo's: a Jinno bot
+    # dropped on Bokjung's arrival point is a bot in a foreign town with none
+    # of its services in reach. The three points are the arrivals of each
+    # kingdom's M1->M2 gate, read out of npc.txt (tools/dump_world_catalog.py);
+    # Chunjo keeps the exact point this step has always used.
     db -e "
         UPDATE player.player p
           JOIN account.account a ON a.id = p.account_id
-           SET p.map_index = 23, p.x = 145500, p.y = 240000
+          LEFT JOIN player.player_index pi ON pi.id = a.id
+           SET p.map_index = CASE pi.empire WHEN 1 THEN 3 WHEN 3 THEN 43 ELSE 23 END,
+               p.x = CASE pi.empire WHEN 1 THEN 400200 WHEN 3 THEN 906400 ELSE 145500 END,
+               p.y = CASE pi.empire WHEN 1 THEN 899500 WHEN 3 THEN 221400 ELSE 240000 END
          WHERE LEFT(a.login, 10) = 'playerbot_'
-           AND p.map_index NOT IN (21, 23, 24, 25, 108, 109, 61, 63, 64, 104, 65, 71);
+           AND p.map_index NOT IN (1, 3, 4, 5, 21, 23, 24, 25, 41, 43, 44, 45,
+                                   108, 109, 61, 63, 64, 104, 65, 71);
     "
-    echo "[playerbot-migrate] moved $stranded bot(s) back to Bokjung"
+    echo "[playerbot-migrate] moved $stranded bot(s) back to their own kingdom"
 fi
 
 # There used to be a step here that pulled every bot outside Orc Valley's
@@ -201,7 +211,18 @@ before=$(db -e "
 echo "[playerbot-migrate] applying deterministic Playerbot seed (PID $first_pid..$last_pid)"
 result=/tmp/playerbot-seed.out
 trap 'rm -f "$result"' EXIT HUP INT TERM
-if db --show-warnings < "$seed" >"$result" 2>&1; then
+# Shinsoo and Jinno are opt-in: M2_PLAYERBOT_KINGDOMS=1 lets the seed create
+# their cohorts, anything else keeps the file to the Chunjo cohort it has
+# always been. The variable goes in ahead of the file, in the same session,
+# because a SET is per-connection.
+kingdoms=0
+case "${M2_PLAYERBOT_KINGDOMS:-0}" in
+    1|true|TRUE|yes|YES) kingdoms=1 ;;
+esac
+echo "[playerbot-migrate] kingdoms (Shinsoo/Jinno) cohorts: $kingdoms"
+if { printf 'SET @playerbot_seed_kingdoms = %s;
+' "$kingdoms"; cat "$seed"; } |
+        db --show-warnings >"$result" 2>&1; then
     [ ! -s "$result" ] || cat "$result"
 else
     rc=$?

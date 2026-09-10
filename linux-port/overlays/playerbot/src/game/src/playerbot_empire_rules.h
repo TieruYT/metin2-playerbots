@@ -176,6 +176,59 @@ namespace playerbot_empire_rules
 	}
 
 	// -------------------------------------------------------------------
+	//  How many bots each kingdom runs
+	// -------------------------------------------------------------------
+	// One budget, three kingdoms, and every core works out the same split from
+	// the same registry - which is what lets three processes each start their
+	// own kingdom without asking one another anything.
+	//
+	// Equal shares, capped by the identities that actually exist, and whatever
+	// that leaves over goes to the kingdoms with spare identities. The degenerate
+	// case is the one that runs today: with Chunjo the only seeded kingdom it
+	// gets the whole budget, so an operator who has not seeded Shinsoo or Jinno
+	// sees exactly the population the slider has always given.
+	//
+	// registered[e] and out[e] are indexed by EEmpire; index 0 is unused.
+	inline void SplitPopulation(int total, const int* registered, int* out)
+	{
+		for (int e = 0; e < EMPIRE_COUNT; ++e)
+			out[e] = 0;
+		if (total <= 0 || !registered || !out)
+			return;
+		int kingdoms = 0;
+		for (int e = EMPIRE_SHINSOO; e <= EMPIRE_JINNO; ++e)
+			if (registered[e] > 0)
+				++kingdoms;
+		if (kingdoms == 0)
+			return;
+		const int share = total / kingdoms;
+		int given = 0;
+		for (int e = EMPIRE_SHINSOO; e <= EMPIRE_JINNO; ++e)
+		{
+			if (registered[e] <= 0)
+				continue;
+			out[e] = share < registered[e] ? share : registered[e];
+			given += out[e];
+		}
+		// The remainder - both the division's and whatever a kingdom short of
+		// identities could not take - goes round the kingdoms that still have
+		// spare ones, one at a time, so the order cannot give anybody two.
+		bool progress = true;
+		while (given < total && progress)
+		{
+			progress = false;
+			for (int e = EMPIRE_SHINSOO; e <= EMPIRE_JINNO && given < total; ++e)
+			{
+				if (out[e] >= registered[e])
+					continue;
+				++out[e];
+				++given;
+				progress = true;
+			}
+		}
+	}
+
+	// -------------------------------------------------------------------
 	//  The points a bot walks to, per kingdom
 	// -------------------------------------------------------------------
 	// npc.txt, in world coordinates. Only the services the AI has code for.

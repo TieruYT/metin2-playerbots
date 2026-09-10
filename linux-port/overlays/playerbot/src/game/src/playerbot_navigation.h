@@ -268,9 +268,12 @@ namespace
 
 			bool Init(long mapIndex)
 			{
-				if (mapIndex != PLAYERBOT_MAP_CHUNJO_M1 &&
-						mapIndex != PLAYERBOT_MAP_CHUNJO_M2 &&
-						mapIndex != PLAYERBOT_MAP_CHUNJO_M3 &&
+				// Every kingdom's own four maps, not only Chunjo's: a Shinsoo bot
+				// standing on map 1 with no grid here cannot plan a step, and the
+				// whole of its local life is on 1, 3, 4 and 5. IsKingdomMap covers
+				// all twelve; the shared maps are named one by one below because
+				// only some of them are ours to walk.
+				if (!playerbot_empire_rules::IsKingdomMap(mapIndex) &&
 						!IsPlayerBotMonkeyMap(mapIndex) &&
 						mapIndex != PLAYERBOT_MAP_ORC_VALLEY &&
 						mapIndex != PLAYERBOT_MAP_DESERT &&

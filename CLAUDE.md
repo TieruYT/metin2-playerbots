@@ -1553,6 +1553,55 @@ PLAYERBOT: autospawn requested=750 registered_started=511 in Chunjo
   files; it reproduces four constants the AI has been using for months
   (both Teleporters, the desert and the valley arrival) to the unit, which
   is what says the reader agrees with the engine.
+- **The registry says which kingdom a bot belongs to; the caller does not.**
+  `LoadRegisteredBots` reads `pi.empire` with the row and keeps it per PID, and
+  `CPlayerBotManager::Spawn` takes the empire from there - an argument that
+  disagrees is refused with a line in syserr. That is what stops a stray call
+  starting a seeded character into somebody else's kingdom, and it is why
+  `SpawnRegistered` can be asked for one kingdom at a time.
+  `CountRegisteredPerEmpire` **loads the registry itself**: the bootstrap asks
+  it for the counts before it asks for any spawn, and the first version left
+  that out - the core came up with no bots at all and not one PLAYERBOT line
+  in the log, because the split had nothing to divide.
+- **Each core starts the kingdoms whose village it hosts.** `m2-render-config`
+  puts Shinsoo's four maps (1,3,4,5) on `first`, Chunjo's plus every shared map
+  on `game1`, and Jinno's (41,43,44,45) on `game2`, so a kingdom's whole local
+  life fits inside one process and needs no transfer. The bootstrap in
+  `input_db.cpp` therefore loops the three kingdoms and asks `map_allow_find`
+  for each village, instead of naming map 21; the operator's one number is
+  split by `playerbot_empire_rules::SplitPopulation` between the kingdoms that
+  have identities, so with only Chunjo seeded it all still goes to Chunjo.
+  Measured after the change: all three cores load the registry, only game1
+  spawns, 970 of 970 asked for, 968 in the world a minute later.
+  `TopUpMissingBots` counts the world against `m_setScheduledBots` - exactly
+  what this core asked for - and not against the first N of a registry that
+  now holds three kingdoms.
+- **The seed carries the kingdom, and the two new ones are opt-in.**
+  `generate_seed.py` renders one canonical cohort in PID order:
+  Chunjo's original 1500 (PID 4..1503, unchanged to the byte), then 500
+  Shinsoo (1504..2003, map 1) and 500 Jinno (2004..2503, map 41). The spec
+  table carries `empire` and `map_index`, every `pi.empire = 2` in the SQL
+  became `= s.empire`, and the character insert takes its village from the
+  spec. `@playerbot_seed_kingdoms` (set by apply.sh from
+  `M2_PLAYERBOT_KINGDOMS`, default 0) deletes the non-Chunjo rows from the
+  spec before anything is validated, so a player's server keeps the cohort it
+  has until the operator asks for more. Proven on the test database: the
+  identity fingerprints of the 1500 Chunjo characters and their accounts are
+  byte-identical across two runs with the switch on and one with it off, and
+  the second run changes nothing at all.
+  The spawn grids were picked by walking `server_attr`: 500/500 points stand
+  on open ground in both new villages (of Chunjo's 1500, 153 do not).
+- **apply.sh moves a stranded bot to its OWN kingdom.** Its allow-list is what
+  decides where a bot may be parked at start, and it named only Chunjo's maps -
+  every Shinsoo and Jinno bot would have been teleported to Bokjung on every
+  start, into a town with none of its services. The list now holds all twelve
+  kingdom maps and the fallback is a CASE on `pi.empire`; Chunjo keeps the
+  exact point it always used.
+- **The navigation grid is built per map, and it refused eight of the twelve.**
+  `CPlayerBotNavigation::Init` named Chunjo's three maps explicitly, so a bot
+  on map 1 could not plan a single step. It asks
+  `playerbot_empire_rules::IsKingdomMap` now; the shared maps stay named one
+  by one, because only some of them are ours to walk.
 
 ## Engine facts worth not re-deriving
 

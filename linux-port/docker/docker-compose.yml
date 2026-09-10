@@ -112,6 +112,11 @@ services:
       # Optional persistent-world guard. A non-zero value refuses to seed/start
       # when the selected Docker daemon or volume contains fewer bots.
       PLAYERBOT_EXPECT_MIN_EXISTING_BOTS: "${PLAYERBOT_EXPECT_MIN_EXISTING_BOTS:-0}"
+      # Shinsoo and Jinno. 0 seeds the Chunjo cohort alone, exactly as before;
+      # 1 also creates the two new kingdoms' identities, which the cores then
+      # start on their own villages. Off until their bots live a full life of
+      # their own on their own maps.
+      M2_PLAYERBOT_KINGDOMS: "${M2_PLAYERBOT_KINGDOMS:-0}"
 
     entrypoint: ["/bin/sh", "/opt/playerbot/apply.sh"]
 
