@@ -46,6 +46,8 @@
 /Client/
 /FreeBSD/
 /Source/
+/server-pack/
+/Metin2Client/
 
 # Game/server archives and binaries in general, wherever they turn up
 *.rar
@@ -180,6 +182,7 @@ htmlcov/
 .DS_Store
 Thumbs.db
 desktop.ini
+.cache/
 
 
 # A directory literally named "C:" appears when a Windows path is used in a Unix
@@ -195,7 +198,3 @@ C:/
 # here first. Ignored so that copy never becomes a second source of truth.
 linux-port/docker/fetch-web-client.sh
 linux-port/docker/artifacts.json
-
-# The world catalog is a measurement, regenerated with tools/dump_world_catalog.py
-# whenever the map files change; the C++ tables built from it are what ships.
-tools/world_catalog.json
