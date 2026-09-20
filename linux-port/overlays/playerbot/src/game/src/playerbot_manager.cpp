@@ -6,6 +6,7 @@
 #include "playerbot_event_rules.h"
 #include "playerbot_stall_rules.h"
 #include "playerbot_persona_rules.h"
+#include "playerbot_lure_order_rules.h"
 
 #include "char.h"
 #include "skill.h"
@@ -1182,6 +1183,16 @@ namespace
 		}
 		// Fighting something is not standing about.
 		if (ch->GetVictim() && !ch->GetVictim()->IsDead())
+			return false;
+		// Neither is walking out to fetch a pack. A luring course takes the
+		// Archer up to PLAYERBOT_LURE_MAX_COURSE_RANGE from the party on
+		// purpose, and this pass runs far above it in the tick - so without
+		// this it walks the Archer home the moment the course passes the follow
+		// distance, and the course walks it out again on the next tick. Same
+		// loop as the errands Pabloo's fix stopped in 2.0.49, from the other
+		// side. The leader changing map is handled above and ends the course
+		// anyway, so only the walk on this map stands down.
+		if (state.bLureStage != LURE_STAGE_NONE)
 			return false;
 		const int dist = DISTANCE_APPROX(ch->GetX() - leader->GetX(), ch->GetY() - leader->GetY());
 		if (dist <= PLAYERBOT_PARTY_FOLLOW_DISTANCE)

@@ -307,30 +307,50 @@ namespace
 		// The luring course says which stage it is in, because "walking away
 		// from the party" and "bringing nine monsters back to it" look the same
 		// from outside and are not the same thing at all.
+		// A standing order says whose it is: an operator reading the panel wants
+		// to know that a bot standing about is waiting to pull for somebody, not
+		// that it has run out of things to do.
+		char forWhom[CHARACTER_NAME_MAX_LEN + 8];
+		forWhom[0] = 0;
+		if (state.dwLurePlayerPID != 0)
+		{
+			LPCHARACTER askedBy =
+					CHARACTER_MANAGER::instance().FindByPID(state.dwLurePlayerPID);
+			snprintf(forWhom, sizeof(forWhom), " dla %s",
+					askedBy ? askedBy->GetName() : "gracza");
+		}
 		if (state.bLureStage != LURE_STAGE_NONE)
 		{
 			switch (state.bLureStage)
 			{
 				case LURE_STAGE_PLAN:
-					snprintf(status, statusSize, "%sSzykuje lur dla druzyny", prefix);
+					snprintf(status, statusSize, "%sSzykuje lur%s", prefix,
+							forWhom[0] ? forWhom : " dla druzyny");
 					return;
 				case LURE_STAGE_RETURN:
-					snprintf(status, statusSize, "%sWracam do druzyny: prowadze %d mobow",
-							prefix, state.iLureChasing);
+					snprintf(status, statusSize, "%sWracam%s: prowadze %d mobow",
+							prefix, forWhom[0] ? forWhom : " do druzyny", state.iLureChasing);
 					return;
 				case LURE_STAGE_HANDOFF:
-					snprintf(status, statusSize, "%sPrzekazuje moby: %d przyprowadzonych, %d nadal za mna",
-							prefix, state.iLureDelivered, state.iLureChasing);
+					snprintf(status, statusSize, "%sPrzekazuje moby%s: %d przyprowadzonych, %d nadal za mna",
+							prefix, forWhom, state.iLureDelivered, state.iLureChasing);
 					return;
 				case LURE_STAGE_RECOVER:
-					snprintf(status, statusSize, "%sWstrzymuje lur: druzyna jeszcze walczy", prefix);
+					snprintf(status, statusSize, "%sWstrzymuje lur: %s jeszcze walczy",
+							prefix, forWhom[0] ? "gracz" : "druzyna");
 					return;
 				default:
-					snprintf(status, statusSize, "%sLuruje dla PT: %u/%u grupy, sciga mnie %d",
-							prefix, (unsigned int)state.bLureGroupsTagged,
+					snprintf(status, statusSize, "%sLuruje%s: %u/%u grupy, sciga mnie %d",
+							prefix, forWhom[0] ? forWhom : " dla PT",
+							(unsigned int)state.bLureGroupsTagged,
 							(unsigned int)state.bLureGroupsPlanned, state.iLureChasing);
 					return;
 			}
+		}
+		if (forWhom[0])
+		{
+			snprintf(status, statusSize, "%sCzekam, zeby lurowac%s", prefix, forWhom);
+			return;
 		}
 		if (state.bRecoveringAfterDeath)
 		{

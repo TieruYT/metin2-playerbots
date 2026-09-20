@@ -107,6 +107,7 @@ dependency order at the top of `playerbot_manager.cpp`:
 | `playerbot_market.h` | Buying from another bot's counter: what is worth having, the walk to the stall, and the purchase. |
 | `playerbot_chat_trade.h` | Trading over the chat: what a bot shouts about its counter and its wants, and the whisper it answers a player's "Kupie"/"Sprzedam" with. Fed by patch 0007. |
 | `playerbot_loot.h` | Picking things up, in and out of a fight, without sweeping the floor. |
+| `playerbot_lure_order_rules.h` | What a person's whisper to a bot means: "luruj" and "przestan lurowac". No engine types, unit-tested. Included first, with the other rules headers. |
 | `playerbot_survival.h` | Saving progress, breaking off a losing fight, and the walk back after dying. |
 | `playerbot_wandering.h` | What a bot does on a hunting map when nothing is asking for its attention. |
 | `playerbot_status.h` | What a bot shows above its head, and the words for it. |
@@ -1094,6 +1095,45 @@ Four things the personalities changed that are easy to trip over later:
   Count the bots that have *decided* to go, not the ones standing on the hub:
   `CountPlayerBotRaiders` keeps a roster per race, because a hundred bots
   choosing in the same second all see an empty hub and all set off.
+- **A bot takes one order from a person, and the engine has the two calls it
+  needs.** "Luruj" whispered to an Archer in your own party makes its pulling
+  course yours until "przestan lurowac" (`playerbot_lure_order_rules.h` is the
+  words, pure and tested; `playerbot_chat_trade.h` sets the order on the state,
+  `playerbot_lure.h` runs it - chat_trade.h is included first, so the course
+  notices the order rather than being called into). Four things shaped it.
+  **The rules that give way are only the ones that exist to keep a bot from
+  luring for nobody**: three party members becomes two (the pair is the party),
+  the receiver may be a person (the roster refuses one on purpose - a bot is not
+  to pick a person to hold a pack for it), the frontier-map rule goes (a person
+  standing somewhere has said where they hunt) and the 20-50 s between courses
+  becomes 4-9. The HP floor, the safe zone, the value policy and the pack window
+  are untouched. **The pack is put on the person, which the bots' own role never
+  does**: `UpdateAggrPoint(player, DAMAGE_TYPE_SPECIAL, monster->GetMaxHP())` -
+  more aggro than two arrows earned, a number the monster supplies, and the one
+  damage type `UpdateAggrPointEx` does not spread over the victim's party - and
+  then `SetVictim(player)`, because the aggro comparison in
+  `ChangeVictimByAggro` is refused for three seconds after any victim change
+  and a monster that has just turned to chase the Archer has had one; SetVictim
+  restarts that lock, which is long enough for the person to land the blows
+  that keep it. A monster `battle_is_attackable` refuses (the person is in a
+  safe zone) is left alone and the person is told why. **The follow pass had to
+  stand down**: `ManagePlayerBotFollowHumanLeader` runs far above the lure hook
+  in the tick and would walk the Archer home the moment its course passed
+  `PLAYERBOT_PARTY_FOLLOW_DISTANCE`, with the course walking it out again on the
+  next tick - the errand loop Pabloo's 2.0.49 fix stopped, from the other side.
+  **And a claim is released by walking the map for the bot, not by recomputing
+  its key**: the key is the leader for the bots' own role and the person for
+  theirs, and by the time a course ends (the party lost its leader, the order
+  was taken back) what the key would be has already changed, so a claim left
+  behind holds the role against every other Archer for
+  `PLAYERBOT_LURE_SESSION_TTL`. The order outlives a course and is renewed by
+  every course, so its deadline means "nothing has happened for forty-five
+  minutes"; it ends at the word, at the party, at the map, at
+  `PLAYERBOT_LURE_PLAYER_MAX_SEPARATION`, and the person is told. Compiled on
+  both engines and read; never watched with a person in a party, because the
+  test world has none. `PLAYERBOT_LURE: order` and `pack handed` are in the
+  support bundle's grep list; the rest of the tag is not, because a course
+  writes six to eight lines and the bundle keeps forty thousand.
 - **A pull is what came back, not what was shot at.** `playerbot_lure.h` is
   the Archer's party role as a whole errand - PLAN, APPROACH, TAG, CONFIRM,
   RETURN, HANDOFF, RECOVER - and CONFIRM counts the live monsters actually

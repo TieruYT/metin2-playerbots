@@ -30,6 +30,15 @@
 //   no clearing of aggro tables: the receivers take the monsters over by
 //   fighting them, the way a party does, and a handover may be partial.
 //
+// A person may also ask for it, and that one exception is the last of those
+// three: "luruj" in a whisper (playerbot_chat_trade.h) makes the course theirs
+// until "przestan lurowac", and the pack is put on them with the engine's own
+// aggro calls rather than left for them to beat off the bot. Everything else
+// about the course is the same machinery, with the rules that exist to keep a
+// bot from luring for nobody - three members, a receiver that is not a person,
+// a frontier map, the role's own pacing - giving way to the fact that somebody
+// asked.
+//
 // An implementation fragment in the sense playerbot_types.h describes: include
 // it exactly once, after playerbot_targeting.h, whose pull-target finder,
 // aggressor count and ordinary bow shot this reuses rather than growing second
@@ -50,6 +59,11 @@ namespace
 		TPlayerBotLureClaim() : dwLurerPID(0), dwSessionId(0), dwExpireTime(0) {}
 	};
 
+	// Keyed by the party's leader for the bots' own role and by the person who
+	// gave the order for theirs, because two people in one party may each have
+	// a bot pulling for them and neither is the other's leader. Released by
+	// walking the map for this bot rather than by recomputing the key: by the
+	// time a course ends, what the key would be has often changed.
 	std::map<DWORD, TPlayerBotLureClaim> s_mapPlayerBotLureClaims;
 	DWORD s_dwPlayerBotLureNextSessionId = 1;
 
@@ -353,18 +367,21 @@ namespace
 		if (state.bLureStage == LURE_STAGE_NONE && state.dwLureSessionId == 0)
 			return;
 
-		if (ch && ch->GetParty())
-		{
-			LPCHARACTER leader = ch->GetParty()->GetLeaderCharacter();
-			if (leader)
+		// By the bot, not by the key: a course ends for reasons that have
+		// already changed what the key would be - the party lost its leader,
+		// the person took their order back - and a claim left behind holds the
+		// role against every other Archer for PLAYERBOT_LURE_SESSION_TTL. A bot
+		// can only ever hold one, so there is nothing to disambiguate.
+		if (ch)
+			for (std::map<DWORD, TPlayerBotLureClaim>::iterator it =
+					s_mapPlayerBotLureClaims.begin();
+					it != s_mapPlayerBotLureClaims.end(); )
 			{
-				std::map<DWORD, TPlayerBotLureClaim>::iterator it =
-						s_mapPlayerBotLureClaims.find(leader->GetPlayerID());
-				if (it != s_mapPlayerBotLureClaims.end() &&
-						it->second.dwLurerPID == (ch ? ch->GetPlayerID() : 0))
-					s_mapPlayerBotLureClaims.erase(it);
+				if (it->second.dwLurerPID == ch->GetPlayerID())
+					s_mapPlayerBotLureClaims.erase(it++);
+				else
+					++it;
 			}
-		}
 
 		sys_log(0, "PLAYERBOT_LURE: finished pid=%u name=%s session=%u stage=%s groups=%u/%u tagged=%u delivered=%d chasing=%d course_ms=%u hp=%d/%d streak=%u reason=%s",
 				ch ? ch->GetPlayerID() : 0, ch ? ch->GetName() : "?",
@@ -391,11 +408,157 @@ namespace
 		state.iLureDelivered = 0;
 		state.iLureChasing = 0;
 		state.vecMultiPullCenters.clear();
-		state.dwLureNextTime = dwNow + number(
-				(int)PLAYERBOT_LURE_COOLDOWN_MIN, (int)PLAYERBOT_LURE_COOLDOWN_MAX);
+		// A standing order is not a bot pacing itself: the person is waiting
+		// for the next pack, so the wait between two courses is seconds.
+		state.dwLureNextTime = state.dwLurePlayerPID != 0
+				? dwNow + number((int)PLAYERBOT_LURE_PLAYER_COOLDOWN_MIN,
+						(int)PLAYERBOT_LURE_PLAYER_COOLDOWN_MAX)
+				: dwNow + number((int)PLAYERBOT_LURE_COOLDOWN_MIN,
+						(int)PLAYERBOT_LURE_COOLDOWN_MAX);
 		if (ch)
 			ch->SetVictim(NULL);
 		ClearPlayerBotRoute(state, true);
+	}
+
+	// The person this bot is luring for, or NULL - resolved every tick, because
+	// a character pointer must not outlive the tick that found it and an order
+	// whose player has gone is an order that has ended. What ends it is written
+	// into *why*; a dead player only suspends it, because standing up takes
+	// twenty seconds and the order was not given for twenty seconds.
+	LPCHARACTER GetPlayerBotLureCommander(LPCHARACTER ch, const TPlayerBotAIState& state,
+			DWORD dwNow, const char** why, bool* waiting)
+	{
+		if (why)
+			*why = NULL;
+		if (waiting)
+			*waiting = false;
+		if (!ch || state.dwLurePlayerPID == 0)
+			return NULL;
+		LPCHARACTER player = CHARACTER_MANAGER::instance().FindByPID(state.dwLurePlayerPID);
+		const char* reason = NULL;
+		if (!player || !player->GetDesc())
+			reason = "player_gone";
+		else if (!ch->GetParty() || ch->GetParty() != player->GetParty())
+			reason = "party_over";
+		else if (player->GetMapIndex() != ch->GetMapIndex())
+			reason = "player_other_map";
+		else if (DISTANCE_APPROX(ch->GetX() - player->GetX(),
+				ch->GetY() - player->GetY()) > PLAYERBOT_LURE_PLAYER_MAX_SEPARATION)
+			reason = "player_too_far";
+		else if (dwNow - state.dwLurePlayerTime > PLAYERBOT_LURE_PLAYER_ORDER_TTL)
+			reason = "order_expired";
+		if (reason)
+		{
+			if (why)
+				*why = reason;
+			return NULL;
+		}
+		if (player->IsDead())
+		{
+			if (waiting)
+				*waiting = true;
+			return NULL;
+		}
+		return player;
+	}
+
+	// The order is over. Cleared, logged, and - where there is still somebody to
+	// tell - said out loud, because a bot that silently stops doing what it was
+	// asked to do reads as a bot that broke.
+	void EndPlayerBotLureOrder(LPCHARACTER ch, TPlayerBotAIState& state,
+			DWORD dwNow, const char* reason)
+	{
+		if (!ch || state.dwLurePlayerPID == 0)
+			return;
+		LPCHARACTER player = CHARACTER_MANAGER::instance().FindByPID(state.dwLurePlayerPID);
+		sys_log(0, "PLAYERBOT_LURE: order over pid=%u name=%s player_pid=%u held_ms=%u reason=%s",
+				ch->GetPlayerID(), ch->GetName(), state.dwLurePlayerPID,
+				state.dwLurePlayerTime != 0 ? dwNow - state.dwLurePlayerTime : 0,
+				reason ? reason : "?");
+		if (player && player->GetDesc() && ch->GetParty() &&
+				ch->GetParty() == player->GetParty())
+		{
+			if (strcmp(reason, "player_too_far") == 0)
+				SendPlayerBotWhisper(ch, player, "Zgubilem cie - koncze lurowanie");
+			else if (strcmp(reason, "order_expired") == 0)
+				SendPlayerBotWhisper(ch, player, "Koncze lurowanie. Napisz \"luruj\", jesli mam dalej");
+		}
+		state.dwLurePlayerPID = 0;
+		state.dwLurePlayerTime = 0;
+	}
+
+	// Give the pack to the person who asked for it.
+	//
+	// The bots' own role never does this: a receiver takes a monster over by
+	// hitting it, which is what a party does, and a partial handover is a real
+	// outcome. A person asked for the pack *on them*, though, and waiting for a
+	// bot to be beaten off it is not that - so the two calls the engine has for
+	// it, in the order that makes them stick:
+	//
+	//   UpdateAggrPoint puts the person in the monster's damage map with more
+	//   aggro than the two arrows of a tag can have earned - the monster's own
+	//   maximum health, a number it supplies itself - as DAMAGE_TYPE_SPECIAL,
+	//   the one type UpdateAggrPointEx does not then spread over the victim's
+	//   party. On its own it is often refused: it ends in ChangeVictimByAggro,
+	//   which does nothing for three seconds after any victim change, and a
+	//   monster that has just turned to chase the Archer has had one.
+	//   SetVictim therefore turns it, and restarts that three-second lock,
+	//   which is long enough for the person to land the blows that keep it.
+	//
+	// A monster that cannot attack the person - they are standing in a safe
+	// zone, most of the time - is left where it is: the engine's own rule, and
+	// not one to be written round here.
+	class CGivePlayerBotLurePack
+	{
+		public:
+			CGivePlayerBotLurePack(LPCHARACTER owner, LPCHARACTER to) :
+				m_owner(owner), m_to(to), m_given(0), m_unreachable(0)
+			{
+			}
+
+			bool operator () (LPENTITY entity)
+			{
+				if (!entity || !entity->IsType(ENTITY_CHARACTER))
+					return true;
+				LPCHARACTER monster = static_cast<LPCHARACTER>(entity);
+				if (monster == m_owner || !monster->IsMonster() || monster->IsDead() ||
+						monster->GetVictim() != m_owner)
+					return true;
+				if (DISTANCE_APPROX(monster->GetX() - m_to->GetX(),
+						monster->GetY() - m_to->GetY()) > PLAYERBOT_LURE_ANCHOR_RADIUS)
+					return true;
+				if (!battle_is_attackable(monster, m_to))
+				{
+					++m_unreachable;
+					return true;
+				}
+				monster->UpdateAggrPoint(m_to, DAMAGE_TYPE_SPECIAL, monster->GetMaxHP());
+				monster->SetVictim(m_to);
+				++m_given;
+				return true;
+			}
+
+			int Given() const { return m_given; }
+			int Unreachable() const { return m_unreachable; }
+
+		private:
+			LPCHARACTER m_owner;
+			LPCHARACTER m_to;
+			int m_given;
+			int m_unreachable;
+	};
+
+	int GivePlayerBotLurePack(LPCHARACTER ch, LPCHARACTER to, int* unreachable)
+	{
+		if (unreachable)
+			*unreachable = 0;
+		if (!ch || !to || !ch->GetSectree())
+			return 0;
+		CGivePlayerBotLurePack giver(ch, to);
+		ch->GetSectree()->ForEachAround(giver);
+		if (unreachable)
+			*unreachable = giver.Unreachable();
+		return giver.Given();
 	}
 
 	// Has this bot got a bow it can actually shoot? The lure fires the ordinary
@@ -420,6 +583,38 @@ namespace
 	{
 		const bool inSession = state.bLureStage != LURE_STAGE_NONE;
 
+		// The person's order first, because it decides which rules below apply
+		// and because it has to be cleared even on the paths that return early:
+		// a party that ended is exactly one of them, and an order nobody
+		// cancelled would otherwise outlive the party it was given in.
+		const char* orderOver = NULL;
+		bool commanderWaiting = false;
+		LPCHARACTER commander = GetPlayerBotLureCommander(ch, state, dwNow,
+				&orderOver, &commanderWaiting);
+		if (orderOver)
+		{
+			// The course first, while the order is still on the state: that is
+			// what decides the pace of the next one and what a log line says
+			// the session was for.
+			if (inSession)
+				FinishPlayerBotLure(ch, state, dwNow, orderOver);
+			EndPlayerBotLureOrder(ch, state, dwNow, orderOver);
+			return false;
+		}
+		// A person on the ground is not a person to bring a pack to. The order
+		// stands; the course waits for them to get up.
+		if (commanderWaiting)
+		{
+			if (inSession && state.bLureStage != LURE_STAGE_RETURN &&
+					state.bLureStage != LURE_STAGE_HANDOFF &&
+					state.bLureStage != LURE_STAGE_RECOVER)
+				FinishPlayerBotLure(ch, state, dwNow, "player_down");
+			return false;
+		}
+		const bool forPlayer = commander != NULL;
+		const int minParty = forPlayer ? PLAYERBOT_LURE_PLAYER_MIN_PARTY_MEMBERS
+				: PLAYERBOT_ARCHER_LURE_MIN_PARTY_MEMBERS;
+
 		// Saving your own life, the errand you are already on, and being dead
 		// all outrank the role. A course in progress ends here rather than
 		// being suspended: half a pull is not a state worth keeping.
@@ -430,8 +625,9 @@ namespace
 				// party of six, five receivers ready, and "no pack seen=0" a
 				// second later, because a first village has no pack to pull.
 				// The frontier maps are where the packs and the party cohort
-				// both are.
-				!IsPlayerBotFrontierMapIndex(ch->GetMapIndex()) ||
+				// both are. A person who asked for a pull has said where they
+				// hunt by standing there, so the rule is theirs to make.
+				(!forPlayer && !IsPlayerBotFrontierMapIndex(ch->GetMapIndex())) ||
 				state.bTacticalRetreat || state.bRecoveringAfterDeath ||
 				state.bVisitingShop || state.bVisitingBiologist ||
 				state.bVisitingStable || state.bMarketTrip || state.bFishingSession ||
@@ -444,12 +640,18 @@ namespace
 		}
 
 		LPCHARACTER leader = ch->GetParty()->GetLeaderCharacter();
-		if (!leader || leader->GetMapIndex() != ch->GetMapIndex())
+		// The leader anchors the bots' own role - it is who the claim is keyed
+		// by and who the party is gathered round. On an order it is the person
+		// who gave it, who has already been checked for both, and who may well
+		// not be leading the party they are in.
+		if (!forPlayer && (!leader || leader->GetMapIndex() != ch->GetMapIndex()))
 		{
 			if (inSession)
 				FinishPlayerBotLure(ch, state, dwNow, "no_leader");
 			return false;
 		}
+		const DWORD claimKey = forPlayer ? commander->GetPlayerID()
+				: (leader ? leader->GetPlayerID() : 0);
 
 		// Who is here. Counted every tick because a party loses people to
 		// death, logout and their own errands while the Archer is away.
@@ -475,7 +677,21 @@ namespace
 				receiver = &roster.m_members[i];
 		}
 
-		if (present < PLAYERBOT_ARCHER_LURE_MIN_PARTY_MEMBERS || !receiver)
+		// On an order the receiver is the person who gave it. The roster refuses
+		// a human on purpose - a bot is not to pick a person to hold a pack for
+		// it - but this person asked to hold one.
+		if (forPlayer)
+		{
+			receiver = NULL;
+			for (size_t i = 0; i < roster.m_members.size(); ++i)
+				if (roster.m_members[i].dwPID == commander->GetPlayerID())
+				{
+					receiver = &roster.m_members[i];
+					break;
+				}
+		}
+
+		if (present < minParty || !receiver)
 		{
 			// A party that shrank mid-course does not get another pack, but the
 			// monsters already following the Archer still have to be brought
@@ -539,8 +755,7 @@ namespace
 			if (state.dwLureNextTime < dwNow + PLAYERBOT_LURE_READY_RECHECK)
 				state.dwLureNextTime = dwNow + PLAYERBOT_LURE_READY_RECHECK;
 
-			if (present < PLAYERBOT_ARCHER_LURE_MIN_PARTY_MEMBERS || !receiver ||
-					ready < PLAYERBOT_ARCHER_LURE_MIN_PARTY_MEMBERS - 1 ||
+			if (present < minParty || !receiver || ready < minParty - 1 ||
 					hpPercent < PLAYERBOT_LURE_START_HP_PERCENT ||
 					!CanPlayerBotLureShoot(ch))
 				return false;
@@ -555,7 +770,7 @@ namespace
 			// One lurer per party. A live claim by somebody else stands; a
 			// stale one is taken over, which is what makes a lurer that died or
 			// logged out cost the party one expiry and no more.
-			TPlayerBotLureClaim& claim = s_mapPlayerBotLureClaims[leader->GetPlayerID()];
+			TPlayerBotLureClaim& claim = s_mapPlayerBotLureClaims[claimKey];
 			if (claim.dwLurerPID != 0 && claim.dwLurerPID != ch->GetPlayerID() &&
 					dwNow < claim.dwExpireTime)
 				return false;
@@ -586,12 +801,21 @@ namespace
 			state.lLureAnchorY = anchorY;
 			state.iLureStartHPPercent = hpPercent;
 			state.dwLureCourseTime = dwNow;
+			// A course renews the order, so the deadline means "nothing has
+			// happened for three quarters of an hour" rather than "you asked
+			// three quarters of an hour ago". A person hunting all evening
+			// should not have to say it again every forty-five minutes; a bot
+			// still holding an order for somebody who wandered off should let
+			// go of it.
+			if (forPlayer)
+				state.dwLurePlayerTime = dwNow;
 			state.vecMultiPullCenters.clear();
 			ClearPlayerBotRoute(state, true);
 			SetPlayerBotLureStage(ch, state, LURE_STAGE_PLAN, dwNow);
-			sys_log(0, "PLAYERBOT_LURE: planned pid=%u name=%s session=%u level=%u party=%d ready=%d fighting=%d human=%d receiver_pid=%u anchor=(%ld,%ld) groups=%u budget=%u",
+			sys_log(0, "PLAYERBOT_LURE: planned pid=%u name=%s session=%u level=%u party=%d ready=%d fighting=%d human=%d for_player=%s receiver_pid=%u anchor=(%ld,%ld) groups=%u budget=%u",
 					ch->GetPlayerID(), ch->GetName(), state.dwLureSessionId,
 					ch->GetLevel(), present, ready, fighting, humanPresent ? 1 : 0,
+					forPlayer ? commander->GetName() : "-",
 					state.dwLureReceiverPID, anchorX, anchorY,
 					(unsigned int)state.bLureGroupsPlanned,
 					(unsigned int)state.bLureBudget);
@@ -604,7 +828,7 @@ namespace
 		// away must not become the target the rest of the party walks to.
 		{
 			std::map<DWORD, TPlayerBotLureClaim>::iterator it =
-					s_mapPlayerBotLureClaims.find(leader->GetPlayerID());
+					s_mapPlayerBotLureClaims.find(claimKey);
 			if (it != s_mapPlayerBotLureClaims.end() &&
 					it->second.dwLurerPID == ch->GetPlayerID())
 				it->second.dwExpireTime = dwNow + PLAYERBOT_LURE_SESSION_TTL;
@@ -856,12 +1080,34 @@ namespace
 							true, false, false);
 					return true;
 				}
-				if (dwNow - state.dwLureStageTime < PLAYERBOT_LURE_HANDOFF_WAIT)
+				// A person asked for the pack *on them*, so it goes on them the
+				// tick the bot is back - not after the seven seconds the bots'
+				// own handover waits to be judged, which for a person watching
+				// is seven seconds of a bot being chewed in front of them.
+				if (forPlayer && onOwner > 0)
+				{
+					int unreachable = 0;
+					const int given = GivePlayerBotLurePack(ch, commander, &unreachable);
+					sys_log(0, "PLAYERBOT_LURE: pack handed to the player pid=%u name=%s session=%u player=%s given=%d on_me=%d unreachable=%d",
+							ch->GetPlayerID(), ch->GetName(), state.dwLureSessionId,
+							commander->GetName(), given, onOwner, unreachable);
+					if (given > 0)
+					{
+						CountPlayerBotLureEngaged(ch, state.lLureAnchorX,
+								state.lLureAnchorY, &onParty, &onOwner);
+						state.iLureChasing = onOwner;
+					}
+					else if (unreachable > 0)
+						SendPlayerBotWhisper(ch, commander,
+								"Nie moge ich na ciebie zrzucic - wyjdz ze strefy bezpieczenstwa");
+				}
+				if (dwNow - state.dwLureStageTime < (forPlayer
+						? PLAYERBOT_LURE_PLAYER_HANDOFF_WAIT : PLAYERBOT_LURE_HANDOFF_WAIT))
 					return true;
 
-				// What the receivers actually took over. The engine's aggro is
-				// never written to - a partial handover is a real outcome and
-				// is reported as one.
+				// What the receivers actually took over. Outside an order the
+				// engine's aggro is never written to - a partial handover is a
+				// real outcome and is reported as one.
 				const bool taken = onParty > 0;
 				sys_log(0, "PLAYERBOT_LURE: handover pid=%u name=%s session=%u delivered=%d taken_by_party=%d still_on_me=%d",
 						ch->GetPlayerID(), ch->GetName(), state.dwLureSessionId,

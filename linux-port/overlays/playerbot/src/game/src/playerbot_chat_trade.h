@@ -103,8 +103,7 @@ namespace
 
 	bool IsPlayerBotChatSeparator(char c)
 	{
-		return c == ' ' || c == '\t' || c == ':' || c == ',' || c == '.' || c == '!' ||
-				c == '?' || c == '-' || c == '"' || c == '\'';
+		return playerbot_lure_rules::IsSeparator(c);
 	}
 
 	// The whisper the client shows as one from the bot: the same packet
@@ -437,6 +436,121 @@ namespace
 		return true;
 	}
 
+	// ------------------------------------------------------------------
+	// "Luruj" / "przestan lurowac": a person's standing order to a bot in
+	// their own party.
+	//
+	// The Archer's luring course (playerbot_lure.h) has been a bot's own role
+	// since it was written - it decides for itself when a party is worth
+	// pulling for. That decision is not one the AI can make on a person's
+	// behalf, so the person asks: one whisper starts the order, another ends
+	// it, and while it stands the course is run for that person and the pack
+	// is handed to them rather than left on the bot.
+	//
+	// The order itself is two fields of the bot's state, set here and read
+	// there - chat_trade.h is included before lure.h, so nothing in this file
+	// may call into the course, and nothing needs to: the course notices the
+	// order on its next tick.
+	// ------------------------------------------------------------------
+	enum EPlayerBotLureOrder
+	{
+		PLAYERBOT_LURE_ORDER_NONE = playerbot_lure_rules::ORDER_NONE,
+		PLAYERBOT_LURE_ORDER_START = playerbot_lure_rules::ORDER_START,
+		PLAYERBOT_LURE_ORDER_STOP = playerbot_lure_rules::ORDER_STOP
+	};
+
+	// The words themselves are playerbot_lure_order_rules.h, which is pure and
+	// unit-tested; this half is the fold from CP1250 that it expects.
+	EPlayerBotLureOrder ParsePlayerBotLureOrder(const char* text)
+	{
+		char folded[CHAT_MAX_LEN + 1];
+		FoldPlayerBotChatText(text, folded, sizeof(folded));
+		switch (playerbot_lure_rules::ParseOrder(folded))
+		{
+			case playerbot_lure_rules::ORDER_START: return PLAYERBOT_LURE_ORDER_START;
+			case playerbot_lure_rules::ORDER_STOP:  return PLAYERBOT_LURE_ORDER_STOP;
+			default:                                return PLAYERBOT_LURE_ORDER_NONE;
+		}
+	}
+
+	bool HandlePlayerBotLureOrder(LPCHARACTER player, LPCHARACTER bot,
+			const char* text, DWORD dwNow)
+	{
+		const EPlayerBotLureOrder order = ParsePlayerBotLureOrder(text);
+		if (order == PLAYERBOT_LURE_ORDER_NONE)
+			return false;
+		TPlayerBotAIStateMap::iterator it = s_mapPlayerBotAIStates.find(bot->GetPlayerID());
+		if (it == s_mapPlayerBotAIStates.end())
+			return false;
+		TPlayerBotAIState& state = it->second;
+		char reply[CHAT_MAX_LEN + 1];
+
+		if (order == PLAYERBOT_LURE_ORDER_STOP)
+		{
+			if (state.dwLurePlayerPID != player->GetPlayerID())
+				snprintf(reply, sizeof(reply), "Nie luruje dla ciebie");
+			else
+			{
+				sys_log(0, "PLAYERBOT_LURE: order ended pid=%u name=%s player=%s held_ms=%u",
+						bot->GetPlayerID(), bot->GetName(), player->GetName(),
+						state.dwLurePlayerTime != 0 ? dwNow - state.dwLurePlayerTime : 0);
+				state.dwLurePlayerPID = 0;
+				state.dwLurePlayerTime = 0;
+				snprintf(reply, sizeof(reply), "Dobra, koncze lurowanie");
+			}
+			SendPlayerBotWhisper(bot, player, reply);
+			return true;
+		}
+
+		// Why a bot cannot take the order, in its own words. Every one of these
+		// is something the person can put right in a few seconds, which is why
+		// each has a sentence of its own instead of one "nie moge".
+		const char* refuse = NULL;
+		LPITEM weapon = bot->GetWear(WEAR_WEAPON);
+		if (!bot->GetParty() || bot->GetParty() != player->GetParty())
+			refuse = "Najpierw zapros mnie do druzyny";
+		else if (bot->GetMapIndex() != player->GetMapIndex())
+			refuse = "Nie stoje na twojej mapie";
+		else if (!IsPlayerBotArcherBuild(bot))
+			refuse = "Nie jestem lucznikiem - lurowanie robie z luku";
+		else if (!weapon || weapon->GetType() != ITEM_WEAPON ||
+				weapon->GetSubType() != WEAPON_BOW)
+			refuse = "Nie mam teraz luku w rece";
+		// The course refuses a safe zone anyway - there is nothing there to
+		// pull - but it refuses it silently, and a person who typed "luruj" in
+		// a village and heard "jasne" would be waiting for something that can
+		// never happen.
+		else if (IsPlayerBotSafeZone(bot->GetMapIndex(), bot->GetX(), bot->GetY()))
+			refuse = "Jestesmy w strefie bezpieczenstwa - wyjdz na lowisko i powtorz";
+		if (refuse)
+		{
+			SendPlayerBotWhisper(bot, player, refuse);
+			return true;
+		}
+
+		if (state.dwLurePlayerPID == player->GetPlayerID())
+		{
+			// Asking again renews the order rather than restarting it: a person
+			// who types it twice does not want the course in progress dropped.
+			state.dwLurePlayerTime = dwNow;
+			snprintf(reply, sizeof(reply), "Juz dla ciebie luruje");
+		}
+		else
+		{
+			state.dwLurePlayerPID = player->GetPlayerID();
+			state.dwLurePlayerTime = dwNow;
+			// Whatever the role was waiting out is not this person's wait.
+			state.dwLureNextTime = 0;
+			sys_log(0, "PLAYERBOT_LURE: order taken pid=%u name=%s level=%u player=%s map=%ld",
+					bot->GetPlayerID(), bot->GetName(), bot->GetLevel(),
+					player->GetName(), bot->GetMapIndex());
+			snprintf(reply, sizeof(reply),
+					"Jasne. Stoj w miejscu, przyprowadze je na ciebie. Koniec: napisz \"przestan lurowac\"");
+		}
+		SendPlayerBotWhisper(bot, player, reply);
+		return true;
+	}
+
 	bool PlayerBotTradeReplyAllowed(LPCHARACTER player, DWORD dwNow)
 	{
 		DWORD& last = s_mapPlayerBotTradeReplyTime[player->GetPlayerID()];
@@ -478,6 +592,11 @@ namespace
 		if (!player || !bot || !text)
 			return;
 		const DWORD dwNow = get_dword_time();
+		// Before the trade line, because an order is answered whatever the
+		// reply clock says: a person who asked a bot to pull for them is owed
+		// an answer, and "luruj" is nobody's idea of a trade.
+		if (HandlePlayerBotLureOrder(player, bot, text, dwNow))
+			return;
 		char query[128];
 		bool book = false;
 		const EPlayerBotTradeVerb verb = ParsePlayerBotTradeText(text, query, sizeof(query), book);

@@ -1612,6 +1612,34 @@ namespace
 	// Above this over the Archer's own level a pack is not brought home, it is
 	// an escort of things that kill the Archer on the way.
 	const int PLAYERBOT_LURE_MAX_LEVEL_OVER = 3;
+	// Luring on a person's word ("luruj" in a whisper, "przestan lurowac" to
+	// end it). The role's own numbers above are what a party of bots needs to
+	// make the pull worth having; a player who asks for one by name has already
+	// decided that, so the rules that exist to keep bots from luring for nobody
+	// are the ones that give way here - and nothing else is.
+	//
+	// The pair is the party: the person who asked is the receiver, so nobody
+	// else has to be standing there.
+	const int PLAYERBOT_LURE_PLAYER_MIN_PARTY_MEMBERS = 2;
+	// Between two courses on a standing order. The role's own 20-50 s is a
+	// bot pacing itself; a person who asked for pulls is waiting for the next
+	// one.
+	const DWORD PLAYERBOT_LURE_PLAYER_COOLDOWN_MIN = 4000;
+	const DWORD PLAYERBOT_LURE_PLAYER_COOLDOWN_MAX = 9000;
+	// The bots' own handover is judged after seven seconds of standing there,
+	// because nothing forced it and the question is whether the receivers took
+	// the pack. On an order the pack is put on the person outright, so the only
+	// thing left to wait for is the engine registering the new victims.
+	const DWORD PLAYERBOT_LURE_PLAYER_HANDOFF_WAIT = 1500;
+	// An order nobody cancels ends by itself, and the player is told. Long
+	// enough for a hunting session, short enough that a bot is not luring for
+	// somebody who logged out an hour ago and came back to something else.
+	const DWORD PLAYERBOT_LURE_PLAYER_ORDER_TTL = 45u * 60u * 1000u;
+	// How far from the person the bot may be before the order is treated as a
+	// party that has drifted apart rather than a course in progress. It is the
+	// course range plus the anchor radius: past that the two are not hunting
+	// together at all.
+	const int PLAYERBOT_LURE_PLAYER_MAX_SEPARATION = 7000;
 
 	const int PLAYERBOT_PARTY_CHALLENGE_MIN_MEMBERS = 3;
 	const int PLAYERBOT_PARTY_CHALLENGE_RADIUS = 3000;
@@ -5648,6 +5676,8 @@ namespace
 			dwLureNextTime(0),
 			dwLureTargetVID(0),
 			dwLureReceiverPID(0),
+			dwLurePlayerPID(0),
+			dwLurePlayerTime(0),
 			lLureAnchorX(0),
 			lLureAnchorY(0),
 			iLureStartHPPercent(0),
@@ -6084,6 +6114,13 @@ namespace
 		DWORD dwLureNextTime;
 		DWORD dwLureTargetVID;
 		DWORD dwLureReceiverPID;
+		// A person's standing order: the pid of the player who whispered
+		// "luruj", and zero for the bots' own role. It outlives a course -
+		// "luruj" is an order, not a request for one pull - and is cleared by
+		// "przestan lurowac", by the party ending, by the player leaving the
+		// map, and by the order's own deadline.
+		DWORD dwLurePlayerPID;
+		DWORD dwLurePlayerTime;
 		// Where the party was standing when the course began. Everything is
 		// measured from here: how far the Archer may go, and where it comes back
 		// to - not the receiver's position, which moves during the fight.
