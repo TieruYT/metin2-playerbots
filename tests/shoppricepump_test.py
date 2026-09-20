@@ -41,9 +41,30 @@ def _stub(name, **members):
     return module
 
 
+chats = []
+# The client's copy of its own counter: slot -> row. The pump reads it to see
+# which of its edits actually took.
+shop = {'items': {}}
+
+
+def _shop_edit(item_id, price):
+    sent.append((item_id, price))
+    # The server answers an edit by refreshing this; a refused one changes
+    # nothing, which is exactly what the pump has to notice.
+    if item_id not in REFUSE:
+        for row in shop['items'].values():
+            if row['id'] == item_id:
+                row['price'] = price
+
+
+REFUSE = set()
+
 _stub('app', GetTime=lambda: now[0])
 _stub('ui', Window=_Window)
-_stub('ikashop', SendEditItem=lambda item_id, price: sent.append((item_id, price)))
+_stub('chat', CHAT_TYPE_INFO=1,
+      AppendChat=lambda kind, text: chats.append(text))
+_stub('constInfo', myshop_data=shop)
+_stub('ikashop', SendEditItem=_shop_edit)
 _stub('offlineShopBuilder',
       SetPrivateShopItemPrice=lambda vnum, count, price, sockets: prices.append((vnum, price)))
 
@@ -63,6 +84,13 @@ def check(what, expected, actual):
 
 def item(item_id, vnum=50300):
     return {'id': item_id, 'vnum': vnum, 'count': 1, 'sockets': (0, 0, 0)}
+
+
+def stock(ids, price=1):
+    """Put these lines on the counter, all at the same starting price."""
+    shop['items'] = dict((n, {'id': i, 'price': price, 'vnum': 50300,
+                              'count': 1, 'sockets': (0, 0, 0)})
+                         for n, i in enumerate(ids))
 
 
 def run_updates(seconds, step=0.05):
@@ -107,9 +135,76 @@ check('with the new price', 7777, sent[-1][1])
 
 print('== an empty queue costs nothing ==')
 del sent[:]
+REFUSE.clear()
+shop['items'] = {}
 shoppricepump.Queue([])
 run_updates(1.0)
 check('nothing is sent', 0, len(sent))
+
+# What blastyw reported: the packets are spaced out and a couple of lines are
+# still skipped on a counter with many of the same item. One refused edit used
+# to be lost for good; the pump reads the counter back and asks again.
+print('== a refused line is asked for again ==')
+del sent[:]
+del chats[:]
+now[0] = 300.0
+REFUSE.clear()
+REFUSE.add(3)
+stock([1, 2, 3, 4, 5])
+shoppricepump.Queue([(item(i), 250000) for i in range(1, 6)])
+# Five lines leave over a second; the look at the counter waits VERIFY_DELAY
+# after the last of them, so nothing is repeated inside this window.
+run_updates(1.5)
+check('every line was sent once', 5, len(sent))
+run_updates(1.5)
+check('the refused one is sent again', 6, len(sent))
+check('and it is the right line', 3, sent[-1][0])
+check('nothing is said while it is still being retried', 0, len(chats))
+
+print('== a line the server never takes is reported, not retried for ever ==')
+run_updates(30.0)
+check('the retries stop', 1, len(chats))
+check('and the line is named in the count', True, '1 pozycji' in chats[0])
+check('the queue is empty afterwards', 0, len(shoppricepump._pump.edits))
+
+print('== when every line takes, nothing is said ==')
+del sent[:]
+del chats[:]
+now[0] = 400.0
+REFUSE.clear()
+stock([11, 12, 13])
+shoppricepump.Queue([(item(i), 99000) for i in (11, 12, 13)])
+run_updates(6.0)
+check('three packets', 3, len(sent))
+check('no complaint', 0, len(chats))
+check('the counter carries the new price', [99000] * 3,
+      [r['price'] for r in shop['items'].values()])
+
+print('== a line sold while the pump ran is not a miss ==')
+del sent[:]
+del chats[:]
+now[0] = 500.0
+REFUSE.clear()
+REFUSE.add(22)
+stock([21, 22, 23])
+shoppricepump.Queue([(item(i), 5000) for i in (21, 22, 23)])
+run_updates(2.0)
+# Somebody buys line 22 before the pump looks at the counter again.
+shop['items'] = dict((n, r) for n, r in shop['items'].items() if r['id'] != 22)
+run_updates(30.0)
+check('the sold line is not asked for again', [21, 22, 23], [i for (i, _) in sent])
+check('and nothing is said about it', 0, len(chats))
+
+print('== the counter being unreadable is not a complaint ==')
+del sent[:]
+del chats[:]
+now[0] = 600.0
+REFUSE.clear()
+shop['items'] = {}
+shoppricepump.Queue([(item(31), 1234)])
+run_updates(30.0)
+check('the edit went', 1, len(sent))
+check('and the pump says nothing it cannot back up', 0, len(chats))
 
 print('')
 if FAILS:

@@ -633,13 +633,34 @@ function Set-SpawnPlan {
 }
 
 function Get-KingdomCountsFromEnv {
-    # PLAYERBOT_AUTOSPAWN_PER_KINGDOM and the three numbers; off and 0/0/0 when
-    # the keys are not there yet.
+    # PLAYERBOT_AUTOSPAWN_PER_KINGDOM and the three numbers.
+    #
+    # A kingdom whose key is not in .env yet defaults to the equal share of
+    # PLAYERBOT_AUTOSPAWN_COUNT, which is what the world runs on right now -
+    # never to zero. Zero is a real setting that means "this kingdom starts
+    # nobody", and offering it as the opening value of a dialog is how a world
+    # ends up with bots in one kingdom: the three keys are absent on every
+    # install made before 2.0.83, so the box showed 0 for all three, and
+    # ticking "Indywidualne wartosci" with one of them filled left the other
+    # two empty for good ("nowe postacie tworza sie tylko w Chunjo",
+    # NerrVoVy, 19 September - his world had just turned the second channel on
+    # and the two were read together).
+    $total = 0
+    [int]::TryParse((Get-DotEnvValue -Key 'PLAYERBOT_AUTOSPAWN_COUNT' -Default '0'), [ref]$total) | Out-Null
+    $even = [int][Math]::Floor($total / 3)
+    $read = {
+        param($key)
+        $raw = Get-DotEnvValue -Key $key -Default ''
+        if ([string]::IsNullOrWhiteSpace([string]$raw)) { return $even }
+        $n = 0
+        if ([int]::TryParse($raw, [ref]$n)) { return $n }
+        return $even
+    }
     return @{
         Enabled = (Get-DotEnvValue -Key 'PLAYERBOT_AUTOSPAWN_PER_KINGDOM' -Default '0') -eq '1'
-        Shinsoo = [int](Get-DotEnvValue -Key 'PLAYERBOT_AUTOSPAWN_SHINSOO' -Default '0')
-        Chunjo  = [int](Get-DotEnvValue -Key 'PLAYERBOT_AUTOSPAWN_CHUNJO' -Default '0')
-        Jinno   = [int](Get-DotEnvValue -Key 'PLAYERBOT_AUTOSPAWN_JINNO' -Default '0')
+        Shinsoo = & $read 'PLAYERBOT_AUTOSPAWN_SHINSOO'
+        Chunjo  = & $read 'PLAYERBOT_AUTOSPAWN_CHUNJO'
+        Jinno   = & $read 'PLAYERBOT_AUTOSPAWN_JINNO'
     }
 }
 
@@ -750,6 +771,17 @@ function Set-BotCountAction {
             $kk = Set-KingdomCounts -Enabled ($PerKingdom -eq 1) -Shinsoo $s -Chunjo $c -Jinno $j
             if ($kk.Enabled) {
                 Write-Host "Zapisano: osobno dla królestw - Shinsoo $($kk.Shinsoo), Chunjo $($kk.Chunjo), Jinno $($kk.Jinno)." -ForegroundColor Green
+                # A kingdom at zero starts nobody, and nothing in the game says
+                # so afterwards - the world simply has no bots there. It is a
+                # legitimate setting, so it is said out loud rather than
+                # refused.
+                $empty = @()
+                if ($kk.Shinsoo -le 0) { $empty += 'Shinsoo' }
+                if ($kk.Chunjo -le 0) { $empty += 'Chunjo' }
+                if ($kk.Jinno -le 0) { $empty += 'Jinno' }
+                if (@($empty).Count -gt 0) {
+                    Write-Host ("UWAGA: " + ($empty -join ' i ') + " nie wystartuje zadnego bota. Wpisz tam liczbe wieksza od zera albo wylacz indywidualne wartosci.") -ForegroundColor Yellow
+                }
             }
             else { Write-Host 'Zapisano: jedna liczba botów dzielona po równo na królestwa.' -ForegroundColor Green }
         }
