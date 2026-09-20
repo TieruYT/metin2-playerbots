@@ -1134,6 +1134,31 @@ Four things the personalities changed that are easy to trip over later:
   test world has none. `PLAYERBOT_LURE: order` and `pack handed` are in the
   support bundle's grep list; the rest of the tag is not, because a course
   writes six to eight lines and the bundle keeps forty thousand.
+- **An order is a job, and every rule written for an idle bot has to be read
+  again against it.** 2.0.89 shipped the person's order with the four rules
+  that "exist to keep a bot from luring for nobody" given way to, and three
+  more were left standing that are the same kind of rule and were shut for
+  ever beside a person who is hunting: the party-busy count
+  (`PLAYERBOT_LURE_BUSY_MONSTERS` is three, and four monsters on a person
+  standing on a spot is an ordinary Sunday), the nine-tenths health floor (the
+  bot takes hits from whatever the person is fighting), and - underneath both -
+  the fact that **nothing stopped the bot hunting between courses**, so a
+  monster was always chasing it and `onOwner > 0` refused every start. What a
+  person saw was a Ninja killing the pack it was asked to fetch and a status
+  reading "Czekam, zeby lurowac dla X" for ever (marcinxboss, 20 September);
+  the two are one causal chain, because a course that cannot open hands the
+  tick to ordinary target acquisition. A standing order is COMMITTED_TRAVEL in
+  the value policy now - self-defence never asks it and party defence is
+  answered above that branch, so the bot still hits back and still helps the
+  person - the bow is held in the hand while an order stands (a dagger drawn
+  for one Metin makes `IsPlayerBotArcher` false and the whole course
+  "ineligible"), and the health floor is `PLAYERBOT_LURE_PLAYER_START_HP_PERCENT`.
+  And the wait says which gate it is waiting on, in the status and once per
+  change in the log (`PLAYERBOT_LURE: waiting reason=`), because three gates
+  that all look like "Czekam" is a report nobody can make. The whole feature
+  is still unwatched with a person in a party: the test world has none, and
+  the bots' own role needs three in a party, which on a measured world it
+  often has not got (143 parties, 143 bots in them, 20 September).
 - **A pull is what came back, not what was shot at.** `playerbot_lure.h` is
   the Archer's party role as a whole errand - PLAN, APPROACH, TAG, CONFIRM,
   RETURN, HANDOFF, RECOVER - and CONFIRM counts the live monsters actually
