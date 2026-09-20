@@ -17,6 +17,63 @@ every version here.
 
 ---
 
+## 2.0.92 — 2026-09-20
+
+Serwer 2.0.92, **klient 2.0.23**. Zawiera wszystko z 2.0.91.
+
+### Gra mówi w ośmiu językach
+
+**Polski, English, Deutsch, Español, Italiano, Português, Română, Türkçe.**
+Język wybiera się w oknie konfiguracji przy logowaniu, obok rozdzielczości —
+zmiana wymaga ponownego uruchomienia klienta.
+
+Paczka językowa jest w całości robotą **ĹŌŞƬĒĶ (l0st3k)**: siedem nowych
+katalogów locale, tabele przedmiotów i potworów, opisy, okna logowania. My
+wstawiliśmy to do naszego klienta i sprawdziliśmy, co następuje:
+
+- wszystkie **762 pliki** naszej dotychczasowej paczki językowej są w jego
+  bajtowo identyczne — nic naszego nie zginęło (tło wyboru postaci, ekran
+  ładowania, regulamin);
+- jego root był zbudowany na starszym naszym kliencie i niósł **starsze wersje
+  trzech naszych plików** — auto-łowów, tytułów botów i sklepu. Wzięliśmy z
+  niego wyłącznie wybór języka, a nasze pliki zostały nasze, więc zmiana
+  zachowania auto-łowów, którą po drodze wprowadził, **nie wchodzi**;
+- nasz `metin2client.exe` już umiał `GetLanguage`, więc nie trzeba było nowego
+  pliku wykonywalnego.
+
+### Angielski interfejs
+
+Dodatkowo 281 napisów interfejsu i komunikatów po angielsku, nakładanych
+**tylko przy wybranym „en"** — każdy inny język widzi dokładnie to, co dotąd.
+Doszły do tego cztery nagłówki, które do tej pory stały w skryptach na sztywno
+i były polskie w każdym języku: „Status postaci", „Atrybuty" w oknie postaci
+oraz „Kategorie" i „Stan Konta" w sklepie z przedmiotami.
+
+Sprawdzone uczciwie, bez klikania w grze: wszystkie 33 skrypty kompilują się w
+Pythonie 2.7 klienta, a prawdziwe loadery locale uruchomione z atrapami silnika
+dla **PL, EN, DE i TR** potwierdzają, że po angielsku wchodzą angielskie
+wartości, a w pozostałych językach **żaden napis się nie ruszył**
+(`tests/client_locale_loader_test.py`). Przepakowany root różni się od
+poprzedniego dokładnie jedenastoma naszymi plikami.
+
+### Czego to jeszcze nie tłumaczy
+
+Żeby nie było niespodzianki po wybraniu angielskiego — **po polsku zostają**:
+
+- **nazwy NPC** („Agent Lądowy"), **treści questów** („Osiągnij 1 poziom
+  jeździectwa…") i wszystko, co przysyła serwer: to jest baza i questy serwera,
+  nie klient;
+- **nazwy przedmiotów i kategorie w sklepie z przedmiotami** — też z serwera;
+- część opisów w oknie bonusów postaci i opisy umiejętności: to brakujące
+  wiersze w plikach `locale_game.txt` wybranego języka (dla angielskiego 676
+  kluczy), a nie kod.
+
+To jest osobna, większa robota po stronie serwera i danych — nie chcemy
+mówić, że gra jest przetłumaczona, kiedy przetłumaczony jest interfejs.
+
+**Paczka klienta urosła z 68 MB do 96 MB** — to te siedem nowych katalogów
+językowych.
+
 ## 2.0.91 — 2026-09-20
 
 Serwer 2.0.91, klient bez zmian (2.0.22). Zawiera wszystko z 2.0.90.

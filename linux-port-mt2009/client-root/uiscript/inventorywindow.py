@@ -58,7 +58,7 @@ window = {
 							"default_image" : flamewindPath.GetInventory("autostack_01"),
 							"over_image" : flamewindPath.GetInventory("autostack_02"),
 							"down_image" : flamewindPath.GetInventory("autostack_03"),
-							"tooltip_text" : "Scal i uporz\xb9dkuj",
+							"tooltip_text" : uiScriptLocale.INVENTORY_SORT_STACK,
 							"tooltip_y": -19,
 							"tooltip_x": -30,
 						},
@@ -274,7 +274,7 @@ window = {
 					"default_image" : "d:/ymir work/ui/game/windows/tab_button_small_01.sub",
 					"over_image" : "d:/ymir work/ui/game/windows/tab_button_small_02.sub",
 					"down_image" : "d:/ymir work/ui/game/windows/tab_button_small_03.sub",
-					"tooltip_text" : "3. Ekwipunek",
+					"tooltip_text" : uiScriptLocale.INVENTORY_PAGE_BUTTON_TOOLTIP_3,
 
 					"children" :
 					(
@@ -301,7 +301,7 @@ window = {
 					"default_image" : "d:/ymir work/ui/game/windows/tab_button_small_01.sub",
 					"over_image" : "d:/ymir work/ui/game/windows/tab_button_small_02.sub",
 					"down_image" : "d:/ymir work/ui/game/windows/tab_button_small_03.sub",
-					"tooltip_text" : "4. Ekwipunek",
+					"tooltip_text" : uiScriptLocale.INVENTORY_PAGE_BUTTON_TOOLTIP_4,
 
 					"children" :
 					(

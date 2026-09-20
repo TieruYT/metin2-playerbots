@@ -672,7 +672,7 @@ window = {
 					"x" : LINE_LABEL_X,
 					"y" : 382+2,
 
-					"text" : "Tytu\xb3y bot\xf3w",
+					"text" : uiScriptLocale.BOT_TITLES_LABEL,
 				},
 				{
 					"name" : "bot_title_personality_button",
@@ -681,7 +681,7 @@ window = {
 					"x" : LINE_DATA_X,
 					"y" : 382,
 
-					"text" : "Osobowo\x9c\xe6",
+					"text" : uiScriptLocale.BOT_TITLES_PERSONALITY,
 
 					"default_image" : ROOT_PATH + "middle_button_01.sub",
 					"over_image" : ROOT_PATH + "middle_button_02.sub",
@@ -694,7 +694,7 @@ window = {
 					"x" : LINE_DATA_X+MIDDLE_BUTTON_WIDTH,
 					"y" : 382,
 
-					"text" : "Wy³¹czone",
+					"text" : uiScriptLocale.BOT_TITLES_OFF,
 
 					"default_image" : ROOT_PATH + "middle_button_01.sub",
 					"over_image" : ROOT_PATH + "middle_button_02.sub",

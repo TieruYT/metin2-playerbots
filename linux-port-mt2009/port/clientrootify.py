@@ -55,6 +55,101 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 OUT = os.path.normpath(os.path.join(HERE, '..', 'client-root'))
 
 EDITS = {
+    # --- Osiem jezykow (Lostek) i angielski interfejs (Codex), 2.0.23 -------
+    # Wybor jezyka przy logowaniu mial dwie pozycje; paczka locale Lostka ma
+    # osiem katalogow (pl en de es it pt ro tr), wiec okno konfiguracji tez.
+    'configmain.py': [
+        (b'\t\tLANGUAGE_OPTIONS = [uiScriptLocale.LANGUAGE_OPTION_DEFAULT,\r\n'
+         b'\t\t\t\t\t\t\tuiScriptLocale.LANGUAGE_OPTION_ENGLISH]\r\n',
+         b'\t\t# Dostepne locale znajdujace sie w locale/locale/\r\n'
+         b'\t\tLANGUAGE_OPTIONS = [\r\n'
+         b'\t\t\t"Polski",\r\n'
+         b'\t\t\t"English",\r\n'
+         b'\t\t\t"Deutsch",\r\n'
+         b'\t\t\t"Espanol",\r\n'
+         b'\t\t\t"Italiano",\r\n'
+         b'\t\t\t"Portugues",\r\n'
+         b'\t\t\t"Romana",\r\n'
+         b'\t\t\t"Turkce",\r\n'
+         b'\t\t]\r\n'),
+        (b'\t\t\tif index == 1:\r\n'
+         b'\t\t\t\treturn "en"\r\n'
+         b'\t\t\telse:\r\n'
+         b'\t\t\t\treturn "pl"\r\n'
+         b'\r\n'
+         b'\t\tdef __LanguageCodeToIndex(self, lang):\r\n'
+         b'\t\t\tif lang == "en":\r\n'
+         b'\t\t\t\treturn 1\r\n'
+         b'\t\t\telse:\r\n',
+         b'\t\t\tlanguage_codes = ["pl", "en", "de", "es", "it", "pt", "ro", "tr"]\r\n'
+         b'\t\t\tif index < 0 or index >= len(language_codes):\r\n'
+         b'\t\t\t\treturn "pl"\r\n'
+         b'\t\t\treturn language_codes[index]\r\n'
+         b'\r\n'
+         b'\t\tdef __LanguageCodeToIndex(self, lang):\r\n'
+         b'\t\t\tlanguage_codes = ["pl", "en", "de", "es", "it", "pt", "ro", "tr"]\r\n'
+         b'\t\t\ttry:\r\n'
+         b'\t\t\t\treturn language_codes.index(lang)\r\n'
+         b'\t\t\texcept ValueError:\r\n'),
+    ],
+    # Angielskie GUI: 281 napisow w english_gui.py (reczny plik obok
+    # serverinfo.py) nalozonych na wczytane tablice tylko dla "en". Klucze,
+    # ktorych locale_interface.txt EN nie ma, zostaja po polsku w kazdym innym
+    # jezyku dzieki setdefault ponizej - wiec DE/ES/IT/PT/RO/TR nic nie traca.
+    'localeinfo.py': [
+        (b'\r\n'
+         b'\r\n'
+         b'if app.ENABLE_CHEQUE_SYSTEM:\r\n'
+         b'\tdef NumberToGold(n) :\r\n',
+         b'\r\n'
+         b'\r\n'
+         b'if systemSetting.GetLanguage() == "en":\r\n'
+         b'\timport english_gui\r\n'
+         b'\tglobals().update(english_gui.GAME)\r\n'
+         b'\r\n'
+         b'if app.ENABLE_CHEQUE_SYSTEM:\r\n'
+         b'\tdef NumberToGold(n) :\r\n'),
+    ],
+    'uiscriptlocale.py': [
+        (b'\tTryLoadLocaleFile("%s/locale_interface_ex.txt" % app.GetLocalePath())\r\n',
+         b'\tTryLoadLocaleFile("%s/locale_interface_ex.txt" % app.GetLocalePath())\r\n'
+         b'\r\n'
+         b'# Napisy, ktore do tej pory staly w skryptach na sztywno. Wartosc\r\n'
+         b'# domyslna jest polska, wiec kazdy inny jezyk widzi to, co dotad.\r\n'
+         b"globals().setdefault('BOT_TITLES_LABEL', 'Tytu\xb3y bot\xf3w')\r\n"
+         b"globals().setdefault('BOT_TITLES_PERSONALITY', 'Osobowo\x9c\xe6')\r\n"
+         b"globals().setdefault('BOT_TITLES_OFF', 'Wy\xb3\xb9czone')\r\n"
+         b"globals().setdefault('SYSTEM_VERSION', 'Wersja: %d.%d.%d%s')\r\n"
+         b"globals().setdefault('INVENTORY_SORT_STACK', 'Scal i uporz\xb9dkuj')\r\n"
+         b"globals().setdefault('INVENTORY_PAGE_BUTTON_TOOLTIP_3', '3. Ekwipunek')\r\n"
+         b"globals().setdefault('INVENTORY_PAGE_BUTTON_TOOLTIP_4', '4. Ekwipunek')\r\n"
+         b"globals().setdefault('CHARACTER_STATUS_TITLE', 'Status postaci')\r\n"
+         b"globals().setdefault('CHARACTER_ATTRIBUTES_TITLE', 'Atrybuty')\r\n"
+         b"globals().setdefault('ITEMSHOP_CATEGORIES', 'Kategorie')\r\n"
+         b"globals().setdefault('ITEMSHOP_ACCOUNT_STATE', 'Stan Konta')\r\n"
+         b'\r\n'
+         b'if systemSetting.GetLanguage() == "en":\r\n'
+         b'\timport english_gui\r\n'
+         b'\tglobals().update(english_gui.UI)\r\n'),
+    ],
+    'uiscript/systemdialog.py': [
+        (b'\t\t\t\t\t"text": "Wersja: 1.0.0",\r\n',
+         b'\t\t\t\t\t"text": uiScriptLocale.SYSTEM_VERSION % (1, 0, 0, ""),\r\n'),
+    ],
+    # Naglowki okna postaci i sklepu z przedmiotami: widac je na kazdym
+    # zrzucie z angielskiego klienta, bo stoja w skrypcie, nie w locale.
+    'uiscript/characterwindow.py': [
+        (b'"text" : "Status postaci",',
+         b'"text" : uiScriptLocale.CHARACTER_STATUS_TITLE,'),
+        (b'"text" : "Atrybuty",',
+         b'"text" : uiScriptLocale.CHARACTER_ATTRIBUTES_TITLE,'),
+    ],
+    'uiscript/itemshopwindow.py': [
+        (b'\t\t\t\t\t\t\t\t\t"text" : "Kategorie",\r\n',
+         b'\t\t\t\t\t\t\t\t\t"text" : uiScriptLocale.ITEMSHOP_CATEGORIES,\r\n'),
+        (b'\t\t\t\t\t\t\t\t\t"text" : "Stan Konta",\r\n',
+         b'\t\t\t\t\t\t\t\t\t"text" : uiScriptLocale.ITEMSHOP_ACCOUNT_STATE,\r\n'),
+    ],
     'gamerules.py': [
         (b'RULES_VERSION = 3\r\n', b'RULES_VERSION = 4\r\n'),
     ],
@@ -428,6 +523,9 @@ EDITS = {
         (b'import ikashop\r\n', b'import ikashop\r\nimport shoppricepump\r\n'),
     ],
     'uisystem.py': [
+        # Numer wersji w oknie systemowym przez klucz locale (2.0.23).
+        (b'\t\tversion_string = "Wersja: %d.%d.%d%s" % (\r\n',
+         b'\t\tversion_string = uiScriptLocale.SYSTEM_VERSION % (\r\n'),
         (b'\t\tutils.open_url("https://mt2009.pl/Identity/Account/Manage/Support")\r\n',
          b'\t\tutils.open_url("https://discord.gg/pt5tvnrN6")\r\n'),
     ],
@@ -526,6 +624,13 @@ EDITS = {
          b'\r\n'),
     ],
     'uiscript/gameoptiondialog.py': [
+        # Migracje napisow z naszych wlasnych wstawek na klucze locale (2.0.23).
+        (b'\t\t\t\t\t"text" : "Tytu\\xb3y bot\\xf3w",\r\n',
+         b'\t\t\t\t\t"text" : uiScriptLocale.BOT_TITLES_LABEL,\r\n', True),
+        (b'\t\t\t\t\t"text" : "Osobowo\\x9c\\xe6",\r\n',
+         b'\t\t\t\t\t"text" : uiScriptLocale.BOT_TITLES_PERSONALITY,\r\n', True),
+        (b'\t\t\t\t\t"text" : "Wy\xb3\xb9czone",\r\n',
+         b'\t\t\t\t\t"text" : uiScriptLocale.BOT_TITLES_OFF,\r\n', True),
         (b'\t"width" : 300,\r\n'
          b'\t"height" : 25*16+8,\r\n',
          b'\t"width" : 300,\r\n'
@@ -559,7 +664,7 @@ EDITS = {
          b'\t\t\t\t\t"x" : LINE_LABEL_X,\r\n'
          b'\t\t\t\t\t"y" : 382+2,\r\n'
          b'\r\n'
-         b'\t\t\t\t\t"text" : "Tytu\\xb3y bot\\xf3w",\r\n'
+         b'\t\t\t\t\t"text" : uiScriptLocale.BOT_TITLES_LABEL,\r\n'
          b'\t\t\t\t},\r\n'
          b'\t\t\t\t{\r\n'
          b'\t\t\t\t\t"name" : "bot_title_personality_button",\r\n'
@@ -568,7 +673,7 @@ EDITS = {
          b'\t\t\t\t\t"x" : LINE_DATA_X,\r\n'
          b'\t\t\t\t\t"y" : 382,\r\n'
          b'\r\n'
-         b'\t\t\t\t\t"text" : "Osobowo\\x9c\\xe6",\r\n'
+         b'\t\t\t\t\t"text" : uiScriptLocale.BOT_TITLES_PERSONALITY,\r\n'
          b'\r\n'
          b'\t\t\t\t\t"default_image" : ROOT_PATH + "middle_button_01.sub",\r\n'
          b'\t\t\t\t\t"over_image" : ROOT_PATH + "middle_button_02.sub",\r\n'
@@ -581,7 +686,7 @@ EDITS = {
          b'\t\t\t\t\t"x" : LINE_DATA_X+MIDDLE_BUTTON_WIDTH,\r\n'
          b'\t\t\t\t\t"y" : 382,\r\n'
          b'\r\n'
-         b'\t\t\t\t\t"text" : "Wy\xb3\xb9czone",\r\n'
+         b'\t\t\t\t\t"text" : uiScriptLocale.BOT_TITLES_OFF,\r\n'
          b'\r\n'
          b'\t\t\t\t\t"default_image" : ROOT_PATH + "middle_button_01.sub",\r\n'
          b'\t\t\t\t\t"over_image" : ROOT_PATH + "middle_button_02.sub",\r\n'
@@ -595,6 +700,12 @@ EDITS = {
     # two pages only, and a script under the loader's sandbox is no place for
     # getattr, so the new ones say it themselves.
     'uiscript/inventorywindow.py': [
+        (b'\t\t\t\t\t"tooltip_text" : "3. Ekwipunek",\r\n',
+         b'\t\t\t\t\t"tooltip_text" : uiScriptLocale.INVENTORY_PAGE_BUTTON_TOOLTIP_3,\r\n', True),
+        (b'\t\t\t\t\t"tooltip_text" : "4. Ekwipunek",\r\n',
+         b'\t\t\t\t\t"tooltip_text" : uiScriptLocale.INVENTORY_PAGE_BUTTON_TOOLTIP_4,\r\n', True),
+        (b'\t\t\t\t\t\t\t"tooltip_text" : "Scal i uporz\\xb9dkuj",\r\n',
+         b'\t\t\t\t\t\t\t"tooltip_text" : uiScriptLocale.INVENTORY_SORT_STACK,\r\n', True),
         (b'\t\t\t\t\t"x" : 10,\r\n'
          b'\t\t\t\t\t"y" : 33 + 191,\r\n'
          b'\r\n'
@@ -645,7 +756,7 @@ EDITS = {
              b'\t\t\t\t\t"default_image" : "d:/ymir work/ui/game/windows/tab_button_small_01.sub",\r\n'
              b'\t\t\t\t\t"over_image" : "d:/ymir work/ui/game/windows/tab_button_small_02.sub",\r\n'
              b'\t\t\t\t\t"down_image" : "d:/ymir work/ui/game/windows/tab_button_small_03.sub",\r\n'
-             b'\t\t\t\t\t"tooltip_text" : "%s. Ekwipunek",\r\n'
+             b'\t\t\t\t\t"tooltip_text" : uiScriptLocale.INVENTORY_PAGE_BUTTON_TOOLTIP_%s,\r\n'
              b'\r\n'
              b'\t\t\t\t\t"children" :\r\n'
              b'\t\t\t\t\t(\r\n'
@@ -669,7 +780,7 @@ EDITS = {
         # The auto-stack button's tooltip: it pours and orders now. CP1250 as
         # an escape, like the options' row, so the script stays ASCII.
         (b'\t\t\t\t\t\t\t"tooltip_text" : uiScriptLocale.INVENTORY_AUTOSTACK,\r\n',
-         b'\t\t\t\t\t\t\t"tooltip_text" : "Scal i uporz\\xb9dkuj",\r\n'),
+         b'\t\t\t\t\t\t\t"tooltip_text" : uiScriptLocale.INVENTORY_SORT_STACK,\r\n'),
     ],
     # The requirement counts under a locked horse-bag slot and a special
     # shop's price ("(0 na 60)") read two bag pages and, with the horse out,
@@ -707,12 +818,20 @@ def main():
         if not os.path.isfile(src):
             raise SystemExit('clientrootify: no %s in %s' % (name, args.root))
         data = io.open(src, 'rb').read()
-        for old, new in edits:
+        for edit in edits:
+            old, new = edit[0], edit[1]
+            # A third element marks the pair optional: it is a migration of
+            # text one of our own edits put there in an earlier version, so
+            # neither side is in a pristine stock root and both are absent
+            # once it has been done. Anything not marked stays compulsory.
+            optional = len(edit) > 2 and edit[2]
             # Already ours, asked first: an edit that inserts after its anchor
             # keeps the anchor in its result, and asking for the anchor first
             # put the options' title methods into uigameoption.py twice each
             # time a published root was the base.
             if data.count(new) == 1:
+                continue
+            if optional and data.count(old) == 0:
                 continue
             if data.count(old) != 1:
                 raise SystemExit('clientrootify: %s: expected exactly one %r, found %d' % (name, old[:50], data.count(old)))

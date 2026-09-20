@@ -69,7 +69,7 @@ class SystemDialog(ui.ScriptWindow):
 		self.GetChild("cancel_button").SAFE_SetEvent(self.Close)
 
 		data = constInfo.GAME_VERSION
-		version_string = "Wersja: %d.%d.%d%s" % (
+		version_string = uiScriptLocale.SYSTEM_VERSION % (
 			data["expansion"], data["major"], data["minor"], "b" if data["is_beta"] else "")
 		self.GetChild("GameVersion").SetText(version_string)
 

@@ -207,6 +207,10 @@ if app.ENABLE_LOCALE_COMMON:
 
 
 
+if systemSetting.GetLanguage() == "en":
+	import english_gui
+	globals().update(english_gui.GAME)
+
 if app.ENABLE_CHEQUE_SYSTEM:
 	def NumberToGold(n) :
 		if n <= 0 :
