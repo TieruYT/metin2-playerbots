@@ -1134,6 +1134,47 @@ Four things the personalities changed that are easy to trip over later:
   test world has none. `PLAYERBOT_LURE: order` and `pack handed` are in the
   support bundle's grep list; the rest of the tag is not, because a course
   writes six to eight lines and the bundle keeps forty thousand.
+- **An errand mode must not refuse the errand it names.** A person's standing
+  lure order put the bot in `COMMITTED_TRAVEL` (2.0.89) so it would stop
+  grinding between courses, and `Evaluate` refuses everything in that mode - so
+  it refused the pack the course had just walked out to tag. The order was
+  taken, "Juz dla ciebie luruje" was said, and every course ended `no_pack` a
+  tick later while the bot stood beside the person (l0st3k and nerrvous_s,
+  20 September, both with logs: `planned ... 957 ms ... finished
+  stage=approach reason=no_pack`, over and over). `Context::lureCourseTarget`
+  is the exception, under defence and over the errand modes, and it is set only
+  while an order's course is running - so between courses the order still stops
+  the hunting it was written to stop. Whenever a mode is added to say "this bot
+  is busy with X", grep for the code that performs X and check it does not ask
+  that mode.
+- **A gate that opens must sit above the gate that breaks off.** The same
+  release dropped the opening health for an order to 55% and left the break at
+  the bots' own 70%, so a bot between the two opened a course and ended it
+  `low_hp` on the same tick, for as long as the order stood. Two thresholds
+  that bound the same activity belong next to each other in the constants, with
+  the pair stated in the comment.
+- **Two roles asking one finder opposite questions want the window as an
+  argument.** `FindPlayerBotLurePack` was written for the bots' own role - a
+  pack the party has not reached, so beyond bow range, clear of the ground the
+  party is fighting over, and judged against the Archer's own level - and a
+  person's order means the exact opposite: the monsters *round me*, which I
+  will fight. All three windows refused exactly that, and the level one was the
+  worst: a level-19 companion beside a level-33 player refused every monster on
+  the map for being eight levels over *itself*. `TPlayerBotLureSearch` carries
+  the four numbers now and `GetPlayerBotLureSearch` answers by who asked.
+- **"A person's party" is not the same set as "serving a person", and the
+  difference is exactly the bots people play with.** The rule that a bot in
+  somebody's party runs no errand (2.0.48) asks whether the party's *leader* is
+  human - but a companion invites the person into **its own** party, so the
+  leader is a bot, and all six errand gates in the tick (the stable, the
+  Biologist, the herbalist, the negative-rank hold, and both halves of a town
+  visit) were silently off for those bots. What it looked like was a bot that
+  took a lure order and walked to the blacksmith with it, logging
+  `PLAYERBOT_LURE: waiting reason=busy` for four minutes. `bServingPerson` is
+  the union: a human-led party, a mercenary contract, a companion holding a
+  person in its party (`IsPlayerBotHeldForCompany` already knew those two), or
+  a standing lure order. The follow-the-leader branch still asks about the
+  party, because that one really is about who leads.
 - **Somebody else's client pack is a superset until it is measured.**
   l0st3k's multilanguage pack (20 September) is seven new locale directories
   beside pl and en, and the whole of it went in - but only after three
@@ -6920,6 +6961,23 @@ Four things the personalities changed that are easy to trip over later:
   it. Smelting is `mining::OreRefine` - a hundred raw for one piece, from an
   alchemist's quest - and is reimplemented rather than called, the way
   `CollectPlayerBotBattleHorse` reimplements the stable keeper's.
+- **The Cube is a GM command, and a quest cannot open it for a player.**
+  `cube.cpp` reads `share/locale/<lang>/cube.txt` at boot
+  (`LocaleService_GetBasePath()`, `Cube_init`, also re-read by `/reload`) and its
+  format is `section / npc / item / reward / percent / gold / end`, with `percent`
+  a flat 1..100 roll and the materials spent before it. But the only way in is
+  `ACMD(do_cube)`, whose row in `cmd.cpp` is **GM_IMPLEMENTOR**, and a quest's
+  `command("cube open")` goes through the same `interpret_command`, which answers
+  "This command does not exist." below that level - so a quest that works for the
+  operator works for nobody else. There is no lua entry point at all. This world
+  ships 106 sections on four NPCs (20017, 20018, 20022, 20383); every other cube
+  NPC, 20091 included, is either absent from `npc.txt` or commented out there, and
+  `Cube_open` refuses an NPC no section names. Two things to check before promising
+  a recipe works: `Cube_make` calls `new_item->GetID()` with no NULL test, so a
+  reward vnum `item_proto` does not know is a core crash on the first success; and
+  `AutoGiveItem` drops the reward on the ground when the bag is full, after the
+  materials are gone. `share/` is baked into the game image, so both `cube.txt` and
+  `npc.txt` come back at every update - the same shape as the language switch.
 - Map world coordinates: `world = BasePosition + cell * 100`, with `BasePosition`
   from the map's `Setting.txt` and `cell` from `npc.txt`. Map 21 is `metin2_map_b1`.
 - `server_attr` is per-sector lzo1x: `int32 width, height`, then per sector a
