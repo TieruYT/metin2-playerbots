@@ -1109,8 +1109,11 @@ namespace
 				item->GetLevelLimit() < PLAYERBOT_SHOP_MIN_GEAR_LEVEL;
 	}
 
-	// The refine that gear needs for a counter: +6, and +8 for a weapon or a body
-	// armour of level one (PLAYERBOT_SHOP_STARTER_GEAR_MIN_REFINE).
+	// The refine that gear needs for a counter: +6, and +7 for a weapon or a body
+	// armour of level one (PLAYERBOT_SHOP_STARTER_GEAR_MIN_REFINE). It is one
+	// number for two decisions - what a counter takes and what the junk rule
+	// scraps under - so raising it past seven is what sent a starter +7 to a
+	// merchant, against "+7 to nigdy nie jest zlom".
 	BYTE GetPlayerBotLowGearMinRefine(LPITEM item)
 	{
 		if (item && (int)item->GetLevelLimit() <= PLAYERBOT_SHOP_STARTER_GEAR_MAX_LEVEL &&

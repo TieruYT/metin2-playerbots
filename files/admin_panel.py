@@ -4054,6 +4054,46 @@ def clean_rate(raw):
         return None
     return v if RATE_MIN <= v <= RATE_MAX else None
 
+def read_rates_mt2009(cur):
+    """The operator's own three percentages, read from what the engine reads.
+
+    On this line a rate is an event flag (a player.quest row with dwPID = 0)
+    and everything else - this table, the advanced panel's, the spool's
+    rates.status - is somebody's copy of it. Four things write the flags (both
+    panels, the in-game RATES helper and the timed events) and only some of
+    them refresh every copy, so the copies drift: measured on the test world on
+    20 September, rates.status said drop 150 / yang 120 while the flags and the
+    world ran 200 / 200, and the advanced panel - which reads that file first -
+    showed the stale pair and would have written it back the moment anybody
+    pressed Save there ("jak ustawialem wczesniej raty u tiera to u sebana
+    narzucal poprzednie", NerrVoVy; "ustawilem 10000% a boty dzialaja jakby
+    mialy x3/5", marcol_).
+
+    While a rate event runs the live flag holds the boosted number and
+    m2_event_*_base holds what the operator set, so the base wins when it is
+    there: a page must show the setting, not the boost, or saving during an
+    event would bake the boost in as the new normal.
+    """
+    vals = {}
+    for name, flags in MT2009_RATE_FLAGS.items():
+        cur.execute("SELECT szName, lValue FROM player.quest WHERE dwPID=0 AND szName IN (%s, %s)",
+                    (flags[0], MT2009_RATE_BASE_FLAGS[name][0]))
+        live = base = 0
+        for row in cur.fetchall():
+            try:
+                value = int(row["lValue"])
+            except (TypeError, ValueError):
+                continue
+            if row["szName"] == flags[0]:
+                live = value
+            else:
+                base = value
+        if base > 0:
+            vals[name] = base
+        elif live > 0:
+            vals[name] = live
+    return vals
+
 def read_rates():
     """The three percentages as they stand in the database."""
     vals = {n: 100 for n in RATE_NAMES}
@@ -4065,6 +4105,13 @@ def read_rates():
                     vals[row["name"]] = int(row["value"])
                 except (TypeError, ValueError):
                     pass
+        if ENGINE_MT2009:
+            # The table above is this panel's own mirror and is kept only so a
+            # world whose flags were never written still shows something.
+            try:
+                vals.update(read_rates_mt2009(cur))
+            except Exception:
+                pass
     return vals
 
 def rates_status():
@@ -4114,6 +4161,13 @@ MT2009_RATE_FLAGS = {
     "exp":  ("mob_exp",  "mob_exp_buyer"),
     "drop": ("mob_item", "mob_item_buyer"),
     "yang": ("mob_gold", "mob_gold_buyer"),
+}
+# What the operator set, kept aside while a timed event boosts the live flag
+# (playerbot_events.h). Zero means no event is running on that kind.
+MT2009_RATE_BASE_FLAGS = {
+    "exp":  ("m2_event_exp_base",  "m2_event_exp_base_buyer"),
+    "drop": ("m2_event_drop_base", "m2_event_drop_base_buyer"),
+    "yang": ("m2_event_yang_base", "m2_event_yang_base_buyer"),
 }
 # Respawn time, as a percent of the regen line's own delay: the engine's
 # regen_event scales the next spawn by the event flags fastBossSpawn and

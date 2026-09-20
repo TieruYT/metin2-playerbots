@@ -4492,9 +4492,10 @@ Four things the personalities changed that are easy to trip over later:
   five still standing for the service visits to cut; in sixteen minutes 1 349
   were opened, 14 columns freed and two chests refused. What stays in the bags
   is in full ones: 26 bots with two free cells or fewer held 601 of them.
-- **Gear for level one is worth a counter only at +8.** A weapon or body
-  armour with a level limit of one or none (Miecz, the starter plates) is
-  merchant scrap under `PLAYERBOT_SHOP_STARTER_GEAR_MIN_REFINE`
+- **Gear for level one is worth a counter only at +7, because +7 is never
+  scrap.** A weapon or body armour with a level limit of one or none (Miecz,
+  the starter plates) is merchant scrap under
+  `PLAYERBOT_SHOP_STARTER_GEAR_MIN_REFINE`
   (`GetPlayerBotLowGearMinRefine`), the rest of the gear under thirty under
   +6 as before; the two-line cap counts only pieces under
   `PLAYERBOT_SHOP_LOW_GEAR_CAP_BELOW_REFINE` (+7), so a +7 is listed past

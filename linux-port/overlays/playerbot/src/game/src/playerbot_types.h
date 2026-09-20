@@ -925,14 +925,20 @@ namespace
 	// already holds; the service visit takes any more off, one a visit.
 	const int PLAYERBOT_SHOP_LOW_GEAR_MAX_LINES = 2;
 	// Starter gear - a weapon or body armour of level one - goes up only from
-	// +8: "Miecz+6, bo to bron na 1 lv, wiec nic nie warta, raczej do handlarza,
-	// chyba ze bylaby +8 lub +9" (Tieru, 15 September); below that it is the
-	// merchant's. And the cap above counts only lines under
+	// +7: "Miecz+6, bo to bron na 1 lv, wiec nic nie warta, raczej do handlarza,
+	// chyba ze bylaby +8 lub +9" (Tieru, 15 September) made it +8, and the
+	// measurement of 20 September said what that cost - fifteen starter +7 a
+	// day handed to a merchant, because this one number is both thresholds:
+	// the counter takes a piece from it and the junk rule scraps everything
+	// under it, so +7 fell between them. "+7 to nigdy nie jest zlom" (Tieru,
+	// 20 September) is the rule that wins, and the only way to keep it without
+	// leaving a +7 in the bag for good is to let the counter have it. Below it
+	// the piece is still the merchant's. The cap above counts only lines under
 	// PLAYERBOT_SHOP_LOW_GEAR_CAP_BELOW_REFINE: a sura of twenty-five kept a
 	// Sejmitar+7, a Dlugi Miecz+6 and an armour+6 in its bag because a pair of
 	// boots+9 and a sword+7 already held the two places.
 	const int PLAYERBOT_SHOP_STARTER_GEAR_MAX_LEVEL = 1;
-	const BYTE PLAYERBOT_SHOP_STARTER_GEAR_MIN_REFINE = 8;
+	const BYTE PLAYERBOT_SHOP_STARTER_GEAR_MIN_REFINE = 7;
 	const BYTE PLAYERBOT_SHOP_LOW_GEAR_CAP_BELOW_REFINE = 7;
 	// Where it ranks: after the materials and the chests, before a scrap
 	// keeper's fodder - and under PLAYERBOT_SHOP_PRIZE_SCORE, so it never

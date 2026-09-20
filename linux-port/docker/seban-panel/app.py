@@ -896,7 +896,48 @@ def fishing_diagnostics():
             "log_matches": matches[-80:], "database_events": database_events}
 
 def read_rates():
+    """What the operator set, from the one place the engine reads it.
+
+    This used to prefer the spool's rates.status, which is only this panel's
+    echo of its own last request and m2-rates' echo of the one it carried out.
+    The classic panel's in-game RATES helper and the timed events write the
+    flags without touching that file, so it goes stale and this page then
+    showed - and on the next Save re-imposed - numbers the world had left
+    behind: measured on the test world on 20 September, the file said drop 150
+    / yang 120 against 200 / 200 in the flags ("jak ustawialem wczesniej raty u
+    tiera to u sebana narzucal poprzednie", NerrVoVy). On mt2009 the flags are
+    the truth; rates.status stays the truth on r40250, which has no flags and
+    whose m2-rates rewrites the tables itself.
+
+    m2_event_*_base is what the operator set while an event boosts the live
+    flag, so it wins where it is set - a Save during an event must not turn the
+    boost into the new normal.
+    """
     values = {name: 100 for name in RATE_NAMES}
+    if ENGINE_MT2009:
+        try:
+            wanted = []
+            for name, flags in MT2009_RATE_FLAGS.items():
+                wanted.append(flags[0])
+                wanted.append("m2_event_%s_base" % MT2009_RATE_EVENT_KIND[name])
+            live = {}
+            for row in rows("SELECT szName, lValue FROM player.quest WHERE dwPID=0 AND szName IN (%s)"
+                            % ",".join(["%s"] * len(wanted)), tuple(wanted)):
+                live[row["szName"]] = int(row["lValue"])
+            found = False
+            for name, flags in MT2009_RATE_FLAGS.items():
+                base = live.get("m2_event_%s_base" % MT2009_RATE_EVENT_KIND[name], 0)
+                current = live.get(flags[0], 0)
+                if base > 0:
+                    values[name] = base
+                    found = True
+                elif current > 0:
+                    values[name] = current
+                    found = True
+            if found:
+                return values
+        except (KeyError, TypeError, ValueError, pymysql.MySQLError):
+            values = {name: 100 for name in RATE_NAMES}
     status = read_rate_status()
     if all(str(status.get(name, "")).isdigit() for name in RATE_NAMES):
         return {name: int(status[name]) for name in RATE_NAMES}
@@ -1300,6 +1341,9 @@ MT2009_RATE_FLAGS = {
     "drop": ("mob_item", "mob_item_buyer"),
     "yang": ("mob_gold", "mob_gold_buyer"),
 }
+# The kind's name in the events' own base flags (playerbot_events.h), which
+# hold what the operator set while an event boosts the live one.
+MT2009_RATE_EVENT_KIND = {"exp": "exp", "drop": "drop", "yang": "yang"}
 
 
 def persist_rates_mt2009(values):
