@@ -1329,7 +1329,7 @@ namespace
 		// so the line says why.
 		if (bPersona && pParty && state.persona.bBagFull)
 		{
-			pParty->Quit(ch->GetPlayerID());
+			LeavePlayerBotParty(ch);
 			state.dwPartyExpireTime = 0;
 			sys_log(0, "PLAYERBOT_AI: left party, bag full pid=%u name=%s",
 					ch->GetPlayerID(), ch->GetName());
@@ -1341,13 +1341,28 @@ namespace
 		{
 			if (pParty)
 			{
-				pParty->Quit(ch->GetPlayerID());
+				LeavePlayerBotParty(ch);
 				sys_log(0, "PLAYERBOT_AI: left party outside party cohort pid=%u name=%s",
 						ch->GetPlayerID(), ch->GetName());
 			}
 			state.dwPartyExpireTime = 0;
 			state.dwNextPartyCheckTime = dwNow + number(60000, 180000);
 			return;
+		}
+
+		// A party of one is not a party, and every rule below reads it as one.
+		// The world arrives here full of them: the straggler radius takes the
+		// member out of a pair and the leader is left holding the record, which
+		// nothing in this pass ever looks at again (the leader skips the
+		// distance branch, `leader != ch` being false). Dissolve it and go on
+		// to the finder in the same check, so a bot stranded this way is back
+		// in the pool within a minute rather than for the rest of its life.
+		if (pParty && pParty->GetMemberCount() < 2)
+		{
+			sys_log(0, "PLAYERBOT_AI: dissolved a party of one pid=%u name=%s",
+					ch->GetPlayerID(), ch->GetName());
+			CPartyManager::instance().DeleteParty(pParty);
+			pParty = NULL;
 		}
 
 		if (pParty)
@@ -1362,7 +1377,7 @@ namespace
 			{
 				state.dwPartyExpireTime = 0;
 				state.dwNextPartyCheckTime = dwNow + number(60000, 180000); // 1-3 min solo before new party
-				pParty->Quit(ch->GetPlayerID());
+				LeavePlayerBotParty(ch);
 				sys_log(0, "PLAYERBOT_AI: left party after time expired (dynamic rotation) pid=%u name=%s",
 						ch->GetPlayerID(), ch->GetName());
 				return;
@@ -1388,7 +1403,7 @@ namespace
 				if (levelDelta > 6 || leader->GetMapIndex() != ch->GetMapIndex() ||
 						distToLeader > stragglerRadius)
 				{
-					pParty->Quit(ch->GetPlayerID());
+					LeavePlayerBotParty(ch);
 					state.dwNextPartyCheckTime = dwNow + number(30000, 90000);
 					sys_log(0, "PLAYERBOT_AI: left party due to distance/level delta pid=%u name=%s leader_pid=%u dist=%d delta=%d",
 							ch->GetPlayerID(), ch->GetName(), leader->GetPlayerID(), distToLeader, levelDelta);
@@ -2208,7 +2223,7 @@ namespace
 		if (ch->GetParty() && !IsPlayerBotHumanLedParty(ch->GetParty()) &&
 				!IsPlayerBotOnMercContract(ch->GetPlayerID()))
 		{
-			ch->GetParty()->Quit(ch->GetPlayerID());
+			LeavePlayerBotParty(ch);
 			state.dwPartyExpireTime = 0;
 			state.dwNextPartyCheckTime = dwNow + number(60000, 120000);
 		}

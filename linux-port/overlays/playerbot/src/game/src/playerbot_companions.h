@@ -334,9 +334,9 @@ namespace
 		LPCHARACTER client = FindPlayerBotMercPartner(c.clientPid, c.clientVid);
 		LPPARTY party = merc ? merc->GetParty() : NULL;
 		if (party && party->GetLeaderPID() == c.mercPid && !IsPlayerBotHumanLedParty(party))
-			party->Quit(c.mercPid);
+			LeavePlayerBotParty(merc);
 		else if (client && client->GetParty() && client->GetParty()->GetLeaderPID() == c.mercPid)
-			client->GetParty()->Quit(c.clientPid);
+			LeavePlayerBotParty(client);
 		TPlayerBotAIStateMap::iterator ms = s_mapPlayerBotAIStates.find(c.mercPid);
 		if (ms != s_mapPlayerBotAIStates.end())
 		{

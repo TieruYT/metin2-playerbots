@@ -955,7 +955,7 @@ namespace
 		// rescue, is still in it - the rescue after a Demon Tower warp left a
 		// player alone in his own party (sizowski, 14 September).
 		if (ch->GetParty() && !IsPlayerBotHumanLedParty(ch->GetParty()))
-			ch->GetParty()->Quit(ch->GetPlayerID());
+			LeavePlayerBotParty(ch);
 		state.dwTargetVID = 0;
 		ch->SetVictim(NULL);
 		ch->Stop();

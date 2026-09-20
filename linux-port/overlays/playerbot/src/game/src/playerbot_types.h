@@ -1654,6 +1654,34 @@ namespace
 	// high enough not to set off with a pack on a bot that is about to die.
 	const int PLAYERBOT_LURE_PLAYER_START_HP_PERCENT = 55;
 
+	// Leaving a party the way the engine leaves one.
+	//
+	// `CParty::Quit` takes the member out and leaves the party standing, so a
+	// party of two that loses one is a leader alone in a party of one -
+	// `GetParty()` still answers, `ManagePlayerBotParty` returns on the first
+	// line of its "already in a party" branch, and that bot never looks for
+	// another partner as long as it lives. `CInputMain`'s own handler never
+	// allows it: with two members, or when the leader is the one leaving, it
+	// calls `DeleteParty` instead, which is why a player can never be in a
+	// party of one. Measured on the test world before this: 78 bots in parties
+	// against 76 distinct leaders, four parties made in forty-five minutes and
+	// every one of them decayed within two minutes on the straggler radius -
+	// and the Archer's lure role, which needs three in a party, had therefore
+	// not run once in five hours.
+	bool LeavePlayerBotParty(LPCHARACTER ch)
+	{
+		if (!ch)
+			return false;
+		LPPARTY party = ch->GetParty();
+		if (!party)
+			return false;
+		if (party->GetMemberCount() <= 2 || party->GetLeaderPID() == ch->GetPlayerID())
+			CPartyManager::instance().DeleteParty(party);
+		else
+			party->Quit(ch->GetPlayerID());
+		return true;
+	}
+
 	const int PLAYERBOT_PARTY_CHALLENGE_MIN_MEMBERS = 3;
 	const int PLAYERBOT_PARTY_CHALLENGE_RADIUS = 3000;
 	const int PLAYERBOT_PARTY_READY_HP_PERCENT = 55;
