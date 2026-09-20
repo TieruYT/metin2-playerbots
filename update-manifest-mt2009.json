@@ -1,20 +1,20 @@
 {
   "schema": 1,
   "channel": "stable",
-  "publishedAt": "2026-09-20T15:28:26Z",
-  "statusMessage": "2.0.91 (serwer 2.0.91, klient bez zmian 2.0.22): druzyny botow byly w wiekszosci jednoosobowe i dlatego wygladaly, jakby ich nie bylo - gdy z pary wychodzil zwykly czlonek, drugi zostawal sam w \"druzynie\", ktorej kod dalej liczyl jako druzyne, wiec ten bot przestawal kogokolwiek szukac. Teraz boty wychodza z druzyny ta sama droga co gracz, a druzyna jednoosobowa jest rozwiazywana w minute; wraca tez lurowanie dla druzyn botow, bo kurs Lucznika potrzebuje trzech osob. Swieza instalacja nie wywala sie juz na pustym katalogu share/package - launcher tworzy go sam zamiast odsylac do instalatora r40250.",
+  "publishedAt": "2026-09-20T16:08:19Z",
+  "statusMessage": "2.0.92 (serwer 2.0.92, klient 2.0.23): gra mowi w osmiu jezykach - polski, angielski, niemiecki, hiszpanski, wloski, portugalski, rumunski i turecki. Jezyk wybiera sie w oknie konfiguracji przy logowaniu; zmiana wymaga ponownego uruchomienia klienta. Paczka jezykowa jest robota LOSTKA, my wstawilismy ja do naszego klienta i dolozylismy 281 angielskich napisow interfejsu. Po polsku zostaja nazwy NPC, tresci questow i nazwy przedmiotow - to jest baza i questy serwera, nie klient. ZAKTUALIZUJ TEZ KLIENTA (paczka urosla do 96 MB).",
   "server": {
-    "version": "2.0.91",
-    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.0.91/metin2-server-update-2.0.91.zip",
-    "sha256": "310835F8E9263795F94ABCA5AABB36238C0408C56ABDBF774A2046100E6C460C"
+    "version": "2.0.92",
+    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.0.92/metin2-server-update-2.0.92.zip",
+    "sha256": "12693B11788D93487F553EB277EBC1BAB6A26CB683C7BC09E4B1EF3BA3777334"
   },
   "support": {
     "contactUrl": "https://discord.gg/pt5tvnrN6",
     "uploadUrl": ""
   },
   "client": {
-    "version": "2.0.22",
-    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.0.90/metin2-client-update-2.0.22.zip",
-    "sha256": "80C00101EDC36085777B226144EE14CAA34C61CDE7EC90C9794B37FEC0B56B18"
+    "version": "2.0.23",
+    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.0.92/metin2-client-update-2.0.23.zip",
+    "sha256": "8177AE606483BEFE8D40BEC00ED39BF082D710DCE66E208FD176EA8CBDC2BF41"
   }
 }
