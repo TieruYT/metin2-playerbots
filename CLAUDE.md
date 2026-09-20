@@ -1134,6 +1134,53 @@ Four things the personalities changed that are easy to trip over later:
   test world has none. `PLAYERBOT_LURE: order` and `pack handed` are in the
   support bundle's grep list; the rest of the tag is not, because a course
   writes six to eight lines and the bundle keeps forty thousand.
+- **A party of two that loses one is a party the engine deletes.**
+  `CParty::Quit` takes the member out and leaves the party standing;
+  `P2PQuit` deletes it only when the leaver's role was LEADER, so that half
+  was always right and the other half never was. A plain member leaving a
+  pair left the other one holding a party of one: `GetParty()` still answers,
+  `ManagePlayerBotParty` returns on the first line of its "already in a party"
+  branch (the distance rule is skipped for the leader, `leader != ch` being
+  false), and that bot never looked for a partner again as long as it lived.
+  `CInputMain`'s own handler never allows it - at two members it calls
+  `DeleteParty` instead - which is why a player cannot be in a party of one
+  and nobody had ever seen this from the player's side. Measured on the test
+  world over two days: 94 to 2 519 `created party` lines an hour with almost as
+  many `left party due to distance` beside them (dist=10526..13922 -
+  `ChoosePlayerBotHuntingHub` reaches twenty kilometres), and **every** census
+  in that time reading `in_party` all but equal to `parties` - 143/143, 117/115,
+  69/68, 113/109. Ten minutes after the fix, on the same world: 33/24.
+  **Read that ratio knowing what the census counts.** `NotePlayerBotPartyCensus`
+  sits below the tick's own light/full split (`(pid + sweep) % 2`), so it sees
+  one half of the bots - 404 of 864 - and the two members of a party have
+  unrelated pids. A world of nothing but pairs therefore reads
+  (0.25*2 + 0.5*1) / 0.75 = **1.33**, not 2, and a world of nothing but
+  singletons reads exactly **1.00**. Before the fix it was 1.00 to 1.04: every
+  sampled party was one bot. After it, 1.375. So parties were made by the
+  hundred and at any instant nearly every one of them held exactly one bot -
+  the members churned through and the leaders piled up as singletons that only
+  a rotation timer, a map change or the watchdog could free. The Archer's lure
+  role, which needs three in a party, had not run once in five hours.
+  (Count the log lines per hourly file: the core rotates `syslog` into
+  `log/<date>/syslog.HH`, and a count over the live file alone is the count for
+  the minutes since the hour - which is how the first reading of this said four
+  an hour.)
+  `LeavePlayerBotParty` is the one way a bot leaves now, in all eight places,
+  and the party pass dissolves a party of one it finds so a world already full
+  of them recovers in a minute. Measure it as the census's `in_party` against
+  `parties`, against the 1.33 above and not against 2.
+- **An empty directory is the most fragile build input there is.**
+  `serverfiles/share/package` is empty on every install of both lines and the
+  game Dockerfile COPYs it all the same. Git cannot track an empty directory,
+  the full package carries it as one of twelve bare zip entries, and an
+  extraction that drops those leaves a tree whose build dies at "failed to
+  compute cache key". What the player got was the launcher refusing to prepare
+  the package and naming an r40250 archive nobody on the 2.x line has ever had
+  (dekri, 20 September, on 2.0.89). All three Windows paths that reach a build
+  make it rather than demand it (`Restore-M2EmptyGameContextDirs`, and
+  `start-server.ps1`'s own copy, which imports no module), and `update.sh` does
+  the same before compose. Before adding a directory to a build context, ask
+  whether it will ever hold a file.
 - **An order is a job, and every rule written for an idle bot has to be read
   again against it.** 2.0.89 shipped the person's order with the four rules
   that "exist to keep a bot from luring for nobody" given way to, and three
