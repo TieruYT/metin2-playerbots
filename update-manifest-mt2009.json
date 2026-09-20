@@ -1,12 +1,12 @@
 {
   "schema": 1,
   "channel": "stable",
-  "publishedAt": "2026-09-20T11:53:45Z",
-  "statusMessage": "2.0.88 (serwer 2.0.88, klient 2.0.21): nowy cennik Iwakury z 20 wrzesnia - ruszyl sie prawie kazdy numer, wiekszosc materialow o jakies siedemdziesiat procent, a receptury zielarskie maja cene po raz pierwszy. W kliencie wracaja nazwy osobowosci nad glowami botow (Grinder, Zdobywca, Handlarz...) - klient 2.0.20 ich nie znal i dlatego nic nie pokazywal - oraz poprawka Colide'a do Auto Lowow: odpaly ida po jednym, wiec silnik nie odrzuca trzech z czterech. Zaktualizuj takze klienta.",
+  "publishedAt": "2026-09-20T13:11:11Z",
+  "statusMessage": "2.0.89 (serwer 2.0.89, klient bez zmian 2.0.21): poproś ninję w swojej drużynie o lurowanie - napisz jej na priv \"luruj\", a potwory przyprowadzi i zrzuci na ciebie, nie na siebie; \"przestań lurować\" kończy. Raty mają jedno źródło prawdy: oba panele czytają to, czym gra naprawdę liczy, więc panel zaawansowany nie narzuca już starych liczb zapisanych gdzie indziej. Sprzęt na 1 lvl z +7 trafia na stragan zamiast do handlarza. Ciszej w logach błędów: bot nie prosi już o konia w chwili, w której silnik zawsze odmawia.",
   "server": {
-    "version": "2.0.88",
-    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.0.88/metin2-server-update-2.0.88.zip",
-    "sha256": "7E131B9BC92FCCE4865C3C3FCAAFB789E118A06A2748B6C6C797F417EEA8737F"
+    "version": "2.0.89",
+    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.0.89/metin2-server-update-2.0.89.zip",
+    "sha256": "B05B0137AF3FF3AF4BF2DEB204DE15028F2EBA47612CC11A861FC2A8D5C1BBAC"
   },
   "support": {
     "contactUrl": "https://discord.gg/pt5tvnrN6",
