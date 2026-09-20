@@ -21,6 +21,42 @@ every version here.
 
 Serwer 2.0.90, klient 2.0.22. Zawiera wszystko z 2.0.89.
 
+### Lurowanie na zlecenie: Ninja w końcu wychodzi po moby
+
+„Ninja zabija ich zamiast przynieść do mnie i pisze mu cały czas »Czekam żeby
+lurować dla nick«" (**marcinxboss**). Jedno i drugie to ten sam błąd: kurs nie
+mógł się zacząć, więc bot spadał do zwykłego zdobywania celu i zabijał to, co
+miał przyprowadzić.
+
+Trzy bramki zamykały go **na zawsze**, i wszystkie trzy są z czasów, gdy lurował
+tylko dla drużyny botów stojącej bezczynnie i czekającej na pakiet:
+
+- **„drużyna jest zajęta"** — kurs nie ruszał, gdy w pobliżu było więcej niż
+  trzy potwory na drużynie. Cztery moby na graczu stojącym na spocie to zwykła
+  niedziela. Ta zasada istnieje po to, żeby bot nie zasypał drużyny, która już
+  ma pełne ręce — ale ktoś, kto napisał „luruj", sam o to poprosił, a jak ma
+  dość, to napisze „przestań lurować".
+- **dziewięć dziesiątych życia** — przy graczu bot obrywa od tego, z czym gracz
+  walczy, więc ten próg nie otwierał się nigdy. Na zlecenie wystarczy 55%.
+- **„coś mnie goni"** — ta zostaje, bo odejście z paczką na plecach to jest
+  właśnie zgubiony lur. Ale teraz sama schodzi do zera, bo:
+
+**bot ze zleceniem nie poluje na własną rękę.** Tego nie mówiła żadna zasada,
+więc między kursami Ninja szła bić jak każdy inny bot — i już nie mogła wyruszyć,
+bo miała potwory na sobie. Obrona własna i pomoc osobie, dla której luruje,
+zostają bez zmian; znika chodzenie do potworów z własnej woli. Do kompletu: łuk
+zostaje w ręce na czas zlecenia (sztylet dobyty na jednego metina wyłączał cały
+kurs, bo lurowanie idzie z łuku).
+
+A gdy bot naprawdę na coś czeka, **mówi na co**: „Czekam, żeby lurować dla X
+(hp)", „(monsters_on_me)", „(no_bow)", „(safe_zone)". Poprzednia wersja
+powtarzała samo „Czekam" i nie dało się z tego nic zgłosić.
+
+Zastrzeżenie, bo na takie rzeczy zasługuje jasna odpowiedź: to jest skompilowane
+i przeczytane, ale **nie obejrzane w grze z żywym graczem** — nasz świat testowy
+nie ma ani jednego. Jeśli dalej będzie coś nie tak, słowo w nawiasie nad głową
+bota powie, co go blokuje.
+
 ### Świeża instalacja na Linuksie znów się buduje
 
 **Jeśli stawiałeś serwer od zera na VPS-ie albo mini PC i nic nie wstawało —
