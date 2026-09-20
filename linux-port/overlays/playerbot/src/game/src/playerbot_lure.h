@@ -185,13 +185,26 @@ namespace
 	// it, and clear of the fight already in progress - so it asks its own
 	// question. What is worth pulling once found is still the shared combat
 	// policy's answer, not this one's.
+	// The window a course looks through. Two roles ask opposite questions of
+	// the same finder - "a pack nobody has reached" and "whatever stands round
+	// this person" - so the numbers are an argument rather than a constant.
+	struct TPlayerBotLureSearch
+	{
+		int iMinDistance;
+		int iMaxDistance;
+		int iAnchorClearance;
+		int iSeparation;
+		int iMaxLevel;
+	};
+
 	class CFindPlayerBotLurePack
 	{
 		public:
 			CFindPlayerBotLurePack(LPCHARACTER owner, long anchorX, long anchorY,
-					const std::vector<PIXEL_POSITION>& taken) :
+					const std::vector<PIXEL_POSITION>& taken,
+					const TPlayerBotLureSearch& search) :
 				m_owner(owner), m_anchorX(anchorX), m_anchorY(anchorY),
-				m_taken(taken), m_bestVID(0), m_bestScore(INT_MAX),
+				m_taken(taken), m_search(search), m_bestVID(0), m_bestScore(INT_MAX),
 				m_seen(0), m_busy(0), m_level(0), m_tooClose(0), m_tooFar(0), m_anchor(0),
 				m_reserved(0), m_claimed(0), m_unreachable(0)
 			{
@@ -218,7 +231,7 @@ namespace
 					++m_busy;
 					return true;
 				}
-				if (candidate->GetLevel() > m_owner->GetLevel() + PLAYERBOT_LURE_MAX_LEVEL_OVER)
+				if ((int)candidate->GetLevel() > m_search.iMaxLevel)
 				{
 					++m_level;
 					return true;
@@ -230,18 +243,18 @@ namespace
 				// one number cannot say which. The first course run after the
 				// party threshold was lowered rejected 114 of 120 monsters here
 				// and the log could only say "range".
-				if (fromMe < PLAYERBOT_LURE_MIN_PACK_DISTANCE)
+				if (fromMe < m_search.iMinDistance)
 				{
 					++m_tooClose;
 					return true;
 				}
-				if (fromMe > PLAYERBOT_LURE_MAX_PACK_DISTANCE)
+				if (fromMe > m_search.iMaxDistance)
 				{
 					++m_tooFar;
 					return true;
 				}
 				if (DISTANCE_APPROX(candidate->GetX() - m_anchorX,
-						candidate->GetY() - m_anchorY) < PLAYERBOT_LURE_ANCHOR_CLEARANCE)
+						candidate->GetY() - m_anchorY) < m_search.iAnchorClearance)
 				{
 					++m_anchor;
 					return true;
@@ -249,8 +262,7 @@ namespace
 				for (size_t i = 0; i < m_taken.size(); ++i)
 				{
 					if (DISTANCE_APPROX(candidate->GetX() - m_taken[i].x,
-							candidate->GetY() - m_taken[i].y) <
-							PLAYERBOT_LURE_GROUP_SEPARATION)
+							candidate->GetY() - m_taken[i].y) < m_search.iSeparation)
 					{
 						++m_reserved;
 						return true;
@@ -297,6 +309,7 @@ namespace
 			long m_anchorX;
 			long m_anchorY;
 			const std::vector<PIXEL_POSITION>& m_taken;
+			const TPlayerBotLureSearch& m_search;
 			DWORD m_bestVID;
 			int m_bestScore;
 			int m_seen;
@@ -310,20 +323,46 @@ namespace
 			int m_unreachable;
 	};
 
+	// The window for a course, by who asked for it. The commander is the person
+	// on an order and NULL for the bots' own role.
+	TPlayerBotLureSearch GetPlayerBotLureSearch(LPCHARACTER ch, LPCHARACTER commander)
+	{
+		TPlayerBotLureSearch search;
+		search.iMaxDistance = PLAYERBOT_LURE_MAX_PACK_DISTANCE;
+		if (commander)
+		{
+			search.iMinDistance = PLAYERBOT_LURE_PLAYER_MIN_PACK_DISTANCE;
+			search.iAnchorClearance = PLAYERBOT_LURE_PLAYER_ANCHOR_CLEARANCE;
+			search.iSeparation = PLAYERBOT_LURE_PLAYER_GROUP_SEPARATION;
+			search.iMaxLevel = (int)std::max(ch->GetLevel(), commander->GetLevel()) +
+					PLAYERBOT_LURE_PLAYER_MAX_LEVEL_OVER;
+		}
+		else
+		{
+			search.iMinDistance = PLAYERBOT_LURE_MIN_PACK_DISTANCE;
+			search.iAnchorClearance = PLAYERBOT_LURE_ANCHOR_CLEARANCE;
+			search.iSeparation = PLAYERBOT_LURE_GROUP_SEPARATION;
+			search.iMaxLevel = (int)ch->GetLevel() + PLAYERBOT_LURE_MAX_LEVEL_OVER;
+		}
+		return search;
+	}
+
 	LPCHARACTER FindPlayerBotLurePack(LPCHARACTER ch, long anchorX, long anchorY,
-			const std::vector<PIXEL_POSITION>& taken, DWORD dwNow)
+			const std::vector<PIXEL_POSITION>& taken,
+			const TPlayerBotLureSearch& search, DWORD dwNow)
 	{
 		if (!ch || !ch->GetSectree())
 			return NULL;
-		CFindPlayerBotLurePack finder(ch, anchorX, anchorY, taken);
+		CFindPlayerBotLurePack finder(ch, anchorX, anchorY, taken, search);
 		ch->GetSectree()->ForEachAround(finder);
 		if (finder.GetBestVID() == 0)
 		{
 			char why[192];
 			finder.Explain(why, sizeof(why));
 			PlayerBotLogThrottled("lure_no_pack", dwNow,
-					"PLAYERBOT_LURE: no pack pid=%u name=%s map=%ld %s",
-					ch->GetPlayerID(), ch->GetName(), ch->GetMapIndex(), why);
+					"PLAYERBOT_LURE: no pack pid=%u name=%s map=%ld level=%u max_level=%d min=%d %s",
+					ch->GetPlayerID(), ch->GetName(), ch->GetMapIndex(),
+					ch->GetLevel(), search.iMaxLevel, search.iMinDistance, why);
 			return NULL;
 		}
 		return CHARACTER_MANAGER::instance().Find(finder.GetBestVID());
@@ -879,9 +918,14 @@ namespace
 			const int earned = humanPresent
 					? 0 : std::min((int)state.bLureGoodCourses / PLAYERBOT_LURE_GROWTH_STREAK,
 							PLAYERBOT_LURE_MAX_GROUPS - PLAYERBOT_LURE_FIRST_GROUPS);
-			state.bLureGroupsPlanned = (BYTE)(PLAYERBOT_LURE_FIRST_GROUPS + earned);
-			state.bLureBudget = (BYTE)std::min(
-					PLAYERBOT_LURE_FIRST_BUDGET + earned * 3, PLAYERBOT_LURE_MAX_BUDGET);
+			// A person asked for the monsters round them, so the plan is the
+			// gathering rather than one fetched pack; it is bounded by the
+			// gather clock, the health gate and the budget like any other.
+			state.bLureGroupsPlanned = (BYTE)(forPlayer ? PLAYERBOT_LURE_PLAYER_GROUPS
+					: PLAYERBOT_LURE_FIRST_GROUPS + earned);
+			state.bLureBudget = (BYTE)(forPlayer ? PLAYERBOT_LURE_PLAYER_BUDGET
+					: std::min(PLAYERBOT_LURE_FIRST_BUDGET + earned * 3,
+							PLAYERBOT_LURE_MAX_BUDGET));
 			state.bLureGroupsTagged = 0;
 			state.bLureTagAttempts = 0;
 			state.iLureDelivered = 0;
@@ -984,9 +1028,12 @@ namespace
 					stop = "gather_time";
 				else if (fromAnchor > PLAYERBOT_LURE_MAX_COURSE_RANGE)
 					stop = "too_far";
-				else if (hpPercent < PLAYERBOT_LURE_BREAK_HP_PERCENT ||
-						state.iLureStartHPPercent - hpPercent >=
-							PLAYERBOT_LURE_MAX_HP_LOSS_PERCENT)
+				else if (hpPercent < (forPlayer
+								? PLAYERBOT_LURE_PLAYER_BREAK_HP_PERCENT
+								: PLAYERBOT_LURE_BREAK_HP_PERCENT) ||
+						state.iLureStartHPPercent - hpPercent >= (forPlayer
+								? PLAYERBOT_LURE_PLAYER_MAX_HP_LOSS_PERCENT
+								: PLAYERBOT_LURE_MAX_HP_LOSS_PERCENT))
 					stop = "low_hp";
 				else if (state.bLureGroupsTagged >= state.bLureGroupsPlanned ||
 						state.iLureChasing >= (int)state.bLureBudget)
@@ -1081,8 +1128,11 @@ namespace
 				{
 					// A pack nobody needs is not pulled just because a course
 					// is running: the shared combat policy answers here too.
+					const TPlayerBotLureSearch search =
+							GetPlayerBotLureSearch(ch, commander);
 					target = FindPlayerBotLurePack(ch, state.lLureAnchorX,
-							state.lLureAnchorY, state.vecMultiPullCenters, dwNow);
+							state.lLureAnchorY, state.vecMultiPullCenters,
+							search, dwNow);
 					if (target && !IsPlayerBotTargetWorthNow(ch, target, state, dwNow))
 						target = NULL;
 					if (!target)

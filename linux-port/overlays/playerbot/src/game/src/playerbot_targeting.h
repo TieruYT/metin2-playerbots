@@ -818,6 +818,16 @@ namespace
 		else
 			context.mode = playerbot_combat_value::OBJECTIVES;
 
+		// A course that is already running is choosing its pack, and the mode
+		// above is exactly what would refuse it. Two halves, both needed: only
+		// on a person's order, because that order is what put the bot in
+		// COMMITTED_TRAVEL in the first place and the bots' own role never
+		// leaves OBJECTIVES; and only while a course is actually running, so
+		// that between courses the order still stops the Archer hunting what it
+		// was asked to fetch.
+		context.lureCourseTarget = state.dwLurePlayerPID != 0 &&
+				state.bLureStage != LURE_STAGE_NONE;
+
 		// One defence episode per bot, not one per attacker.
 		//
 		// The first draft let a different attacker start a fresh episode

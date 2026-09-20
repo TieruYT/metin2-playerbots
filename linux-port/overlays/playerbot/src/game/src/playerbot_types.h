@@ -1653,6 +1653,38 @@ namespace
 	// what the health is actually for. Low enough to survive the return leg,
 	// high enough not to set off with a pack on a bot that is about to die.
 	const int PLAYERBOT_LURE_PLAYER_START_HP_PERCENT = 55;
+	// What a person means by "luruj", measured against what the bots' own role
+	// means by it. That role fetches a pack the party has not reached, so it
+	// starts beyond bow range and clear of the ground the party is fighting
+	// over; a person standing on a spot wants the monsters *round them*
+	// gathered onto them, and every one of those three windows refused exactly
+	// that - on l0st3k's screenshot of 20 September the bot stood beside him
+	// with monsters a few hundred units away and the whole field was
+	// "too_close" and "anchor". So on an order there is no minimum and no
+	// clearance, the groups already taken only reserve the ground right round
+	// them, and the plan is bigger because gathering is the job rather than
+	// one trip.
+	const int PLAYERBOT_LURE_PLAYER_MIN_PACK_DISTANCE = 0;
+	const int PLAYERBOT_LURE_PLAYER_ANCHOR_CLEARANCE = 0;
+	const int PLAYERBOT_LURE_PLAYER_GROUP_SEPARATION = 250;
+	const int PLAYERBOT_LURE_PLAYER_GROUPS = 5;
+	const int PLAYERBOT_LURE_PLAYER_BUDGET = 12;
+	// And the level window is the person's, not the bot's. The bots' own role
+	// judges by the Archer because the Archer's party will fight what it
+	// brings; on an order the person fights it, and a level-18 companion beside
+	// a level-33 player refused every monster on the map for being eight levels
+	// over *itself*. The bot only has to survive the walk back, which is what
+	// the health gate and the leash are for.
+	const int PLAYERBOT_LURE_PLAYER_MAX_LEVEL_OVER = 3;
+	// And the two that end a gathering, which have to sit under the one that
+	// opens it. 2.0.90 dropped the opening gate to 55% for an order and left
+	// the break at the bots' own 70%, so a bot between the two opened a course
+	// and ended it "low_hp" on the same tick, every few seconds, for as long as
+	// the order stood. The loss window is wider for the same reason the level
+	// window is: gathering a spot means standing in it while the pack turns
+	// round, and 12% is one hit.
+	const int PLAYERBOT_LURE_PLAYER_BREAK_HP_PERCENT = 35;
+	const int PLAYERBOT_LURE_PLAYER_MAX_HP_LOSS_PERCENT = 30;
 
 	// Leaving a party the way the engine leaves one.
 	//

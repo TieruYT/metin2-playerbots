@@ -31,7 +31,7 @@ enum Reason {
     REJECT_NO_EXP_EVIDENCE, REJECT_ZERO_EXP, REJECT_LOW_EXP,
     ALLOW_SELF_DEFENSE, ALLOW_PARTY_DEFENSE, ALLOW_QUEST,
     ALLOW_MATERIAL, ALLOW_EQUIPMENT, ALLOW_EXP,
-    REJECT_RESIDENCE_POLICY, REJECT_OUTGROWN_PREY
+    REJECT_RESIDENCE_POLICY, REJECT_OUTGROWN_PREY, ALLOW_LURE
 };
 
 struct Policy {
@@ -54,6 +54,13 @@ struct Context {
     bool activeQuestTarget;
     bool activeMaterialTarget;
     bool activeEquipmentTarget;
+    // The pack a lure course is walking out to tag. A person's standing order
+    // puts the bot in COMMITTED_TRAVEL so it stops grinding between courses,
+    // and that refused the very monsters the course exists to fetch: the order
+    // was taken, "Juz dla ciebie luruje" was said, and every course ended
+    // "no_pack" a tick later while the bot stood beside the person (l0st3k,
+    // 20 September). What an errand mode names is not what it may refuse.
+    bool lureCourseTarget;
     // Obtain from the real server's EXP rules, not a copied level table.
     bool expEvidenceKnown;
     int levelExpPercent;
@@ -68,7 +75,8 @@ struct Context {
     Context() : baseEligible(false), mode(OBJECTIVES),
         boundedSelfDefense(false), boundedPartyDefense(false),
         activeQuestTarget(false), activeMaterialTarget(false),
-        activeEquipmentTarget(false), expEvidenceKnown(false),
+        activeEquipmentTarget(false), lureCourseTarget(false),
+        expEvidenceKnown(false),
         levelExpPercent(0), outgrownPrey(false), canReceiveExp(false) {}
 };
 
@@ -83,6 +91,9 @@ inline Decision Evaluate(const Context& c, const Policy& p = Policy()) {
     if (c.mode == RETREAT) return Decision(false, REJECT_RETREAT);
     if (c.boundedSelfDefense) return Decision(true, ALLOW_SELF_DEFENSE);
     if (c.boundedPartyDefense) return Decision(true, ALLOW_PARTY_DEFENSE);
+    // Under defence and over the errand modes: fetching the pack IS the
+    // errand, and a bot saving its own life still does not stop to fetch one.
+    if (c.lureCourseTarget) return Decision(true, ALLOW_LURE);
     if (c.mode == COMMITTED_TRAVEL)
         return Decision(false, REJECT_COMMITTED_TRAVEL);
     if (c.activeQuestTarget) return Decision(true, ALLOW_QUEST);
@@ -118,6 +129,7 @@ inline const char* ReasonName(Reason r) {
         case ALLOW_EXP: return "exp";
         case REJECT_RESIDENCE_POLICY: return "residence_policy";
         case REJECT_OUTGROWN_PREY: return "outgrown_prey";
+        case ALLOW_LURE: return "lure_course";
     }
     return "unknown";
 }
