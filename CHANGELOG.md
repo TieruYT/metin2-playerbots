@@ -17,6 +17,74 @@ every version here.
 
 ---
 
+## 2.0.89 — 2026-09-20
+
+Serwer 2.0.89, klient bez zmian (2.0.21). Zawiera wszystko z 2.0.88.
+
+### Poproś ninję o lurowanie
+
+Bot z łukiem w twojej drużynie przyjmuje teraz dwie komendy **na priv**:
+
+- **„luruj"** — bierze zlecenie (rozumie też „lur", „pull", „przyciągnij",
+  „ciągnij")
+- **„przestań lurować"** — oddaje je (albo „koniec", „dość", „stop")
+
+Kiedy zlecenie stoi, kurs jest twój, a **paczka ląduje na tobie, nie na bocie**.
+To jedyne miejsce w całym lurowaniu, które rusza agro silnika — kiedy boty
+lurują dla siebie, potwory trzeba odbić walką — i robi to dwoma wywołaniami
+silnika w kolejności, która się trzyma: bot oddaje ci potwora z większym agro, niż zdążył
+zarobić strzałami, a potem odwraca go na ciebie. Masz około trzech sekund na
+pierwsze uderzenia, zanim silnik znów zacznie liczyć agro normalnie.
+
+Ustępują tylko te reguły, które istnieją po to, żeby bot nie lurował dla nikogo:
+trzech w drużynie → dwóch (para to drużyna), odbiorcą może być człowiek, znika
+wymóg mapy frontierowej, a przerwa między kursami spada z 20-50 s do 4-9 s.
+Próg życia, strefa bezpieczeństwa i „czy ta walka jest warta" zostają.
+
+Bot odmawia konkretnie: „Najpierw zaproś mnie do drużyny", „Nie mam teraz łuku
+w ręce", „Jesteśmy w strefie bezpieczeństwa — wyjdź na łowisko". Nad jego głową
+i w panelu widać, **dla kogo** luruje.
+
+### Raty: jedna prawda dla obu paneli
+
+„Jak ustawiałem wcześniej raty u tiera, to u sebana narzucał poprzednie"
+(NerrVoVy) i „ustawiłem 10000%, a boty działają jakby miały x3/5" (marcol_) to
+było to samo.
+
+Rata to **flaga zdarzenia** w bazie — wszystko inne to jej kopie. Flagi
+zapisują cztery rzeczy (oba panele, pomocnik w grze, eventy czasowe) i nie
+wszystkie odświeżają każdą kopię. Panel zaawansowany czytał plik ze spoola jako
+pierwszy, a ten się rozjeżdżał: na świecie testowym mówił drop 150 / yang 120,
+kiedy świat naprawdę chodził na 200 / 200 — i w chwili kliknięcia „Zapisz"
+wpisałby te stare liczby jako nowe raty.
+
+Oba panele czytają teraz flagi. W trakcie eventu strona pokazuje **twoje**
+ustawienie, nie podbicie, więc zapis podczas eventu nie zamieni podbicia w nową
+normę.
+
+### +7 nigdy nie jest złomem, sprzęt startowy też
+
+Jedna liczba była dwoma progami naraz: od ilu stragan bierze przedmiot i
+poniżej ilu handlarz go skupuje. Dla broni i zbroi na 1 lvl próg wynosił +8, więc
++7 wpadał między nie i szedł do handlarza — kilkanaście sztuk dziennie. Teraz +7
+trafia na stragan; do handlarza idzie tylko +4 do +6.
+
+### Ciszej w logach, i jedna prośba, której silnik nigdy nie spełniał
+
+Bot prosił o dosiadanie konia w chwilach, w których silnik zawsze odmawiał —
+przy otwartym straganie, przy magazynie, w sklepie z przedmiotami, przy
+warzeniu mikstur. Tysiące linii błędu dziennie, a koń był w porządku. Teraz bot
+pyta o to zawczasu i po prostu czeka.
+
+Audyt siatki plecaka pisał do logu błędów przy każdym sortowaniu, także wtedy,
+gdy niczego nie zepsuł: 2285 przebiegów na 1002 plecakach w ciągu dnia i ani
+jednego, który skończył gorzej, niż zaczął. Pisze teraz tylko wtedy, gdy
+naprawdę coś się pogorszyło.
+
+Support bundle dostaje mniej śmieci, a prawdziwe błędy przestają w nich ginąć.
+
+---
+
 ## 2.0.88 — 2026-09-20
 
 Serwer 2.0.88, klient 2.0.21. Zawiera wszystko z 2.0.87.
