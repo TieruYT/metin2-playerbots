@@ -13,6 +13,12 @@ import unittest
 
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)),
                                 '..', 'linux-port-mt2009', 'client-root'))
+# The module asks the engine which language the client runs in, to show the
+# personality names in it (client 2.0.23). Polish here, so the values below
+# are the ones an ordinary Polish client draws.
+_setting = types.ModuleType('systemSetting')
+_setting.GetLanguage = lambda: 'pl'
+sys.modules['systemSetting'] = _setting
 import playerbot_status_tail as status
 
 
