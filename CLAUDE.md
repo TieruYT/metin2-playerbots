@@ -1134,6 +1134,47 @@ Four things the personalities changed that are easy to trip over later:
   test world has none. `PLAYERBOT_LURE: order` and `pack handed` are in the
   support bundle's grep list; the rest of the tag is not, because a course
   writes six to eight lines and the bundle keeps forty thousand.
+- **Somebody else's client pack is a superset until it is measured.**
+  l0st3k's multilanguage pack (20 September) is seven new locale directories
+  beside pl and en, and the whole of it went in - but only after three
+  measurements, and each one decided something. **All 762 files of our own
+  locale pack are byte-identical inside his**, so nothing of ours is lost (the
+  character-select background of client 2.0.9, the loading logos, the rules),
+  which is what made taking his `locale.index`/`locale.data` whole the safe
+  move. **His root was built on an older client of ours** - our published
+  2.0.22 differs from his base in `shoppricepump.py`, `uiautohunt.py` and
+  `playerbot_status_tail.py` - so from his root only `configmain.py` was taken
+  (the language list, 2 replacements), and with it the auto-hunt behaviour
+  change he had made along the way stayed out. And **our own exe already
+  exports `GetLanguage`**, so the multilanguage needed no new binary: the
+  machinery was always there and what was missing was the locale data and a
+  picker with more than two rows. Check all three before merging any client
+  pack somebody sends: what of ours it drops, what of ours it rewinds, and what
+  it needs from the exe.
+- **A language overlay belongs after the locale files, and its defaults keep
+  everybody else's text.** Codex's English interface is `english_gui.py` -
+  two dicts applied over the loaded namespaces in `localeinfo.py` and
+  `uiscriptlocale.py`, and only while `systemSetting.GetLanguage()` is "en".
+  That is what makes it safe: EN's own `locale_interface.txt` is missing 213 of
+  PL's keys and `locale_game.txt` 676, and the loader reads PL first, so a
+  missing key is Polish text rather than a traceback - the overlay then covers
+  all 144 of the missing interface keys the scripts actually use. Strings that
+  stood hardcoded in the scripts move to keys with `globals().setdefault(key,
+  '<the Polish text>')`, so DE/ES/IT/PT/RO/TR read exactly what they read
+  before. `tests/client_locale_loader_test.py` runs the real loaders with the
+  engine stubbed and asserts both halves: English wins for "en", and no string
+  value moved for PL/DE/TR.
+- **An edit of ours that changes its own output cannot be idempotent against
+  our own published root.** `clientrootify.py` renders from the published root
+  and skips an edit whose `new` it already finds. Change what an insertion
+  produces - here three Polish literals of ours became locale keys - and `new`
+  is not there yet while `old` (the stock anchor) was eaten by the previous
+  render, so the run dies. A pair may now be marked optional (a third element):
+  it migrates text one of our own earlier edits put there, and is silent both
+  in a pristine stock root and in one already migrated. And `EDITS` is a plain
+  dict, so **a second entry for a file silently replaces the first** - which is
+  how a `uisystem.py` edit went missing for one render until the file came out
+  the same size twice.
 - **A party of two that loses one is a party the engine deletes.**
   `CParty::Quit` takes the member out and leaves the party standing;
   `P2PQuit` deletes it only when the leaver's role was LEADER, so that half
