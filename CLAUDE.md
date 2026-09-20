@@ -5902,6 +5902,29 @@ Four things the personalities changed that are easy to trip over later:
   package is assembled by unpacking the **published** update zip over the deploy
   tree, never by trusting a rebuild to reproduce it; compare the two file by
   file before shipping, the way `scratchpad/player_zip_2071.py` does.
+- **A clean HEAD export is not a package, and the packager does not fall back.**
+  A 2.x update package is built from `git archive HEAD` - that is what keeps the
+  gitignored 1.x staging out of it - but the file list names 126 entries and 7
+  of them git does not track: the staged engine tree
+  (`linux-port-mt2009/docker/game/src/server/{common,db,game,libthecore}`) and
+  the panel's build context (`linux-port/docker/panel/{app,schema,bin}`).
+  `New-M2UpdatePackage.ps1` **throws** on the first one it cannot find
+  ("Listed file does not exist") - an earlier note here said it falls back to
+  the `files/` copy, and it does not. So the export is filled from the working
+  tree afterwards, copying **only what the export lacks** (a file already there
+  came from HEAD and is the one that must ship), the staged
+  `playerbot_*` are overwritten with HEAD's overlay, and
+  `linux-port/docker/panel/app/admin_panel.py` is `files/admin_panel.py`
+  (1 072 542 bytes for 2.0.93 - the number to check, because the 1.x staging is
+  smaller). `scratchpad/fill_export_2093.py` of session 82d3ab90 is the shape;
+  verify the built zip by reading files out of it, never by its size alone.
+- **`check-release-covers-changes.py` reads the 1.x list only.** Its `LIST` is
+  `launcher/server-update-files.txt`, so on a 2.x release it reports
+  `linux-port-mt2009/VERSION` as "NIE DOJADA DO GRACZA" although that path is
+  line 61 of `server-update-files.mt2009.txt`. The manifest is the other
+  standing false positive: the launcher fetches it from GitHub, so it never
+  travels in a package. Check both by hand against the mt2009 list before
+  believing the gate, or fix the gate to take the engine.
 - **A development purchase is a quantity, and the trip to make it is a
   share.** `playerbot_progression_needs.h` (Codex, 18 September) counts what a
   bot is short of for its own progress - books of a skill at Master up to
