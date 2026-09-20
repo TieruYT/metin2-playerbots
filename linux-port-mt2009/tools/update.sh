@@ -334,6 +334,17 @@ add_missing_env_keys() {
 # Linux install built from the package alone stopped at "/schema: not found"
 # and the whole compose build was cancelled with it (DUDU's VPS, 18 September).
 # The same list as the launcher's; `sh update.sh stage' runs it alone.
+restore_empty_context_dirs() {
+    # share/package is empty on every install of both lines and the game
+    # Dockerfile COPYs it all the same, so a tree whose unpacking dropped the
+    # bare directory entry - git cannot carry one either - fails the build at
+    # "failed to compute cache key" (dekri, 20 September, on Windows). Make it
+    # rather than let the build die over a directory with nothing in it.
+    for d in "$COMPOSE_DIR/game/src/serverfiles/share/package"; do
+        [ -d "$d" ] || mkdir -p "$d" 2>/dev/null || true
+    done
+}
+
 stage_panel_context() {
     _panel="$COMPOSE_DIR/panel"
     [ -d "$_panel" ] || return 0
@@ -389,6 +400,7 @@ run_update() {
     migrate_world_layout
     # Before compose, because a published port range only changes at a recreate.
     sync_channel_ports
+    restore_empty_context_dirs
     stage_panel_context || { fail "the panel's build context could not be staged from files/"; return 1; }
     step "building and starting the new version (docker compose up -d --build)"
     # By hand the build talks to the terminal; under the panel it goes to the

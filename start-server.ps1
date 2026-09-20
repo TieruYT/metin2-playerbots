@@ -1214,6 +1214,15 @@ if ((Test-Path -LiteralPath $overlaySource -PathType Container) -and
 #
 # So say it here, once, in words, before Docker gets a chance to say it badly.
 $gameContext = Join-Path $PSScriptRoot 'linux-port\docker\game\src'
+# An empty directory is the one build input a package cannot be relied on to
+# deliver - git does not track one and an extraction tool may drop the bare
+# zip entry - and share\package is empty on every install of both lines. Make
+# it rather than refuse over it (Restore-M2EmptyGameContextDirs in the module
+# says the same; this script imports no module and carries its own copy).
+$emptyByDesign = Join-Path $gameContext 'serverfiles\share\package'
+if (-not (Test-Path -LiteralPath $emptyByDesign)) {
+    try { New-Item -ItemType Directory -Path $emptyByDesign -Force -ErrorAction Stop | Out-Null } catch { }
+}
 # Per engine, the same list as Get-M2RequiredGameContext in the module:
 # mt2009 keeps its protos in the database (no share\conf) and its
 # dependency script one level up, in game\.

@@ -1504,6 +1504,9 @@ function Install-Or-Prepare {
     # the installer through Install in GUI did not restore the sources" - it
     # could not have, this is not the installer. Say which it is.
     $gameContext = Join-Path $root 'linux-port\docker\game\src'
+    foreach ($made in @(Restore-M2EmptyGameContextDirs -ServerRoot $root)) {
+        Write-LocalLog ("Odtworzono pusty katalog budowy: " + $made)
+    }
     $requiredContext = @(Get-M2RequiredGameContext -ServerRoot $root)
     $missingContext = @($requiredContext | Where-Object { -not (Test-Path -LiteralPath (Join-Path $gameContext $_)) })
     # The database dumps are the other half of what the installer takes out

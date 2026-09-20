@@ -1493,6 +1493,33 @@ function Get-M2RequiredSqlDumps {
     return @('account', 'common', 'player', 'log', 'hotbackup')
 }
 
+function Restore-M2EmptyGameContextDirs {
+    # The build inputs that are empty directories on every install of both
+    # lines, and are therefore the most fragile thing a package can carry:
+    # git cannot track an empty directory at all, a zip holds it as a bare
+    # entry (twelve of them in the whole full package) and more than one
+    # extraction tool drops those. The game Dockerfile COPYs
+    # src/serverfiles/share/package all the same, so without it the build dies
+    # at "failed to compute cache key" - and until now the launcher refused
+    # first and told the player to re-run the r40250 installer, which on the
+    # 2.x line is a package they have never had (dekri, 20 September).
+    # Nothing is ever in these, so make them rather than demand them.
+    param([Parameter(Mandatory = $true)][string]$ServerRoot)
+    $made = @()
+    foreach ($rel in @('linux-port\docker\game\src\serverfiles\share\package')) {
+        $full = Join-Path $ServerRoot $rel
+        if (Test-Path -LiteralPath $full) { continue }
+        try {
+            New-Item -ItemType Directory -Path $full -Force -ErrorAction Stop | Out-Null
+            $made += $rel
+        } catch {
+            # A folder we cannot create is a folder the check below will name,
+            # which is the honest outcome.
+        }
+    }
+    return $made
+}
+
 function Get-M2RequiredGameContext {
     # What linux-port\docker\game\src has to hold for the image to build,
     # relative to it: the modules the Dockerfile COPYs and the share
@@ -2075,6 +2102,7 @@ Export-ModuleMember -Function @(
     'Get-M2SiblingClientExecutable',
     'Get-M2RequiredSqlDumps',
     'Get-M2RequiredGameContext',
+    'Restore-M2EmptyGameContextDirs',
     'Test-M2DockerRunning',
     'Sync-M2PlayerbotOverlay',
     'Set-M2PlayerbotsVersionEnvironment',
