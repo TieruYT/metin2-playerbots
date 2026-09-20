@@ -1,12 +1,12 @@
 {
   "schema": 1,
   "channel": "stable",
-  "publishedAt": "2026-09-20T14:29:58Z",
-  "statusMessage": "2.0.90 (serwer 2.0.90, klient 2.0.22): ninja ze zleceniem \"luruj\" w koncu wychodzi po moby zamiast je zabijac - trzy bramki pisane dla druzyny botow zamykaly kurs na zawsze przy graczu stojacym na spocie, a bot ze zleceniem nie poluje juz na wlasna reke; gdy na cos czeka, mowi na co. Swieza instalacja na Linuksie znow sie buduje: caly build przewracal sie na pliku, ktory istnial tylko na maszynach, gdzie kiedys stawiano stara linie. Zmiana cen hurtem w sklepie (Ctrl + prawy) powtarza to, co nie weszlo. Liczba botow per krolestwo otwiera sie na rownym podziale, nie na zerach. Zaktualizuj tez klienta.",
+  "publishedAt": "2026-09-20T15:28:26Z",
+  "statusMessage": "2.0.91 (serwer 2.0.91, klient bez zmian 2.0.22): druzyny botow byly w wiekszosci jednoosobowe i dlatego wygladaly, jakby ich nie bylo - gdy z pary wychodzil zwykly czlonek, drugi zostawal sam w \"druzynie\", ktorej kod dalej liczyl jako druzyne, wiec ten bot przestawal kogokolwiek szukac. Teraz boty wychodza z druzyny ta sama droga co gracz, a druzyna jednoosobowa jest rozwiazywana w minute; wraca tez lurowanie dla druzyn botow, bo kurs Lucznika potrzebuje trzech osob. Swieza instalacja nie wywala sie juz na pustym katalogu share/package - launcher tworzy go sam zamiast odsylac do instalatora r40250.",
   "server": {
-    "version": "2.0.90",
-    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.0.90/metin2-server-update-2.0.90.zip",
-    "sha256": "A16BA2FFEC47C4C5D48A291427922E07C922F5A04EDA79F7CEFC3AED8A4C402D"
+    "version": "2.0.91",
+    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.0.91/metin2-server-update-2.0.91.zip",
+    "sha256": "310835F8E9263795F94ABCA5AABB36238C0408C56ABDBF774A2046100E6C460C"
   },
   "support": {
     "contactUrl": "https://discord.gg/pt5tvnrN6",
