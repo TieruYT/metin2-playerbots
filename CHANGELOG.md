@@ -17,6 +17,79 @@ every version here.
 
 ---
 
+## 2.0.93 — 2026-09-20
+
+Serwer 2.0.93. Klient bez zmian (2.0.23). Zawiera wszystko z 2.0.92.
+
+### Lurowanie na zlecenie gracza
+
+Zgłoszone tego samego wieczora przez **ĹŌŞƬĒĶ (l0st3k)** i **nerrvous_s**, z
+logami — i okazało się, że to **dwie różne awarie naraz**, a dwie z trzech
+przyczyn wprowadziliśmy sami w dwóch poprzednich wydaniach.
+
+**Bot przyjmował zlecenie i nie ruszał się.** W 2.0.89 stojące zlecenie
+przestawiało bota w tryb „jestem w drodze, nie poluję" — po to, żeby między
+kursami nie zabijał tego, co miał przyprowadzić. Tyle że reguła oceniająca, czy
+warto z czymś walczyć, odrzuca w tym trybie **wszystko** — również paczkę, po
+którą kurs właśnie wyszedł. Zlecenie przyjęte, „Juz dla ciebie luruje"
+powiedziane, i każdy kurs kończył się „brak paczki" ułamek sekundy później. W
+logu nerrvous_s to widać co do milisekundy: kurs otwarty, 957 ms, koniec, i tak
+w kółko.
+
+**Bot otwierał kurs i zamykał go w tym samym momencie.** 2.0.90 obniżyło próg
+życia, przy którym kurs się zaczyna, do 55% — a próg, przy którym kurs się
+przerywa, został na 70%. Bot między jedną a drugą wartością robił to co
+sekundę.
+
+**Lur szukał paczek tam, gdzie gracz ich nie ma.** Ta rola była napisana dla
+drużyn botów: „przyprowadź paczkę, do której drużyna jeszcze nie doszła" — więc
+odrzucała wszystko bliżej niż 1100 jednostek i wszystko w promieniu 900 od
+miejsca zbiórki, a poziom potwora mierzyła **względem bota**. Na zrzucie
+l0st3ka towarzysz z 19 poziomu stał przy graczu z 33 i odrzucał każdego moba
+wokół: za blisko, za nisko, albo o osiem poziomów za wysoko — względem siebie,
+nie względem gracza, który i tak miał je bić.
+
+Teraz na zlecenie od człowieka **lur zbiera to, co stoi wokół**: bez minimalnej
+odległości, bez odstępu od miejsca zbiórki, okno poziomu liczone od gracza, a
+plan to pięć grup i dwanaście strzałów zamiast dwóch grup i siedmiu. Oddawanie
+agro graczowi działało wcześniej i jest nietknięte.
+
+### Bot towarzysz robił zakupy zamiast słuchać
+
+Drugi log — l0st3ka — pokazał coś innego: kurs **w ogóle się nie zaczynał**,
+przez cztery minuty, z powodem `busy`. Powód okazał się workiem na siedem flag
+naraz, więc najpierw dostał osobne nazwy (`town_visit`, `biologist`, `stable`,
+`market_trip`, `fishing`, `retreat`, `recovering`, `off_frontier`, `dead`) —
+bez tego następne zgłoszenie też byłoby nie do odczytania.
+
+A pod spodem była reguła z 2.0.48: „bot w drużynie gracza nie chodzi na
+errandy". Sprawdza ona, czy **liderem drużyny jest człowiek** — a bot
+*Towarzysz* zaprasza gracza **do swojej własnej** drużyny, więc liderem jest
+bot. Przez to wszystkie sześć bramek (stajnia, Biolog, zielarz, blokada przy
+ujemnej randze oraz start i kontynuacja wizyty w mieście) było po cichu
+wyłączonych **akurat dla tych botów, z którymi ludzie grają**. Teraz pytają o
+jedną regułę: drużyna człowieka, kontrakt najemnika, towarzysz trzymający
+człowieka w drużynie albo stojące zlecenie lurowania.
+
+### Czego nie sprawdziliśmy
+
+Uczciwie, bo tym razem wyszło mniej, niż chcieliśmy. Obie linie silnika
+kompilują się bez błędów i bez nowych ostrzeżeń, nowy kod jest w gotowym
+pliku wykonywalnym (sprawdzone po napisach, żeby mieć pewność, że optymalizator
+go nie wyciął), świat testowy chodzi na tej wersji bez ani jednego padnięcia
+rdzenia, a wizyty w mieście i drużyny działają jak przedtem.
+
+Czego **nie** zmierzyliśmy: samego lurowania. Dla człowieka nie da się — na
+świecie testowym nie ma gracza, który stanąłby w drużynie bota. A własnej roli
+botów nie dało się dziś zmierzyć, bo nasz świat testowy ma obecnie cztery
+postacie od 30 poziomu wzwyż, a ta rola działa tylko na mapach frontu, dokąd
+nikt z tak niskim poziomem nie idzie.
+
+Zostaje więc to, co zobaczą zgłaszający. W logu szukać:
+`PLAYERBOT_LURE: planned` (kurs ruszył), `pack answered` (paczka odpowiedziała),
+`pack handed to the player` (agro przeszło na gracza) oraz
+`PLAYERBOT_LURE: waiting reason=` z konkretnym powodem, jeśli bot dalej stoi.
+
 ## 2.0.92 — 2026-09-20
 
 Serwer 2.0.92, **klient 2.0.23**. Zawiera wszystko z 2.0.91.
