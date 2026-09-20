@@ -340,8 +340,23 @@ namespace playerbot_persona
 			// to M3 and is held there for the first time.
 			if (t.tier == 1 && level >= GRINDER_TIER1_SKIP_LEVEL && SkipsFirstVillage(pid))
 				return 0;
+			// The draw is salted with the tier, and that is not decoration.
+			// With one salt for every tier the *offset* into the range is the
+			// same number in each of them, and tier 1 (13-19) and tier 2
+			// (19-25) are both seven levels wide - so a bot that drew offset
+			// six drew 19 in the first village, which its band (10-18) can
+			// never reach, walked out of the village unheld, entered tier 2 at
+			// 19 and drew offset six again: 25, the top of that tier. Every
+			// seventh bot in the world therefore stopped on exactly the same
+			// level. Counted over the seeded cohort (pid 4..2503, the pure
+			// functions run outside the engine): 15.6% of the bots stopped at
+			// 25 against 3.4% at each of 19..24, where Community Patch 1 says
+			// the M3 lock is "losowana rowno". Iwakura saw it as bots massing
+			// on a level his document never names (20 September). With a salt
+			// per tier the same count reads 4.8-5.4% across 19..25.
+			const uint32_t salt = 0x4c4f434bu + (uint32_t)t.tier * 0x9e3779b1u;
 			const uint8_t lock = (uint8_t)(t.lockMin +
-					MixPid(pid, 0x4c4f434bu) % (uint32_t)(t.lockMax - t.lockMin + 1));
+					MixPid(pid, salt) % (uint32_t)(t.lockMax - t.lockMin + 1));
 			return lock < level ? level : lock;
 		}
 		return level;

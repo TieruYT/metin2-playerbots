@@ -665,6 +665,65 @@ int main()
 		assert(PERSONA_TITLE_BASE + PERSONA_TOWARZYSZ == 109);
 	}
 
+	{
+		// Where a Grinder actually stops, counted rather than reasoned about.
+		//
+		// The lock is drawn per tier, and it has to be drawn *independently*
+		// per tier: with one salt the offset into the range was the same
+		// number everywhere, and tiers 1 (13-19) and 2 (19-25) are both seven
+		// wide - so every bot that drew offset six walked out of a first
+		// village whose band ends at 18 and stopped at 25, the top of tier 2.
+		// 15.6% of the seeded cohort on one level, against 3.4% on each of
+		// 19..24 (Iwakura, 20 September: "boty masowo zatrzymuja sie na 25
+		// lvlu a ja nawet takiego przedzialu nie dawalem"). This walks a bot
+		// up from level one exactly as the world does and asks that no level
+		// of a tier take more than twice its share.
+		int stops[128];
+		for (int i = 0; i < 128; ++i)
+			stops[i] = 0;
+		const uint32_t firstPid = 4, lastPid = 2503;
+		for (uint32_t pid = firstPid; pid <= lastPid; ++pid)
+		{
+			for (int level = 1; level <= 70; ++level)
+			{
+				const uint8_t lock = GrinderLockFor((uint8_t)level, pid);
+				if (lock != 0 && level >= (int)lock)
+				{
+					++stops[level];
+					break;
+				}
+			}
+		}
+		for (unsigned int i = 0; i < GRINDER_TIER_COUNT; ++i)
+		{
+			const TGrinderTier& t = GRINDER_TIERS[i];
+			int total = 0, peak = 0, bands = 0;
+			for (int level = t.lockMin; level <= t.lockMax; ++level)
+			{
+				total += stops[level];
+				if (stops[level] > peak)
+					peak = stops[level];
+				++bands;
+			}
+			if (total == 0 || bands < 2)
+				continue;
+			// No level may hold more than twice an even share of its tier.
+			assert(peak * bands <= total * 2);
+		}
+		// And the two tiers that shared a width must not share a draw.
+		int sameOffset = 0;
+		for (uint32_t pid = firstPid; pid <= lastPid; ++pid)
+		{
+			const int one = (int)GrinderLockFor(12, pid) - 13;
+			const int two = (int)GrinderLockFor(19, pid) - 19;
+			if (one >= 0 && one == two)
+				++sameOffset;
+		}
+		const int cohort = (int)(lastPid - firstPid + 1);
+		// A shared draw put every bot here; chance alone puts about a seventh.
+		assert(sameOffset * 3 < cohort);
+	}
+
 	std::printf("playerbot_persona_rules: all tests passed\n");
 	return 0;
 }
