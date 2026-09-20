@@ -638,11 +638,25 @@ TResult ArrangeInventory(LPCHARACTER ch, bool fromPlayer)
 		for (std::set<WORD>::const_iterator it = restate.begin(); it != restate.end(); ++it)
 			RestateCell(ch, *it);
 	}
-	// Counted before the plan as well as after it (`holesBefore`), because a
-	// cell the bag already carried that way is not this operation's doing and
-	// the two answers are told apart in the line.
+	// Counted before the plan as well as after it, and only a count that GREW
+	// is this operation's doing and worth a line.
+	//
+	// It used to report any count at all, and the measurement says what that
+	// was worth: on the test world on 20 September, 2285 runs over 1002
+	// different bags, and not one of them ended with more than it began with -
+	// 2285 syserr lines a day about a condition the sort did not cause and
+	// cannot repair. What the line is for is the day the sort breaks a bag,
+	// and that is what it says now.
+	//
+	// The pre-existing count is left undiagnosed on purpose rather than
+	// quietly dropped: one to eight cells of most bags are cells this counter
+	// calls empty and IsEmptyItemGrid calls taken, and nothing yet says which
+	// of the two is wrong. Nobody has reported a bag that says it is full
+	// while cells are visibly free, which is what the engine being right would
+	// look like, so the counter is the likelier suspect - but that is a guess,
+	// and a guess does not belong in syserr once a second.
 	const int gridHoles = CountPlayerBotGridHoles(ch, bagCells);
-	if (gridHoles || holesBefore)
+	if (gridHoles > holesBefore)
 		sys_err("INVENTORY_ARRANGE: pid=%u name=%s empty cells marked taken in the grid: %d before, %d after",
 				ch->GetPlayerID(), ch->GetName(), holesBefore, gridHoles);
 

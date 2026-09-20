@@ -833,12 +833,37 @@ namespace
 				ch->GetHorseHealth() <= 0 || ch->GetHorseStamina() <= 0 ||
 				dwNow < state.dwNextHorseRideCheckTime)
 			return false;
+		// What CHARACTER::StartRiding refuses that this pass can see coming.
+		// IsBusy is the whole of it in practice: a counter open, another bot's
+		// counter being read, the safebox page, the item shop, a herbalist's
+		// craft - all ordinary things a bot does, and every one of them made
+		// the mount below fail and write a line to syserr. Measured on the
+		// test world on 20 September: 1060 + 775 + 566 ... some thousands of
+		// "mount failed" lines in a day, every one of them a bot that was
+		// simply doing something else at the time. A refusal the AI could
+		// have predicted is not an error; it is a reason to wait.
+		// IsBusy is mt2009's; r40250's StartRiding asks nothing of the kind, so
+		// there is nothing to predict there beyond these two.
+		if (ch->IsDead() || ch->IsPolymorphed()
+#if defined(PLAYERBOT_ENGINE_MT2009)
+				|| ch->IsBusy()
+#endif
+				)
+		{
+			state.dwNextHorseRideCheckTime = dwNow + PLAYERBOT_HORSE_RIDE_RETRY_INTERVAL;
+			return false;
+		}
 
 		ch->Stop();
 		if (!ch->StartRiding())
 		{
 			state.dwNextHorseRideCheckTime = dwNow + PLAYERBOT_HORSE_RIDE_RETRY_INTERVAL;
-			sys_err("PLAYERBOT_HORSE: mount failed pid=%u name=%s horse_level=%u health=%d stamina=%d reason=%s",
+			// Throttled, because what is left is whatever the engine refuses
+			// for a reason nothing above could ask about - and if that ever
+			// becomes common again, one line a minute is enough to see it
+			// without burying every other error in the file.
+			PlayerBotLogThrottled("horse_mount_failed", dwNow,
+					"PLAYERBOT_HORSE: mount failed pid=%u name=%s horse_level=%u health=%d stamina=%d reason=%s",
 					ch->GetPlayerID(), ch->GetName(), (unsigned int)ch->GetHorseLevel(),
 					ch->GetHorseHealth(), ch->GetHorseStamina(), reason ? reason : "?");
 			return false;
