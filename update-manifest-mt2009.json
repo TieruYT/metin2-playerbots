@@ -1,12 +1,12 @@
 {
   "schema": 1,
   "channel": "stable",
-  "publishedAt": "2026-09-20T16:08:19Z",
-  "statusMessage": "2.0.92 (serwer 2.0.92, klient 2.0.23): gra mowi w osmiu jezykach - polski, angielski, niemiecki, hiszpanski, wloski, portugalski, rumunski i turecki. Jezyk wybiera sie w oknie konfiguracji przy logowaniu; zmiana wymaga ponownego uruchomienia klienta. Paczka jezykowa jest robota LOSTKA, my wstawilismy ja do naszego klienta i dolozylismy 281 angielskich napisow interfejsu. Po polsku zostaja nazwy NPC, tresci questow i nazwy przedmiotow - to jest baza i questy serwera, nie klient. ZAKTUALIZUJ TEZ KLIENTA (paczka urosla do 96 MB).",
+  "publishedAt": "2026-09-20T17:45:00Z",
+  "statusMessage": "2.0.93 (serwer 2.0.93, klient bez zmian - 2.0.23): naprawione lurowanie na zlecenie gracza. Bot przyjmowal \"luruj\" i stal w miejscu - dwie z trzech przyczyn wprowadzilismy sami w dwoch poprzednich wydaniach. Teraz na zlecenie od czlowieka lur zbiera to, co stoi wokol, a poziom potwora mierzy wzgledem gracza, nie wzgledem siebie. Osobno: bot Towarzysz chodzil na zakupy zamiast sluchac - regula \"bot w druzynie gracza nie robi errandow\" byla wylaczona akurat dla tych botow, z ktorymi ludzie graja. Klienta nie trzeba aktualizowac.",
   "server": {
-    "version": "2.0.92",
-    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.0.92/metin2-server-update-2.0.92.zip",
-    "sha256": "12693B11788D93487F553EB277EBC1BAB6A26CB683C7BC09E4B1EF3BA3777334"
+    "version": "2.0.93",
+    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.0.93/metin2-server-update-2.0.93.zip",
+    "sha256": "70973B6D99911BB97242A77CCA37E917A42BCE5B3339119E01472AF55A172E80"
   },
   "support": {
     "contactUrl": "https://discord.gg/pt5tvnrN6",
