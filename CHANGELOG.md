@@ -109,10 +109,26 @@ Pola otwierają się teraz na równym podziale twojej liczby botów, a zero
 wpisane świadomie jest honorowane i powiedziane wprost: „UWAGA: Shinsoo i
 Jinno nie wystartuje żadnego bota".
 
-To kandydat na przyczynę „nowe postacie tworzą się tylko w Chunjo"
-(**NerrVoVy**), a nie potwierdzona przyczyna. Drugi kanał nią nie jest —
-zmierzone: przy ch2 włączonym oba kanały niosą wszystkie trzy królestwa
-(kanał 1: 320 / 1185 / 347, kanał 2: 180 / 315 / 153).
+To **nie jest** potwierdzona przyczyna „nowe postacie tworzą się tylko w
+Chunjo" (**NerrVoVy**) — on sam dopisał tego samego dnia, że widział to również
+przy wyłączonym ptaszku, samym suwakiem. Dwie rzeczy zmierzone u nas, żeby
+wykluczyć to, co się najpierw nasuwa: podział liczby botów między królestwa jest
+**równy** (przy 1000 botów rdzeń zgłasza „world split 334/333/333"), a drugi
+kanał nie ma z tym nic wspólnego — przy ch2 włączonym oba kanały niosą wszystkie
+trzy królestwa (kanał 1: 320 / 1185 / 347, kanał 2: 180 / 315 / 153). Zostaje
+liczba **zdatnych tożsamości** w danym świecie; rdzeń wypisuje ją przy starcie i
+to jest pierwsza linia, o którą poprosimy przy następnym zgłoszeniu:
+
+```
+PLAYERBOT_AUTH: loaded N registered bot identities (shinsoo=.. chunjo=.. jinno=..)
+PLAYERBOT_AUTH: registry rows=.. usable=.. rejected: ...
+```
+
+Przy okazji, bo to wyszło w tej samej rozmowie: **`.env` nie jest miejscem, w
+którym stoją twoje aktualne raty.** Na linii 2.x raty to flagi zdarzeń w bazie —
+panel je zmienia i gra liczy nimi od razu — a `M2_RATE_*` w `.env` to tylko
+wartości startowe świeżego świata. To, że w `.env` stoi 100, a w panelu 125, nie
+jest błędem i niczego nie cofa.
 
 ---
 
