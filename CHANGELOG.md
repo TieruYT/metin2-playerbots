@@ -17,6 +17,48 @@ every version here.
 
 ---
 
+## 2.0.91 — 2026-09-20
+
+Serwer 2.0.91, klient bez zmian (2.0.22). Zawiera wszystko z 2.0.90.
+
+### Drużyny botów były w większości jednoosobowe
+
+I dlatego wyglądały, jakby ich nie było. `CParty::Quit` wyjmuje członka i
+**zostawia drużynę stojącą**; silnik kasuje ją tylko wtedy, gdy odchodzi lider.
+Więc kiedy z pary wychodził zwykły członek — a wychodził stale, bo hub do
+polowania bywa dwadzieścia kilometrów od drugiego bota — **drugi zostawał sam
+w „drużynie" jednoosobowej**. Dla kodu to wciąż drużyna: `GetParty()` odpowiada,
+pass drużyn wraca w pierwszej linii, i ten bot przestaje szukać kogokolwiek.
+
+Własny kod silnika nigdy na to nie pozwala: przy dwóch członkach rozwiązuje
+drużynę. Dlatego **gracz nie może być w drużynie jednoosobowej** i od strony
+gracza nie dało się tego zobaczyć.
+
+Jak to wyglądało na naszym świecie testowym — od 94 do 2519 założonych drużyn
+**na godzinę**, i w każdym spisie tyle samo drużyn co botów w drużynach. Teraz
+boty wychodzą z drużyny tą samą drogą co gracz, a drużyna jednoosobowa, jeśli
+się gdzieś ostała, jest rozwiązywana w minutę. Zmierzone dziesięć minut po
+wdrożeniu: stosunek z 1,00 na 1,375 (świat samych par daje 1,33 — spis ogląda
+połowę botów, więc to jest wartość docelowa, nie 2).
+
+Przy okazji wraca lurowanie **dla drużyn botów**: kurs Łucznika potrzebuje
+trzech osób i przez pięć godzin nie odpalił ani razu, bo trójki nie miały z
+czego powstać. Zlecenie od gracza („luruj" z 2.0.90) działało niezależnie od
+tego — tam wystarczy para.
+
+### Świeża instalacja nie wywala się już na pustym katalogu
+
+„Launcher każe mi ogarniać pliki r40250" (**dekri**) — przy serwerze 2.0.89,
+czyli na linii, która paczki r40250 nigdy nie używa. Brakowało dokładnie
+jednego katalogu, i to **pustego**: `serverfiles\share\package`. Jest pusty na
+każdej instalacji obu linii, Docker tylko go kopiuje — ale git pustego katalogu
+nie przechowa wcale, a paczka niesie go jako jeden z dwunastu gołych wpisów
+w zipie, które część programów do rozpakowywania po prostu pomija.
+
+Zamiast odmawiać, launcher **tworzy go teraz sam** — na wszystkich trzech
+drogach, które prowadzą do budowy, i tak samo `update.sh` na Linuksie. Komunikat
+odsyłający do instalatora r40250 nie pojawi się już z tego powodu.
+
 ## 2.0.90 — 2026-09-20
 
 Serwer 2.0.90, klient 2.0.22. Zawiera wszystko z 2.0.89.
