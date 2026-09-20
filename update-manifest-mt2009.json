@@ -1,20 +1,20 @@
 {
   "schema": 1,
   "channel": "stable",
-  "publishedAt": "2026-09-20T13:11:11Z",
-  "statusMessage": "2.0.89 (serwer 2.0.89, klient bez zmian 2.0.21): poproś ninję w swojej drużynie o lurowanie - napisz jej na priv \"luruj\", a potwory przyprowadzi i zrzuci na ciebie, nie na siebie; \"przestań lurować\" kończy. Raty mają jedno źródło prawdy: oba panele czytają to, czym gra naprawdę liczy, więc panel zaawansowany nie narzuca już starych liczb zapisanych gdzie indziej. Sprzęt na 1 lvl z +7 trafia na stragan zamiast do handlarza. Ciszej w logach błędów: bot nie prosi już o konia w chwili, w której silnik zawsze odmawia.",
+  "publishedAt": "2026-09-20T14:29:58Z",
+  "statusMessage": "2.0.90 (serwer 2.0.90, klient 2.0.22): ninja ze zleceniem \"luruj\" w koncu wychodzi po moby zamiast je zabijac - trzy bramki pisane dla druzyny botow zamykaly kurs na zawsze przy graczu stojacym na spocie, a bot ze zleceniem nie poluje juz na wlasna reke; gdy na cos czeka, mowi na co. Swieza instalacja na Linuksie znow sie buduje: caly build przewracal sie na pliku, ktory istnial tylko na maszynach, gdzie kiedys stawiano stara linie. Zmiana cen hurtem w sklepie (Ctrl + prawy) powtarza to, co nie weszlo. Liczba botow per krolestwo otwiera sie na rownym podziale, nie na zerach. Zaktualizuj tez klienta.",
   "server": {
-    "version": "2.0.89",
-    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.0.89/metin2-server-update-2.0.89.zip",
-    "sha256": "B05B0137AF3FF3AF4BF2DEB204DE15028F2EBA47612CC11A861FC2A8D5C1BBAC"
+    "version": "2.0.90",
+    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.0.90/metin2-server-update-2.0.90.zip",
+    "sha256": "A16BA2FFEC47C4C5D48A291427922E07C922F5A04EDA79F7CEFC3AED8A4C402D"
   },
   "support": {
     "contactUrl": "https://discord.gg/pt5tvnrN6",
     "uploadUrl": ""
   },
   "client": {
-    "version": "2.0.21",
-    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.0.88/metin2-client-update-2.0.21.zip",
-    "sha256": "20526060A9CB81900B2FDDFC391FA3EF76378027FA5F82E7A1506DDEB9E9D209"
+    "version": "2.0.22",
+    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.0.90/metin2-client-update-2.0.22.zip",
+    "sha256": "80C00101EDC36085777B226144EE14CAA34C61CDE7EC90C9794B37FEC0B56B18"
   }
 }
