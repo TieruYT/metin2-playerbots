@@ -17,6 +17,69 @@ every version here.
 
 ---
 
+## 2.0.90 — 2026-09-20
+
+Serwer 2.0.90, klient 2.0.22. Zawiera wszystko z 2.0.89.
+
+### Świeża instalacja na Linuksie znów się buduje
+
+**Jeśli stawiałeś serwer od zera na VPS-ie albo mini PC i nic nie wstawało —
+to było to.** Cały build przewracał się na jednej linii:
+
+```
+target seban-panel: failed to solve: failed to compute cache key: "/VERSION": not found
+```
+
+a razem z nim gra, panel i itemshop — więc nie startowało nic, i żadne
+„kliknij jeszcze raz" nie mogło pomóc.
+
+Plik, którego brakowało, jest w `.gitignore`, a tworzą go tylko dwa skrypty:
+ten od instalacji na starej linii i launcher windowsowy. Czyli istniał na
+każdej maszynie, która kiedykolwiek któryś z nich uruchomiła — i na niczyjej
+innej. Instalacja 2.x na Linuksie nie uruchamia żadnego z nich, a paczka nie
+mogła go przenieść, bo powstaje z czystego eksportu z repozytorium.
+
+Build nie zależy już od tego pliku, a aktualizacja sama go dokłada. Zgłosił
+**superjerry925** z pełnym logiem — bez niego to by leżało dalej.
+
+Przy okazji naprawione narzędzie, które miało takie rzeczy wyłapywać przed
+wydaniem: pytało dysk zamiast repozytorium, więc wierzyło plikowi, który jest
+tylko u nas. Teraz pyta, **kto** dany plik tworzy i czy ten ktoś w ogóle
+działa na danej linii.
+
+### Ceny hurtem w sklepie: powtarza to, co nie weszło
+
+„Zmienianie cen działa, ale potrafi ominąć nawet parę itemów, gdy ma się ich
+dużo w sklepie" (**blastyw**). Ctrl + prawy wysyłał pakiety w odstępach, bo
+serwer przyjmuje jedną operację na sklepie co 200 ms — ale **wysyłał i
+zapominał**. Ćwierć sekundy liczona zegarem klienta potrafi dolecieć wewnątrz
+jednego okna serwera po zaciętej klatce, a wtedy ta jedna pozycja przepadała
+bezpowrotnie.
+
+Teraz klient sprawdza, co faktycznie weszło: czeka na powrót listy sklepu,
+porównuje ceny i powtarza to, co się nie udało — trzy podejścia, a potem mówi
+na czacie, ile zostało. Pozycja sprzedana w międzyczasie nie liczy się jako
+pominięta. **Zaktualizuj też klienta.**
+
+### Liczba botów per królestwo nie otwiera się już na zerach
+
+W oknie LICZBA BOTÓW ptaszek „Indywidualne wartości dla królestw" pokazywał
+**0 / 0 / 0**, bo te trzy ustawienia nie istnieją w `.env` na żadnej
+instalacji starszej niż 2.0.83. Zaznaczenie go i wpisanie liczby tylko w
+jednym polu zostawiało dwa pozostałe królestwa bez ani jednego bota — i nic w
+grze tego nie mówiło.
+
+Pola otwierają się teraz na równym podziale twojej liczby botów, a zero
+wpisane świadomie jest honorowane i powiedziane wprost: „UWAGA: Shinsoo i
+Jinno nie wystartuje żadnego bota".
+
+To kandydat na przyczynę „nowe postacie tworzą się tylko w Chunjo"
+(**NerrVoVy**), a nie potwierdzona przyczyna. Drugi kanał nią nie jest —
+zmierzone: przy ch2 włączonym oba kanały niosą wszystkie trzy królestwa
+(kanał 1: 320 / 1185 / 347, kanał 2: 180 / 315 / 153).
+
+---
+
 ## 2.0.89 — 2026-09-20
 
 Serwer 2.0.89, klient bez zmian (2.0.21). Zawiera wszystko z 2.0.88.
