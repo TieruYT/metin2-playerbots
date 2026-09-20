@@ -3,7 +3,7 @@
 [Polski (README.md)](README.md) | **English**
 
 [![Website](https://img.shields.io/badge/Website-metin2singleplayer.com-2EA44F?style=for-the-badge&logo=firefoxbrowser&logoColor=white)](https://metin2singleplayer.com)
-[![Discord](https://img.shields.io/badge/Discord-Join_Community-5865F2?style=for-the-badge&logo=discord&logoColor=white)](https://discord.gg/6v4WkDY6a)
+[![Discord](https://img.shields.io/badge/Discord-Join_Community-5865F2?style=for-the-badge&logo=discord&logoColor=white)](https://discord.gg/pt5tvnrN6)
 [![BuyCoffee](https://img.shields.io/badge/BuyCoffee-Support_the_Project-FF813F?style=for-the-badge&logo=coffeescript&logoColor=white)](https://buycoffee.to/metin2-playerbots)
 
 A local Metin2 singleplayer world populated by genuine, autonomous player characters (Playerbots): leveling up, grinding solo and in squads, looting items, refining gear at the Blacksmith, hunting Metin stones, and persisting their full progression in the standard database.
@@ -11,7 +11,7 @@ A local Metin2 singleplayer world populated by genuine, autonomous player charac
 ## 💬 Community & Project Support
 
 - **[Project website — metin2singleplayer.com](https://metin2singleplayer.com)** — what the project is, the roadmap, the install guide and the FAQ, in Polish and English.
-- **[Join our Discord server](https://discord.gg/6v4WkDY6a)** — discuss the project, share playtests and ideas, and follow playerbot development updates.
+- **[Join our Discord server](https://discord.gg/pt5tvnrN6)** — discuss the project, share playtests and ideas, and follow playerbot development updates.
 - **[Support development on buycoffee.to](https://buycoffee.to/metin2-playerbots)** — voluntary donations help cover the tools and AI models used to develop the project.
 
 <a href="https://buycoffee.to/metin2-playerbots" target="_blank"><img src="https://buycoffee.to/btn/buycoffeeto-btn-primary.svg" style="height: 42px;" alt="Support on buycoffee.to"></a>

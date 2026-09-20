@@ -1816,7 +1816,7 @@ BRAND = str(CONF.get("brand", "") or "").strip() or "Singleplayer Official Metin
 # An operator who wants a different address edits this line, which is a change
 # to the software and shows up as one -- not a setting that quietly diverges
 # between installs and leaves players pointed at nothing.
-DISCORD_URL = "https://discord.gg/SSHajSeHm"
+DISCORD_URL = "https://discord.gg/pt5tvnrN6"
 
 CLIENT_NAME  = str(CONF.get("client_name", "Metin2 Client") or "").strip()
 CLIENT_FILE  = _client_download_name(CLIENT_NAME)
