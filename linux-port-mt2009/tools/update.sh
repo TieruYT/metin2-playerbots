@@ -338,6 +338,13 @@ stage_panel_context() {
     _panel="$COMPOSE_DIR/panel"
     [ -d "$_panel" ] || return 0
     mkdir -p "$_panel/app" "$_panel/schema" || return 1
+    # The advanced panel's own build context wants the same thing, and until
+    # 2.0.90 nothing on Linux put it there: its Dockerfile tolerates the file
+    # being absent now, but a panel that says "dev" instead of a version is
+    # still a panel nobody can tell is behind.
+    if [ -d "$COMPOSE_DIR/seban-panel" ] && [ -f "$ROOT/VERSION" ]; then
+        cp -a "$ROOT/VERSION" "$COMPOSE_DIR/seban-panel/VERSION" 2>/dev/null || true
+    fi
     for _pair in "VERSION:app/VERSION" "CHANGELOG.md:app/CHANGELOG.md" \
             "files/admin_panel.py:app/admin_panel.py" "files/items.json:app/items.json" \
             "files/favicon.png:app/favicon.png" \
