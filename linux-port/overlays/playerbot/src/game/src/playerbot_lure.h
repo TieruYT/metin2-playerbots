@@ -706,28 +706,50 @@ namespace
 		// Saving your own life, the errand you are already on, and being dead
 		// all outrank the role. A course in progress ends here rather than
 		// being suspended: half a pull is not a state worth keeping.
-		if (!ch || ch->IsDead() || !ch->GetParty() || !IsPlayerBotArcher(ch) ||
-				// "In a party, on a big spot" is the whole point of the role, and
-				// there was no map rule at all: an Archer with a party anywhere
-				// outside a safe zone planned a course. Measured on Yongan - a
-				// party of six, five receivers ready, and "no pack seen=0" a
-				// second later, because a first village has no pack to pull.
-				// The frontier maps are where the packs and the party cohort
-				// both are. A person who asked for a pull has said where they
-				// hunt by standing there, so the rule is theirs to make.
-				(!forPlayer && !IsPlayerBotFrontierMapIndex(ch->GetMapIndex())) ||
-				state.bTacticalRetreat || state.bRecoveringAfterDeath ||
-				state.bVisitingShop || state.bVisitingBiologist ||
-				state.bVisitingStable || state.bMarketTrip || state.bFishingSession ||
-				IsPlayerBotSafeZone(ch ? ch->GetMapIndex() : 0,
-						ch ? ch->GetX() : 0, ch ? ch->GetY() : 0))
+		//
+		// Named one by one rather than counted. "busy" stood for seven flags
+		// and a map rule at once, and the first report that needed it could not
+		// be read at all: a person's order on a village map logged
+		// "reason=busy" for four minutes while the bot walked its town errand
+		// (l0st3k, 20 September). A conjunction that refuses has to say which
+		// clause did it.
+		const char* ineligible = NULL;
+		if (!ch || !ch->GetParty())
+			ineligible = "no_party";
+		else if (ch->IsDead())
+			ineligible = "dead";
+		else if (!IsPlayerBotArcher(ch))
+			ineligible = "no_bow";
+		else if (IsPlayerBotSafeZone(ch->GetMapIndex(), ch->GetX(), ch->GetY()))
+			ineligible = "safe_zone";
+		// "In a party, on a big spot" is the whole point of the role, and there
+		// was no map rule at all: an Archer with a party anywhere outside a safe
+		// zone planned a course. Measured on Yongan - a party of six, five
+		// receivers ready, and "no pack seen=0" a second later, because a first
+		// village has no pack to pull. The frontier maps are where the packs and
+		// the party cohort both are. A person who asked for a pull has said
+		// where they hunt by standing there, so the rule is theirs to make.
+		else if (!forPlayer && !IsPlayerBotFrontierMapIndex(ch->GetMapIndex()))
+			ineligible = "off_frontier";
+		else if (state.bTacticalRetreat)
+			ineligible = "retreat";
+		else if (state.bRecoveringAfterDeath)
+			ineligible = "recovering";
+		else if (state.bVisitingShop)
+			ineligible = "town_visit";
+		else if (state.bVisitingBiologist)
+			ineligible = "biologist";
+		else if (state.bVisitingStable)
+			ineligible = "stable";
+		else if (state.bMarketTrip)
+			ineligible = "market_trip";
+		else if (state.bFishingSession)
+			ineligible = "fishing";
+		if (ineligible)
 		{
 			if (inSession)
 				FinishPlayerBotLure(ch, state, dwNow, "ineligible");
-			NotePlayerBotLureWait(ch, !ch || !ch->GetParty() ? "no_party"
-					: !IsPlayerBotArcher(ch) ? "no_bow"
-					: IsPlayerBotSafeZone(ch->GetMapIndex(), ch->GetX(), ch->GetY())
-							? "safe_zone" : "busy", forPlayer);
+			NotePlayerBotLureWait(ch, ineligible, forPlayer);
 			return false;
 		}
 

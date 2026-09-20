@@ -4732,6 +4732,17 @@ void CPlayerBotManager::Update()
 		// the Biologist, the town visit and the empty-handed recovery stand
 		// down below. Fighting does not: a bot in a party is there to fight.
 		const bool bHumanLedParty = IsPlayerBotHumanLedParty(ch->GetParty());
+		// Whose bot this is, for the errands below. Three ways a bot belongs to
+		// a person and only one of them is their party: a companion invites the
+		// person into ITS OWN party, so the leader is a bot and every rule
+		// written for "a person's party" was silently off for exactly the bots
+		// people play with; a mercenary is under contract; and a standing lure
+		// order is a job the person gave. That last one is what
+		// "PLAYERBOT_LURE: waiting reason=town_visit" is - an order taken and
+		// the bot walking to the blacksmith with it (l0st3k, 20 September).
+		// IsPlayerBotHeldForCompany already knew the first two.
+		const bool bServingPerson = bHumanLedParty || IsPlayerBotHeldForCompany(ch) ||
+				state.dwLurePlayerPID != 0;
 		// Keeping up with the player comes before the bot's own plans for the
 		// tick, or the wander pass walks it out of the party it just joined.
 		if (ManagePlayerBotFollowHumanLeader(ch, state, dwNow))
@@ -4818,7 +4829,7 @@ void CPlayerBotManager::Update()
 
 		// A negative rank keeps the bot inside its village's safe ring, ahead of
 		// the loot, the errands, the travel and the fight below.
-		if (!bHumanLedParty && !state.bMultiPullActive &&
+		if (!bServingPerson && !state.bMultiPullActive &&
 				KeepPlayerBotNegativeRankInTown(ch, state, dwNow))
 			continue;
 
@@ -4836,7 +4847,7 @@ void CPlayerBotManager::Update()
 			continue;
 
 		// Horse medals are equally real resources: a bot leaves combat, walks to
-		if (!bHumanLedParty && !state.bMultiPullActive && !bFightingMetin &&
+		if (!bServingPerson && !state.bMultiPullActive && !bFightingMetin &&
 				ManagePlayerBotHorse(ch, state, dwNow))
 			continue;
 
@@ -4874,13 +4885,13 @@ void CPlayerBotManager::Update()
 		// Research is a first-class activity, not an instant reward. A bot that
 		// has collected the outstanding specimens walks to Chaegirab and submits
 		// them one by one before it resumes hunting.
-		if (!bHumanLedParty && !state.bMultiPullActive && !bFightingMetin &&
+		if (!bServingPerson && !state.bMultiPullActive && !bFightingMetin &&
 				ManagePlayerBotBiologist(ch, state, dwNow))
 			continue;
 
 		// Baek-Go stands in the same three villages, so his board is the same
 		// kind of local errand as the hand-in above and is gated the same way.
-		if (!bHumanLedParty && !state.bMultiPullActive && !bFightingMetin &&
+		if (!bServingPerson && !state.bMultiPullActive && !bFightingMetin &&
 				ManagePlayerBotHerbalist(ch, state, dwNow))
 			continue;
 
@@ -4890,7 +4901,7 @@ void CPlayerBotManager::Update()
 		// the next tier loops forever between the weapon and armour merchants and
 		// never returns to combat (or to its local party).
 		const bool bOnTownMap = IsPlayerBotVillageMap(ch->GetMapIndex());
-		if (!bHumanLedParty && bOnTownMap && !state.bVisitingShop && !state.bMultiPullActive &&
+		if (!bServingPerson && bOnTownMap && !state.bVisitingShop && !state.bMultiPullActive &&
 				!bFightingMetin &&
 				(bNeedsProfession || dwNow > state.dwNextShopCheckTime))
 		{
@@ -4950,7 +4961,7 @@ void CPlayerBotManager::Update()
 		// A visit is an adaptive, persistent route. The bot only visits specialists
 		// needed by its current inventory: weapon merchant, armor merchant, Misc
 		// Merchant and/or blacksmith. Goals never change in the middle of a route.
-		if (!bHumanLedParty && HandlePlayerBotTownVisit(ch, state, dwNow))
+		if (!bServingPerson && HandlePlayerBotTownVisit(ch, state, dwNow))
 			continue;
 
 		// A normal horse is for transport only, so it comes off before buffs
