@@ -17,6 +17,56 @@ every version here.
 
 ---
 
+## 2.0.94 — 2026-09-20
+
+Serwer 2.0.94. Klient bez zmian (2.0.23). Zawiera wszystko z 2.0.93.
+
+### Boty nie zatrzymują się już całą wsią na jednym poziomie
+
+Zgłosił **Iwakura**: „boty masowo zatrzymują się na 25 lvlu, a ja nawet takiego
+przedziału nie dawałem". Reguła tierów jest czystą funkcją, więc dało się ją
+policzyć poza silnikiem, dla całej kohorty — i liczby przyznały mu rację.
+
+**Gdzie zatrzymywał się bot rosnący od pierwszego poziomu** (2500 botów): na
+poziomach 19–24 po 3,4–3,8% każdy, a na **25 aż 15,6%** — cztery i pół raza
+więcej, choć Community Patch 1 obiecywał, że blokada M3 jest „losowana równo".
+W logach naszego świata testowego to samo: blokada 25 padła 118 razy, a każda
+z 19–24 od 6 do 16 razy.
+
+**Przyczyna.** Losowanie było jedno na bota, wspólne dla wszystkich tierów, a
+pierwsza wioska (13–19) i M3 (19–25) mają tę samą szerokość — siedem poziomów.
+Bot, który wylosował szóstą pozycję w przedziale, dostawał w wiosce blokadę 19,
+której jej pasmo (10–18) nigdy nie osiąga; wychodził z wioski niezatrzymany,
+wchodził na M3 z poziomem 19 i losował tę samą szóstą pozycję — czyli 25,
+szczyt tieru. Co siódmy bot świata, z konstrukcji.
+
+Każdy tier losuje teraz osobno. Ten sam rachunek daje po poprawce 4,8–5,4% na
+każdym z poziomów 19–25.
+
+### Powyżej Góry Sohan nie ma już blokady
+
+Tabela tierów kończy się na Sohanie (55–62), a bot, który ją przerósł,
+blokował się **dokładnie tam, gdzie akurat stanął**. W historii naszego świata
+testowego są blokady na 63, 64, 65 i wyżej — w tym **112 botów zamrożonych na
+71 poziomie**, na liczbie, której żaden tier nie wymienia. Powyżej ostatniego
+tieru Grinder nie jest już trzymany nigdzie, a blokada zapisana pod starą
+regułą jest zdejmowana przy pierwszym sprawdzeniu.
+
+### Czego to jeszcze nie naprawia
+
+Uczciwie, bo Iwakura wskazał więcej: **awans nadal kończy blokady na zawsze**.
+Bot, który raz spełnił Prawo Awansu w pierwszej wiosce albo na M3, nigdy nie
+dostaje blokady M2 (30–35), Doliny (40–48) ani Sohanu (55–62) — wraca pod nią
+tylko przez trzy śmierci, i wtedy staje tam, gdzie zginął. Dokument mówi co
+innego: „Grinder NIGDY nie przechodzi na kolejny Tier bez odpowiedniego
+przygotowania", czyli awans ma być **wejściem w następny tier**, nie końcem
+blokad.
+
+Do tego Iwakura zaprojektował rozłam po pierwszej wiosce: garstka botów
+zostaje na M1 po ulepszacze i księgi umiejętności, reszta rozchodzi się na M2,
+M3 i loch małp. To jest zmiana zachowania całego świata i wymaga własnego
+wydania — wchodzi w następnym.
+
 ## 2.0.93 — 2026-09-20
 
 Serwer 2.0.93. Klient bez zmian (2.0.23). Zawiera wszystko z 2.0.92.
