@@ -2,6 +2,7 @@
 
 **Polski** | [English (README_EN.md)](README_EN.md)
 
+[![Strona](https://img.shields.io/badge/Strona-metin2singleplayer.com-2EA44F?style=for-the-badge&logo=firefoxbrowser&logoColor=white)](https://metin2singleplayer.com)
 [![Discord](https://img.shields.io/badge/Discord-Dołącz_do_społeczności-5865F2?style=for-the-badge&logo=discord&logoColor=white)](https://discord.gg/6v4WkDY6a)
 [![BuyCoffee](https://img.shields.io/badge/BuyCoffee-Postaw_kaw%C4%99-FF813F?style=for-the-badge&logo=coffeescript&logoColor=white)](https://buycoffee.to/metin2-playerbots)
 
@@ -20,6 +21,7 @@ Jak to jest zbudowane: [linux-port-mt2009/README.md](linux-port-mt2009/README.md
 
 ## 💬 Społeczność i wsparcie projektu
 
+- **[Strona projektu — metin2singleplayer.com](https://metin2singleplayer.com)** — opis projektu, roadmapa, instrukcja instalacji i FAQ, po polsku i po angielsku.
 - **[Dołącz do serwera Discord](https://discord.gg/6v4WkDY6a)** — porozmawiaj o projekcie, podziel się testami i pomysłami oraz śledź aktualności z rozwoju botów.
 - **[Wesprzyj rozwój na buycoffee.to](https://buycoffee.to/metin2-playerbots)** — dobrowolne wpłaty pomagają pokrywać koszty narzędzi i modeli AI wykorzystywanych podczas rozwijania projektu.
 
