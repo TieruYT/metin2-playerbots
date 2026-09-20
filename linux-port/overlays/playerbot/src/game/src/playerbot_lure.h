@@ -420,6 +420,54 @@ namespace
 		ClearPlayerBotRoute(state, true);
 	}
 
+	// Why a course has not started yet, for the one person who is standing
+	// there waiting for it. It lives beside the pass rather than in
+	// TPlayerBotAIState - a new field there has to be initialised in
+	// declaration order or -Wreorder fires, and this is nobody else's business
+	// - and it is read through the forward declaration in playerbot_status.h,
+	// which is included above this file. "Czekam, zeby lurowac dla X" for
+	// twenty minutes is what a person sees when one of the gates below is shut
+	// for good (marcinxboss, 20 September); saying which one turns the next
+	// report into one that can be read.
+	std::map<DWORD, const char*> s_mapPlayerBotLureWaitReason;
+
+	void NotePlayerBotLureWait(LPCHARACTER ch, const char* reason, bool forPlayer)
+	{
+		if (!ch)
+			return;
+		std::map<DWORD, const char*>::iterator it =
+				s_mapPlayerBotLureWaitReason.find(ch->GetPlayerID());
+		const char* was = it != s_mapPlayerBotLureWaitReason.end() ? it->second : NULL;
+		// Nothing is kept for the bots' own role. Every bot in a party reaches
+		// this hook, so recording all of them would be an entry per bot in the
+		// world for something only a person's order ever reads - and the end of
+		// an order comes through here with forPlayer false, which is what takes
+		// the entry away again.
+		if (reason == NULL || !forPlayer)
+		{
+			if (it != s_mapPlayerBotLureWaitReason.end())
+				s_mapPlayerBotLureWaitReason.erase(it);
+			return;
+		}
+		s_mapPlayerBotLureWaitReason[ch->GetPlayerID()] = reason;
+		// Only a change, and only where somebody is actually waiting: the
+		// bots' own role has an Archer in every party on the map and its gates
+		// move every couple of seconds, while a person who asked for a pull is
+		// one person. The map is kept for both, because the status reads it.
+		if (was != reason)
+			sys_log(0, "PLAYERBOT_LURE: waiting pid=%u name=%s reason=%s",
+					ch->GetPlayerID(), ch->GetName(), reason);
+	}
+
+	const char* GetPlayerBotLureWaitReason(DWORD dwPID)
+	{
+		if (dwPID == 0)
+			return NULL;
+		std::map<DWORD, const char*>::const_iterator it =
+				s_mapPlayerBotLureWaitReason.find(dwPID);
+		return it != s_mapPlayerBotLureWaitReason.end() ? it->second : NULL;
+	}
+
 	// The person this bot is luring for, or NULL - resolved every tick, because
 	// a character pointer must not outlive the tick that found it and an order
 	// whose player has gone is an order that has ended. What ends it is written
@@ -485,6 +533,7 @@ namespace
 		}
 		state.dwLurePlayerPID = 0;
 		state.dwLurePlayerTime = 0;
+		NotePlayerBotLureWait(ch, NULL, false);
 	}
 
 	// Give the pack to the person who asked for it.
@@ -636,6 +685,10 @@ namespace
 		{
 			if (inSession)
 				FinishPlayerBotLure(ch, state, dwNow, "ineligible");
+			NotePlayerBotLureWait(ch, !ch || !ch->GetParty() ? "no_party"
+					: !IsPlayerBotArcher(ch) ? "no_bow"
+					: IsPlayerBotSafeZone(ch->GetMapIndex(), ch->GetX(), ch->GetY())
+							? "safe_zone" : "busy", forPlayer);
 			return false;
 		}
 
@@ -755,17 +808,51 @@ namespace
 			if (state.dwLureNextTime < dwNow + PLAYERBOT_LURE_READY_RECHECK)
 				state.dwLureNextTime = dwNow + PLAYERBOT_LURE_READY_RECHECK;
 
-			if (present < minParty || !receiver || ready < minParty - 1 ||
-					hpPercent < PLAYERBOT_LURE_START_HP_PERCENT ||
-					!CanPlayerBotLureShoot(ch))
+			if (present < minParty || !receiver || ready < minParty - 1)
+			{
+				NotePlayerBotLureWait(ch, "party", forPlayer);
 				return false;
+			}
+			// A course opens at nine tenths of health for a party of bots that
+			// is standing and waiting. Beside a person who is fighting, the bot
+			// is taking hits, and that gate never opens.
+			if (hpPercent < (forPlayer ? PLAYERBOT_LURE_PLAYER_START_HP_PERCENT
+					: PLAYERBOT_LURE_START_HP_PERCENT))
+			{
+				NotePlayerBotLureWait(ch, "hp", forPlayer);
+				return false;
+			}
+			if (!CanPlayerBotLureShoot(ch))
+			{
+				NotePlayerBotLureWait(ch, "no_bow", forPlayer);
+				return false;
+			}
 
 			// Not while the party still has its hands full: the point of a
-			// course is to keep them fed, not to bury them.
+			// course is to keep them fed, not to bury them. That is a rule
+			// about bots - it exists so a course does not bury a party that is
+			// already busy - and a person who typed "luruj" has said they want
+			// the next pack whatever they are holding; if they are swamped they
+			// say "przestan lurowac". It is the gate that shut this feature on
+			// a real spot: four monsters on the person is an ordinary Sunday,
+			// and PLAYERBOT_LURE_BUSY_MONSTERS is three.
+			//
+			// A pack on the Archer itself still stops it, for both: walking
+			// away from monsters that are chasing you is how a pull is lost.
+			// With the grinding stopped in the value policy, that count now
+			// falls to zero by itself within a few seconds.
 			int onParty = 0, onOwner = 0;
 			CountPlayerBotLureEngaged(ch, anchorX, anchorY, &onParty, &onOwner);
-			if (onParty > PLAYERBOT_LURE_BUSY_MONSTERS || onOwner > 0)
+			if (!forPlayer && onParty > PLAYERBOT_LURE_BUSY_MONSTERS)
+			{
+				NotePlayerBotLureWait(ch, "party_busy", forPlayer);
 				return false;
+			}
+			if (onOwner > 0)
+			{
+				NotePlayerBotLureWait(ch, "monsters_on_me", forPlayer);
+				return false;
+			}
 
 			// One lurer per party. A live claim by somebody else stands; a
 			// stale one is taken over, which is what makes a lurer that died or
@@ -773,8 +860,12 @@ namespace
 			TPlayerBotLureClaim& claim = s_mapPlayerBotLureClaims[claimKey];
 			if (claim.dwLurerPID != 0 && claim.dwLurerPID != ch->GetPlayerID() &&
 					dwNow < claim.dwExpireTime)
+			{
+				NotePlayerBotLureWait(ch, "another_lurer", forPlayer);
 				return false;
+			}
 			state.dwLureNextTime = 0;
+			NotePlayerBotLureWait(ch, NULL, forPlayer);
 
 			state.dwLureSessionId = s_dwPlayerBotLureNextSessionId++;
 			claim.dwLurerPID = ch->GetPlayerID();

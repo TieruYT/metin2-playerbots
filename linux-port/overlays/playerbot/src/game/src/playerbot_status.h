@@ -18,6 +18,12 @@
 
 namespace
 {
+	// Defined with the luring course (playerbot_lure.h), which is included
+	// below this file: what a bot holding a person's order is waiting for
+	// before it sets off. A status line that says only "Czekam" is exactly
+	// what a person cannot report.
+	const char* GetPlayerBotLureWaitReason(DWORD dwPID);
+
 	// Whether a real player is close enough for any of this to be seen. The
 	// overhead text exists for them, so with nobody watching there is nothing
 	// to broadcast.
@@ -349,7 +355,16 @@ namespace
 		}
 		if (forWhom[0])
 		{
-			snprintf(status, statusSize, "%sCzekam, zeby lurowac%s", prefix, forWhom);
+			// And what it is waiting for. A bot reading "Czekam, zeby lurowac
+			// dla X" for twenty minutes and never setting off is the whole of
+			// what a person sees of this feature going wrong; the word in
+			// brackets is what turns that into a report somebody can act on.
+			const char* waitFor = GetPlayerBotLureWaitReason(ch ? ch->GetPlayerID() : 0);
+			if (waitFor)
+				snprintf(status, statusSize, "%sCzekam, zeby lurowac%s (%s)",
+						prefix, forWhom, waitFor);
+			else
+				snprintf(status, statusSize, "%sCzekam, zeby lurowac%s", prefix, forWhom);
 			return;
 		}
 		if (state.bRecoveringAfterDeath)

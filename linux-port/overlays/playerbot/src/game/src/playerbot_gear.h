@@ -961,9 +961,12 @@ namespace
 					? CHARACTER_MANAGER::instance().Find(state.dwTargetVID) : NULL;
 			// Only a dagger at +4 or better puts the Archer into melee; below that
 			// it stays on the bow and reaches a stone only when others are already
-			// breaking it (CanPlayerBotEngageStone).
+			// breaking it (CanPlayerBotEngageStone). And never while a person has
+			// asked this bot to lure: IsPlayerBotArcher wants the bow in the hand,
+			// so a dagger drawn for one stone makes the whole course "ineligible"
+			// until the stone is gone - with nothing anywhere saying why.
 			const bool wantMelee = target && target->IsStone() && !target->IsDead() &&
-					HasPlayerBotUsableStoneDagger(ch);
+					state.dwLurePlayerPID == 0 && HasPlayerBotUsableStoneDagger(ch);
 			if (wantMelee != state.bMeleeForStone)
 			{
 				state.bMeleeForStone = wantMelee;

@@ -1646,6 +1646,13 @@ namespace
 	// course range plus the anchor radius: past that the two are not hunting
 	// together at all.
 	const int PLAYERBOT_LURE_PLAYER_MAX_SEPARATION = 7000;
+	// A course opens at nine tenths of health for the bots' own role, where the
+	// party stands and waits and an Archer at 89% has simply not finished
+	// resting. Beside a person it is a gate that never opens: the bot takes
+	// hits from whatever the person is fighting, and the run out and back is
+	// what the health is actually for. Low enough to survive the return leg,
+	// high enough not to set off with a pack on a bot that is about to die.
+	const int PLAYERBOT_LURE_PLAYER_START_HP_PERCENT = 55;
 
 	const int PLAYERBOT_PARTY_CHALLENGE_MIN_MEMBERS = 3;
 	const int PLAYERBOT_PARTY_CHALLENGE_RADIUS = 3000;

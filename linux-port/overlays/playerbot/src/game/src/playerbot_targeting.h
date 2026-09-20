@@ -787,6 +787,17 @@ namespace
 		// does not get to pick a new one on the way out.
 		if (state.bTacticalRetreat || state.bRecoveringAfterDeath)
 			context.mode = playerbot_combat_value::RETREAT;
+		// A person's standing order to lure is a job, and grinding is not part
+		// of it. Nothing said so in 2.0.89, so between courses the Archer went
+		// hunting like any other bot - "Ninja zabija ich zamiast przyniesc do
+		// mnie" (marcinxboss, 20 September) - and then could never set off,
+		// because a monster chasing the Archer is what a course refuses to
+		// start with. Self-defence never asks this policy and party defence is
+		// answered above COMMITTED_TRAVEL, so the bot still hits back and still
+		// helps the person it is luring for; what it stops doing is walking up
+		// to things on its own.
+		else if (state.dwLurePlayerPID != 0)
+			context.mode = playerbot_combat_value::COMMITTED_TRAVEL;
 		// "Committed" means the errand has actually begun, not that the goal
 		// says so: a bot carrying BOT_GOAL_RESTOCK that never started a visit is
 		// simply standing about, and the audit was explicit that the goal string
