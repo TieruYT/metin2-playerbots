@@ -217,8 +217,13 @@ int main()
 			// Sohan between fifty-five and sixty-two.
 			const uint8_t sohan = GrinderLockFor(51, pid);
 			assert(sohan >= 55 && sohan <= 62);
-			// Past the last tier a Grinder holds where it is.
-			assert(GrinderLockFor(70, pid) == 70);
+			// Past the last tier there is nothing to hold it at. Answering
+			// with the bot's own level made every level a lock - m2zip's logs
+			// carry 112 bots frozen at 71, a number no tier names - and the
+			// document's tiers stop at Sohan (Tieru, 20 September).
+			assert(GrinderLockFor(66, pid) == 0);
+			assert(GrinderLockFor(70, pid) == 0);
+			assert(GrinderLockFor(120, pid) == 0);
 			// The same pid always gets the same lock - every core asks.
 			assert(GrinderLockFor(26, pid) == m2);
 		}

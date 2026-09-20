@@ -135,6 +135,20 @@ namespace
 			return 0;
 		const BYTE level = (BYTE)std::min<int>(255, ch->GetLevel());
 		const BYTE lock = playerbot_persona::GrinderLockFor(level, ch->GetPlayerID());
+		if (p.bLockLevel != 0 && lock == 0)
+		{
+			// Today's draw says this bot is held nowhere - it is past the last
+			// tier, or it is one of the quarter that walks through the first
+			// village - so a lock written under an older rule goes. Without
+			// this the fix above reaches only bots that have not been locked
+			// yet, and m2zip's 112 bots frozen at 71 would stay there.
+			sys_log(0, "PLAYERBOT_PERSONA: grinder lock lifted pid=%u name=%s level=%u was=%u",
+					ch->GetPlayerID(), ch->GetName(), (unsigned int)level,
+					(unsigned int)p.bLockLevel);
+			p.bLockLevel = 0;
+			p.bDirty = true;
+			return 0;
+		}
 		if (p.bLockLevel != 0)
 		{
 			// A lock written before Community Patch 1 is the old fixed number
