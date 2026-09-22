@@ -276,7 +276,8 @@ classic panel's AI page, **on by default**; off is exactly the old behaviour,
 which is why every rule below asks `IsPlayerBotPersonaEnabled()` first. The old
 personality stays as a hidden character that only biases chances
 (`bDrawnPersonality`), and the Metin, M2 and M3 droppers are gone: what they
-did is the Grinder's tier locks. The operator's medal-dropper cohort stays.
+did is the Grinder's tier locks. The operator's medal-dropper cohort stays,
+and since Community Patch 2 a drawn medal dropper stays one too (below).
 
 `DecidePersona` (pure, in `playerbot_persona_rules.h`) is the order a bot is
 claimed in: a mercenary's contract, then a party (Towarzysz), the rod, the
@@ -338,20 +339,132 @@ Four things the personalities changed that are easy to trip over later:
   distance, because the mercenary that struck it had walked forty-four
   kilometres across Orc Valley to make the offer
   (`PLAYERBOT_MERC_NOTICE_RANGE`).
-- **The Useful Items List is a keep, not a ranking.** A piece the list keeps -
-  jewellery and boots of tier 3-6, the weapons of his level bands, the level-61
-  shields and the level-66 armours, and anything carrying a tier 5-6 line
-  rolled at least half-way up - is neither merchant scrap nor counter goods,
-  and one already standing on a counter comes home at the next service visit.
-  Two of a weapon or an armour and three of a small piece for the bot's own
-  class, one for another class; a family worn at +9 needs no plain backups. The
-  level-30 weapons are **not** in it: they have the operator's own rules (the
-  anvil's share, the grind for sale) and keeping them twice would fight those.
-  What the box holds is remembered from the last visit
+- **The Useful Items List is a keep, not a ranking.** A piece the list keeps
+  is neither merchant scrap nor counter goods, and one already standing on a
+  counter comes home at the next service visit. Since Community Patch 2 the
+  list is his by name: the twenty-four jewellery and boot families of
+  `PLAYERBOT_LPP_JEWELS` (read off `world.item_proto`, where some names are cut
+  short), the weapons of `PLAYERBOT_LPP_WEAPONS` (the twenty-five he names),
+  every body armour over `PLAYERBOT_LPP_ARMOUR_OVER_LEVEL` and every shield
+  over `PLAYERBOT_LPP_SHIELD_OVER_LEVEL`, plus anything carrying a tier 5-6
+  line rolled at least half-way up. Two of a weapon or an armour and three of
+  a small piece for the bot's own class, one for another class; a family worn
+  at +9 needs no plain backups. The six level-30 weapons on his list are left
+  out of it (`ClassifyPlayerBotLppItem`) for the operator's own rules: the bot's
+  own class up to `PLAYERBOT_LEVEL30_KEEP_MAX` for its anvil
+  (`PlayerBotKeepsLevel30ForAnvil`), another class's never for the anvil - the
+  grind for sale and the counter are its road. The list's pieces go to the
+  storekeeper **at every visit**
+  (they waited for a bag at eighty percent, and the bags held them for good);
+  the herbs keep the old rule. What the list lets go is counter goods at
+  `PLAYERBOT_SHOP_LPP_SURPLUS_SCORE` (`IsPlayerBotLppSurplusGoods`), never the
+  merchant's - "musi natychmiast trafic na sklep, aby inni Hazardzisci mogli je
+  odkupic". What the box holds is remembered from the last visit
   (`TPlayerBotPersona::mapLppStored`), a box with fewer than nine free cells
   stops the list keeping anything new - or a full box would leave a full bag
   for good - and a piece the list lets go is remembered as released, because
   the dead-stock rule would otherwise send it straight back down.
+
+Community Patch 2 (Iwakura, 22 September; his text stays with the operator,
+not in `data/`) reworked these point by point. What each hangs on:
+
+- **Every bot of thirty holds its class's level-30 weapon** (point 1).
+  `PlayerBotLacksClassLevel30Weapon` sends a bot with none in hand or bag to
+  the market at its next town visit, whatever its level and with or without the
+  switch; the browse ranks the class's weapon at 400 plus its average line, so
+  the highest average wins and the price only breaks a tie ("12% za 300k albo
+  26% za 450k - wybierze drozsza"). Under the switch the purchase and the anvil
+  share `PLAYERBOT_LEVEL30_BUDGET_PERCENT` of the purse the visit began with,
+  and the anvil aims at `GetPlayerBotLevel30Aim`: the first plus drawn by pid
+  (60/13/8/5 percent for +6/+7/+8/+9; the fourteen the sheet leaves over also
+  +6) while the weapon walked into town under it, then
+  `PLAYERBOT_LEVEL30_LONG_TERM_PLUS` (+9 for the +9 draw) at every visit after.
+  From `PLAYERBOT_LEVEL30_BLESSING_FROM_3_AVERAGE` it goes under a Blessing
+  Scroll from +3 (the operator's 37%-and-up scroll-only rule answers first),
+  and a counter's piece at that average beating every one the bot holds is
+  bought as well (`IsPlayerBotMandatedLevel30Offer`). A bot that can buy one is
+  not sent to farm M3 for it. `PLAYERBOT_MARKET: level-30 census` counts the
+  eligible, the lacking and the pluses every ten minutes. Droppers are left out.
+- **Two Grinder styles** (point 2), one draw by pid (`GrinderStyleRoll`):
+  thirteen percent never hold at a lock (`NeverHoldsAtLocks`), and ten percent
+  more may give grinding up - a 33% roll once per tier, the moment the Law of
+  Advancement is met at the lock, remembered in `PLAYERBOT_PERSONA_FLAG_QUIT`
+  and `_QUIT_TIER` so a restart does not roll again. Both lift a lock already
+  written (`grinder lock lifted ... why=`): 95 in the first quarter hour on
+  m2zip, and two bots gave grinding up.
+- **Bonuses by the sheet** (point 3). Before 45 the boots, the necklace and
+  the bracelet (`IsPlayerBotEarlyBonusSlot`) are bonused at any refine and are
+  finished at a health line plus one of his lines for the slot; the weapon
+  waits for two of them to carry health (`PLAYERBOT_EARLY_HP_PIECES_FOR_WEAPON`)
+  and aims at `PLAYERBOT_BONUS_WEAPON_TARGET_AVERAGE`. A new piece whose lines
+  are worth less than the worn one's waits in the bag while a stone can change
+  that (`IsPlayerBotSwapHeldForBonus`) and is bonused where it lies: on m2zip
+  the first three held pieces were bonused past the worn ones inside twenty
+  minutes. See "A wait must be one the pass that ends it will end" below.
+- **The medal dropper came back** (point 4). Under the switch a drawn medal
+  dropper used to become a Wanderer (`GetPlayerBotCharakter`), which left the
+  operator's cohort as the only farm; it stays one now, and
+  `PLAYERBOT_MEDAL_DROPPER_EXTRA_PER_MILLE` of the bots with no role of their
+  own are drawn one besides, in their band only. They hold at the dungeon's
+  lock, not a tier's, and never advance out of it
+  (`GetPlayerBotMedalDropperLock`); `PLAYERBOT_MEDAL_GOAL_PERCENT` of them farm
+  until the medals pay for their level's weapon and armour at +9 and helmet and
+  shield at +7, the weapon first from thirty, and then play as Wanderers
+  (`ManagePlayerBotMedalGoal`, `PLAYERBOT_PERSONA_FLAG_MEDAL_GOAL`). Measured on
+  m2zip ten minutes after the start: 75 of the 737 bots of channel 1 outside
+  the operator's 99 and 21 of 209 on channel 2 - a tenth, against the 26 in a
+  thousand Iwakura counted. Their unreachable plans (the maze's chambers,
+  on a retreat) are most of the core's `PLAYERBOT_NAV: unreachable` now.
+- **Books for a trader** (point 5). The Handlarz persona or any bot on a town
+  visit (`PlayerBotBuysBooksAsTrader`) buys its own Master skills' books
+  whatever its gear, from `PLAYERBOT_BOOK_VISIT_BUDGET_PERCENT` of the purse
+  per `PLAYERBOT_BOOK_BUDGET_WINDOW_MS`, and reads them; another class's books
+  score `PLAYERBOT_SHOP_OTHER_CLASS_BOOK_SCORE`, and
+  `PLAYERBOT_SHOP_OTHER_CLASS_BOOK_MIN` of them open a counter.
+- **Mood.** A boss's casket lifts it (point 6,
+  `PLAYERBOT_MOOD_BOSS_CASKET_VNUMS`), and a SLABY bot picks up its own drop
+  before it steps away (point 7) - for at most
+  `PLAYERBOT_MOOD_AFK_LOOT_WAIT_MAX_MS`, because a drop it cannot reach must
+  not cost it the habit.
+- **Inflation** (point 8). `RefreshPlayerBotWorldYang` sums the gold of every
+  character every ten minutes, GMs included ("lacznie na wszystkich
+  postaciach"), and `ScalePlayerBotIwakuraPrice` adds
+  `PLAYERBOT_INFLATION_STEP_PERCENT` per `PLAYERBOT_INFLATION_STEP_YANG` in
+  whole steps on top of the yang curve. The step is folded into
+  `GetPlayerBotPriceGeneration`, so a new one reprices every offline counter
+  at its service visits. m2zip started at 3.19 billion and +5%.
+- **The gambler in town** (point 10). A bot in its first village with a
+  weapon at `PLAYERBOT_GAMBLE_TOWN_WEAPON_PLUS`, an armour at `_ARMOUR_PLUS`
+  and `PLAYERBOT_GAMBLE_TOWN_PURSE_BASE` through the yang curve and the
+  inflation begins the gambler's session without the roll (`townTrigger`).
+- **The market Perfectionist** (point 11). `IsPlayerBotMarketPerfectionist`
+  (fifteen percent by pid, and the never-holders, the quitters and the
+  graduated goal droppers, whose gear is meant to come off the market) looks
+  for a finished piece at `PLAYERBOT_READY_GEAR_MIN_PLUS` inside
+  `PLAYERBOT_READY_GEAR_LEVEL_WINDOW` of its level before the blacksmith, and
+  holds the anvil `PLAYERBOT_READY_GEAR_WAIT_MS` for the purchase.
+- **Fifty-four junk weapons, five on the market** (point 13). His bases at
+  +0..+3 (`IsPlayerBotJunkWeaponVnum`) may stand
+  `PLAYERBOT_JUNK_WEAPON_MARKET_CAP` at a time on all the bots' counters
+  together: the ledger counts them (`junk_weapons=` in its line), the junk rule
+  sends the rest to the merchant, the service visit takes a surplus home. A
+  piece with prize lines is exempt, the Useful Items List keeps first (Lwi
+  Miecz is on both of his lists), and the cap is asked before the level-65
+  pickup goods, which would otherwise keep those for a full market.
+- **The first villages hunt what pays** (point 14). `PLAYERBOT_M1_VALUE_HUBS`
+  is the 48 hubs of the three first villages whose ring holds the White Oath
+  soldiers and the bears - 15, 15 and 18, measured through regen.txt,
+  group.txt and group_group.txt on m2zip's share - and
+  `PreferPlayerBotM1ValueHubs` takes them over the dogs when the bot hunts for
+  its own level. One percent of tier 1 (`IsPlayerBotM1Farmer`) stays there
+  until it can pay for the level-30 weapon at +8 and an armour of 18 or 26 at
+  +9 (`PlayerBotM1FarmerGoalMet`).
+- **A guild defends its own** (point 15, Amos's idea). A person who strikes a
+  bot calls its guild (`TPlayerBotGuildCall`): every member within
+  `PLAYERBOT_ANTIPK_GUILD_RANGE` of the attacker drops what it is doing and
+  fights, for `PLAYERBOT_ANTIPK_GUILD_MEMORY_MS` after the last blow
+  (`BOT_FOE_GUILD`, `PLAYERBOT_ANTIPK: guild called`). Only a person is an
+  aggressor. Never watched: the test world has no person to strike a bot.
 
 ### Traps this file has already sprung
 
@@ -3811,7 +3924,10 @@ Four things the personalities changed that are easy to trip over later:
   in the Dockerfile loop (object/70058/use in the image). qc checks only the
   dotted engine functions against quest_functions: the questlib helpers
   map_warp uses (say_split, select_table, parse_number, get_player_map1_index)
-  compile without being listed. Compiled, not used in game yet.
+  compile without being listed. It never ran under that name: the ring's use
+  goes to its special item group, and the handler is `when 10031.sig_use`
+  since 2.0.95 (see "A quest item in a special item group is used under the
+  group's number").
 - **A GM on this line is its owner playing.** `apply_gm_gameplay` in
   playerbotify.py, from an audit of 14 September (gm_gameplayify.py): Ikarus's
   `CheckGMLevel` refused every shop operation above GM_PLAYER,
@@ -4513,8 +4629,12 @@ Four things the personalities changed that are easy to trip over later:
   below zero. The stone is never junk and never counter goods. Fasolka Zen
   (70102) lifts a negative rank by up to its value0 of 5000 and the engine takes
   it only then; `ManagePlayerBotZenBeans` eats one when the rank is below zero,
-  and a counter keeps the first `PLAYERBOT_ZEN_BEAN_KEEP` back
-  (`CountPlayerBotVnumUnitsAhead`). A rank that is below zero all the same keeps
+  and a counter keeps `PLAYERBOT_ZEN_BEAN_KEEP_MIN` to `_MAX` back - ten to
+  fifteen by pid since 2.0.95, "pod robienie skilli na P", counted over the
+  whole bag and listed in lines of `PLAYERBOT_ZEN_BEAN_LINE_UNITS`. The keep
+  was two and counted only over the cells in front of a stack, so a bot's one
+  stack was never goods: 18 000 beans in bags on blasty's world and none on a
+  counter. A rank that is below zero all the same keeps
   its bot in the safe zone until a bean lifts it, and the bean is the only way
   back (Tieru, 15 September): `KeepPlayerBotNegativeRankInTown`, in the tick
   ahead of the loot, the errands, the travel and the fight, and never for a bot
@@ -5243,7 +5363,10 @@ Four things the personalities changed that are easy to trip over later:
   (playerbotify `apply_quest_item_use_log`), a suspended state is told to the
   player, the ring quest logs `QUEST_ITEM: teleport_ring runs`, and the bundle
   keeps the tag - the next report can be read instead of guessed. Read the
-  enum before naming a flag by its number.
+  enum before naming a flag by its number. And the use path above is not the
+  ring's: the ring is in special item group 10031, so its use is
+  `CQuestManager::SIGUse(10031)` and no handler under 70058 is ever asked -
+  found by Mur4s in 2.0.95, after both diagnoses here.
 - **A player's guild invitation reaches the bot on the same call.**
   `CGuild::Invite` sends the invitee a packet a bot's descriptor never answers,
   so the invitation event expired in silence. Unlike the party invitation, the
@@ -6963,6 +7086,180 @@ Four things the personalities changed that are easy to trip over later:
   again - the idempotency check (copy client-root, render it with `--root` on
   the copy, `diff -r`) is what caught it, and it overwrites client-root, so
   render from the published root again afterwards.
+- **An offline shop runs on two clocks, and only the db core's may end it.**
+  This core counts each shop's minutes down on its own pulse event
+  (`func_offlineshop_update_duration`) and the db core counts the same minutes
+  on its own; the db core's count expires the shop and refuses a create while
+  its own copy has time left ("it already exists", with no answer at all). A
+  loaded core's pulse clock runs fast - `heart_idle` counts
+  `floor(elapsed / pass) + 1` pulses whenever a loop overruns, and game1 at a
+  thousand bots measured 26.6 pulses a second against 25 - so a shop reached
+  zero here long before it did there. In that stretch the entity stood on the
+  map and a click did nothing ("sklepy WIDMO w ktore nie da sie kliknac",
+  Iwakura), and a renewal asked for in it took the fee and was refused without
+  a word ("sklep nie daje sie ponownie otworzyc", ElGrande): 368 bot renewals
+  on m2zip from 17 to 20 September. `apply_shop_clock` (playerbotify) keeps
+  this core's count at one minute or more - zero is the db core's word alone,
+  and it arrives with the expiry packet - and a renewal still unanswered after
+  `PLAYERBOT_OFFLINE_RENEW_ABANDON_MS` is dropped and asked again
+  (`PLAYERBOT_OFFLINE: renewal went unanswered`): it carries no goods, so
+  nothing can be doubled, where a create is still never retried.
+  Any duration the two cores both count wants one owner.
+- **`AFFECT_EXP_BLOCK` takes an attacker out of the whole kill, not just its
+  own share.** `CHARACTER::DistributeExp` skips a blocked attacker in the
+  damage map altogether, so its blows count for nobody - and the Grinder's
+  locks hold their bots under that affect. A player in a party of such bots
+  got nothing from what they killed until the player's own blow put him on the
+  map ("W PT - NA ROWNYM nie leci exp", SIZOWSKI).
+  `apply_party_exp_of_blocked_members` counts a blocked member's blows for its
+  party while somebody in it can take experience; `PointChange` still refuses
+  the blocked member's own share, and a party of nothing but blocked members,
+  or a blocked attacker alone, is left out as before. char_battle.cpp ships
+  staged.
+- **A switch read in a loop of sliders has to `continue`.** The classic
+  panel's `read_ai_weights` handled WARS in its own branch and then fell
+  through to the slider branch below, which clamped it to 25: the page showed
+  the wars on after every reload and the next save of anything wrote WARS 1 -
+  so switching the wars off from the panel never held, and "bots still fight
+  with the wars off" was the panel. Every non-slider key in that loop ends its
+  branch with `continue`; check a new one the same way.
+- **The stock level-85 Biologist row counted the level-80 row's item.**
+  `collect_quest_lv85` (Czerw. Konar Duchodrzewa, 30167) asked the bag for
+  30166 at the hand-in, so a player holding a hundred and sixty red branches
+  was sent away at every visit with nothing taken (! AmaZing !, 21 September).
+  Our copy in `linux-port-mt2009/docker/game/quest/` changes that one line and
+  compiles in the Dockerfile loop over the stock objects. The other rows'
+  hand-ins were read beside it and ask for their own items.
+- **A quest item in a special item group is used under the group's number.**
+  `special_item_group.txt` puts the Teleport Ring (70058) in the quest group
+  10031 ("Type Quest"), so `ITEM_MANAGER` gives every ring SIGVnum 10031 and
+  the use goes to `CQuestManager::SIGUse(10031)`, which looks for a `sig_use`
+  handler under that number and never under the item's own. `when 70058.use`
+  compiled, sat under `object/70058/use` where nothing looked, and the ring did
+  nothing from 2.0.48 to 2.0.94 - through two diagnoses in this file that read
+  the flags and the use path and never the group. Mur4s found it ("FIX
+  PIERSCIONKA TELEPORTACJI", 22 September) and NerrVoVy confirmed it:
+  `when 10031.sig_use`. Before writing a `use` handler for an item, grep
+  `special_item_group.txt` for its vnum.
+- **A schedule that sends a cohort to rest sends it all at once.** With the
+  LIFE switch on every bot starts with the core, every first session ends
+  inside the same six hours, and a rest is three to nine: at six hours nine
+  bots in ten were resting and one in ten was back - Kuszaa's chart of 21
+  September, 500 a kingdom at 14:30 and 40 at 20:40 ("boty poszly na odpoczynek
+  ale z niego nie wracaja"; they were coming back, too few at a time).
+  `PLAYERBOT_LIFE_MAX_RESTING_PERCENT` of the scheduled bots rest at most, and
+  a session that ends past it plays on `PLAYERBOT_LIFE_HOLD_MIN_MS` to `_MAX_MS`
+  more, by pid; the census carries `held_on=` and `cap=`. Worked out, not yet
+  watched: m2zip runs with the switch off.
+- **A war fought with skills alone is a war of bots standing still.** The
+  basic swing knew only the duel's opponent, so a guild war and every Anti-PK
+  fight back were fought with skills and nothing between them ("boty jedynie
+  uzywaja umiejetnosci, nie autoatakuja, nie biegaja", prodnathin; Dixdros'
+  "PVP Bots"). It takes the war's foe and the Anti-PK foe now, and
+  `battle_is_attackable` still has the last word on every blow. And the war
+  chased the nearest enemy anywhere on the map, so a foe who walked off after a
+  death drew its enemies up the slopes and onto the Shinsoo map's bridge and
+  cliffs, four kilometres of fight with bots in the rock faces:
+  `PLAYERBOT_GUILD_WAR_FIELD_RADIUS` round the ground the sides were found on
+  is the field, a bot off it walks back before it looks for anybody, and a foe
+  off it is nobody's target.
+- **Encode what a tool writes before the file is opened for writing.** An edit
+  script opened `playerbot_lpp.h` for writing and then failed to encode a
+  Polish letter in its replacement text: the file was left at zero bytes, and
+  only `git checkout` brought it back. The session's helper encodes first,
+  writes a temporary file and `os.replace`s it, and refuses non-ASCII text for
+  an overlay file (the convention is ASCII there anyway). Any script that
+  rewrites a source in place wants the same order.
+- **A wait must be one the pass that ends it will end.** Community Patch 2's
+  swap rule holds a new piece in the bag while a stone could lift its lines
+  past the worn one's, and the first version asked only whether the bag held a
+  stone. The bonus pass's loop for the held piece asks
+  `CanPlayerBotRerollItemFor`, which refuses an armour under
+  `PLAYERBOT_BONUS_MIN_REFINE` - so a bot that bought a +0 armour from the
+  merchant with a stone in its bag would have kept it there for good.
+  `PlayerBotHoldsBonusStoneFor` asks the loop's question first. Found by
+  reading the throttled `new piece waits in the bag` line on m2zip before
+  anything shipped; the same shape as "the planner and the pass that acts must
+  ask one function".
+- **A medal dropper's lock is its dungeon's, and the status file has to say
+  so.** The exp lock held Community Patch 2's medal droppers at
+  `PLAYERBOT_EXP_LOCK_MEDAL_DROPPER`, while `ManagePlayerBotAdvancement` went on
+  treating them as Grinders: the status file and both panels showed tier locks
+  of 15, 18 and 25 for bots levelling to 33, and the Law of Advancement could
+  have made one a Conqueror in the Monkey Dungeon. `GetPlayerBotPersonaLockLevel`
+  answers for them (`GetPlayerBotMedalDropperLock`, the operator's cohort at its
+  own level), writes the lock down only once it holds - as a Grinder's is - and
+  the law leaves them alone.
+- **A bot's counter has no padlocks.** A shop's right half opens row by row as
+  a player unlocks it (`SHOP_SLOT_UNLOCK_PROGRESS_FLAG`, rows 0-3) and with the
+  premium (rows 4-7, which every bot holds); a bot never unlocked anything, so
+  its counters showed the padlocks and used half the grid.
+  `apply_bot_shop_slots_unlocked` answers `GetShopUnlockedProgress` for a bot
+  descriptor with every lockable row open - the offline shop takes it as its
+  `unlockCount` at the next add, the classic stall through
+  `CanPlaceOnShopSlot` - and a player's progress is his flag as ever
+  (Iwakura's idea, on SIZOWSKI's condition that it is the bots' alone).
+  char_shop.cpp ships staged.
+- **A bot's stand stands in a first village.** Kuszaa's reasoning, Iwakura's
+  idea: the players shop in the first villages, so the stands in the second
+  were counters nobody visits. The `SHOP_M2` key (off by default, a tick box
+  on the classic panel's AI page) is what lets them stand there again;
+  `IsPlayerBotShopMapAllowed` refuses the open pass anywhere else, and an
+  expired stand in a second village is renewed on its owner's first-village
+  ring at the next service visit (`moved_from=` in `PLAYERBOT_OFFLINE: reopen`) -
+  a renewal stands where its owner stands (`OpenOfflineShop`), so the owner is
+  served there instead of being walked back. Nothing moves a running stand, and
+  nothing touches a player's.
+- **The apprentice chest is the world's choice, asked with the rates.**
+  seban latino's idea: `M2_STARTER_CHEST` (launcher: a question in the text
+  menu and a tick box in the new-world dialog, `-StarterChest`) reaches the
+  migrator, which writes the event flag `m2_starter_chest_off`, and
+  `starter_chest.quest` gives nothing while it is raised. A character that
+  logs in meanwhile is not marked, so it gets its chest on a later login if
+  the chest is switched back on before it passes level five. A change is live
+  from the next start, like the difficulty.
+- **During a rate event the base flag is the operator's number.** The event
+  keeps the live flag at the boost of the base; a rate saved from a panel
+  during an event wrote the live flag, the core put the old boost straight
+  back over it, and the page read the base - so the save looked lost and did
+  not survive the event either ("zmiana rat nie dziala ... teraz nie mozna ich
+  zmienic mimo ze zaden event nie jest wlaczony", Monek, CarloMontana). Both
+  panels write the base while an event runs, the event's end returns the live
+  flag to the base whatever it holds, and a base left by an event that ended
+  while the core was down is cleared half a minute after the leader's start
+  (`PLAYERBOT_EVENT: stale base cleared`).
+- **A backup must survive the table it is backing up.** `log` is history
+  alone and is where a crashed MyISAM table lives, and its dump failing failed
+  the whole backup and the world reset behind it ("Zrzut bazy 'log' nie
+  powiodl sie", uxietoszef). It is dumped again with `--force` past what cannot
+  be read and, if even that fails, left out; the backup's README names what
+  was skipped. Any other database is the world and still stops the backup.
+- **The price pump waits for the answers before it calls anything a miss.**
+  Client 2.0.24's `shoppricepump.py`: an edit is a round trip through the db
+  core, which on a world of a thousand bots took longer than the second and a
+  half it was given, so every line was sent three times and the chat reported
+  failures for prices that had all changed on the first click (blastyw). A
+  line is looked at again every `CHECK_EVERY` for up to `PATIENCE` before it
+  is sent again (`tests/shoppricepump_test.py`).
+- **A visit resumed after a party can start on the wrong side of Joan's
+  wall.** A town visit is paused, not ended, while the bot is in a person's
+  party, and the bot goes where the person goes - so a visit begun inside the
+  wall resumed at the weapon merchant with the bot out by the fields: the leg's
+  goal was moved onto the bot's own side, "arrived" (`nav_out=2`) and the phase
+  never moved until the watchdog (Sammy Suricate's world). A bot outside the
+  wall in an inside phase crosses the gate again
+  (`PLAYERBOT_TOWN: outside the wall in phase`).
+- **Jinno's guild map is two pieces.** Its south-east fifth - 111 536 of
+  570 456 open cells, fifteen spawn groups - has no way in from the Town.txt
+  point, and the hub there was planned "unreachable" by every bot that drew it
+  (Champion, urtopy's world). It is replaced by the main piece's spawn point
+  furthest from the other nine. Check a hub's component, not only its cell.
+- **The FISHING slider reached the villages only.** The Rybak's roll was
+  read in the two villages and every bot old enough for the rod lives on the
+  frontier, so 200% moved a handful of bots of thirty to thirty-five and
+  nobody else ("ustawilem 200%, a liczba rybakow nie rosnie", blasty). A
+  frontier bot whose roll says fish (`IsPlayerBotRybakNow`) goes home to the
+  bank now; a trial and a party are not interrupted for it.
 
 ## Engine facts worth not re-deriving
 
