@@ -223,7 +223,10 @@ RUN set -eux; \
     # trainings (Tieru, 16 September, 2.0.56).
     # fishing_pass_shop opens the Fisherman's special shop, the only seller
     # of Karta Wedkarska, which no stock quest ever opened (2.0.68).
-    for q in web_admin speed_boost starter_chest pony_levelup gm_profile new_quest_lv19 teleport_ring pony_buy horse_upgrade horse_upgrade2 horse_levelup deviltower_zone fishing_pass_shop; do \
+    # collect_quest_lv85 is the Biologist's red-branch row with its hand-in
+    # asking for the right item: the stock quest counted 30166, the level-80
+    # row's, so nobody could hand in a single 30167 (2.0.95).
+    for q in web_admin speed_boost starter_chest pony_levelup gm_profile new_quest_lv19 teleport_ring pony_buy horse_upgrade horse_upgrade2 horse_levelup deviltower_zone fishing_pass_shop collect_quest_lv85; do \
       [ -f "/quest-add/$q.quest" ] || continue; \
       sed 's/\r$//' "/quest-add/$q.quest" > "/tmp/qc-work/$q.quest"; \
       ( cd /tmp/qc-work && /src/Server/game/src/quest/qc "$q.quest" ); \

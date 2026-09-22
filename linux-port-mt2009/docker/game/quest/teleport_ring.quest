@@ -91,7 +91,15 @@ quest teleport_ring begin
             return true
         end
 
-        when 70058.use begin
+        -- Not 70058.use: special_item_group.txt puts the ring in the quest
+        -- group 10031 ("Group ... Vnum 10031, Type Quest"), so ITEM_MANAGER
+        -- gives every ring SIGVnum 10031 and the use goes to
+        -- CQuestManager::SIGUse(10031), which looks for a sig_use handler
+        -- under that number and never under the item's own. The handler below
+        -- compiled and sat under 70058/use, where nothing ever looked, for
+        -- 2.0.48-2.0.94 - found and fixed by Mur4s (22 September, "FIX
+        -- PIERSCIONKA TELEPORTACJI"), confirmed by NerrVoVy.
+        when 10031.sig_use begin
             local player_level = pc.get_level()
             -- The engine logs the use (QUEST_ITEM: use); this line says the
             -- handler itself ran, which no log said on 2.0.62-2.0.64.

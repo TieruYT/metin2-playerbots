@@ -1,0 +1,205 @@
+-- The package's collect_quest_lv85 (the Biologist's red branches of the
+-- Red Forest, Czerw. Konar Duchodrzewa 30167) with one line changed. Its
+-- hand-in asked the bag for 30166 - the level-80 row's item, a copy-paste
+-- slip in the stock quest - so a player holding a hundred and sixty red
+-- branches and no 30166 was told "come back when you find another one" at
+-- every visit, nothing was taken and nothing counted (! AmaZing !, 21
+-- September). The rest is the stock file byte for byte; it has no define,
+-- so it compiles as it stands, and its objects land over the stock ones in
+-- the Dockerfile's quest loop. A character already in the quest keeps its
+-- state: the state names are the stock ones.
+----------------------------------------------------
+--COLLECT QUEST_lv85
+--METIN2 ?? ???  
+----------------------------------------------------
+quest collect_quest_lv85  begin
+	state start begin
+	end
+	state run begin
+		when login or levelup with pc.level >= 85  begin
+			set_state(information)
+		end	
+	end
+
+	state information begin
+		when letter begin
+			local v = find_npc_by_vnum(20084)
+			if v != 0 then
+				target.vid("__TARGET__", v, gameforge.collect_quest_lv85._010_target)
+			end
+			send_letter(gameforge.collect_quest_lv85._020_send_letter)
+		end
+
+		when button or info begin
+			say_title(gameforge.collect_quest_lv85._030_say_title)
+			say(gameforge.collect_quest_lv85._040_say)
+		end
+		
+		when __TARGET__.target.click or
+			20084.chat.gameforge.collect_quest_lv85._050_npcChat begin
+			target.delete("__TARGET__")
+			npc_name()
+			say_title(gameforge.collect_quest_lv85._055_say_title)
+			say(gameforge.collect_quest_lv85._060_say)
+			wait()
+			say_title(gameforge.collect_quest_lv85._064_say)
+			say(gameforge.collect_quest_lv85._065_say)
+			wait()
+			say_title(gameforge.collect_quest_lv85._069_say)
+			say(gameforge.collect_quest_lv85._070_say)
+			set_state(go_to_disciple)
+			pc.setqf("collect_count",0)
+		end
+	end
+
+	state go_to_disciple begin
+		when letter begin
+			send_letter(gameforge.collect_quest_lv85._080_send_letter)
+			
+		end
+		when button or info begin
+			say_title(gameforge.collect_quest_lv85._090_say_title)
+			say(gameforge.collect_quest_lv85._100_say)
+			say_item_vnum(30167) 
+			say_reward(gameforge.collect_quest_lv85._105_1_say_reward	.." "..pc.getqf("collect_count")..gameforge.collect_quest_lv85._105_2_say_reward)
+		end
+
+		when 2311.kill or 2312.kill or 2313.kill or 2314.kill or 2315.kill begin 
+			local s = number(1, 200)
+			if s == 1  then
+				pc.give_item2(30167)
+				send_letter(gameforge.collect_quest_lv85._130_send_letter)
+			end	
+		end
+		
+    	when 20084.chat.gameforge.collect_quest_lv85._140_npcChat with pc.count_item(30167) > 0 begin
+			if collect_data.is_wait() then
+				say_title(gameforge.collect_quest_lv85._185_say)
+				say(gameforge.collect_quest_lv85._190_say)
+				return
+			end
+
+			if pc.count_item(30167) < 1 then
+				say_title(gameforge.collect_quest_lv85._149_say)
+				say(gameforge.collect_quest_lv85.no_item)
+				return
+			end
+
+			say_title(gameforge.collect_quest_lv85._149_say)
+			say(gameforge.collect_quest_lv85._150_say)
+			pc.remove_item(30167, 1)
+			wait()
+			
+			local if_fail_show_wait_info = not collect_data.is_no_time_on_fail()
+			if collect_data.take_chance(60) then
+			   if pc.getqf("collect_count")< 39 then
+					local index =pc.getqf("collect_count")+1 
+					pc.setqf("collect_count",index)
+					say_title(gameforge.collect_quest_lv85._159_say)
+					say(gameforge.collect_quest_lv85._160_say)
+					say(gameforge.collect_quest_lv85._165_1_say.." "..40-pc.getqf("collect_count").. gameforge.collect_quest_lv85._165_2_say)
+					say(gameforge.collect_quest_lv85._170_say)
+					return
+				end
+				say_title(gameforge.collect_quest_lv85._174_say)
+				say(gameforge.collect_quest_lv85._175_say)
+				pc.setqf("collect_count",0)
+				collect_data.reset_time()
+				set_state(key_item)
+				return
+			else
+			say_title(gameforge.collect_quest_lv85._179_say)
+			say(gameforge.collect_quest_lv85._180_say)
+			say()
+			if if_fail_show_wait_info then
+				say(gameforge.collect_quest_lv85.fail_wait_info)
+			end
+			return
+			end
+		end
+	end
+
+	state key_item begin
+		when letter begin
+			send_letter(gameforge.collect_quest_lv85._195_send_letter)
+			
+			if pc.count_item(30226)>0 then	
+				local v = find_npc_by_vnum(20084)
+				if v != 0 then
+					target.vid("__TARGET__", v, gameforge.collect_quest_lv85._010_target)
+				end
+			end
+
+		end
+		when button or info begin
+			if pc.count_item(30226) >0 then
+				say_title(gameforge.collect_quest_lv85._200_say_title)
+				say(gameforge.collect_quest_lv85._210_say)
+				return
+			end
+
+			say_title(gameforge.collect_quest_lv85._220_say_title)
+			say(gameforge.collect_quest_lv85._230_say)
+			say_item_vnum(30226)
+			say(gameforge.collect_quest_lv85._240_say)
+		end
+		
+
+	
+		when 2311.kill or 2312.kill or  2313.kill or 2314.kill or 2315.kill  begin
+			local s = number(1, 200)
+			if s == 1 and pc.count_item(30226)==0 then
+				pc.give_item2(30226)
+				send_letter(gameforge.collect_quest_lv85._250_send_letter)
+			end	
+		end
+
+		when __TARGET__.target.click  or 20084.chat.gameforge.collect_quest_lv85._255_npcChat with pc.count_item(30226) > 0  begin
+		    target.delete("__TARGET__")
+			say_title(gameforge.collect_quest_lv85._260_say)
+			say(gameforge.collect_quest_lv85._265_say)
+			pc.remove_item(30226,1)
+			set_state(__reward)
+		end
+		
+	end
+	
+	state __reward begin
+		when letter begin
+			send_letter(gameforge.collect_quest_lv85._270_send_letter)
+			
+			local v = find_npc_by_vnum(20018)
+			if v != 0 then
+				target.vid("__TARGET__", v, gameforge.collect_quest_lv85._280_target)
+			end
+
+		end
+		when button or info begin
+			say_title(gameforge.collect_quest_lv85._290_say_title)
+			say(gameforge.collect_quest_lv85._300_say)
+
+		end
+		
+		when __TARGET__.target.click  or	20018.chat.gameforge.collect_quest_lv85._310_npcChat  begin
+		    target.delete("__TARGET__")
+			say_title(gameforge.collect_quest_lv85._311_say)
+			say(gameforge.collect_quest_lv85._315_say)
+			wait()
+			say_title(gameforge.collect_quest_lv85._311_say)
+			say(gameforge.collect_quest_lv85._316_say)
+			say_reward(gameforge.collect_quest_lv85._317_say_reward)
+			say_reward(gameforge.collect_quest_lv85._318_say_reward)
+			say_reward(gameforge.collect_quest_lv85._319_say_reward)
+			say("")
+			set_quest_state("collect_quest_lv90", "run")
+			set_state(__complete)
+			pc.give_item2(50115) 
+			clear_letter()
+			affect.add_collect(POINT_RESIST_HUMAN, 10)
+
+		end
+	end
+	state __complete begin
+	end
+end
+
