@@ -17,6 +17,58 @@ every version here.
 
 ---
 
+## 2.0.97 — 2026-09-23
+
+Serwer 2.0.97. Klient zostaje przy 2.0.25, więc aktualizacja klienta nie jest
+potrzebna. Zawiera wszystko z 2.0.96.
+
+### Boty odpisują na priv — system rozmów od ĹŌŞƬĒĶ (l0st3k)
+
+System napisany przez **ĹŌŞƬĒĶ (l0st3k)** sprawia, że bot odpisuje na szept
+tak, jak zrobiłby to gracz. Całość jest w C++ i działa lokalnie w rdzeniu gry,
+bez żadnej zewnętrznej usługi. Wchodzi w całości, z kilkoma naszymi poprawkami. Co
+potrafi:
+
+- **Rozumie zwykłe pytania**: co robisz, gdzie expisz, jaki masz poziom, ile
+  masz yang, jak drop, czy jest w PT albo w gildii, co ma w sklepie, czy
+  sprzeda lub kupi przedmiot albo księgę („masz ku aura miecza?”). Rozmawia
+  też o luźnych rzeczach: czy lubi zimę, czego się boi, czy jest botem.
+- **Odpowiada tym, co naprawdę robi w tej chwili**: mapą, celem, poziomem,
+  bronią i zbroją, drużyną, gildią i nastrojem z systemu osobowości Iwakury.
+- **Pamięta rozmowę**: rozumie dopytania („a dlaczego?”, „a potem?”, „a ty?”),
+  nie powtarza w kółko tych samych zdań, a stałego rozmówcę z czasem traktuje
+  jak znajomego.
+- **Odpisuje po chwili**, jak człowiek (około sekundy). Kilka szybkich
+  wiadomości łączy w jedną odpowiedź, a na zalew wiadomości odpowiada krótko,
+  zamiast gubić wątek.
+- **Czasem sam zagada** do gracza, z którym już wcześniej rozmawiał.
+
+„Kupię …” i „Sprzedam …” działają jak dotąd, czyli odpowiada bot, który ma
+towar. „Luruj” też działa bez zmian.
+
+Nasze poprawki: bot wie o swoim sklepie offline. Mówi, w którym mieście stoi
+sklep i co na nim jest, a na „sprzedasz mi …” odpowiada ceną z własnych
+półek. Wcześniej na tej linii serwera każdy bot odpowiadał, że straganu nie
+ma. Poprawiliśmy też liczenie wolnych miejsc w plecaku, tak jak liczy je gra.
+
+Dla administratora: plik `playerbot_conv_debug` w katalogu rdzenia włącza
+szczegółowe linie `PLAYERBOT_CONV` w logu, a `playerbot_conv_noinit` sprawia,
+że boty nie zaczynają rozmów same. Oba działają bez restartu.
+
+Sprawdzone na naszym serwerze testowym przy około 850 botach: przez 12 minut
+boty zadały sobie nawzajem 885 pytań, w tym serie po sześć wiadomości naraz.
+Boty udzieliły 542 odpowiedzi (130 z nich łączyło kilka wiadomości), a żaden
+rdzeń nie padł. Z żywymi graczami system działa już na serwerze autora.
+
+### Bot po śmierci nie biegnie w ścianę
+
+Po wstaniu bot odchodzi kawałek od miejsca śmierci. Kierunek był losowany
+z ośmiu, a w wąskich komnatach Lochu Małp większość z nich to ściana. Bot
+planował wtedy drogę donikąd przy każdym ruchu, aż się wyleczył, i były to
+najczęstsze linie w syserr serwera. Teraz wybiera pierwszy kierunek, do
+którego naprawdę da się dojść, a gdy żadnego nie ma, zostaje w miejscu,
+niewidzialny, i się leczy.
+
 ## 2.0.96 — 2026-09-23
 
 Serwer 2.0.96, klient 2.0.25. Zawiera wszystko z 2.0.95. **Zaktualizuj też

@@ -105,7 +105,9 @@ dependency order at the top of `playerbot_manager.cpp`:
 | `playerbot_town.h` | A town visit end to end, as a state machine that survives being interrupted. |
 | `playerbot_itemshop.h` | The 2.x line's in-game ItemShop: the Kupon SM vouchers cashed, the account's Dragon Coins and Marks, and the few things a bot buys with them. Empty on r40250. |
 | `playerbot_market.h` | Buying from another bot's counter: what is worth having, the walk to the stall, and the purchase. |
-| `playerbot_chat_trade.h` | Trading over the chat: what a bot shouts about its counter and its wants, and the whisper it answers a player's "Kupie"/"Sprzedam" with. Fed by patch 0007. |
+| `playerbot_chat_trade.h` | Trading over the chat: what a bot shouts about its counter and its wants, and the whisper it answers a player's "Kupie"/"Sprzedam" with. Fed by patch 0007. Anything else whispered falls through to the conversation. |
+| `playerbot_conv_*.h` | ĹŌŞƬĒĶ's conversation layer as pure code (text, lexicon, intents, memory, state, say, general, generator, engine): what a whisper means, what the bot remembers of the person, and the reply. No engine types, unit-tested (`tests/playerbot_conversation_test.cpp`). Included by the next row only. |
+| `playerbot_chat_conversation.h` | The conversation's engine side: the snapshot of the bot it answers from, the whisper packet, the short timer while replies wait. After status.h. |
 | `playerbot_loot.h` | Picking things up, in and out of a fight, without sweeping the floor. |
 | `playerbot_lure_order_rules.h` | What a person's whisper to a bot means: "luruj" and "przestan lurowac". No engine types, unit-tested. Included first, with the other rules headers. |
 | `playerbot_survival.h` | Saving progress, breaking off a losing fight, and the walk back after dying. |
@@ -7349,6 +7351,42 @@ not in `data/`) reworked these point by point. What each hangs on:
   the fourth page doubled the time between visits wherever drops are slow.
   Not changed yet: measure on an ordinary-rate world before moving either
   threshold, because on a fast one the visits are already constant.
+- **A whisper to a bot is a conversation now, and it is ĹŌŞƬĒĶ's (l0st3k).** Their
+  "chat bots v1.1a" (23 September) came as a whole game/src against 2.0.94;
+  against the package only fifteen files differed, none of them an engine
+  file, so it went in as ten headers, their test and three small hunks in the
+  manager and the trade layer. The shape to keep: `playerbot_conv_*.h` is
+  pure (no engine types) and bounded - 4096 pairs of person and bot, six
+  queued lines a pair, four remembered turns, 256 bytes of input, a pair
+  forgotten three hours after its last line - and `tests/playerbot_conversation_test.cpp`
+  runs it (400 checks). `playerbot_chat_conversation.h` is the only file that
+  knows the engine: it looks the bot and the person up by pid every time it
+  answers and never holds a character across ticks, sends the raw whisper
+  packet, and runs its own event only while a reply is waiting (it returns 0
+  and forgets the pointer when the queue empties). The trade layer answers a
+  "Kupie"/"Sprzedam" line as a shout, as before, and hands everything else -
+  and a trade line inside the eight-second trade clock, which used to vanish -
+  to `HandlePlayerBotConversation`. The layer reads the AI and writes nothing
+  to it. Two things we changed: **on the 2.x line a bot's counter is an
+  offline shop, so `GetMyShop()` answered "no stall" for every bot** - the
+  snapshot reads the ikashop shop into `shopTown`/`shopSummary` and
+  `AnswerBuy` searches its lines; `shopOpen` stays false for one, because
+  every line that reads it means "I am standing at my stall" and such a
+  keeper is out hunting - and the bag's free cells are the item grid's, not
+  the empty pointers. Runtime switches are files in the core's working
+  directory, read every thirty seconds: `playerbot_conv_debug` (the
+  `PLAYERBOT_CONV`, `_QUEUE`, `_REPLY`, `_INITIATIVE` lines) and
+  `playerbot_conv_noinit` (no bot starts a conversation). `PLAYERBOT_CONV_STATS`
+  every ten minutes is the census. A bot descriptor drops every packet
+  (`DESC::Packet` returns for `m_bBot`), which is what makes a server-side
+  test possible: a variant with a self-test that has one bot whisper another
+  (`make_selftest_conv.py` of session 82d3ab90) runs the whole engine side on
+  live states with nobody logged in. Measured with it on m2zip on 23
+  September at about 850 bots: 885 lines in twelve minutes, bursts of six
+  among them, 542 replies (130 of them merging several lines), one line a
+  bot began itself, no core died, and the tick at 7.0 s of 60 against 6.5 to
+  6.9 before. Never watched with a person whispering: the test world has
+  none, and the author runs it on their own.
 
 
 ## Engine facts worth not re-deriving
