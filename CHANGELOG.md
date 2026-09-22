@@ -17,6 +17,99 @@ every version here.
 
 ---
 
+## 2.0.96 — 2026-09-23
+
+Serwer 2.0.96, klient 2.0.25. Zawiera wszystko z 2.0.95. **Zaktualizuj też
+klienta** (przycisk „Aktualizuj klienta”): Auto Łowy 2.0 potrzebują nowego
+`metin2client.exe`.
+
+### Auto Łowy 2.0 od Colide'a
+
+Colide przebudował Auto Łowy i przysłał swój kod — łącznie z częścią dla
+klienta w C++. Wchodzi w całości, a do tego nasze poprawki. Nowości:
+
+- **Moby, Metiny, Bossy** — trzy przełączniki w oknie ustawień decydują, co
+  postać atakuje. Gdy włączone są wszystkie, serwer zawsze wybiera najpierw
+  bossa, potem Metina, a dopiero potem zwykłe potwory. Domyślnie włączone są
+  Moby i Metiny.
+- **Po zabiciu potwora postać od razu bierze następny cel.** Martwy potwór
+  leży na mapie jeszcze 2–3 sekundy, a postać czekała przy nim na kolejną
+  odpowiedź serwera. Teraz klient sam widzi, że potwór padł, i od razu prosi
+  o następny cel.
+- **Łuk w ręce strzela z daleka** — do 2400 jednostek. Z mieczem lub
+  sztyletami postać podchodzi jak dotąd.
+- **Zasięg widać na ziemi.** Przy otwartym oknie ustawień gra rysuje okrąg:
+  niebieski idzie za postacią, a zielony, gdy włączone jest „Wracaj”, stoi w
+  miejscu startu z krzyżykiem w punkcie powrotu. Zasięg ustawia się suwakiem
+  (300–5000).
+- **Bez „Wracaj” zasięg idzie za postacią**, zamiast trzymać się miejsca
+  startu.
+- **Okna pamiętają swoje miejsce** (`autohunt/config.cfg`), a każda postać ma
+  swoje ustawienia w `autohunt/postacie/<nick>.cfg`. Ustawienia z poprzednich
+  wersji są czytane do pierwszego zapisu, więc nic nie ginie.
+
+Okrąg, zasięg łuku i puszczanie trupa to funkcje nowego exe klienta. Ze
+starszym exe Auto Łowy działają bez nich — łucznik ze szkołą łuku nadal
+strzela z daleka.
+
+Nasze poprawki w tej wersji: mikstura, której nie ma w plecaku, jest szukana
+raz na sekundę zamiast w każdej klatce (przeszukanie czterech stron plecaka
+kosztowało klatkę), niebieska mikstura jest rozpoznawana po tabeli
+przedmiotu, a próg HP po wskrzeszeniu nie może przekroczyć 100%.
+
+### Szybkie podnoszenie działało tylko do pierwszego teleportu
+
+Zgłosił **GorącyDelfin**: klawisz podnoszenia wszystkiego naraz (`)
+działał tylko w M1. Zegar klienta liczy od zera przy każdym połączeniu z
+serwerem, czyli po każdym teleporcie, a klawisz pamiętał czas sprzed
+teleportu — więc blokował się na tyle, ile postać grała przed przeniesieniem.
+To samo dotyczyło przycisku „Scal i uporządkuj”, przenoszenia stosów do
+magazynu, pompy cen w sklepie, tytułów botów i Auto Łowów. Wszystkie liczą
+teraz czas zegarem, który teleport nie zeruje.
+
+### Boty w drużynie gracza trzymają się gracza
+
+Zgłosił **SIZOWSKI**: szamani dodani do drużyny robili swoje, zamiast iść za
+graczem, więc nikogo nie buffowali. Bot szuka potworów do 6000 jednostek od
+siebie, a za graczem idzie tylko wtedy, gdy nie walczy. Bot, który zawsze
+miał następnego potwora w zasięgu, odchodził więc paczka po paczce i nie
+wracał. Teraz bot w drużynie gracza atakuje tylko potwory **do 2500 jednostek
+od gracza** — chyba że potwór bije jego samego, bo obrony nic nie wstrzymuje.
+Gdy nie ma z czym walczyć, wraca do gracza i go buffuje.
+
+### Bot bez broni na 30 poziom nie kręci się już w kółko przy M3
+
+Zgłosił **urtopy**, na przykładzie bota Champion: bot bez broni na 30 poziom,
+któremu skończył się czas wizyty w M3, szedł do M2 i po dwóch sekundach
+wracał do M3 — bez końca. Status pokazywał przy tym cel planera („Zbieram dla
+Biologa: Ząb Orka”), choć Ząb Orka nie leży w M3. Teraz po wizycie, która
+skończyła się bez broni, bot wraca do M3 dopiero po 45–90 minutach i w tym
+czasie załatwia resztę (dolina, koń, Biolog). W M3 jego status to
+„Szukam broni na 30 poziom na M3”.
+
+### Nowy wygląd launchera
+
+Launcher dostał nowy wygląd z tłem:
+
+- menu po lewej: Pulpit, Świat i boty, COOP, Baza danych, Logi i
+  diagnostyka;
+- pod menu wersje serwera, launchera i klienta oraz przycisk „Postaw
+  kawkę”;
+- w nagłówku link do metin2singleplayer.com i przełącznik języka;
+- akcje jako karty z opisem;
+- log operacji, który można zwinąć;
+- przycisk rat EXP / DROP / YANG, który otwiera edytor rat w panelu WWW.
+
+Wszystkie przyciski robią dokładnie to samo co wcześniej, z tymi samymi
+oknami potwierdzeń. Zniknął tylko „URUCHOM DOCKER” — Dockera, jak dotąd,
+uruchamia przycisk GRAJ. Okno mieści się też na mniejszym ekranie (laptop
+1366×768). Gdyby nowy wygląd nie uruchomił się na danym komputerze, launcher
+powie o tym i przy następnym uruchomieniu otworzy się w starym wyglądzie
+(zostawia plik `.m2launcher-classic-layout`; jego usunięcie to kolejna próba).
+Tło to grafika w klimacie Metin2, nie oficjalny render z gry.
+
+---
+
 ## 2.0.95 — 2026-09-22
 
 Serwer 2.0.95, klient 2.0.24. Zawiera wszystko z 2.0.94. Większość tej wersji
