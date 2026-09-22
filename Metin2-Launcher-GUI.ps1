@@ -1,13 +1,30 @@
 ﻿[CmdletBinding()]
-param([switch]$SelfTest)
+param(
+    [switch]$SelfTest,
+    # The window's own test (Metin2-Launcher-GUI.Layout.ps1): the window is
+    # built off screen, every page is walked at three sizes, a picture of
+    # each goes to -UiTestOutput, and the process ends before any timer,
+    # Docker question, update check or action.
+    [switch]$UiSelfTest,
+    [string]$UiTestOutput,
+    [ValidateSet('pl', 'en')][string]$UiLanguage = 'pl',
+    # Another installation for the modules and the configuration, so the
+    # window can be tried from a checkout against a working server.
+    [string]$ServerRoot = ''
+)
 
 $ErrorActionPreference = 'Stop'
-$root = [IO.Path]::GetFullPath($PSScriptRoot)
+if (-not $ServerRoot) { $ServerRoot = $PSScriptRoot }
+$root = [IO.Path]::GetFullPath($ServerRoot)
 $cliLauncher = Join-Path $root 'Metin2-Launcher.ps1'
 $modulePath = Join-Path $root 'launcher\Metin2Launcher.psm1'
 $diagnosticsModulePath = Join-Path $root 'launcher\Metin2Launcher.Diagnostics.psm1'
 $configPath = Join-Path $root '.m2launcher.json'
 $logDirectory = Join-Path $root 'launcher-logs'
+if ($UiSelfTest) {
+    if (-not $UiTestOutput) { throw 'UiTestOutput is required for UiSelfTest.' }
+    $logDirectory = Join-Path ([IO.Path]::GetFullPath($UiTestOutput)) 'test-logs'
+}
 $supportDirectory = Join-Path $root 'support-bundles'
 $composeFile = Join-Path $root 'linux-port\docker\docker-compose.yml'
 $sessionLog = Join-Path $logDirectory ('launcher-{0}.log' -f (Get-Date -Format 'yyyyMMdd'))
@@ -26,6 +43,7 @@ function Write-StartupFailure {
 }
 
 trap {
+    if ($UiSelfTest) { Write-Error $_ -ErrorAction Continue; exit 1 }
     # A launcher that dies before its first log line left nothing behind but a
     # dialog nobody could copy from - after the 2.0.8 restart the session log
     # ended at "Uruchamiam launcher ponownie" and the player saw an error box
@@ -308,6 +326,8 @@ try {
     if ($storedLang -eq 'en') { $script:Lang = 'en' }
 }
 catch { }
+
+if ($UiSelfTest) { $script:Lang = $UiLanguage }
 
 function T {
     param([Parameter(Mandatory = $true)][string]$Key)
@@ -2927,6 +2947,38 @@ $repairDbButton.Add_Click({
     if ($answer -ne [Windows.Forms.DialogResult]::Yes) { return }
     Start-LauncherAction -Action 'RepairDb'
 })
+
+# The window's layout - the menu of five pages, the cards, the painted
+# background (22 September) - is its own file and only moves the controls
+# built above into place: their Click handlers and the one-action-at-a-time
+# guard stay as they are. Without the file (an installation part-way through
+# an update) the window keeps its plain layout. A layout that failed once on
+# this computer leaves .m2launcher-classic-layout behind, and the plain
+# layout is what opens from then on; deleting the file tries again.
+$layoutPath = Join-Path $PSScriptRoot 'Metin2-Launcher-GUI.Layout.ps1'
+$classicLayoutFlag = Join-Path $root '.m2launcher-classic-layout'
+if ((Test-Path -LiteralPath $layoutPath -PathType Leaf) -and
+        ($UiSelfTest -or -not (Test-Path -LiteralPath $classicLayoutFlag -PathType Leaf))) {
+    try {
+        . $layoutPath
+    }
+    catch {
+        if ($UiSelfTest) { throw }
+        Write-StartupFailure ('Nowy wyglad launchera: ' + ($_ | Out-String))
+        if ($script:ui -and $script:ui.Cleared) {
+            # The controls are half moved and there is no way back inside
+            # this process; the next start opens the plain window.
+            try { [IO.File]::WriteAllText($classicLayoutFlag, ($_ | Out-String)) } catch { }
+            throw ('Nowy wyglad launchera nie uruchomil sie na tym komputerze ({0}). Uruchom launcher jeszcze raz - otworzy sie w poprzednim wygladzie.' -f $_.Exception.Message)
+        }
+    }
+    if ($UiSelfTest) {
+        Invoke-LayoutSelfTest -OutputDirectory $UiTestOutput
+        $script:form.Dispose()
+        exit 0
+    }
+}
+elseif ($UiSelfTest) { throw 'Metin2-Launcher-GUI.Layout.ps1 is missing.' }
 
 $timer = [Windows.Forms.Timer]::new()
 $timer.Interval = 1200

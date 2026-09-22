@@ -66,6 +66,8 @@ Metin2-Launcher.ps1
 Metin2-Launcher.bat
 Metin2-Launcher-GUI.ps1
 Metin2-Launcher-GUI.bat
+Metin2-Launcher-GUI.Layout.ps1
+Metin2-Launcher-GUI.Background.png
 launcher/Metin2Launcher.psm1
 launcher/Metin2Launcher.Diagnostics.psm1
 launcher/Metin2Launcher.Coop.psm1
