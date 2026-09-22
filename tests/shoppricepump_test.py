@@ -47,17 +47,28 @@ chats = []
 shop = {'items': {}}
 
 
+def _apply(item_id, price):
+    for row in shop['items'].values():
+        if row['id'] == item_id:
+            row['price'] = price
+
+
 def _shop_edit(item_id, price):
     sent.append((item_id, price))
     # The server answers an edit by refreshing this; a refused one changes
-    # nothing, which is exactly what the pump has to notice.
-    if item_id not in REFUSE:
-        for row in shop['items'].values():
-            if row['id'] == item_id:
-                row['price'] = price
+    # nothing, which is exactly what the pump has to notice. On a busy world
+    # the answer comes LATE seconds later (the db core's queue).
+    if item_id in REFUSE:
+        return
+    if LATE[0] > 0:
+        pending.append((now[0] + LATE[0], item_id, price))
+    else:
+        _apply(item_id, price)
 
 
 REFUSE = set()
+LATE = [0.0]
+pending = []
 
 _stub('app', GetTime=lambda: now[0])
 _stub('ui', Window=_Window)
@@ -94,10 +105,15 @@ def stock(ids, price=1):
 
 
 def run_updates(seconds, step=0.05):
-    # The client calls OnUpdate every frame; time moves in small steps.
+    # The client calls OnUpdate every frame; time moves in small steps, and a
+    # late answer lands when its time has come.
     ticks = int(seconds / step)
     for _ in range(ticks):
         now[0] += step
+        for entry in list(pending):
+            if entry[0] <= now[0]:
+                pending.remove(entry)
+                _apply(entry[1], entry[2])
         shoppricepump._pump.OnUpdate()
 
 
@@ -153,16 +169,19 @@ REFUSE.add(3)
 stock([1, 2, 3, 4, 5])
 shoppricepump.Queue([(item(i), 250000) for i in range(1, 6)])
 # Five lines leave over a second; the look at the counter waits VERIFY_DELAY
-# after the last of them, so nothing is repeated inside this window.
+# after the last of them, and a line still at its old price is only looked at
+# again until PATIENCE has passed - its answer may still be on its way.
 run_updates(1.5)
 check('every line was sent once', 5, len(sent))
 run_updates(1.5)
+check('nothing is sent again inside the patience', 5, len(sent))
+run_updates(shoppricepump.PATIENCE)
 check('the refused one is sent again', 6, len(sent))
 check('and it is the right line', 3, sent[-1][0])
 check('nothing is said while it is still being retried', 0, len(chats))
 
 print('== a line the server never takes is reported, not retried for ever ==')
-run_updates(30.0)
+run_updates(60.0)
 check('the retries stop', 1, len(chats))
 check('and the line is named in the count', True, '1 pozycji' in chats[0])
 check('the queue is empty afterwards', 0, len(shoppricepump._pump.edits))
@@ -194,6 +213,23 @@ shop['items'] = dict((n, r) for n, r in shop['items'].items() if r['id'] != 22)
 run_updates(30.0)
 check('the sold line is not asked for again', [21, 22, 23], [i for (i, _) in sent])
 check('and nothing is said about it', 0, len(chats))
+
+# What blastyw reported against client 2.0.23: every price changed on the
+# first click and the chat still said lines had failed - the answers took
+# longer than the pump waited, on a world of 1600 bots.
+print('== a slow answer is not a refusal ==')
+del sent[:]
+del chats[:]
+now[0] = 550.0
+REFUSE.clear()
+LATE[0] = 6.0
+stock([41, 42, 43, 44])
+shoppricepump.Queue([(item(i), 3300) for i in (41, 42, 43, 44)])
+run_updates(60.0)
+LATE[0] = 0.0
+check('each line was sent once', [41, 42, 43, 44], [i for (i, _) in sent])
+check('and nothing is said', 0, len(chats))
+check('every price took', [3300] * 4, [r['price'] for r in shop['items'].values()])
 
 print('== the counter being unreadable is not a complaint ==')
 del sent[:]

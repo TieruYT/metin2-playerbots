@@ -22,6 +22,15 @@
 # that did not take again - PASSES times, and then it says in the chat what is
 # left rather than leaving somebody to find it by eye.
 #
+# And it waits for the answers before it calls anything a miss. An edit is a
+# round trip through the db core, and on a world of a thousand and more bots
+# that core's queue took longer than the second and a half this gave it: every
+# line still showed its old price, all of them were sent again, and after three
+# passes the chat said N lines had failed while every price had changed on the
+# first click (blastyw, 21 September, client 2.0.23). A line that has not
+# changed yet is now looked at again every CHECK_EVERY seconds for up to
+# PATIENCE before it is sent again.
+#
 # Python 2.7 as the client has it.
 
 import app
@@ -37,9 +46,13 @@ TICK = 0.25
 # How long to let the shop's own list come back before believing what it says.
 # The edit is a round trip through the db core, so this is not the tick.
 VERIFY_DELAY = 1.5
+# A line whose price has not changed yet is looked at again this often, and
+# sent again only once PATIENCE has passed since the pass's last packet.
+CHECK_EVERY = 1.0
+PATIENCE = 10.0
 # How many times a line that did not take is asked for again. Three passes of
-# a thirty-line counter is still under a minute, and a line that survives all
-# three is not being refused by the pulse.
+# a thirty-line counter is still under a minute and a half, and a line that
+# survives all three is not being refused by the pulse.
 PASSES = 3
 
 
@@ -69,6 +82,7 @@ class ShopPricePump(ui.Window):
 		self.asked = []
 		self.nextTick = 0.0
 		self.verifyAt = 0.0
+		self.lastSentAt = 0.0
 		self.passesLeft = 0
 		self.SetSize(0, 0)
 		self.Show()
@@ -80,6 +94,7 @@ class ShopPricePump(ui.Window):
 		self.asked = list(edits)
 		self.nextTick = 0.0
 		self.verifyAt = 0.0
+		self.lastSentAt = 0.0
 		self.passesLeft = PASSES
 
 	def OnUpdate(self):
@@ -98,6 +113,7 @@ class ShopPricePump(ui.Window):
 		ikashop.SendEditItem(itemData["id"], itemPrice)
 		offlineShopBuilder.SetPrivateShopItemPrice(
 			itemData["vnum"], itemData["count"], itemPrice, itemData["sockets"])
+		self.lastSentAt = now
 		if not self.edits:
 			self.verifyAt = now + VERIFY_DELAY
 
@@ -126,6 +142,12 @@ class ShopPricePump(ui.Window):
 		if not missed:
 			self.asked = []
 			self.passesLeft = 0
+			return
+		# Not answered yet is not refused: the db core's queue can hold an
+		# edit for seconds on a busy world, and its answer is on its way.
+		if app.GetTime() - self.lastSentAt < PATIENCE:
+			self.asked = list(missed)
+			self.verifyAt = app.GetTime() + CHECK_EVERY
 			return
 		if self.passesLeft > 0:
 			self.passesLeft -= 1
