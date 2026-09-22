@@ -602,13 +602,26 @@ namespace
 		const EPlayerBotTradeVerb verb = ParsePlayerBotTradeText(text, query, sizeof(query), book);
 		if (verb != PLAYERBOT_TRADE_NONE)
 		{
+			// The 8-second trade clock is for shouts - one bot to one door. A
+			// whisper inside it used to vanish without a word; now this bot
+			// answers it itself from its own counter and needs (conversation
+			// layer, I_BUY / I_SELL), so nothing a person writes is lost.
+			std::map<DWORD, DWORD>::const_iterator last =
+					s_mapPlayerBotTradeReplyTime.find(player->GetPlayerID());
+			if (last != s_mapPlayerBotTradeReplyTime.end() && last->second != 0 &&
+					dwNow - last->second < PLAYERBOT_TRADE_REPLY_INTERVAL &&
+					HandlePlayerBotConversation(player, bot, text))
+				return;
 			HandlePlayerShoutForTrade(player, text);
 			return;
 		}
-		if (!PlayerBotTradeReplyAllowed(player, dwNow))
-			return;
+		// Ordinary conversation: analysed at once, answered from the
+		// conversation queue 0.7-1.5 s later, merged when several lines come
+		// together. No limiter drops anything (playerbot_conv_engine.h).
 		char reply[CHAT_MAX_LEN + 1];
 		TPlayerBotAIStateMap::const_iterator it = s_mapPlayerBotAIStates.find(bot->GetPlayerID());
+		if (HandlePlayerBotConversation(player, bot, text))
+			return;
 		if (bot->GetMyShop() && it != s_mapPlayerBotAIStates.end() && !it->second.vecShopOffers.empty())
 		{
 			std::string goods;
@@ -629,8 +642,10 @@ namespace
 		else if (it != s_mapPlayerBotAIStates.end() && it->second.bMarketTrip)
 			snprintf(reply, sizeof(reply), "Wlasnie ide na targ w %s", GetPlayerBotTownName(bot->GetMapIndex()));
 		else
-			snprintf(reply, sizeof(reply), "Nie handluje teraz, poluje. Zajrzyj na stragany w Joan i Bokjung");
-		SendPlayerBotWhisper(bot, player, reply);
+		{
+			snprintf(reply, sizeof(reply), "Nie rozumiem. Zapytaj mnie, co robie, gdzie expie albo co mam na straganie.");
+			SendPlayerBotWhisper(bot, player, reply);
+		}
 	}
 }
 

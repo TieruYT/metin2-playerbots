@@ -23,6 +23,8 @@
 #include "input.h"
 #include "item.h"
 #include "item_manager.h"
+// CMobManager: the conversation names the mob a hunting mission is after.
+#include "mob_manager.h"
 #include "log.h"
 #include "config.h"
 #include "constants.h"
@@ -131,11 +133,15 @@ extern void SendShout(const char* szText, BYTE bEmpire);
 #include "playerbot_weapon_goal.h"
 #include "playerbot_market.h"
 #include "playerbot_offline_market.h"
+// Forward declaration: the trade layer falls through to the deterministic
+// conversation layer for ordinary whispers.
+namespace { bool HandlePlayerBotConversation(LPCHARACTER player, LPCHARACTER bot, const char* text); }
 #include "playerbot_chat_trade.h"
 #include "playerbot_loot.h"
 #include "playerbot_survival.h"
 #include "playerbot_wandering.h"
 #include "playerbot_status.h"
+#include "playerbot_chat_conversation.h"
 #include "playerbot_targeting.h"
 #include "playerbot_guild_war.h"
 // Iwakura's Anti-PK protocol and the stone hunter: the war's fight, turned on
@@ -4233,6 +4239,12 @@ void CPlayerBotManager::Update()
 {
 	const DWORD dwNow = get_dword_time();
 	const DWORD dwTickStartUs = PlayerBotClockUs();
+
+	// Whispers waiting for an answer, a bot's own opening line, and the
+	// conversation memory's housekeeping (playerbot_chat_conversation.h).
+	// Cheap when nobody is talking; while replies are pending the
+	// conversation's own short timer does the precise timing.
+	PumpPlayerBotConversation(dwNow);
 
 #if defined(PLAYERBOT_ENGINE_MT2009)
 	// The two channels with moves: what the database thread has answered,
