@@ -192,6 +192,27 @@ WORLD_DIFFICULTY = (
 )
 
 
+STARTER_CHEST = (
+    '\n'
+    "# Whether a player's new character gets the apprentice chest at its first\n"
+    "# login (starter_chest.quest reads m2_starter_chest_off). Asked with the\n"
+    "# rates when a world is made (seban latino's idea, 22 September); on unless\n"
+    "# .env says M2_STARTER_CHEST=0. An event flag like the difficulty, so a\n"
+    "# change reaches the quests at the next start.\n"
+    'starter=$(printf \'%s\' "${M2_STARTER_CHEST:-1}" | tr \'A-Z\' \'a-z\' | tr -d \' \\r\')\n'
+    'case "$starter" in\n'
+    '    0|off|no|false) starter_off=1 ;;\n'
+    '    *)              starter_off=0 ;;\n'
+    'esac\n'
+    'if db -e "REPLACE INTO player.quest (dwPID, szName, szState, lValue) VALUES\n'
+    "        (0, 'm2_starter_chest_off', '', $starter_off);\"; then\n"
+    '    echo "[playerbot-migrate] apprentice chest for new characters: $([ "$starter_off" = 1 ] && echo off || echo on)"\n'
+    'else\n'
+    '    echo "[playerbot-migrate] WARNING: could not write the apprentice chest flag; the quest keeps the last one" >&2\n'
+    'fi\n'
+)
+
+
 def sql_rows(rows, per_line=8):
     """A tuple of tuples as the SQL list of row constructors, a few to a line."""
     parts = ['(' + ', '.join(str(v) for v in r) + ')' for r in rows]
@@ -397,6 +418,8 @@ def main():
             (WORLD_RATES,
              '\necho "[playerbot-migrate] applying deterministic Playerbot seed (PID $first_pid..$last_pid)"\n'),
             (WORLD_DIFFICULTY,
+             '\necho "[playerbot-migrate] applying deterministic Playerbot seed (PID $first_pid..$last_pid)"\n'),
+            (STARTER_CHEST,
              '\necho "[playerbot-migrate] applying deterministic Playerbot seed (PID $first_pid..$last_pid)"\n')):
         assert s.count(anchor) == 1, anchor
         s = s.replace(anchor, text + anchor)

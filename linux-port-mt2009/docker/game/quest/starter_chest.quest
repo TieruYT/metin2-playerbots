@@ -13,9 +13,16 @@
 -- 50212, shaman 50213. A bot logging in at that level gets one too - the
 -- quest cannot tell a bot from a player - which is one chest more on a
 -- handful of level-5 bots and nothing else.
+--
+-- And only while the world gives it: M2_STARTER_CHEST=0 in .env (the launcher
+-- asks with the rates when a world is made) has the migrator raise the event
+-- flag m2_starter_chest_off, and a character that logs in meanwhile is not
+-- marked - it gets its chest on a later login if the chest is switched back
+-- on before it passes level five.
 quest starter_chest begin
 	state start begin
-		when login with pc.getqf("given") == 0 and pc.get_level() <= 5 begin
+		when login with pc.getqf("given") == 0 and pc.get_level() <= 5 and
+				game.get_event_flag("m2_starter_chest_off") == 0 begin
 			local job = pc.get_job()
 			local vnum = 50187
 			if job == 1 then

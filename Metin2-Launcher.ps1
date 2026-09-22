@@ -29,6 +29,9 @@ param(
     # And whether that world comes up with the bots held at the door: 1 = held
     # until the operator lets them in, 0 = they walk in with the world.
     [int]$HoldBots = -1,
+    # And whether a player's new character there gets the apprentice chest:
+    # 1 = yes, 0 = no, -1 leaves .env as it is.
+    [int]$StarterChest = -1,
     [string]$ImportSource = '',
     [string]$RestoreSource = '',
     # COOP (experimental): the friend's name for CoopAddFriend, a friend's
@@ -1184,7 +1187,8 @@ function Set-FreshWorldSettings {
     $drop = $RateDrop
     $yang = $RateYang
     $hold = $HoldBots
-    $interactive = (-not $Yes) -and $exp -lt 0 -and $drop -lt 0 -and $yang -lt 0 -and $hold -lt 0
+    $starter = $StarterChest
+    $interactive = (-not $Yes) -and $exp -lt 0 -and $drop -lt 0 -and $yang -lt 0 -and $hold -lt 0 -and $starter -lt 0
     if ($interactive) {
         Write-Host ''
         Write-Host "Ustawienia $Reason - wchodzą w życie, zanim pojawi się pierwszy bot:" -ForegroundColor Cyan
@@ -1213,6 +1217,14 @@ function Set-FreshWorldSettings {
         else {
             $hold = 0
         }
+        Write-Host ''
+        Write-Host 'Skrzynia Ucznia to zestaw skrzyń, który prowadzi postać przez pierwsze wioski (boty też je mają):' -ForegroundColor Cyan
+        if (Confirm-Operation 'Czy nowe postacie graczy mają dostawać Skrzynię Ucznia przy pierwszym logowaniu?') {
+            $starter = 1
+        }
+        else {
+            $starter = 0
+        }
     }
 
     $written = @()
@@ -1232,6 +1244,11 @@ function Set-FreshWorldSettings {
         $heldValue = $(if ($hold -ge 1) { '1' } else { '0' })
         Set-DotEnvValue -Key 'M2_PLAYERBOT_START_HELD' -Value $heldValue
         $written += $(if ($heldValue -eq '1') { 'boty czekają na wpuszczenie' } else { 'boty wchodzą od razu' })
+    }
+    if ($starter -ge 0) {
+        $starterValue = $(if ($starter -ge 1) { '1' } else { '0' })
+        Set-DotEnvValue -Key 'M2_STARTER_CHEST' -Value $starterValue
+        $written += $(if ($starterValue -eq '1') { 'nowe postacie dostają Skrzynię Ucznia' } else { 'bez Skrzyni Ucznia dla nowych postaci' })
     }
     if ($written.Count -gt 0) {
         Write-Host ('Zapisano: ' + ($written -join ', ') + '.') -ForegroundColor Green

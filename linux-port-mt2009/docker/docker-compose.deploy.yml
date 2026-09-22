@@ -91,6 +91,9 @@ services:
       M2_RATE_DROP: "${M2_RATE_DROP:-100}"
       M2_RATE_YANG: "${M2_RATE_YANG:-100}"
       M2_PLAYERBOT_START_HELD: "${M2_PLAYERBOT_START_HELD:-0}"
+      # Whether a player's new character gets the apprentice chest (the
+      # launcher asks with the rates; starter_chest.quest reads the flag).
+      M2_STARTER_CHEST: "${M2_STARTER_CHEST:-1}"
 
     entrypoint: ["/bin/sh", "/opt/playerbot/apply.sh"]
 

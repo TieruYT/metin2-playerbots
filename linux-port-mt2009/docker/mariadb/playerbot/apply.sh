@@ -590,6 +590,23 @@ else
     echo "[playerbot-migrate] WARNING: could not write the difficulty flags; the quests keep the last ones" >&2
 fi
 
+# Whether a player's new character gets the apprentice chest at its first
+# login (starter_chest.quest reads m2_starter_chest_off). Asked with the
+# rates when a world is made (seban latino's idea, 22 September); on unless
+# .env says M2_STARTER_CHEST=0. An event flag like the difficulty, so a
+# change reaches the quests at the next start.
+starter=$(printf '%s' "${M2_STARTER_CHEST:-1}" | tr 'A-Z' 'a-z' | tr -d ' \r')
+case "$starter" in
+    0|off|no|false) starter_off=1 ;;
+    *)              starter_off=0 ;;
+esac
+if db -e "REPLACE INTO player.quest (dwPID, szName, szState, lValue) VALUES
+        (0, 'm2_starter_chest_off', '', $starter_off);"; then
+    echo "[playerbot-migrate] apprentice chest for new characters: $([ "$starter_off" = 1 ] && echo off || echo on)"
+else
+    echo "[playerbot-migrate] WARNING: could not write the apprentice chest flag; the quest keeps the last one" >&2
+fi
+
 echo "[playerbot-migrate] applying deterministic Playerbot seed (PID $first_pid..$last_pid)"
 result=/tmp/playerbot-seed.out
 trap 'rm -f "$result"' EXIT HUP INT TERM

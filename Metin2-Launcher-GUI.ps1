@@ -861,10 +861,12 @@ function Show-FreshWorldDialog {
     # at the door. Both reach the migrator through .env and are read before the
     # cores come up, so this is the only moment they can be chosen without
     # something already happening in the world - which is what the window is
-    # for (NerrVoVy, 20 September). Returns @{ Exp; Drop; Yang; Hold } or $null.
+    # for (NerrVoVy, 20 September). And whether a player's new character gets
+    # the apprentice chest (seban latino, 22 September). Returns
+    # @{ Exp; Drop; Yang; Hold; Starter } or $null.
     $dialog = [Windows.Forms.Form]::new()
     $dialog.Text = 'Nowy świat - ustawienia na start'
-    $dialog.Size = [Drawing.Size]::new(560, 392)
+    $dialog.Size = [Drawing.Size]::new(560, 426)
     $dialog.StartPosition = 'CenterParent'
     $dialog.FormBorderStyle = 'FixedDialog'
     $dialog.MaximizeBox = $false
@@ -930,6 +932,14 @@ function Show-FreshWorldDialog {
     $dialog.Controls.Add($holdBox)
     $y += 34
 
+    $starterBox = [Windows.Forms.CheckBox]::new()
+    $starterBox.Text = 'Skrzynia Ucznia dla nowych postaci graczy (przy pierwszym logowaniu)'
+    $starterBox.Location = [Drawing.Point]::new(18, $y + 6)
+    $starterBox.Size = [Drawing.Size]::new(516, 26)
+    $starterBox.Checked = $true
+    $dialog.Controls.Add($starterBox)
+    $y += 34
+
     # The boxes belong to "własne"; a preset says its own numbers.
     $sync = {
         $form = $this.FindForm()
@@ -969,9 +979,10 @@ function Show-FreshWorldDialog {
         }
     }
     $hold = $(if ($holdBox.Checked) { 1 } else { 0 })
+    $starter = $(if ($starterBox.Checked) { 1 } else { 0 })
     $dialog.Dispose()
     if ($result -ne [Windows.Forms.DialogResult]::OK) { return $null }
-    return @{ Exp = $values.Exp; Drop = $values.Drop; Yang = $values.Yang; Hold = $hold }
+    return @{ Exp = $values.Exp; Drop = $values.Drop; Yang = $values.Yang; Hold = $hold; Starter = $starter }
 }
 
 function Get-LauncherFingerprint {
@@ -2838,7 +2849,8 @@ $worldBackupButton.Add_Click({
         '-RateExp', "$($fresh.Exp)",
         '-RateDrop', "$($fresh.Drop)",
         '-RateYang', "$($fresh.Yang)",
-        '-HoldBots', "$($fresh.Hold)")
+        '-HoldBots', "$($fresh.Hold)",
+        '-StarterChest', "$($fresh.Starter)")
 })
 $dbAccessButton.Add_Click({
     # In-process on purpose: an action would print through the log box and the
