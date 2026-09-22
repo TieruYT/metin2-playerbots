@@ -1,20 +1,20 @@
 {
   "schema": 1,
   "channel": "stable",
-  "publishedAt": "2026-09-22T21:15:00Z",
-  "statusMessage": "2.0.95 (serwer 2.0.95, klient 2.0.24 - zaktualizuj oba): Community Patch 2 od Iwakury - bron na 30 poziom dla kazdego bota od 30 poziomu, dwa style Grindera, bonusy wedlug tabeli, dropki medali w Lochu Malp, inflacja cen, Lista Przydatnych Przedmiotow z nazwy, obrona gildii i wiecej. Naprawione: boty wracaja z odpoczynku, wojny gildii (zwykly atak, pole bitwy, przelacznik w panelu), sklepy-widma i sklepy, ktorych nie dalo sie odnowic, Czerwone Konary u Biologa, exp w druzynie 'Na rownym', suwak wedkowania, raty podczas eventu, kopia swiata, Pierscien Teleportacji. Nowe: sklepy botow bez klodek, sklepy tylko w M1 (przelacznik w panelu), Skrzynia Ucznia jako opcja przy tworzeniu swiata.",
+  "publishedAt": "2026-09-22T22:18:40Z",
+  "statusMessage": "2.0.96 (serwer 2.0.96, klient 2.0.25 - zaktualizuj oba): Auto Lowy 2.0 od Colide'a - przelaczniki Moby/Metiny/Bossy, nastepny cel od razu po zabiciu, luk z daleka, zasieg na ziemi, ustawienia kazdej postaci osobno. Nowy wyglad launchera z tlem. Naprawione: szybkie podnoszenie i inne przyciski po teleporcie, boty w druzynie gracza trzymaja sie gracza (szaman buffuje), bot bez broni na 30 poziom nie krazy miedzy M2 i M3.",
   "server": {
-    "version": "2.0.95",
-    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.0.95/metin2-server-update-2.0.95.zip",
-    "sha256": "35BD2825A1772118B48ECB00D40C5EB866CD03664F45D7022765B9D9BD8E7C97"
+    "version": "2.0.96",
+    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.0.96/metin2-server-update-2.0.96.zip",
+    "sha256": "8E56F2E89A085297CA341664CCFDA1DF16A65DE428BE3367CC9C977D16B92BDA"
   },
   "support": {
     "contactUrl": "https://discord.gg/pt5tvnrN6",
     "uploadUrl": ""
   },
   "client": {
-    "version": "2.0.24",
-    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.0.95/metin2-client-update-2.0.24.zip",
-    "sha256": "B418DBA40AB5186B56B59F71F9505F1FE35FDAB5C62F011DF82872D71AE5DE11"
+    "version": "2.0.25",
+    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.0.96/metin2-client-update-2.0.25.zip",
+    "sha256": "685C0C3B12364DD6661FDB5B1ADC803CF229D028784E46B9E9C45D840F825FBF"
   }
 }
