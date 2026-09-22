@@ -1438,6 +1438,9 @@ def main(root):
     apply_safebox_commands(game)
     apply_channel_connection(game)
     apply_player_struck(game)
+    apply_shop_clock(game)
+    apply_party_exp_of_blocked_members(game)
+    apply_bot_shop_slots_unlocked(game)
     print('playerbotify: done')
 
 
@@ -4257,6 +4260,122 @@ def apply_player_struck(game):
          '\n'
          '\tif (DAMAGE_TYPE_MAGIC == type && pAttacker)\n',
          marker='\t// Playerbot: a player\'s blow at a bot, or at a person in a party, is\n')
+
+
+def apply_shop_clock(game):
+    # An offline shop runs on two clocks, and only one of them may end it.
+    # This core counts each shop's minutes down on its own pulse event
+    # (func_offlineshop_update_duration) and the db core counts the same
+    # minutes on its own; the db core's count is the one that expires the shop
+    # (IkarusShopExpiredShop -> RecvShopExpiredDBPacket) and the one that
+    # refuses a new create while it still has time left (CShopCache::
+    # CreateShop, "it already exists", with no answer at all). A loaded core's
+    # pulse clock runs fast - heart_idle counts floor(elapsed / pass) + 1
+    # pulses whenever a loop overruns, and game1 with a thousand bots measured
+    # 26.6 pulses a second against 25 on m2zip (22 September) - so a shop
+    # reached zero here long before it did there. For that stretch the entity
+    # stood on the map and a click did nothing (RecvShopOpenClientPacket
+    # returns quietly for a shop at zero): Iwakura's "sklepy WIDMO w ktore nie
+    # da sie kliknac". A viewer who arrived meanwhile saw nothing at all while
+    # the panels, reading the database, listed the shop as open (ElGrande).
+    # And a renewal asked for in that stretch was refused by the db core with
+    # no answer, having already taken the fee: "sklep nie daje sie ponownie
+    # otworzyc ... po ponownym odpaleniu powstal za pierwszym razem"
+    # (ElGrande, 21 September), 368 bot renewals on m2zip the same way. This
+    # core now counts no lower than one minute; zero is the db core's word
+    # alone, and it arrives with the expiry packet (SetDuration(0) under
+    # EXTEND_IKASHOP_PRO).
+    edit(os.path.join(game, 'ikarus_shop_manager.cpp'),
+         '\tvoid CShopManager::UpdateShopsDuration()\n'
+         '\t{\n'
+         '\t\tfor(auto& [id, shop] : m_mapShops)\n'
+         '\t\t\tif(shop->GetDuration() > 0)\n'
+         '\t\t\t\tshop->DecreaseDuration();\n'
+         '\t}\n',
+         '\tvoid CShopManager::UpdateShopsDuration()\n'
+         '\t{\n'
+         '\t\t// playerbot: never to zero on this core\'s clock - the db core\'s\n'
+         '\t\t// expiry is what ends a shop (playerbotify apply_shop_clock).\n'
+         '\t\tfor(auto& [id, shop] : m_mapShops)\n'
+         '\t\t\tif(shop->GetDuration() > 1)\n'
+         '\t\t\t\tshop->DecreaseDuration();\n'
+         '\t}\n',
+         marker='// playerbot: never to zero on this core\'s clock')
+
+
+def apply_party_exp_of_blocked_members(game):
+    # A kill's experience is shared by the damage map, and this engine leaves
+    # every attacker under AFFECT_EXP_BLOCK out of it altogether - its blows
+    # count for nobody, not only not for itself. The Grinder's tier locks
+    # hold their bots there, so a player in a party with such bots got nothing
+    # from anything the bots killed: "W PT - NA ROWNYM nie leci exp dla postaci
+    # gracza. Exp zaczyna leciec dopiero gdy postac gracza zadaje jakiekolwiek
+    # obrazenia" (SIZOWSKI, 20 September) - the player's own damage was the
+    # only damage the kill counted. A blocked member's blows now count for its
+    # party while somebody in the party can take experience; the blocked
+    # member's own share is still refused by PointChange, which tests the same
+    # affect. A party whose every member is blocked, and a blocked attacker on
+    # its own, are left out exactly as before.
+    p = os.path.join(game, 'char_battle.cpp')
+    edit(p,
+         'LPCHARACTER CHARACTER::DistributeExp()\n',
+         '// Playerbot: whether anybody in this party can take experience - an\n'
+         '// exp-blocked member\'s blows count for such a party (DistributeExp).\n'
+         'static bool PlayerBotPartyTakesExp(LPPARTY party)\n'
+         '{\n'
+         '\tif (!party)\n'
+         '\t\treturn false;\n'
+         '\tstruct FTakesExp\n'
+         '\t{\n'
+         '\t\tbool found;\n'
+         '\t\tFTakesExp() : found(false) {}\n'
+         '\t\tvoid operator () (LPCHARACTER member)\n'
+         '\t\t{\n'
+         '\t\t\tif (member && !member->FindAffect(AFFECT_EXP_BLOCK))\n'
+         '\t\t\t\tfound = true;\n'
+         '\t\t}\n'
+         '\t} f;\n'
+         '\tparty->ForEachOnlineMember(f);\n'
+         '\treturn f.found;\n'
+         '}\n'
+         '\n'
+         'LPCHARACTER CHARACTER::DistributeExp()\n',
+         marker='static bool PlayerBotPartyTakesExp(LPPARTY party)\n')
+    edit(p,
+         '\t\tif (!pAttacker || pAttacker->IsNPC() || DISTANCE_APPROX(GetX()-pAttacker->GetX(), GetY()-pAttacker->GetY())>5000 || pAttacker->FindAffect(AFFECT_EXP_BLOCK))\n'
+         '\t\t\tcontinue;\n',
+         '\t\tif (!pAttacker || pAttacker->IsNPC() || DISTANCE_APPROX(GetX()-pAttacker->GetX(), GetY()-pAttacker->GetY())>5000 ||\n'
+         '\t\t\t\t(pAttacker->FindAffect(AFFECT_EXP_BLOCK) && !PlayerBotPartyTakesExp(pAttacker->GetParty())))\n'
+         '\t\t\tcontinue;\n',
+         marker='(pAttacker->FindAffect(AFFECT_EXP_BLOCK) && !PlayerBotPartyTakesExp(pAttacker->GetParty()))')
+
+
+def apply_bot_shop_slots_unlocked(game):
+    # A shop's right half is padlocked: rows 0-3 open one at a time as a
+    # player unlocks them (SHOP_SLOT_UNLOCK_PROGRESS_FLAG), rows 4-7 with the
+    # premium. A bot never unlocks anything, so its counter showed a player the
+    # padlocks and used half its grid (the premium rows are open to it: every
+    # bot holds the subscription). Iwakura's idea, agreed on the Discord with
+    # SIZOWSKI's condition that it is the bots' alone: a bot's descriptor is
+    # answered with every lockable row open. The same answer reaches the
+    # offline shop (its unlockCount is the owner's progress, re-sent at the
+    # next add, which is what the client draws the padlocks from) and the
+    # classic stall's CanPlaceOnShopSlot. A player's progress is his flag, as
+    # ever.
+    edit(os.path.join(game, 'char_shop.cpp'),
+         'BYTE CHARACTER::GetShopUnlockedProgress()\n'
+         '{\n'
+         '\treturn GetSpecialFlag(SHOP_SLOT_UNLOCK_PROGRESS_FLAG);\n'
+         '}\n',
+         'BYTE CHARACTER::GetShopUnlockedProgress()\n'
+         '{\n'
+         '\t// playerbot: a bot\'s counter has no padlocks - every lockable row is\n'
+         '\t// open to it (playerbotify apply_bot_shop_slots_unlocked).\n'
+         '\tif (GetDesc() && GetDesc()->IsBot())\n'
+         '\t\treturn (BYTE)(SHOP_PLAYER_LOCKED_Y_END - SHOP_PLAYER_LOCKED_Y_START + 1);\n'
+         '\treturn GetSpecialFlag(SHOP_SLOT_UNLOCK_PROGRESS_FLAG);\n'
+         '}\n',
+         marker='// playerbot: a bot\'s counter has no padlocks')
 
 
 if __name__ == '__main__':
