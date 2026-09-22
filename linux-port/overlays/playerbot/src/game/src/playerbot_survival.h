@@ -195,14 +195,29 @@ namespace
 			{
 				static const int kEscapeX[8] = { 1000, 700, 0, -700, -1000, -700, 0, 700 };
 				static const int kEscapeY[8] = { 0, 700, 1000, 700, 0, -700, -1000, -700 };
-				const BYTE escapeDirection = (BYTE)((ch->GetPlayerID() + state.bDeathCount +
+				// The first of the eight ways out the bot's own ground joins,
+				// starting from the one its pid draws. In a Monkey Dungeon
+				// chamber most of them are the wall, and a walk planned into
+				// the wall was planned again on every tick until the bot had
+				// healed: the ten loudest lines of game1's syserr on
+				// 23 September were that one unreachable plan, a thousand
+				// units east of where medal droppers had died.
+				const BYTE firstDirection = (BYTE)((ch->GetPlayerID() + state.bDeathCount +
 						state.bStuckCounter) % 8);
-				const long targetX = state.lDeathX + kEscapeX[escapeDirection];
-				const long targetY = state.lDeathY + kEscapeY[escapeDirection];
-				// The walk back from the respawn point is the longest routine journey a
-		// bot makes, and it was made on foot.
-		MovePlayerBot(ch, targetX, targetY, dwNow, 16, true, true);
-				return true;
+				for (BYTE k = 0; k < 8; ++k)
+				{
+					const BYTE escapeDirection = (BYTE)((firstDirection + k) % 8);
+					const long targetX = state.lDeathX + kEscapeX[escapeDirection];
+					const long targetY = state.lDeathY + kEscapeY[escapeDirection];
+					if (!IsPlayerBotReachable(ch->GetMapIndex(), ch->GetX(), ch->GetY(), targetX, targetY))
+						continue;
+					// The walk back from the respawn point is the longest routine
+					// journey a bot makes, and it was made on foot.
+					MovePlayerBot(ch, targetX, targetY, dwNow, 16, true, true);
+					return true;
+				}
+				// No way out joins: the bot stays, invisible and healing, where
+				// it stood up.
 			}
 		}
 
