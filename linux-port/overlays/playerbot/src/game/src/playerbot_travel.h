@@ -676,6 +676,9 @@ namespace
 				ch->GetLevel() <= PLAYERBOT_EXP_LOCK_M3_DROPPER + PLAYERBOT_DROPPER_OUTGROWN_LEVELS;
 	}
 
+	// Iwakura's price curve lives with the town (playerbot_town.h), later.
+	DWORD ScalePlayerBotIwakuraPrice(DWORD base);
+
 	bool ShouldPlayerBotVisitM3(LPCHARACTER ch)
 	{
 		if (!ch || !HasPlayerBotM3ReadyEquipment(ch))
@@ -688,6 +691,13 @@ namespace
 		if (GetPlayerBotPersonalityByPID(ch->GetPlayerID()) == BOT_PERSONALITY_M3_DROPPER)
 			return IsPlayerBotM3DropperOnFarm(ch);
 		if (HasPlayerBotSpecialLevel30Weapon(ch, true))
+			return false;
+		// One a counter holds and the purse reaches is bought, not farmed
+		// (community patch 2, point 1): the market trip is the next town
+		// visit's, and M3 is for the bots it would not serve.
+		if (PlayerBotMarketHasClassLevel30Weapon(ch) &&
+				GetPlayerBotLevel30PurchaseCap(ch) >=
+					(long long)ScalePlayerBotIwakuraPrice(PLAYERBOT_LEVEL30_BASE_PRICE))
 			return false;
 		// Twenty-four was the cap, and it made the weapon a thing a bot either
 		// got young or never got: past it the only route left was a counter it
@@ -1990,17 +2000,31 @@ namespace
 			// Handed to M2, where the ordinary M3 branch takes over.
 			const bool wantsWeapon = settledIn && !wantsMedal &&
 					ShouldPlayerBotVisitM3(ch) && ch->GetParty() == NULL;
-			if (!visitExpired && !outOfBand && !needsTown && !wantsMedal && !wantsWeapon)
+			// And the river, for the same reason again: the fishing trip was
+			// read in the two villages alone, and every bot old enough for the
+			// rod lives out here - so the FISHING slider moved a handful of bots
+			// of thirty to thirty-five and nobody else ("ustawilem 200%, a liczba
+			// rybakow nie rosnie", blasty, Community Patch 2). A Rybak's roll
+			// (IsPlayerBotRybakNow) now takes it home to the bank from anywhere;
+			// a trial and a party are not interrupted for it.
+			const bool wantsFishing = settledIn && !onBattleTrialHere && !wantsMedal && !wantsWeapon &&
+					ch->GetParty() == NULL && WantsPlayerBotFishingTrip(ch, state, dwNow);
+			if (!visitExpired && !outOfBand && !needsTown && !wantsMedal && !wantsWeapon && !wantsFishing)
 				return false;
 
 			// A share of the bots keeps Joan as home: the services trip goes
 			// there, and only the services trip - a medal, a weapon hunt and
 			// a graduation are Bokjung's business.
-			const bool joanHome = needsTown &&
+			const bool joanHome = (needsTown &&
 					(PlayerBotNavHash(ch->GetPlayerID() ^ 0x4a4f414eU) % 1000U) <
-						(DWORD)PLAYERBOT_JOAN_HOME_PER_MILLE;
+						(DWORD)PLAYERBOT_JOAN_HOME_PER_MILLE) ||
+					// The bank, the bait merchant and the Fisherman are all in
+					// the first village.
+					(!needsTown && !outOfBand && wantsFishing);
 			const char* reason = "frontier_visit_complete";
-			if (joanHome)
+			if (joanHome && wantsFishing && !needsTown && !outOfBand)
+				reason = "frontier_fishing_to_m1";
+			else if (joanHome)
 				reason = "frontier_services_to_m1";
 			else if (needsTown)
 				reason = "frontier_services_to_m2";

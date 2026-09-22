@@ -148,6 +148,13 @@ namespace
 	// The bots' ItemShop purchases (the ISHOP key), playerbot_itemshop.h.
 	bool s_bPlayerBotItemShop = true;
 	bool s_bPlayerBotItemShopReported = true;
+	// Whether a bot's stand may stand in a second village too (the SHOP_M2
+	// key). Off by default: Iwakura's idea (Kuszaa's reasoning, 22 September)
+	// is the stands in the first villages alone - "przy obecnych sklepach
+	// offline sklepy w M2 sa troche useless", the players shop where the
+	// market is - with this switch for a world that wants both.
+	bool s_bPlayerBotShopsInM2 = false;
+	bool s_bPlayerBotShopsInM2Reported = false;
 	// Iwakura's personality system (the PERSONA key): moods, the personalities
 	// that follow a bot's situation, the Grinder's experience locks and the
 	// Law of Advancement (playerbot_persona.h). On by default - the operator
@@ -210,6 +217,7 @@ namespace
 		s_bPlayerBotGuildWars = true;
 		s_bPlayerBotTowerRaids = true;
 		s_bPlayerBotItemShop = true;
+		s_bPlayerBotShopsInM2 = false;
 		s_bPlayerBotPersona = true;
 		if (s_iPlayerBotChestConfigPermille < 0)
 		{
@@ -301,6 +309,17 @@ namespace
 				s_bPlayerBotLifeScheduleReported = enabled;
 			}
 			s_bPlayerBotLifeSchedule = enabled;
+			return;
+		}
+		if (PlayerBotWeightNameEquals(szKey, "SHOP_M2"))
+		{
+			const bool enabled = value != 0;
+			if (enabled != s_bPlayerBotShopsInM2Reported)
+			{
+				sys_log(0, "PLAYERBOT_CONFIG: bot stands in the second villages %s", enabled ? "on" : "off");
+				s_bPlayerBotShopsInM2Reported = enabled;
+			}
+			s_bPlayerBotShopsInM2 = enabled;
 			return;
 		}
 		if (PlayerBotWeightNameEquals(szKey, "WARS"))
@@ -512,6 +531,8 @@ namespace
 			return s_bPlayerBotTowerRaids ? 1 : 0;
 		if (PlayerBotWeightNameEquals(szKey, "ISHOP"))
 			return s_bPlayerBotItemShop ? 1 : 0;
+		if (PlayerBotWeightNameEquals(szKey, "SHOP_M2"))
+			return s_bPlayerBotShopsInM2 ? 1 : 0;
 		if (PlayerBotWeightNameEquals(szKey, "PERSONA"))
 			return s_bPlayerBotPersona ? 1 : 0;
 		if (PlayerBotWeightNameEquals(szKey, "SCRAP"))
@@ -564,6 +585,7 @@ namespace
 				PlayerBotWeightNameEquals(szKey, "WARS") ||
 				PlayerBotWeightNameEquals(szKey, "TOWER") ||
 				PlayerBotWeightNameEquals(szKey, "ISHOP") ||
+				PlayerBotWeightNameEquals(szKey, "SHOP_M2") ||
 				PlayerBotWeightNameEquals(szKey, "PERSONA"))
 		{
 			value = value ? 1 : 0;
@@ -1008,6 +1030,11 @@ namespace
 	}
 
 	// The LIFE switch, asked by CPlayerBotManager::ManageLifeSchedule.
+	bool IsPlayerBotShopsInM2Enabled()
+	{
+		return s_bPlayerBotShopsInM2;
+	}
+
 	bool IsPlayerBotLifeScheduleEnabled()
 	{
 		return s_bPlayerBotLifeSchedule;

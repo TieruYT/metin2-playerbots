@@ -45,6 +45,42 @@ namespace
 
 	void NotePlayerBotLppDeposit() { ++s_uPlayerBotLppDeposits; }
 
+	// Iwakura's community patch 2, point 9: the list by name. The jewellery
+	// and boots are these twenty-four families (their +0 vnums, read off
+	// world.item_proto, where a few names are cut short - "Bransol. Z Bial.
+	// Zlota", "Kolczyki Z Niebian.Lez"); every body armour over level 33 and
+	// every shield over level 20 is on it too. The weapons are the ones his
+	// document's bands already named (PLAYERBOT_LPP_WEAPONS). Kept here rather
+	// than in playerbot_persona_tables.h, which his older document renders.
+	const DWORD PLAYERBOT_LPP_JEWELS[] = {
+		17100, // Ebonitowe Kolczyki
+		17200, // Kolczyki z Niebianskich Lez
+		14200, // Bransoleta z Niebianskich Lez
+		16200, // Naszyjnik z Niebianskich Lez
+		15200, // Buty Feniksa
+		14040, // Srebrna Bransoleta
+		14140, // Bialozlota Bransoleta
+		15080, // Skorzane Kozaki
+		16060, // Zloty Naszyjnik
+		15160, // Ekstazyjne Buty
+		17000, // Drewniane Kolczyki
+		17020, // Miedziane Kolczyki
+		17040, // Srebrne Kolczyki
+		17060, // Zlote Kolczyki
+		17080, // Jadeitowe Kolczyki
+		17160, // Krysztalowe Kolczyki
+		17180, // Ametystowe Kolczyki
+		16040, // Srebrny Naszyjnik
+		16100, // Ebonitowy Naszyjnik
+		15040, // Drewniane Buty
+		15060, // Buty Wyszywane Zlotem
+		15120, // Buty Z Brazu
+		15180, // Deszczowe Buty
+		15220, // Buty Ognistego Ptaka
+	};
+	const int PLAYERBOT_LPP_ARMOUR_OVER_LEVEL = 33;
+	const int PLAYERBOT_LPP_SHIELD_OVER_LEVEL = 20;
+
 	// The level at which each of his weapon bands begins in this world, read
 	// off the rendered table (PLAYERBOT_LPP_WEAPONS): a band is passed when the
 	// next one's weapons can be worn.
@@ -133,22 +169,28 @@ namespace
 		}
 		else if (sub == ARMOR_WRIST || sub == ARMOR_NECK || sub == ARMOR_EAR || sub == ARMOR_FOOTS)
 		{
-			const int tier = std::max(GetPlayerBotItemTier(family, job, false),
-					GetPlayerBotItemTier(family, job, true));
-			if (tier >= playerbot_persona::LPP_JEWEL_MIN_TIER)
+			// His names since community patch 2 (PLAYERBOT_LPP_JEWELS), where
+			// the first document let his tier sheet choose.
+			if (IsPlayerBotLppListed(PLAYERBOT_LPP_JEWELS,
+					sizeof(PLAYERBOT_LPP_JEWELS) / sizeof(PLAYERBOT_LPP_JEWELS[0]), family))
 				piece.kind = playerbot_persona::LPP_JEWEL;
 		}
-		else if (sub == ARMOR_SHIELD && IsPlayerBotLppListed(PLAYERBOT_LPP_TARGET_SHIELDS,
-				sizeof(PLAYERBOT_LPP_TARGET_SHIELDS) / sizeof(PLAYERBOT_LPP_TARGET_SHIELDS[0]), family))
+		else if (sub == ARMOR_SHIELD)
 		{
-			piece.kind = playerbot_persona::LPP_SHIELD;
-			piece.target = true;
+			// Every shield over level twenty; the four his first document named
+			// stay targets, never outgrown.
+			piece.target = IsPlayerBotLppListed(PLAYERBOT_LPP_TARGET_SHIELDS,
+					sizeof(PLAYERBOT_LPP_TARGET_SHIELDS) / sizeof(PLAYERBOT_LPP_TARGET_SHIELDS[0]), family);
+			if (piece.target || (int)piece.level > PLAYERBOT_LPP_SHIELD_OVER_LEVEL)
+				piece.kind = playerbot_persona::LPP_SHIELD;
 		}
-		else if (sub == ARMOR_BODY && IsPlayerBotLppListed(PLAYERBOT_LPP_TARGET_ARMOURS,
-				sizeof(PLAYERBOT_LPP_TARGET_ARMOURS) / sizeof(PLAYERBOT_LPP_TARGET_ARMOURS[0]), family))
+		else if (sub == ARMOR_BODY)
 		{
-			piece.kind = playerbot_persona::LPP_ARMOUR;
-			piece.target = true;
+			// And every body armour over level thirty-three.
+			piece.target = IsPlayerBotLppListed(PLAYERBOT_LPP_TARGET_ARMOURS,
+					sizeof(PLAYERBOT_LPP_TARGET_ARMOURS) / sizeof(PLAYERBOT_LPP_TARGET_ARMOURS[0]), family);
+			if (piece.target || (int)piece.level > PLAYERBOT_LPP_ARMOUR_OVER_LEVEL)
+				piece.kind = playerbot_persona::LPP_ARMOUR;
 		}
 		if (piece.kind == playerbot_persona::LPP_NONE)
 		{
@@ -254,6 +296,19 @@ namespace
 				CountPlayerBotLppKeptAhead(ch, p, item, family));
 	}
 
+	// A piece on the list the list does not keep - past its limit, outgrown,
+	// or kept by a box with no room - is counter goods, never the merchant's:
+	// "wszystko ponad ten limit musi natychmiast trafic na sklep, aby inni
+	// Hazardzisci mogli je odkupic i ulepszac" (community patch 2, point 9).
+	bool IsPlayerBotLppSurplusGoods(LPCHARACTER ch, LPITEM item)
+	{
+		if (!ch || !item || item->IsEquipped() || !IsPlayerBotPersonaEnabled())
+			return false;
+		playerbot_persona::TLppPiece piece;
+		DWORD family = 0;
+		return ClassifyPlayerBotLppItem(ch, item, piece, family) && !IsPlayerBotLppKeptItem(ch, item);
+	}
+
 	// A piece in the box the list no longer keeps: outgrown, or a plain copy
 	// of a family now worn at +9. A piece that is not on the list at all - the
 	// dead stock an older rule put down - is left where it is.
@@ -268,8 +323,10 @@ namespace
 	}
 
 	// What goes down on this visit: the kept pieces the bag has no use for
-	// now, with the other surplus - on the Trader's errand, a bag at eighty
-	// percent or under pressure, as every collector beside it. Never a piece
+	// now - at every visit since community patch 2 ("obowiazek chowac DO
+	// MAGAZYNU, a nie trzymac w ekwipunku jak dotychczas"); it used to wait
+	// for a bag at eighty percent or under pressure, like every collector
+	// beside it, and the bags held the list's pieces for good. Never a piece
 	// the bot is about to wear, work at the anvil, or carry as its backup or
 	// its stone weapon; never a stone it has a socket for; never a herb the
 	// Zielarz is going to brew; nothing while a gambler's session is on.
@@ -279,8 +336,9 @@ namespace
 		if (!ch || !IsPlayerBotPersonaEnabled() || !state.persona.bRestored ||
 				state.persona.bLppBoxFull || IsPlayerBotGambling(state, get_dword_time()))
 			return;
-		if (!IsPlayerBotBagFull(ch) && CountPlayerBotFreeInventoryCells(ch) > PLAYERBOT_BAG_PRESSURE_FREE_CELLS)
-			return;
+		// The herbs keep the old rule: they go down under bag pressure only.
+		const bool pressure = IsPlayerBotBagFull(ch) ||
+				CountPlayerBotFreeInventoryCells(ch) <= PLAYERBOT_BAG_PRESSURE_FREE_CELLS;
 		LPITEM backup = FindPlayerBotBackupWeapon(ch);
 		LPITEM stoneWeapon = FindPlayerBotStoneWeapon(ch, false);
 		const bool zielarz = IsPlayerBotZielarz(ch);
@@ -292,7 +350,7 @@ namespace
 				continue;
 			if (IsPlayerBotLppHerb(item))
 			{
-				if (!zielarz)
+				if (!zielarz && pressure)
 					cells.push_back(cell);
 				continue;
 			}

@@ -322,6 +322,16 @@ namespace
 			std::vector<std::pair<int, LPITEM> > m_items;
 	};
 
+	size_t CountPlayerBotLootToTake(LPCHARACTER ch, TPlayerBotAIState& state, DWORD dwNow)
+	{
+		if (!ch || !ch->GetSectree())
+			return 0;
+		CCollectPlayerBotLoot loot(ch, PLAYERBOT_LOOT_SEARCH_RANGE,
+				state.mapFailedLootVIDs, dwNow);
+		ch->GetSectree()->ForEachAround(loot);
+		return loot.GetItems().size();
+	}
+
 	class CDetectPlayerBotCombatThreat
 	{
 		public:

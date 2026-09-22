@@ -60,6 +60,9 @@ int GetPlayerBotReservedGold(LPCHARACTER){return 500;}
 // and only while his personalities are switched on.
 bool personaOn=false; bool IsPlayerBotPersonaEnabled(){return personaOn;}
 bool bigThree=false; bool IsPlayerBotBigThreeAtPlus(LPCHARACTER,int){return bigThree;}
+// Community patch 2, point 5: the Trader in town buys its own books whatever
+// its gear stands at, from its book purse.
+bool trader=false; bool PlayerBotBuysBooksAsTrader(LPCHARACTER){return trader;}
 #include "../linux-port/overlays/playerbot/src/game/src/playerbot_progression_needs.h"
 int main(){
     Character c; c.mastery[1]=SKILL_MASTER;
@@ -125,6 +128,14 @@ int main(){
     assert(GetPlayerBotProgressionNeed(&c,&book)==0);
     bigThree=true;
     assert(GetPlayerBotProgressionNeed(&c,&book)>0);
+    // Community patch 2, point 5: the Trader buys books before the big three
+    // stand at +7 - and only books: the spirit stone keeps the Student's gate.
+    bigThree=false; trader=true;
+    assert(GetPlayerBotProgressionNeed(&c,&book)>0);
+    c.mastery[1]=SKILL_GRAND_MASTER; c.quantities[50513]=0;
+    Item stone2; stone2.type=0; stone2.vnum=50513; stone2.count=1;
+    assert(GetPlayerBotProgressionNeed(&c,&stone2)==0);
+    c.mastery[1]=SKILL_MASTER; trader=false;
     personaOn=false;
     std::printf("playerbot_progression_needs: all tests passed\n");
 }

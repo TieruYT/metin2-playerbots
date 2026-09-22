@@ -291,9 +291,22 @@ namespace
 		const long long gold = (long long)ch->GetGold();
 		if (gold < (long long)ScalePlayerBotIwakuraPrice(PLAYERBOT_GAMBLE_MIN_PURSE_BASE))
 			return false;
+		// Iwakura's community patch 2, point 10: back in its first village as
+		// the Trader, with a weapon at +7, an armour at +6 and three million on
+		// his scale, a bot turns gambler whatever the draw says - it picks a
+		// piece, buys what the anvil wants and works it by the gambler's rules.
+		// Such a bot is past the gear the rule below waits for, and its pieces
+		// may all be at the storekeeper now (the Useful Items List puts them
+		// there at every visit): the session's first stop is the safebox.
+		LPITEM wornWeapon = ch->GetWear(WEAR_WEAPON);
+		LPITEM wornArmour = ch->GetWear(WEAR_BODY);
+		const bool townTrigger = IsPlayerBotM1Map(mapIndex) &&
+				wornWeapon && wornWeapon->GetRefineLevel() >= PLAYERBOT_GAMBLE_TOWN_WEAPON_PLUS &&
+				wornArmour && wornArmour->GetRefineLevel() >= PLAYERBOT_GAMBLE_TOWN_ARMOUR_PLUS &&
+				gold >= (long long)ScalePlayerBotIwakuraPrice(PLAYERBOT_GAMBLE_TOWN_PURSE_BASE);
 		// The bot's own gear comes first - the Perfectionist is "absolutny
 		// fundament", the gambler what a bot does with what is left over.
-		if (HasPlayerBotRefineOpportunity(ch))
+		if (!townTrigger && HasPlayerBotRefineOpportunity(ch))
 			return false;
 		std::vector<LPITEM> bases;
 		CollectPlayerBotGambleBases(ch, bases);
@@ -301,9 +314,9 @@ namespace
 		for (size_t i = 0; i < bases.size(); ++i)
 			if (IsPlayerBotGambleWorkable(ch, bases[i]))
 				++workable;
-		if (workable == 0)
+		if (workable == 0 && !(townTrigger && !p.mapLppStored.empty()))
 			return false;
-		if (number(1, 100) > GetPlayerBotGambleChance(state.bPersonality))
+		if (!townTrigger && number(1, 100) > GetPlayerBotGambleChance(state.bPersonality))
 		{
 			p.dwNextGambleAt = dwNow + number(PLAYERBOT_GAMBLE_RETRY_MIN_MS, PLAYERBOT_GAMBLE_RETRY_MAX_MS);
 			return false;
@@ -323,10 +336,10 @@ namespace
 		p.bGambleSafeboxTaken = 0;
 		p.vecGamblePlans.clear();
 		p.dwNextDecide = 0;
-		sys_log(0, "PLAYERBOT_PERSONA: gambler begins pid=%u name=%s gold=%lld budget=%lld pieces=%u workable=%u character=%u map=%ld",
+		sys_log(0, "PLAYERBOT_PERSONA: gambler begins pid=%u name=%s gold=%lld budget=%lld pieces=%u workable=%u character=%u map=%ld town_trigger=%d",
 				ch->GetPlayerID(), ch->GetName(), gold,
 				gold * playerbot_persona::GAMBLE_BUDGET_PERCENT / 100, (unsigned int)bases.size(),
-				(unsigned int)workable, (unsigned int)state.bPersonality, mapIndex);
+				(unsigned int)workable, (unsigned int)state.bPersonality, mapIndex, townTrigger ? 1 : 0);
 
 		// The errands the visit came for are done; what is left is the
 		// storekeeper and the anvil, walked by the same phases as any visit.

@@ -379,6 +379,39 @@ namespace
 		return count;
 	}
 
+	// Whether a first village's hub is one of the valuable ones
+	// (PLAYERBOT_M1_VALUE_HUBS).
+	bool IsPlayerBotM1ValueHub(long mapIndex, long x, long y)
+	{
+		for (size_t i = 0; i < sizeof(PLAYERBOT_M1_VALUE_HUBS) / sizeof(PLAYERBOT_M1_VALUE_HUBS[0]); ++i)
+			if (PLAYERBOT_M1_VALUE_HUBS[i].mapIndex == mapIndex &&
+					PLAYERBOT_M1_VALUE_HUBS[i].x == x && PLAYERBOT_M1_VALUE_HUBS[i].y == y)
+				return true;
+		return false;
+	}
+
+	// The soldiers and the bears first (community patch 2, point 14): of the
+	// hubs the band admitted, the valuable ones when there are any; when there
+	// are none, the valuable hubs of a band up to PLAYERBOT_M1_VALUE_HUB_UNDER
+	// under the bot. A band with neither keeps its own choice - under level
+	// twelve there is nothing but the dogs' kind to hunt.
+	int PreferPlayerBotM1ValueHubs(long mapIndex, int botLevel, const TPlayerBotVillageHub* hubs,
+			int hubTotal, int* choices, int count, int cap)
+	{
+		int valuable = 0;
+		for (int i = 0; i < count; ++i)
+			if (IsPlayerBotM1ValueHub(mapIndex, hubs[choices[i]].x, hubs[choices[i]].y))
+				choices[valuable++] = choices[i];
+		if (valuable > 0)
+			return valuable;
+		int widened = 0;
+		for (int h = 0; h < hubTotal && widened < cap; ++h)
+			if (hubs[h].mobLevel <= botLevel + 2 && hubs[h].mobLevel >= botLevel - PLAYERBOT_M1_VALUE_HUB_UNDER &&
+					IsPlayerBotM1ValueHub(mapIndex, hubs[h].x, hubs[h].y))
+				choices[widened++] = h;
+		return widened > 0 ? widened : count;
+	}
+
 	// The second villages' choice: the band rule above, and when it admits
 	// fewer than PLAYERBOT_M2_HUB_CHOICES_MIN hubs, the nearest bands by
 	// distance fill the set. The first villages have thirty-two hubs over a
@@ -693,8 +726,18 @@ namespace
 				int hubChoices[64];
 				// The active herb row's level while its monster is wanted, the
 				// bot's own otherwise (GetPlayerBotVillageHuntLevel).
-				int hubCount = CollectPlayerBotM1HubsForLevel(GetPlayerBotVillageHuntLevel(ch),
+				const int huntLevel = GetPlayerBotVillageHuntLevel(ch);
+				int hubCount = CollectPlayerBotM1HubsForLevel(huntLevel,
 						hubs, hubTotal, hubChoices, 64);
+				// The soldiers and the bears ahead of the dogs (community patch
+				// 2, point 14) - unless a herb row's monster is what the bot is
+				// hunting here, which has its own level and its own ground.
+				// Every row of the list is back on the table the first time
+				// the bands are filled again: the valuable set is re-read each
+				// decision.
+				if (huntLevel == (int)ch->GetLevel())
+					hubCount = PreferPlayerBotM1ValueHubs(ch->GetMapIndex(), huntLevel,
+							hubs, hubTotal, hubChoices, hubCount, 64);
 				hubCount = FilterPlayerBotAvoidedHubs(state, ch->GetMapIndex(), hubs,
 						hubChoices, hubCount, dwNow);
 				if (hubCount <= 0)

@@ -460,6 +460,9 @@ namespace
 							case BOT_FOE_STONE_RIVAL:
 								snprintf(status, statusSize, "%sOdganiam %s od Metina", prefix, target->GetName());
 								break;
+							case BOT_FOE_GUILD:
+								snprintf(status, statusSize, "%sBronie gildii przed %s", prefix, target->GetName());
+								break;
 							default:
 								snprintf(status, statusSize, "%sWalcze z %s", prefix, target->GetName());
 								break;

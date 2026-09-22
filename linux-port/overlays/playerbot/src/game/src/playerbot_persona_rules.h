@@ -326,6 +326,39 @@ namespace playerbot_persona
 		return MixPid(pid, 0x534b4950u) % 100u < (uint32_t)GRINDER_TIER1_SKIP_PERCENT;
 	}
 
+	// Iwakura's community patch 2, point 2. Of all bots, GRINDER_NEVER_HOLDS
+	// percent never hold at a tier's lock ("calkowicie pomija zatrzymywanie
+	// sie na okreslonych poziomach"), and GRINDER_MAY_QUIT percent may give
+	// grinding up: at each tier, once its gear stands (the Law of Advancement
+	// met at the lock), GRINDER_QUIT_CHANCE percent of them do, for good. One
+	// draw by pid for both, so the two shares are the sheet's exactly and
+	// never overlap. Both kinds get their upgrades mainly off the market.
+	const uint8_t GRINDER_NEVER_HOLDS_PERCENT = 13;
+	const uint8_t GRINDER_MAY_QUIT_PERCENT = 10;
+	const uint8_t GRINDER_QUIT_CHANCE_PERCENT = 33;
+
+	inline uint32_t GrinderStyleRoll(uint32_t pid)
+	{
+		return MixPid(pid, 0x5354594cu) % 100u;
+	}
+
+	inline bool NeverHoldsAtLocks(uint32_t pid)
+	{
+		return GrinderStyleRoll(pid) < (uint32_t)GRINDER_NEVER_HOLDS_PERCENT;
+	}
+
+	inline bool MayQuitGrinding(uint32_t pid)
+	{
+		const uint32_t roll = GrinderStyleRoll(pid);
+		return roll >= (uint32_t)GRINDER_NEVER_HOLDS_PERCENT &&
+				roll < (uint32_t)(GRINDER_NEVER_HOLDS_PERCENT + GRINDER_MAY_QUIT_PERCENT);
+	}
+
+	inline bool RollQuitGrinding(uint32_t roll)
+	{
+		return roll % 100u < (uint32_t)GRINDER_QUIT_CHANCE_PERCENT;
+	}
+
 	inline uint8_t GrinderLockFor(uint8_t level, uint32_t pid)
 	{
 		if (level < GRINDER_FREE_BELOW)

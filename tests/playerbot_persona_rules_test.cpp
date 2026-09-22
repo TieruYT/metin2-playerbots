@@ -238,6 +238,25 @@ int main()
 		assert(seen13 && seen19 && seenM3low && seenM3high);
 		// A quarter, near enough: the draw is a hash, not a counter.
 		assert(skippers > 2500 / 6 && skippers < 2500 / 3);
+
+		// Community patch 2, point 2: thirteen in a hundred never hold, ten
+		// may give grinding up, and nobody is both.
+		unsigned int never = 0, mayQuit = 0;
+		for (uint32_t pid = 4; pid < 2504; ++pid)
+		{
+			assert(!(NeverHoldsAtLocks(pid) && MayQuitGrinding(pid)));
+			never += NeverHoldsAtLocks(pid) ? 1 : 0;
+			mayQuit += MayQuitGrinding(pid) ? 1 : 0;
+			// The same pid always gets the same answer.
+			assert(NeverHoldsAtLocks(pid) == NeverHoldsAtLocks(pid));
+		}
+		assert(never > 2500 * 10 / 100 && never < 2500 * 16 / 100);
+		assert(mayQuit > 2500 * 7 / 100 && mayQuit < 2500 * 13 / 100);
+		// And the 33% of the quit.
+		unsigned int quits = 0;
+		for (uint32_t roll = 0; roll < 100; ++roll)
+			quits += RollQuitGrinding(roll) ? 1 : 0;
+		assert(quits == GRINDER_QUIT_CHANCE_PERCENT);
 	}
 
 	// --- the Law of Advancement -----------------------------------------------

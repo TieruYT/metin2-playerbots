@@ -946,6 +946,40 @@ namespace
 		return IsPlayerBotWeapon(ch, item);
 	}
 
+	// What the rolled lines of a piece are worth, by Iwakura's tiers - the
+	// equipment score's own count of them (ScorePlayerBotApplyTiered), without
+	// the base the piece is made of.
+	long long GetPlayerBotItemLineScore(LPITEM item, LPCHARACTER ch)
+	{
+		long long lines = 0;
+		for (int i = 0; item && i < ITEM_ATTRIBUTE_MAX_NUM; ++i)
+			if (item->GetAttributeType(i) != 0 && item->GetAttributeValue(i) > 0)
+				lines += ScorePlayerBotApplyTiered(item->GetAttributeType(i), item->GetAttributeValue(i), ch);
+		return lines;
+	}
+
+	// Defined in playerbot_bonus.h, later: a stone in the bag for this piece.
+	bool PlayerBotHoldsBonusStoneFor(LPCHARACTER ch, LPITEM item);
+
+	// Iwakura's community patch 2, point 3 ("zasada wymiany ekwipunku"): a
+	// bot wearing a piece with, say, fifteen hundred health keeps a new one in
+	// the bag until it has bonused it and the new lines outweigh the old -
+	// whatever the new base is worth. The weapon is outside it: its average
+	// line is in its blow already (GetPlayerBotWeaponHitDamage). And the wait
+	// lasts only while it can end: with no stone in the bag for the new piece
+	// the swap goes by the score as ever, or a bot without stones would keep
+	// its level-one boots for life.
+	bool IsPlayerBotSwapHeldForBonus(LPCHARACTER ch, LPITEM candidate, LPITEM worn)
+	{
+		if (!ch || !candidate || !worn || !IsPlayerBotPersonaEnabled() ||
+				candidate->GetType() == ITEM_WEAPON || worn->GetType() == ITEM_WEAPON)
+			return false;
+		const long long wornLines = GetPlayerBotItemLineScore(worn, ch);
+		if (wornLines <= 0 || GetPlayerBotItemLineScore(candidate, ch) >= wornLines)
+			return false;
+		return PlayerBotHoldsBonusStoneFor(ch, candidate);
+	}
+
 	bool ManagePlayerBotEquipment(LPCHARACTER ch, TPlayerBotAIState& state, DWORD dwNow)
 	{
 		if (!ch || !ch->IsItemLoaded())
@@ -1041,6 +1075,17 @@ namespace
 					: 0;
 			if (oldItem && itemScore <= oldScore)
 				continue;
+			// A new piece waits in the bag while its lines are worth less than
+			// the worn one's and a stone can change that (community patch 2,
+			// point 3); the bonus pass works on it there.
+			if (oldItem && IsPlayerBotSwapHeldForBonus(ch, item, oldItem))
+			{
+				PlayerBotLogThrottled("swap_held_for_bonus", dwNow,
+						"PLAYERBOT_BONUS: new piece waits in the bag for its lines pid=%u name=%s wear=%d new_vnum=%u old_vnum=%u new_lines=%lld old_lines=%lld",
+						ch->GetPlayerID(), ch->GetName(), wearCell, item->GetVnum(), oldItem->GetVnum(),
+						GetPlayerBotItemLineScore(item, ch), GetPlayerBotItemLineScore(oldItem, ch));
+				continue;
+			}
 
 			const long long improvement = oldItem ? itemScore - oldScore : 1000000000000LL + itemScore;
 			if (!bestItem || improvement > bestImprovement)
@@ -1689,6 +1734,11 @@ namespace
 			return PLAYERBOT_LEVEL30_ANVIL_PLUS_GOOD;
 		if (average <= PLAYERBOT_LEVEL30_ANVIL_AVG_BETTER)
 			return PLAYERBOT_LEVEL30_ANVIL_PLUS_BETTER;
+		// Iwakura's community patch 2: from 34% "Zwojami Blogoslawienstwa juz
+		// od poziomu +3". From 37% the operator's scroll-only rule answers
+		// first and the anvil never sees it at all.
+		if (average >= PLAYERBOT_LEVEL30_BLESSING_FROM_3_AVERAGE)
+			return 3;
 		if (average <= PLAYERBOT_LEVEL30_ANVIL_AVG_HIGH)
 			return PLAYERBOT_LEVEL30_ANVIL_PLUS_HIGH;
 		return 0;
@@ -1727,6 +1777,144 @@ namespace
 		const BYTE plus = std::max<BYTE>(item->GetRefineLevel(), PLAYERBOT_LEVEL30_PROJECT_PLUS);
 		const TItemTable* proto = GetPlayerBotWeaponProtoAtPlus(item, plus);
 		return proto ? GetPlayerBotWeaponHitDamageAt(item, proto, ch) : 0;
+	}
+
+	// Iwakura's community patch 2, point 1: the level-30 weapon of this bot's
+	// class - the Full Moon Sword, the Ostrze z Czerwonej Stali, the bow, the
+	// dagger, the bell or the fan, whichever its build wields - is every bot's
+	// from level thirty, whatever its level now: a bot of forty-two on an old
+	// world without one is sent for it as surely as a bot of thirty.
+	bool IsPlayerBotClassLevel30Weapon(LPCHARACTER ch, LPITEM item)
+	{
+		return ch && item && IsPlayerBotSpecialLevel30Weapon(item) && IsPlayerBotWeapon(ch, item) &&
+				item->CanUsedBy(ch);
+	}
+
+	// The one it works on: the best of them by what it will hit for, the
+	// weapon in the hand winning a tie.
+	LPITEM FindPlayerBotClassLevel30Weapon(LPCHARACTER ch)
+	{
+		if (!ch || !ch->IsItemLoaded())
+			return NULL;
+		LPITEM best = NULL;
+		long long bestPotential = -1;
+		LPITEM worn = ch->GetWear(WEAR_WEAPON);
+		if (IsPlayerBotClassLevel30Weapon(ch, worn))
+		{
+			best = worn;
+			bestPotential = GetPlayerBotLevel30Potential(ch, worn);
+		}
+		for (WORD cell = 0; cell < PLAYERBOT_BAG_CELLS; ++cell)
+		{
+			LPITEM item = ch->GetInventoryItem(cell);
+			if (!item || item->GetCell() != cell || !IsPlayerBotClassLevel30Weapon(ch, item))
+				continue;
+			const long long potential = GetPlayerBotLevel30Potential(ch, item);
+			if (potential > bestPotential)
+			{
+				best = item;
+				bestPotential = potential;
+			}
+		}
+		return best;
+	}
+
+	// Who has to go and get one: thirty or more, not a dropper (its time is
+	// its farm's, IsPlayerBotDropper), and none in the hand or the bag.
+	bool PlayerBotLacksClassLevel30Weapon(LPCHARACTER ch)
+	{
+		return ch && ch->GetLevel() >= 30 && ch->IsItemLoaded() &&
+				!IsPlayerBotDropper(GetPlayerBotPersonalityByPID(ch->GetPlayerID())) &&
+				FindPlayerBotClassLevel30Weapon(ch) == NULL;
+	}
+
+	// What the purchase may cost: PLAYERBOT_LEVEL30_BUDGET_PERCENT of what the
+	// bot holds over its reserve and the shopping floor. The anvil's share of
+	// the same budget is kept by ManagePlayerBotRefining against the purse the
+	// visit began with, so a purchase made on the way leaves it less.
+	long long GetPlayerBotLevel30PurchaseCap(LPCHARACTER ch)
+	{
+		if (!ch)
+			return 0;
+		const long long spare = (long long)ch->GetGold() - GetPlayerBotReservedGold(ch) -
+				(long long)PLAYERBOT_SHOPPING_GOLD_FLOOR;
+		return spare > 0 ? spare * PLAYERBOT_LEVEL30_BUDGET_PERCENT / 100 : 0;
+	}
+
+	// The first plus, drawn by pid so a bot keeps the same one for life.
+	BYTE GetPlayerBotLevel30FirstPlus(DWORD pid)
+	{
+		const int roll = (int)(PlayerBotNavHash(pid ^ 0x4c333046U) % 100U);
+		int edge = PLAYERBOT_LEVEL30_FIRST_PLUS6_PERCENT;
+		if (roll < edge)
+			return 6;
+		edge += PLAYERBOT_LEVEL30_FIRST_PLUS7_PERCENT;
+		if (roll < edge)
+			return 7;
+		edge += PLAYERBOT_LEVEL30_FIRST_PLUS8_PERCENT;
+		if (roll < edge)
+			return 8;
+		edge += PLAYERBOT_LEVEL30_FIRST_PLUS9_PERCENT;
+		if (roll < edge)
+			return 9;
+		return 6;
+	}
+
+	// And the one it keeps trying for at every later visit.
+	BYTE GetPlayerBotLevel30LongPlus(DWORD pid)
+	{
+		return std::max<BYTE>(GetPlayerBotLevel30FirstPlus(pid), PLAYERBOT_LEVEL30_LONG_TERM_PLUS);
+	}
+
+	// This visit's aim: the first plus while the weapon walked into town
+	// under it - one visit's push, as far as the purse allows - and the
+	// long-term plus from the visit after that.
+	BYTE GetPlayerBotLevel30Aim(LPCHARACTER ch, LPITEM item)
+	{
+		if (!ch || !item)
+			return 0;
+		const DWORD pid = ch->GetPlayerID();
+		const BYTE first = GetPlayerBotLevel30FirstPlus(pid);
+		BYTE startPlus = item->GetRefineLevel();
+		TPlayerBotAIStateMap::const_iterator st = s_mapPlayerBotAIStates.find(pid);
+		if (st != s_mapPlayerBotAIStates.end() && st->second.persona.bLevel30VisitStartPlus != 0xFF)
+			startPlus = st->second.persona.bLevel30VisitStartPlus;
+		return startPlus < first ? first : GetPlayerBotLevel30LongPlus(pid);
+	}
+
+	// The best average line of the class's level-30 weapons the bot holds.
+	long GetPlayerBotBestClassLevel30Average(LPCHARACTER ch)
+	{
+		long best = -1;
+		if (!ch || !ch->IsItemLoaded())
+			return best;
+		LPITEM worn = ch->GetWear(WEAR_WEAPON);
+		if (IsPlayerBotClassLevel30Weapon(ch, worn))
+			best = SumPlayerBotItemLines(worn, APPLY_NORMAL_HIT_DAMAGE_BONUS);
+		for (WORD cell = 0; cell < PLAYERBOT_BAG_CELLS; ++cell)
+		{
+			LPITEM item = ch->GetInventoryItem(cell);
+			if (item && item->GetCell() == cell && IsPlayerBotClassLevel30Weapon(ch, item))
+				best = std::max(best, SumPlayerBotItemLines(item, APPLY_NORMAL_HIT_DAMAGE_BONUS));
+		}
+		return best;
+	}
+
+	// A counter's level-30 weapon of the bot's own class it has to buy: any,
+	// when it has none; and one carrying PLAYERBOT_LEVEL30_BLESSING_FROM_3_AVERAGE
+	// or more that beats every one it holds on that line ("takie egzemplarze
+	// bot ma obowiazek dokupic z rynku, o ile nie przekroczy to ogolnego
+	// budzetu" - the budget is CanPlayerBotPayForOffer's).
+	bool IsPlayerBotMandatedLevel30Offer(LPCHARACTER ch, LPITEM offer)
+	{
+		if (!IsPlayerBotClassLevel30Weapon(ch, offer) || offer->GetLevelLimit() > ch->GetLevel() ||
+				ch->GetLevel() < 30 || IsPlayerBotDropper(GetPlayerBotPersonalityByPID(ch->GetPlayerID())))
+			return false;
+		const long own = GetPlayerBotBestClassLevel30Average(ch);
+		if (own < 0)
+			return true;
+		const long offered = SumPlayerBotItemLines(offer, APPLY_NORMAL_HIT_DAMAGE_BONUS);
+		return offered >= PLAYERBOT_LEVEL30_BLESSING_FROM_3_AVERAGE && offered > own;
 	}
 
 	// What a level-30 weapon has to beat, and the one worth grinding for it.
@@ -1808,6 +1996,15 @@ namespace
 			return false;
 		if (IsPlayerBotLevel30Project(ch, item))
 			return true;   // the project is kept whatever the draw says
+		// So is the class's own (community patch 2, point 1).
+		if (item == FindPlayerBotClassLevel30Weapon(ch))
+			return true;
+		// Another class's is never kept for this bot's anvil: it cannot wear
+		// it, so it was kept to be kept - the grind for sale is its own rule
+		// (PlayerBotRefinesLevel30ForSale), and the rest is counter goods at
+		// once (community patch 2, point 9).
+		if (!IsPlayerBotClassLevel30Weapon(ch, item))
+			return false;
 		const DWORD salt = ch->GetPlayerID() ^ (item->GetID() * 2654435761U);
 		if ((int)(PlayerBotNavHash(salt) % 100U) >= PLAYERBOT_LEVEL30_KEEP_PERCENT)
 			return false;
@@ -1817,7 +2014,7 @@ namespace
 		for (int cell = 0; cell < PLAYERBOT_BAG_CELLS; ++cell)
 		{
 			LPITEM other = ch->GetInventoryItem(cell);
-			if (!other || other == item || !IsPlayerBotSpecialLevel30Weapon(other))
+			if (!other || other == item || !IsPlayerBotClassLevel30Weapon(ch, other))
 				continue;
 			const DWORD otherSalt = ch->GetPlayerID() ^ (other->GetID() * 2654435761U);
 			if ((int)(PlayerBotNavHash(otherSalt) % 100U) < PLAYERBOT_LEVEL30_KEEP_PERCENT)
@@ -2085,9 +2282,13 @@ namespace
 		// grinding, goes to +9 whatever the personality: that is what the
 		// weapon is for. A scroll-only one gets there under scrolls or not at
 		// all (CanPlayerBotAttemptRefineItem).
+		// Under the personalities the class's own goes to this visit's aim
+		// instead (community patch 2, point 1: GetPlayerBotLevel30Aim).
 		if (IsPlayerBotSpecialLevel30Weapon(item) && IsPlayerBotWeapon(ch, item) &&
-				(item->IsEquipped() || IsPlayerBotLevel30Project(ch, item)))
-			return PLAYERBOT_SCROLL_REFINE_MAX_PLUS;
+				(item->IsEquipped() || IsPlayerBotLevel30Project(ch, item) ||
+					(IsPlayerBotPersonaEnabled() && item == FindPlayerBotClassLevel30Weapon(ch))))
+			return IsPlayerBotPersonaEnabled() ? GetPlayerBotLevel30Aim(ch, item)
+					: PLAYERBOT_SCROLL_REFINE_MAX_PLUS;
 		// One of another class, ground for sale, as far as its ceiling.
 		if (PlayerBotRefinesLevel30ForSale(ch, item))
 			return GetPlayerBotLevel30SaleTarget(item);
@@ -2193,6 +2394,27 @@ namespace
 			return false;
 		return !IS_SET(proto->dwAntiFlags,
 				GET_SEX(ch) == SEX_MALE ? ITEM_ANTIFLAG_MALE : ITEM_ANTIFLAG_FEMALE);
+	}
+
+	// Whether some counter in this world holds a level-30 weapon this bot
+	// could wield, read off the market ledger without walking to one.
+	bool PlayerBotMarketHasClassLevel30Weapon(LPCHARACTER ch)
+	{
+		static const DWORD families[] = { 290, 1170, 2150, 3210, 5110, 7160 };
+		for (size_t i = 0; ch && i < sizeof(families) / sizeof(families[0]); ++i)
+		{
+			const TItemTable* proto = ITEM_MANAGER::instance().GetTable(families[i]);
+			if (!proto || proto->bType != ITEM_WEAPON || !IsPlayerBotWeaponSubTypeFor(ch, proto->bSubType) ||
+					!IsPlayerBotProtoForCharacter(ch, proto))
+				continue;
+			for (DWORD plus = 0; plus < 10; ++plus)
+			{
+				const TPlayerBotMarketLedgerEntry* entry = GetPlayerBotMarketLedgerEntry(families[i] + plus);
+				if (entry && entry->dwSupplyUnits > 0)
+					return true;
+			}
+		}
+		return false;
 	}
 
 	DWORD FindPlayerBotBestMerchantSlotVnum(LPCHARACTER ch, int wearCell)

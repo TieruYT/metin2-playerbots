@@ -91,6 +91,30 @@ namespace {
         auto it = playerbot_offline::requests.find(ch->GetPlayerID());
         if (it == playerbot_offline::requests.end()) return false;
         auto& r = it->second;
+        // A create whose answer never came, read against the shop the core
+        // holds. Standing again (duration above zero) is the answer arriving by
+        // another road - the ack was lost, not the shop. Still expired a while
+        // later is a renewal the db core turned down: it carries no goods, so
+        // nothing can be doubled by asking again, and holding the request for
+        // good (as every unresolved request was held) left the keeper with an
+        // expired stand full of goods until the next restart - 368 such
+        // renewals on m2zip from 17 to 20 September. The db core refuses a
+        // create while its own copy of the shop has time left, and that copy
+        // ran behind this core's until 2.0.95 (see apply_shop_clock in
+        // playerbotify.py). A fresh create is left alone: its goods are
+        // already in the shop's window in the database.
+        if (!r.done && r.sent && r.op == playerbot_offline::Create) {
+            auto shop = ikashop::GetManager().GetShopByOwnerID(ch->GetPlayerID());
+            if (shop && shop->GetDuration() > 0) {
+                r.done = true;
+                r.success = true;
+            } else if (shop && uint32_t(now - r.started) >= PLAYERBOT_OFFLINE_RENEW_ABANDON_MS) {
+                sys_err("PLAYERBOT_OFFLINE: renewal went unanswered pid=%u name=%s age_s=%u; dropped, the next service visit asks again",
+                    ch->GetPlayerID(), ch->GetName(), unsigned((now - r.started) / 1000U));
+                playerbot_offline::requests.erase(it);
+                return false;
+            }
+        }
         if (r.done) {
             if (r.success && r.op == playerbot_offline::Buy && r.count && r.unitPrice)
                 RememberPlayerBotSale(r.vnum, r.refine, r.unitPrice, now, r.skill);
@@ -329,6 +353,16 @@ namespace {
                 M2_DELETE(preview);
                 continue;
             }
+            // One of Iwakura's junk weapons while the bots' counters carry more
+            // than PLAYERBOT_JUNK_WEAPON_MARKET_CAP of them comes home, and the
+            // junk rule sends it to the merchant (community patch 2, point 13).
+            if (IsPlayerBotCappedJunkWeapon(preview) &&
+                    GetPlayerBotItemPolicy(preview) != PLAYERBOT_ITEM_POLICY_STALL &&
+                    s_iPlayerBotJunkWeaponsOnCounters > PLAYERBOT_JUNK_WEAPON_MARKET_CAP) {
+                if (!unwanted) { unwanted = id; reason = "junk_weapon"; }
+                M2_DELETE(preview);
+                continue;
+            }
             // A dye from the water the owner does not keep for sale comes home
             // to be thrown away (PLAYERBOT_HAIR_DYE_KEEP_PERMILLE): 5 147 of
             // them stood on the counters.
@@ -415,6 +449,10 @@ namespace {
         ikashop::GetManager().RecvShopRemoveItemClientPacket(ch, itemid);
         if (!EndCall(ch->GetPlayerID())) return false;
         state.offlineShop.listed.erase(itemid);
+        // Off the world's count at once, so the next keeper's visit this
+        // minute does not take a second one home for the same surplus.
+        if (why && strcmp(why, "junk_weapon") == 0 && s_iPlayerBotJunkWeaponsOnCounters > 0)
+            --s_iPlayerBotJunkWeaponsOnCounters;
         sys_log(0, "PLAYERBOT_OFFLINE: took off pid=%u name=%s item=%u low_gear_kept=%d reason=%s",
             ch->GetPlayerID(), ch->GetName(), itemid, lowGear, why);
         return true;
@@ -553,6 +591,8 @@ namespace {
             if (BotOfflineMarbleLines(shop, item->GetSocket(0), sameMob) >= PLAYERBOT_SHOP_MARBLE_LINES || sameMob)
                 return true;
         }
+        // Nor one of Iwakura's junk weapons past the world's cap.
+        if (IsPlayerBotCappedJunkWeapon(item) && IsPlayerBotJunkWeaponMarketFull()) return true;
         // And no more than PLAYERBOT_SHOP_SAME_VNUM_LINES of anything else.
         if (IsPlayerBotSameVnumCapped(item) &&
                 BotOfflineLinesOf(shop, item->GetVnum()) >= PLAYERBOT_SHOP_SAME_VNUM_LINES)
@@ -801,12 +841,32 @@ namespace {
             BotOfflineFinishVisit(ch, state, now);
             return false;
         }
+        // Where this visit is served. An expired stand on a map that no longer
+        // takes one (a second village with the SHOP_M2 switch off) is renewed
+        // on its owner's first village ring instead: a renewal stands where its
+        // owner stands (OpenOfflineShop), so the stand moves there rather than
+        // being walked back to. A stand still running is served where it is,
+        // and moves when it has run out.
+        long serviceMap = spawn.map, serviceX = spawn.x, serviceY = spawn.y;
+        if (shop->GetDuration() == 0 && !IsPlayerBotShopMapAllowed(spawn.map)) {
+            const long home = playerbot_empire_rules::GetHomeMap((int)ch->GetEmpire(),
+                    playerbot_empire_rules::MAP_ROLE_M1);
+            long px = 0, py = 0;
+            if (IsPlayerBotMapHostedHere(home) && GetPlayerBotShopCentre(home, px, py)) {
+                long ox = 0, oy = 0;
+                GetPlayerBotStableOffset(ch->GetPlayerID(), 0x4d4b5450U,
+                        PLAYERBOT_SHOP_RING_MIN, PLAYERBOT_SHOP_RING_RADIUS, ox, oy);
+                serviceMap = home;
+                serviceX = px + ox;
+                serviceY = py + oy;
+            }
+        }
         // A shop on another map waits for the long round
         // (PLAYERBOT_OFFLINE_FAR_SERVICE_MIN_MS): two map changes a visit for
         // every keeper out on the frontier was most of the gates' traffic. An
         // empty hand with a weapon on its own counter does not wait (the
         // reclaim probe above), nor does the first visit after a start.
-        if (!o.visiting && ch->GetMapIndex() != spawn.map && ch->GetWear(WEAR_WEAPON) &&
+        if (!o.visiting && ch->GetMapIndex() != serviceMap && ch->GetWear(WEAR_WEAPON) &&
                 o.lastServedAt != 0 && !Due(now, o.lastServedAt + PLAYERBOT_OFFLINE_FAR_SERVICE_MIN_MS)) {
             o.nextService = now + PLAYERBOT_OFFLINE_FAR_SERVICE_RETRY_MS;
             return false;
@@ -821,12 +881,12 @@ namespace {
             return false;
         }
         SetPlayerBotAction(state, BOT_ACTION_TRAVEL, now);
-        if (ch->GetMapIndex() != spawn.map) {
+        if (ch->GetMapIndex() != serviceMap) {
             // Reuses world-travel safety checks; never manufactures cross-core warps.
-            TransitionPlayerBotMap(ch, state, spawn.map, spawn.x, spawn.y, now, "offline_shop_service");
+            TransitionPlayerBotMap(ch, state, serviceMap, serviceX, serviceY, now, "offline_shop_service");
             return true;
         }
-        if (!MovePlayerBotTownLeg(ch, state, now, spawn.x, spawn.y, 800)) return true;
+        if (!MovePlayerBotTownLeg(ch, state, now, serviceX, serviceY, 800)) return true;
         if (!Due(now, o.nextStep)) return true;
         o.nextStep = now + 3000;
         if (!BotOfflineBudget(now)) return true;
@@ -882,8 +942,9 @@ namespace {
                     strlcpy(sign, shop->GetName(), sizeof(sign));
                 manager.RecvShopReopenClientPacket(ch, sign, 1);
                 if (EndCall(ch->GetPlayerID()))
-                    sys_log(0, "PLAYERBOT_OFFLINE: reopen pid=%u name=%s lines=%u sign=\"%s\" how=%s",
-                        ch->GetPlayerID(), ch->GetName(), unsigned(shop->GetItems().size()), sign, how);
+                    sys_log(0, "PLAYERBOT_OFFLINE: reopen pid=%u name=%s lines=%u sign=\"%s\" how=%s moved_from=%ld",
+                        ch->GetPlayerID(), ch->GetName(), unsigned(shop->GetItems().size()), sign, how,
+                        serviceMap != spawn.map ? (long)spawn.map : 0L);
             }
             BotOfflineFinishVisit(ch, state, now);
             return false;
@@ -982,6 +1043,7 @@ namespace {
                     // same material up against the player's floor in the
                     // minute before the ledger is rebuilt.
                     AddPlayerBotMarketSupply(item->GetVnum(), (WORD)item->GetCount(), shop->GetSpawn().map);
+                    NotePlayerBotJunkWeaponOnCounter(item->GetVnum(), (int)item->GetCount());
                 }
             }
             break; // at most one item per short service visit

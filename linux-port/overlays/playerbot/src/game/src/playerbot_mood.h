@@ -34,11 +34,27 @@ namespace
 		return false;
 	}
 
+	// A boss's casket lifts the mood by one as well (Iwakura, Community Patch
+	// 2, point 6): the Orc Chief's, the Esoteric and the Reborn Lord's, the
+	// Spider Queen's and the Giant Spider's, the Plague Bearer's, the Desert
+	// Turtle's, Nine Tails', the Yellow Tiger's, the Fire King's, the Red
+	// Dragon's, the Demon King's, the Reaper's, the Nine-Tailed Fox's, the
+	// Giant Tree's and Chegal's - every one of them a giftbox in item_proto.
+	// Kept beside the rendered table rather than in it: the table is his
+	// personality document's list, and this one is the patch's.
+	const DWORD PLAYERBOT_MOOD_BOSS_CASKET_VNUMS[] = {
+		50070, 50071, 50072, 50073, 50074, 50075, 50076, 50077,
+		50078, 50079, 50080, 50081, 50082, 50090, 50097, 50098,
+	};
+
 	// Is this item on Iwakura's list of valuable drops? A skill book and a
 	// Forgetting book are one vnum each, told apart by the skill in socket 0;
 	// a family of gear counts at any refine.
 	bool IsPlayerBotMoodValuable(DWORD vnum, long socket0, BYTE type)
 	{
+		for (size_t i = 0; i < sizeof(PLAYERBOT_MOOD_BOSS_CASKET_VNUMS) / sizeof(PLAYERBOT_MOOD_BOSS_CASKET_VNUMS[0]); ++i)
+			if (PLAYERBOT_MOOD_BOSS_CASKET_VNUMS[i] == vnum)
+				return true;
 		if (vnum == PLAYERBOT_MOOD_SKILL_BOOK_VNUM)
 			return IsPlayerBotSkillInList(PLAYERBOT_MOOD_VALUABLE_BOOK_SKILLS,
 					sizeof(PLAYERBOT_MOOD_VALUABLE_BOOK_SKILLS), socket0);
@@ -140,6 +156,9 @@ namespace
 		ch->SetQuestFlag(PLAYERBOT_PERSONA_FLAG_DROUGHT, (int)(p.mood.droughtMs / 1000) + 1);
 		ch->SetQuestFlag(PLAYERBOT_PERSONA_FLAG_ADVANCED, (p.bAdvanced ? 1 : 0) + 1);
 		ch->SetQuestFlag(PLAYERBOT_PERSONA_FLAG_LOCK_LEVEL, (int)p.bLockLevel + 1);
+		ch->SetQuestFlag(PLAYERBOT_PERSONA_FLAG_QUIT, (p.bQuitGrinding ? 1 : 0) + 1);
+		ch->SetQuestFlag(PLAYERBOT_PERSONA_FLAG_QUIT_TIER, (int)p.bQuitRolledTier + 1);
+		ch->SetQuestFlag(PLAYERBOT_PERSONA_FLAG_MEDAL_GOAL, (p.bMedalGoalDone ? 1 : 0) + 1);
 		p.bDirty = false;
 		p.dwNextSave = dwNow + PLAYERBOT_PERSONA_SAVE_INTERVAL;
 	}
@@ -182,6 +201,16 @@ namespace
 		p.bAdvanced = ch->GetQuestFlag(PLAYERBOT_PERSONA_FLAG_ADVANCED) - 1 == 1;
 		const int lockLevel = ch->GetQuestFlag(PLAYERBOT_PERSONA_FLAG_LOCK_LEVEL) - 1;
 		p.bLockLevel = lockLevel > 0 && lockLevel <= PLAYER_MAX_LEVEL_CONST ? (BYTE)lockLevel : 0;
+		p.bQuitGrinding = ch->GetQuestFlag(PLAYERBOT_PERSONA_FLAG_QUIT) - 1 == 1;
+		const int quitTier = ch->GetQuestFlag(PLAYERBOT_PERSONA_FLAG_QUIT_TIER) - 1;
+		p.bQuitRolledTier = quitTier > 0 && quitTier < 256 ? (BYTE)quitTier : 0;
+		p.bMedalGoalDone = ch->GetQuestFlag(PLAYERBOT_PERSONA_FLAG_MEDAL_GOAL) - 1 == 1;
+		// A goal dropper that graduated before this login plays as the
+		// Wanderer its draw would otherwise have made it (community patch 2,
+		// point 4); the operator's cohort is the operator's.
+		if (p.bMedalGoalDone && state.bPersonality == BOT_PERSONALITY_MEDAL_DROPPER &&
+				!CPlayerBotManager::instance().IsMedalDropperCohortPID(ch->GetPlayerID()))
+			state.bPersonality = BOT_PERSONALITY_WANDERER;
 #if defined(PLAYERBOT_ENGINE_MT2009)
 		// Where the engine's count of deaths at a player's hands stands, so the
 		// next death can be told apart (WasPlayerBotKilledByPlayer).

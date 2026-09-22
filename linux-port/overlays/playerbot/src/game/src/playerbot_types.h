@@ -304,7 +304,16 @@ namespace
 	const DWORD PLAYERBOT_GRAND_MASTER_CHECK_INTERVAL = 30000;
 	const int PLAYERBOT_GRAND_MASTER_TRAIN_SECONDS = 12 * 3600;
 	const DWORD PLAYERBOT_ZEN_BEAN_VNUM = 70102;
-	const int PLAYERBOT_ZEN_BEAN_KEEP = 2;
+	// What a bot keeps of its beans: ten to fifteen, drawn by pid, "pod
+	// robienie skilli na P" - the Grand Master's reads cost rank, and a bean
+	// is the one way back from below zero (Iwakura, Community Patch 2). The
+	// rest is counter goods in lines of PLAYERBOT_ZEN_BEAN_LINE_UNITS. The
+	// keep was two, counted only over the cells in front of a stack, so a
+	// bot's one stack was never goods: 18 000 beans in bags on blasty's world
+	// and not one on a counter (21 September).
+	const int PLAYERBOT_ZEN_BEAN_KEEP_MIN = 10;
+	const int PLAYERBOT_ZEN_BEAN_KEEP_MAX = 15;
+	const int PLAYERBOT_ZEN_BEAN_LINE_UNITS = 5;
 	const DWORD PLAYERBOT_ZEN_BEAN_CHECK_INTERVAL = 10000;
 	// A bot with a negative rank waits inside its village's safe ring
 	// (KeepPlayerBotNegativeRankInTown): the rest mark that keeps the inactivity
@@ -541,7 +550,9 @@ namespace
 	// change its mind about the same weapon every ten minutes.
 	const int PLAYERBOT_LEVEL30_KEEP_PERCENT = 65;
 	// How many such weapons one bag works on at a time; the rest are goods.
-	const int PLAYERBOT_LEVEL30_KEEP_MAX = 3;
+	// Four since community patch 2, point 9 ("wyjatek: bron na 30. poziom dla
+	// klasy bota, ktorej limit wynosi 4 sztuki"), and only of its own class.
+	const int PLAYERBOT_LEVEL30_KEEP_MAX = 4;
 	// A level-30 weapon of a class this bot cannot wear is goods, and 2 717
 	// of them stood on m2zip's counters at +0 and +2 on 18 September against
 	// thirty weapons of any kind sold in two days. This share of them - drawn
@@ -574,6 +585,25 @@ namespace
 	const DWORD PLAYERBOT_LEVEL30_BASE_PRICE = 500000;
 	// How many safe scrolls a bot refining a weapon under them buys up to.
 	const int PLAYERBOT_LEVEL30_SCROLL_WANT = 3;
+	// Iwakura's community patch 2, point 1. The level-30 weapon of the bot's
+	// class is every bot's from level thirty, whatever its level now, and is
+	// bought off a counter when the bag has none. Purchase and anvil together
+	// take at most PLAYERBOT_LEVEL30_BUDGET_PERCENT of what the bot holds.
+	// Under the personalities (the Perfectionist's part) it is refined to a
+	// first plus drawn by pid - 60% +6, 13% +7, 8% +8, 5% +9, and the 14% the
+	// sheet leaves unnamed +6 like the majority - and at every later visit on
+	// towards PLAYERBOT_LEVEL30_LONG_TERM_PLUS ("+8/+9 to ABSOLUTNY
+	// PRIORYTET"), +9 for the ones that drew it.
+	const int PLAYERBOT_LEVEL30_BUDGET_PERCENT = 60;
+	const int PLAYERBOT_LEVEL30_FIRST_PLUS6_PERCENT = 60;
+	const int PLAYERBOT_LEVEL30_FIRST_PLUS7_PERCENT = 13;
+	const int PLAYERBOT_LEVEL30_FIRST_PLUS8_PERCENT = 8;
+	const int PLAYERBOT_LEVEL30_FIRST_PLUS9_PERCENT = 5;
+	const BYTE PLAYERBOT_LEVEL30_LONG_TERM_PLUS = 8;
+	// From this average a level-30 weapon goes under a Blessing Scroll from +3
+	// (the anvil's ceiling, GetPlayerBotLevel30AnvilCeiling), and one on a
+	// counter carrying it is bought when it beats every one the bot holds.
+	const long PLAYERBOT_LEVEL30_BLESSING_FROM_3_AVERAGE = 34;
 	// The monster a blow is modelled against: the bot's own level, its defence
 	// about fifteen over that on this proto (GetPlayerBotWeaponHitDamageAt).
 	const int PLAYERBOT_MONSTER_DEFENCE_OVER_LEVEL = 15;
@@ -665,6 +695,20 @@ namespace
 	// books: the roll picked one bot in ten and the books sat with the other
 	// nine.
 	const int PLAYERBOT_SHOP_BOOK_PRESSURE_MIN = 6;
+	// Iwakura's community patch 2, point 5. Another build's books go on the
+	// counter ahead of the ordinary goods, and this many of them open a
+	// counter by themselves (under the TRADE weight, like the books above).
+	const int PLAYERBOT_SHOP_OTHER_CLASS_BOOK_SCORE = 600;
+	// What a piece of Iwakura's list past its keep scores on a counter
+	// (community patch 2, point 9): the gamblers' stock, above the materials.
+	const int PLAYERBOT_SHOP_LPP_SURPLUS_SCORE = 700;
+	const int PLAYERBOT_SHOP_OTHER_CLASS_BOOK_MIN = 3;
+	// And a bot in town as the Trader buys the books of its own skills at
+	// Master whatever its gear stands at, with at most this share of its yang
+	// a visit - the window opens with the town visit, or lasts this long where
+	// no visit opened one.
+	const int PLAYERBOT_BOOK_VISIT_BUDGET_PERCENT = 30;
+	const DWORD PLAYERBOT_BOOK_BUDGET_WINDOW_MS = 60 * 60 * 1000;
 	// How often a bag of surplus books alone opens a counter, per thousand,
 	// before the TRADE weight is applied. A thousand means "always" at the
 	// neutral weight, which is what this rule did before it answered to the
@@ -748,6 +792,16 @@ namespace
 	const DWORD PLAYERBOT_LIFE_REST_MAX_MS = 9 * 60 * 60 * 1000;
 	// A bot beside a player is not logged out from under them; it waits.
 	const DWORD PLAYERBOT_LIFE_POSTPONE_MS = 10 * 60 * 1000;
+	// At most this share of the cohort rests at once (ManageLifeSchedule): a
+	// session that ends past it goes on for another HOLD_MIN..MAX and asks
+	// again. The free-running figures above settle at about three in five
+	// resting, and after a start - every bot in at once, every first session
+	// over inside six hours - at nine in ten for the evening; with the cap at
+	// least three in five of the bots the operator asked for are in the world
+	// at every moment, and every one of them still takes its rests.
+	const size_t PLAYERBOT_LIFE_MAX_RESTING_PERCENT = 40;
+	const DWORD PLAYERBOT_LIFE_HOLD_MIN_MS = 10 * 60 * 1000;
+	const DWORD PLAYERBOT_LIFE_HOLD_MAX_MS = 40 * 60 * 1000;
 	const DWORD PLAYERBOT_LIFE_CENSUS_INTERVAL = 10 * 60 * 1000;
 	// And the same spread for a bot's own first heavy passes - the refine, the
 	// gear pass, the shopping decision - which all had timers of zero and so
@@ -1237,6 +1291,11 @@ namespace
 	// A bot's own spot is the ground and up to 400 units of pid, so eight
 	// hundred keeps the whole crowd out; the ground moves about a kilometre.
 	const long PLAYERBOT_GUILD_WAR_SAFE_MARGIN = 800;
+	// And the battlefield is this far round that ground and no further: a foe
+	// beyond it is not chased, and a bot beyond it walks back to its spot
+	// (IsPlayerBotOnWarField). A spot is the ground and 400 of pid, so the
+	// crowd stands well inside; the rest is room for a charge and a chase.
+	const long PLAYERBOT_GUILD_WAR_FIELD_RADIUS = 1800;
 	// The Demon Tower raid (playerbot_demon_tower.h): one bot guild at a
 	// time on this core, the first a few minutes after a start and the next
 	// an interval after a raid ends; the members gather on the ground floor
@@ -1418,6 +1477,12 @@ namespace
 	// the change stone's +5 floor does not apply to them, and the lines he
 	// names for each are worth half as much again as the table alone says.
 	const BYTE PLAYERBOT_EARLY_BONUS_MAX_LEVEL = 45;
+	// Iwakura's community patch 2, point 3. A weapon is finished at this
+	// average ("30%+ SR"), and under PLAYERBOT_EARLY_BONUS_MAX_LEVEL it gets no
+	// stone until this many of the boots, the necklace and the bracelet carry
+	// a health line.
+	const long PLAYERBOT_BONUS_WEAPON_TARGET_AVERAGE = 30;
+	const int PLAYERBOT_EARLY_HP_PIECES_FOR_WEAPON = 2;
 	const int PLAYERBOT_EARLY_BONUS_PERCENT = 150;
 	const long PLAYERBOT_BONUS_KEEP_HP = 1500;
 	const long PLAYERBOT_BONUS_KEEP_CRIT = 5;
@@ -2023,6 +2088,20 @@ namespace
 	// the materials by about seventy percent, and the herbalist's recipes are
 	// priced for the first time (one row for all forty of them).
 	const DWORD PLAYERBOT_PRICE_TABLE_VERSION = 8;
+	// Community patch 2, point 8: inflation. Every PLAYERBOT_INFLATION_STEP_YANG
+	// the world's characters hold between them lifts every price his sheet sets
+	// by PLAYERBOT_INFLATION_STEP_PERCENT, on top of the yang-rate curve and in
+	// whole steps, the way he wrote it: 2.5 billion is +5%, 5 billion +10%, and
+	// so on up. The sum is the database's, asked this often; the ceiling is
+	// only arithmetic - a world at GOLD_MAX on every character.
+	const long long PLAYERBOT_INFLATION_STEP_YANG = 2500000000LL;
+	// The share of browses that go to a person's counter first, and how far
+	// over the market's price that counter may ask (percent of it).
+	const int PLAYERBOT_MARKET_PERSON_FIRST_PERCENT = 33;
+	const int PLAYERBOT_MARKET_PERSON_PRICE_PERCENT = 110;
+	const int PLAYERBOT_INFLATION_STEP_PERCENT = 5;
+	const int PLAYERBOT_INFLATION_MAX_PERCENT = 100000;
+	const DWORD PLAYERBOT_INFLATION_REFRESH_MS = 10 * 60 * 1000;
 	// Iwakura's tier list (playerbot_item_tiers.h, 16 September): a family's
 	// PvE tier moves the whole equipment score by this much per step from
 	// the neutral 3 (tier 6 is +24%, tier 1 is -16%), and a bonus line's PvE
@@ -3425,6 +3504,22 @@ namespace
 	const BYTE PLAYERBOT_EXP_LOCK_M3_DROPPER = 30;
 	const BYTE PLAYERBOT_EXP_LOCK_M2_DROPPER = 36;
 	const BYTE PLAYERBOT_EXP_LOCK_MEDAL_DROPPER = 33;
+	// Iwakura's community patch 2, point 4 ("Grinder Lochu Malp", Tier 4).
+	// Under the personalities a drawn medal dropper stays one (it used to
+	// become a Wanderer, and 26 bots in a thousand farmed medals), and this
+	// many in a thousand of the bots with no role of their own are drawn one
+	// besides - four and a half times the old count all told. They hold at
+	// PLAYERBOT_EXP_LOCK_MEDAL_DROPPER, not at a Grinder's lock.
+	const int PLAYERBOT_MEDAL_DROPPER_EXTRA_PER_MILLE = 140;
+	// And this share of them stays until the medals it sold pay for its
+	// level's weapon and armour at +9 and helmet and shield at +7 - or it
+	// wears them already - and then leaves the dungeon for good: the weapon
+	// first from level thirty, the armour first under it. Looked at this often.
+	const int PLAYERBOT_MEDAL_GOAL_PERCENT = 3;
+	const int PLAYERBOT_MEDAL_GOAL_MAIN_PLUS = 9;
+	const int PLAYERBOT_MEDAL_GOAL_SIDE_PLUS = 7;
+	const BYTE PLAYERBOT_MEDAL_GOAL_WEAPON_FIRST_LEVEL = 30;
+	const DWORD PLAYERBOT_MEDAL_GOAL_CHECK_MS = 60 * 1000;
 	// A bot is drawn a dropper only while it stands no further than this over
 	// its lock. The lock stops experience and cannot take any back, so a bot
 	// that had passed its band before droppers existed - or before a restart
@@ -3451,6 +3546,10 @@ namespace
 	// last service and asks again every PLAYERBOT_OFFLINE_FAR_SERVICE_RETRY_MS.
 	const DWORD PLAYERBOT_OFFLINE_FAR_SERVICE_MIN_MS = 45 * 60 * 1000;
 	const DWORD PLAYERBOT_OFFLINE_FAR_SERVICE_RETRY_MS = 5 * 60 * 1000;
+	// A renewal of an expired stand the db core has not answered in this long
+	// is dropped and asked for again at the next service visit
+	// (BotOfflinePoll): it carries no goods, so a second ask cannot double any.
+	const DWORD PLAYERBOT_OFFLINE_RENEW_ABANDON_MS = 5 * 60 * 1000;
 	// A dropper opens its stall on a third of its town visits, against one in
 	// ten for an adventurer and every visit for a merchant: it hunts for a
 	// living and sells what the hunt brought, not the other way round.
@@ -4789,12 +4888,89 @@ namespace
 		{ 195800, 18100, 0 }, { 187600, 15100, 0 }, { 216000, 15900, 0 },
 		{ 201500, 21700, 0 }
 	};
+	// Jinno's guild map is two pieces that do not join: the south-east fifth
+	// (111 536 of 570 456 open cells, fifteen spawn groups) has no way in from
+	// the Town.txt point. Its hub, (270400, 46600), was planned "unreachable"
+	// from every bot that drew it - Champion of Urtopy's world tried it every
+	// few minutes on 21 September - and is replaced by the spawn point of the
+	// main piece furthest from the other nine (scratchpad pick_hub44.py).
 	const TPlayerBotVillageHub PLAYERBOT_GROUND_HUBS_44[10] = {
 		{ 260800, 22100, 0 }, { 264300, 23000, 0 }, { 246900, 8600, 0 },
-		{ 270400, 46600, 0 }, { 234300, 10900, 0 }, { 259700, 29000, 0 },
+		{ 239300, 13400, 0 }, { 234300, 10900, 0 }, { 259700, 29000, 0 },
 		{ 235100, 17400, 0 }, { 243500, 23200, 0 }, { 241000, 8000, 0 },
 		{ 241600, 24700, 0 }
 	};
+
+	// Iwakura's community patch 2, point 14: the first villages' hunting is
+	// the White Oath soldiers (301-304, 331-334, 351-354) and the bears
+	// (110-113, 139-142, 180-183), whose drops are refine materials - not the
+	// dogs by the gate. These are the hubs of the three tables above whose
+	// 2500-unit ring holds at least four of their spawn points and a third of
+	// all, measured on m2zip's own regen.txt through group.txt and
+	// group_group.txt (the mt2009 share, 22 September); the rest are dogs,
+	// wolves, boars and the cursed ground of the youngest. Keyed by map and
+	// point, so a table reordered keeps its marks.
+	struct TPlayerBotValueHub { long mapIndex; long x; long y; };
+	const TPlayerBotValueHub PLAYERBOT_M1_VALUE_HUBS[] = {
+		{ 1, 419700, 904500 },
+		{ 1, 425700, 913000 },
+		{ 1, 431500, 912100 },
+		{ 1, 426000, 918900 },
+		{ 1, 432800, 904900 },
+		{ 1, 464400, 910600 },
+		{ 1, 422700, 905200 },
+		{ 1, 463800, 1008100 },
+		{ 1, 476700, 906400 },
+		{ 1, 468500, 905300 },
+		{ 1, 427000, 964600 },
+		{ 1, 427400, 925700 },
+		{ 1, 482600, 905000 },
+		{ 1, 438000, 912400 },
+		{ 1, 425000, 937900 },
+		{ 21, 61600, 133500 },
+		{ 21, 59500, 123600 },
+		{ 21, 83500, 130000 },
+		{ 21, 87200, 147300 },
+		{ 21, 84600, 197500 },
+		{ 21, 89800, 195300 },
+		{ 21, 86700, 209800 },
+		{ 21, 61100, 214300 },
+		{ 21, 29900, 196400 },
+		{ 21, 33500, 209800 },
+		{ 21, 30200, 164500 },
+		{ 21, 32600, 178200 },
+		{ 21, 35000, 135500 },
+		{ 21, 28500, 146900 },
+		{ 21, 42100, 129300 },
+		{ 41, 975700, 219600 },
+		{ 41, 987800, 316300 },
+		{ 41, 962900, 221200 },
+		{ 41, 968800, 221100 },
+		{ 41, 982600, 222200 },
+		{ 41, 937600, 309500 },
+		{ 41, 988700, 215900 },
+		{ 41, 993500, 317300 },
+		{ 41, 988800, 304200 },
+		{ 41, 989000, 284200 },
+		{ 41, 987700, 233900 },
+		{ 41, 986900, 220600 },
+		{ 41, 969500, 216800 },
+		{ 41, 982700, 216900 },
+		{ 41, 989700, 298000 },
+		{ 41, 940300, 304200 },
+		{ 41, 956700, 225100 },
+		{ 41, 995100, 277700 },
+	};
+	// How far under the bot's level a valuable hub may be taken when its own
+	// band has none: the soldiers and the bears are worth it a few levels down.
+	const int PLAYERBOT_M1_VALUE_HUB_UNDER = 6;
+	// And the one bot in a hundred of the first village's Grinders that farms
+	// materials there for sale until it can buy or make its class's level-30
+	// weapon at +8 and an armour of level 18 or 26 at +9 (community patch 2,
+	// point 14): it does not advance until it can.
+	const int PLAYERBOT_M1_FARMER_PERCENT = 1;
+	const int PLAYERBOT_M1_FARMER_WEAPON_PLUS = 8;
+	const int PLAYERBOT_M1_FARMER_ARMOUR_PLUS = 9;
 
 	// Joan's eight party camps, by hand, with the level band each was measured
 	// at. The other two first villages take the eight densest clusters of their
@@ -5120,8 +5296,47 @@ namespace
 	// SLABY only goes AFK somewhere it will not simply die for it: not in a
 	// fight, not with a monster on it, not hurt.
 	const int PLAYERBOT_MOOD_AFK_MIN_HP_PERCENT = 70;
+	// Community patch 2, point 13: fifty-four weapon families nobody buys at
+	// +0..+3 - Iwakura's list, bound to base vnums through the names of the
+	// price table (playerbot_price_tables.h) and checked against
+	// world.item_proto. The counters of every bot together carry at most
+	// PLAYERBOT_JUNK_WEAPON_MARKET_CAP of them; each further one is the
+	// merchant's. Ten of the families are level-65 weapons the pickup rule
+	// keeps (IsPlayerBotPickupGoods): they are still picked up, and this cap
+	// decides where they go.
+	const DWORD PLAYERBOT_JUNK_WEAPON_BASES[] = {
+		70, 80, 90, 100, 110, 120, 130, 140, 150, 160, 170, 190,
+		1040, 1050, 1060, 1070, 1080, 1090, 1100, 1110, 1120,
+		2060, 2070, 2080, 2090, 2100, 2110, 2120,
+		3060, 3070, 3080, 3090, 3100, 3110, 3120, 3140,
+		5050, 5060, 5070, 5080, 5090, 5100, 5130,
+		7010, 7020, 7050, 7060, 7070, 7080, 7090, 7100, 7110, 7130, 7140
+	};
+	const int PLAYERBOT_JUNK_WEAPON_MAX_REFINE = 3;
+	const int PLAYERBOT_JUNK_WEAPON_MARKET_CAP = 5;
+
+	// A weapon family is its base vnum plus the refine, 0..9.
+	bool IsPlayerBotJunkWeaponVnum(DWORD vnum)
+	{
+		const DWORD grade = vnum % 10;
+		if (grade > (DWORD)PLAYERBOT_JUNK_WEAPON_MAX_REFINE)
+			return false;
+		const DWORD base = vnum - grade;
+		for (size_t i = 0; i < sizeof(PLAYERBOT_JUNK_WEAPON_BASES) / sizeof(PLAYERBOT_JUNK_WEAPON_BASES[0]); ++i)
+			if (PLAYERBOT_JUNK_WEAPON_BASES[i] == base)
+				return true;
+		return false;
+	}
+
 	// A bot that has been AFK and was struck puts the next stop off this long.
 	const DWORD PLAYERBOT_MOOD_AFK_INTERRUPTED_RETRY = 5 * 60 * 1000;
+	// Nor does it leave its own drop lying on the ground to go AFK (Iwakura's
+	// community patch 2, point 7): the stop waits while the loot pass has
+	// something to take, looked at again this often - and gives up waiting
+	// after the second figure, because a drop the walk never reaches must not
+	// cancel the habit for good.
+	const DWORD PLAYERBOT_MOOD_AFK_LOOT_RETRY_MS = 3000;
+	const DWORD PLAYERBOT_MOOD_AFK_LOOT_WAIT_MAX_MS = 90 * 1000;
 	// How often the census of personalities and moods is written.
 	const DWORD PLAYERBOT_PERSONA_CENSUS_INTERVAL = 10 * 60 * 1000;
 	// The quest flags a bot's moods and its Grinder's promise live in, so that
@@ -5134,6 +5349,12 @@ namespace
 	const char* const PLAYERBOT_PERSONA_FLAG_DROUGHT = "playerbot.persona_drought_s";
 	const char* const PLAYERBOT_PERSONA_FLAG_ADVANCED = "playerbot.persona_adv";
 	const char* const PLAYERBOT_PERSONA_FLAG_LOCK_LEVEL = "playerbot.persona_lock_lv";
+	// Community patch 2, point 2: gave grinding up for good, and the tier its
+	// 33% was last rolled at (so a tier is rolled once).
+	const char* const PLAYERBOT_PERSONA_FLAG_QUIT = "playerbot.persona_quit";
+	const char* const PLAYERBOT_PERSONA_FLAG_QUIT_TIER = "playerbot.persona_quit_tier";
+	// Community patch 2, point 4: a goal dropper that has met its goal.
+	const char* const PLAYERBOT_PERSONA_FLAG_MEDAL_GOAL = "playerbot.medal_goal";
 
 	// The Grinder and the Conqueror (Zdobywca). A Grinder that meets the Law of
 	// Advancement is asked once an hour whether it moves on or stays to push
@@ -5150,6 +5371,23 @@ namespace
 	// two million at the stock rate, sixty at 3000%), of which the session may
 	// spend GAMBLE_BUDGET_PERCENT - fees, scrolls, materials and what burns.
 	const DWORD PLAYERBOT_GAMBLE_MIN_PURSE_BASE = 2000000;
+	// Iwakura's community patch 2, point 10: a Trader back in its first village
+	// with its weapon at this plus, its armour at that one and this purse on
+	// his scale (the yang rate's curve and the inflation) turns gambler.
+	const DWORD PLAYERBOT_GAMBLE_TOWN_PURSE_BASE = 3000000;
+	// Community patch 2, point 11: this share of the bots, as Perfectionists,
+	// looks at the market for a finished piece - a weapon, an armour, a shield
+	// or a helmet at +8 or +9, of its class and at most this many levels under
+	// it - before it takes its own to the anvil, and buys it instead. The anvil
+	// waits this long for the purchase, and the look is not taken again for
+	// the second figure.
+	const int PLAYERBOT_READY_GEAR_PERCENT = 15;
+	const int PLAYERBOT_READY_GEAR_MIN_PLUS = 8;
+	const int PLAYERBOT_READY_GEAR_LEVEL_WINDOW = 10;
+	const DWORD PLAYERBOT_READY_GEAR_WAIT_MS = 20 * 60 * 1000;
+	const DWORD PLAYERBOT_READY_GEAR_RECHECK_MS = 60 * 60 * 1000;
+	const int PLAYERBOT_GAMBLE_TOWN_WEAPON_PLUS = 7;
+	const int PLAYERBOT_GAMBLE_TOWN_ARMOUR_PLUS = 6;
 	// A bot that qualifies and does not take it is asked again this much later;
 	// one that has gambled rests this long before the next session.
 	const DWORD PLAYERBOT_GAMBLE_RETRY_MIN_MS = 30 * 60 * 1000;
@@ -5192,6 +5430,13 @@ namespace
 	// na agresora"), from as far as this.
 	const DWORD PLAYERBOT_ANTIPK_PARTY_MEMORY_MS = 8000;
 	const int PLAYERBOT_ANTIPK_PARTY_RANGE = 2500;
+	// And a guild for a member a person has struck (Iwakura's community patch
+	// 2, point 15, Amos's idea): every bot of the guild within this of the
+	// aggressor drops what it is doing and goes for him, and holds him while
+	// he stays within it. The call stays open this long after the last blow,
+	// which is what lets a bot twelve kilometres off set out at all.
+	const int PLAYERBOT_ANTIPK_GUILD_RANGE = 12000;
+	const DWORD PLAYERBOT_ANTIPK_GUILD_MEMORY_MS = 15000;
 
 	// Iwakura's Rybak (playerbot_activities.h): from level thirty, never in a
 	// party, and mostly a bad mood's answer - "bardzo duza szansa" for SLABY,
@@ -5298,7 +5543,8 @@ namespace
 		BOT_FOE_STRUCK,       // it struck this bot
 		BOT_FOE_PARTY,        // it struck a member of this bot's party
 		BOT_FOE_GRUDGE,       // it killed this bot, which has come back for it
-		BOT_FOE_STONE_RIVAL   // another kingdom's, breaking this bot's stone
+		BOT_FOE_STONE_RIVAL,  // another kingdom's, breaking this bot's stone
+		BOT_FOE_GUILD         // a person who struck a member of this bot's guild
 	};
 
 	// The gambler's plan for one piece (playerbot_gambler.h): the item, the
@@ -5341,6 +5587,29 @@ namespace
 		DWORD dwPausedAfterFight;
 		DWORD dwAfkUntil;
 		DWORD dwNextAfkAt;
+		// Since when the stop has been waiting for the bot's own drop.
+		DWORD dwAfkLootWaitSince;
+		// The plus the class's level-30 weapon had when this town visit began,
+		// 0xFF when it had none (GetPlayerBotLevel30Aim).
+		BYTE bLevel30VisitStartPlus;
+		// The trader's book purse (PLAYERBOT_BOOK_VISIT_BUDGET_PERCENT): what
+		// the window began with, what it has spent, and when it began.
+		long long llBookBudgetBase;
+		long long llBookBudgetSpent;
+		DWORD dwBookBudgetSince;
+		// The market Perfectionist's look for finished gear
+		// (PLAYERBOT_READY_GEAR_PERCENT): until when the anvil waits for the
+		// purchase, and when the market was last looked at for it.
+		DWORD dwReadyGearWaitUntil;
+		DWORD dwReadyGearCheckedAt;
+		// The Grinder that gave grinding up (community patch 2, point 2), and
+		// the last tier its chance was rolled at.
+		bool bQuitGrinding;
+		BYTE bQuitRolledTier;
+		// The goal dropper's graduation (PLAYERBOT_MEDAL_GOAL_PERCENT) and the
+		// clock of its look at the purse.
+		bool bMedalGoalDone;
+		DWORD dwNextMedalGoalCheck;
 		// The Grinder: whether the law is met and the bot has chosen to level
 		// (a Conqueror), the level it holds at otherwise (zero until its tier's
 		// lock is reached), when it is next asked, and the monster deaths that
@@ -5448,6 +5717,10 @@ namespace
 			bPersona(playerbot_persona::PERSONA_GRINDER), dwPersonaSince(0), dwNextDecide(0),
 			bDrawnPersonality(BOT_PERSONALITY_STEADY_ADVENTURER),
 			dwPauseUntil(0), dwPausedAfterFight(0), dwAfkUntil(0), dwNextAfkAt(0),
+			dwAfkLootWaitSince(0), bLevel30VisitStartPlus(0xFF),
+			llBookBudgetBase(0), llBookBudgetSpent(0), dwBookBudgetSince(0),
+			dwReadyGearWaitUntil(0), dwReadyGearCheckedAt(0), bQuitGrinding(false), bQuitRolledTier(0),
+			bMedalGoalDone(false), dwNextMedalGoalCheck(0),
 			bAdvanced(false), bLockLevel(0), dwNextAdvanceRoll(0), llPlayerDeaths(-1),
 			llVisitGoldStart(0), dwPerfectEndedAt(0), bGambling(false), llGambleGoldStart(0),
 			llGambleSpent(0), dwGambleUntil(0), dwNextGambleAt(0), dwNextGambleStep(0),

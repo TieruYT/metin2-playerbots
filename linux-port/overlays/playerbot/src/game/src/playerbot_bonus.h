@@ -306,6 +306,28 @@ namespace
 		if (!item)
 			return false;
 
+		// Under level forty-five the boots, the necklace and the bracelet are
+		// finished by the lines the patch requires of them, not by a score:
+		// the health line and at least one more of the slot's list
+		// (IsPlayerBotEarlySlotLine) - community patch 2, point 3.
+		if (IsPlayerBotEarlyBonusSlot(ch, wearCell))
+		{
+			long earlyHp = 0;
+			int others = 0;
+			for (int i = 0; i < ITEM_ATTRIBUTE_MAX_NUM; ++i)
+			{
+				const BYTE type = item->GetAttributeType(i);
+				const long value = item->GetAttributeValue(i);
+				if (value <= 0)
+					continue;
+				if (type == APPLY_MAX_HP)
+					earlyHp = value;
+				else if (IsPlayerBotEarlySlotLine(wearCell, type))
+					++others;
+			}
+			return earlyHp >= PLAYERBOT_BONUS_KEEP_HP && others >= 1;
+		}
+
 		long hp = 0, attGrade = 0, resistBow = 0, crit = 0, penetrate = 0;
 		long average = 0, skill = 0, block = 0, dodge = 0, attSpeed = 0;
 		long steal = 0, drop = 0, mov = 0, race = 0;
@@ -374,7 +396,9 @@ namespace
 				// it off would waste it ("szkoda tracic takiego ladnego bonusu do
 				// PvP", Tieru). PvE still wears the average weapon - this only
 				// stops the reroll from destroying the skill one.
-				return average >= PLAYERBOT_BONUS_KEEP_AVERAGE ||
+				// Thirty since community patch 2, point 3 ("tak, aby wynosily one
+				// 30%+ SR"); it was PLAYERBOT_BONUS_KEEP_AVERAGE, twenty.
+				return average >= PLAYERBOT_BONUS_WEAPON_TARGET_AVERAGE ||
 						skill > PLAYERBOT_BONUS_SKILL_PVP_PCT ||
 						(IsPlayerBotCaster(ch) && skill >= PLAYERBOT_BONUS_KEEP_SKILL);
 			}
@@ -637,6 +661,38 @@ namespace
 				item->GetRefineLevel() >= PLAYERBOT_BONUS_MIN_REFINE;
 	}
 
+	// The same, for a piece in its slot: the young bot's boots, necklace and
+	// bracelet are bonused at any refine ("niezaleznie od poziomu ulepszenia",
+	// community patch 2, point 3). The refine floor above kept every one of
+	// them under +4 out of the pass, which with the jewellery a bot of twenty
+	// wears is nearly all of it - the patch's "boty aplikowaly je losowo".
+	bool CanPlayerBotRerollItemFor(LPCHARACTER ch, LPITEM item, BYTE wearCell)
+	{
+		if (IsPlayerBotEarlyBonusSlot(ch, wearCell))
+			return item && item->GetType() != ITEM_COSTUME && !item->isLocked() &&
+					!item->IsExchanging() && item->GetAttributeSetIndex() != -1;
+		return CanPlayerBotRerollItem(item);
+	}
+
+	// How many of the boots, the necklace and the bracelet worn carry a
+	// health line - the weapon's turn comes at two (community patch 2).
+	int CountPlayerBotEarlyHpPieces(LPCHARACTER ch)
+	{
+		static const BYTE slots[] = { WEAR_FOOTS, WEAR_NECK, WEAR_WRIST };
+		int pieces = 0;
+		for (size_t s = 0; ch && s < sizeof(slots) / sizeof(slots[0]); ++s)
+		{
+			LPITEM worn = ch->GetWear(slots[s]);
+			for (int i = 0; worn && i < ITEM_ATTRIBUTE_MAX_NUM; ++i)
+				if (worn->GetAttributeType(i) == APPLY_MAX_HP && worn->GetAttributeValue(i) > 0)
+				{
+					++pieces;
+					break;
+				}
+		}
+		return pieces;
+	}
+
 	// Zielony Czar and Zielona Sila (71151/76023, 71152/76024) are the change
 	// and add stones of the same kind as 71084/71085, and the engine lets a
 	// player spend one only on a weapon or a body armour of level forty or less
@@ -730,7 +786,31 @@ namespace
 		return true;
 	}
 
-	// Worn gear only. Spares in the bag are sold or put in a stall long before
+	// Whether the bag holds a stone this piece could take now - an add stone
+	// while it has room for a line, a change stone once it is full (from +5,
+	// or at any refine on a young bot's jewellery). The swap rule waits only
+	// while the waiting can end (IsPlayerBotSwapHeldForBonus), so this asks
+	// first what the bonus pass's own loop for the held piece asks: an armour
+	// under PLAYERBOT_BONUS_MIN_REFINE, or a piece that takes no lines at all,
+	// is never worked on there, and a stone in the bag for it would have held
+	// a bought +0 armour back from its owner for good.
+	bool PlayerBotHoldsBonusStoneFor(LPCHARACTER ch, LPITEM item)
+	{
+		if (!ch || !item)
+			return false;
+		const int slot = item->FindEquipCell(ch);
+		if (slot < 0 || slot >= WEAR_MAX_NUM || !CanPlayerBotRerollItemFor(ch, item, (BYTE)slot))
+			return false;
+		const bool early = IsPlayerBotEarlyBonusSlot(ch, (BYTE)slot);
+		const bool greenOnly = ch->GetLevel() < PLAYERBOT_BONUS_MIN_LEVEL && !early;
+		if (item->GetAttributeCount() < PLAYERBOT_BONUS_MAX_LINES)
+			return FindPlayerBotBonusStoneCellLike(ch, PLAYERBOT_BONUS_ADD_VNUM, item, greenOnly) >= 0;
+		return (early || item->GetRefineLevel() >= PLAYERBOT_BONUS_CHANGE_MIN_REFINE) &&
+				FindPlayerBotBonusStoneCellLike(ch, PLAYERBOT_BONUS_CHANGE_VNUM, item, greenOnly) >= 0;
+	}
+
+	// Worn gear, and the new piece the swap rule holds back (see the loop at
+	// the end). Other spares in the bag are sold or put in a stall long before
 	// they are worth polishing, and rerolling them would spend the gold the bot
 	// needs for its next real upgrade.
 	bool ManagePlayerBotBonusReroll(LPCHARACTER ch, TPlayerBotAIState& state, DWORD dwNow)
@@ -780,7 +860,12 @@ namespace
 		{
 			const BYTE wearCell = wearSlots[i];
 			LPITEM item = ch->GetWear(wearCell);
-			if (!CanPlayerBotRerollItem(item))
+			if (!CanPlayerBotRerollItemFor(ch, item, wearCell))
+				continue;
+			// The weapon waits for the health lines (community patch 2, point
+			// 3): two of the boots, the necklace and the bracelet first.
+			if (early && wearCell == WEAR_WEAPON &&
+					CountPlayerBotEarlyHpPieces(ch) < PLAYERBOT_EARLY_HP_PIECES_FOR_WEAPON)
 				continue;
 			// A green stone cannot touch jewellery or boots at all, so the
 			// three early slots take an ordinary one even under the level.
@@ -805,12 +890,16 @@ namespace
 			// whatever the score says: the score is a sum of good lines and a
 			// weapon full of them at twelve percent average was "good enough"
 			// to the score and not to anybody who looked at it.
+			// The young bot's jewellery and boots are changed until they carry
+			// the lines the patch requires, whatever the score (community
+			// patch 2, point 3).
 			const bool bWantChange = !bWantAdd && !bWantMarble &&
 					(item->GetRefineLevel() >= PLAYERBOT_BONUS_CHANGE_MIN_REFINE ||
 					 IsPlayerBotEarlyBonusSlot(ch, wearCell)) &&
 					!HasPlayerBotFinishedBonus(ch, item, wearCell) &&
 					(score < PLAYERBOT_BONUS_KEEP_SCORE ||
-					 IsPlayerBotSpecialLevel30WeaponVnum(item->GetVnum()));
+					 IsPlayerBotSpecialLevel30WeaponVnum(item->GetVnum()) ||
+					 IsPlayerBotEarlyBonusSlot(ch, wearCell));
 			if (!bWantAdd && !bWantMarble && !bWantChange)
 				continue;
 
@@ -875,6 +964,52 @@ namespace
 					item->GetVnum(), (unsigned int)wearCell, count,
 					item->GetAttributeCount(), score, newScore,
 					(int)(ch->GetGold() / 1000));
+		}
+
+		// The new piece the swap rule holds in the bag (IsPlayerBotSwapHeldForBonus,
+		// community patch 2, point 3) is bonused where it lies - no unequipping,
+		// the engine only refuses a worn item - until its lines beat the worn
+		// piece's and the equipment pass puts it on.
+		for (WORD cell = 0; cell < PLAYERBOT_BAG_CELLS &&
+				stonesUsed < PLAYERBOT_BONUS_STONES_PER_VISIT; ++cell)
+		{
+			LPITEM item = ch->GetInventoryItem(cell);
+			if (!item || item->GetCell() != cell || item->IsEquipped() ||
+					!IsPlayerBotEquipmentCandidate(ch, item))
+				continue;
+			const int slot = item->FindEquipCell(ch);
+			if (slot < 0 || slot >= WEAR_MAX_NUM)
+				continue;
+			LPITEM worn = ch->GetWear((BYTE)slot);
+			if (!worn || !IsPlayerBotSwapHeldForBonus(ch, item, worn) ||
+					!CanPlayerBotRerollItemFor(ch, item, (BYTE)slot))
+				continue;
+			const int count = item->GetAttributeCount();
+			const bool bWantAdd = count < PLAYERBOT_BONUS_MAX_LINES;
+			if (!bWantAdd && item->GetRefineLevel() < PLAYERBOT_BONUS_CHANGE_MIN_REFINE &&
+					!IsPlayerBotEarlyBonusSlot(ch, (BYTE)slot))
+				continue;
+			const DWORD stoneVnum = bWantAdd ? PLAYERBOT_BONUS_ADD_VNUM : PLAYERBOT_BONUS_CHANGE_VNUM;
+			const bool slotGreenOnly = greenOnly && !IsPlayerBotEarlyBonusSlot(ch, (BYTE)slot);
+			const int stoneCell = FindPlayerBotBonusStoneCellLike(ch, stoneVnum, item, slotGreenOnly);
+			if (stoneCell < 0)
+				continue;
+			const long long before = GetPlayerBotItemLineScore(item, ch);
+			if (bWantAdd)
+			{
+				if (number(1, 100) <= aiItemAttributeAddPercent[count])
+					item->AddAttribute();
+			}
+			else
+				item->ChangeAttribute();
+			ConsumePlayerBotBonusStoneAt(ch, stoneCell);
+			++stonesUsed;
+			LogManager::instance().ItemLog(ch, item,
+					bWantAdd ? "PLAYERBOT_BONUS_ADD" : "PLAYERBOT_BONUS_CHANGE", item->GetName());
+			sys_log(0, "PLAYERBOT_BONUS: %s held piece pid=%u name=%s vnum=%u slot=%d lines=%d->%d value=%lld->%lld worn_value=%lld",
+					bWantAdd ? "added" : "rerolled", ch->GetPlayerID(), ch->GetName(), item->GetVnum(), slot,
+					count, item->GetAttributeCount(), before, GetPlayerBotItemLineScore(item, ch),
+					GetPlayerBotItemLineScore(worn, ch));
 		}
 
 		// The level-30 weapons in the bag are goods, and a level-30 weapon

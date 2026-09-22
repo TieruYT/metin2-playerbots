@@ -47,6 +47,7 @@ namespace
 			case BOT_FOE_PARTY: return "party";
 			case BOT_FOE_GRUDGE: return "grudge";
 			case BOT_FOE_STONE_RIVAL: return "stone_rival";
+			case BOT_FOE_GUILD: return "guild";
 			default: return "none";
 		}
 	}
@@ -60,6 +61,22 @@ namespace
 		DWORD dwAt;
 	};
 	std::map<DWORD, TPlayerBotHumanStruck> s_mapPlayerBotHumanStruck;
+
+	// A guild's call to arms (community patch 2, point 15): the person who
+	// last struck one of its bots, keyed by guild id. Only a person's blow
+	// opens one. A bot's own blows at a player are all answers or rivalries
+	// (the stone, the grudge, a defence), and a guild that answered those
+	// would draw the other guild's answer to its own defenders - two guilds of
+	// twenty on one map fighting because a stone was contested.
+	struct TPlayerBotGuildCall
+	{
+		DWORD dwAttackerVID;
+		DWORD dwAttackerPID;
+		DWORD dwVictimPID;
+		DWORD dwAt;
+		long lMapIndex;
+	};
+	std::map<DWORD, TPlayerBotGuildCall> s_mapPlayerBotGuildCall;
 
 	// The player who last killed a bot, and until when the bot comes back for
 	// him: Step 2's "ponownie probuje go przejac (po raz kolejny wdaje sie w
@@ -130,6 +147,27 @@ namespace
 			return;
 		}
 		TPlayerBotPersona& p = it->second.persona;
+		// The guild's half: a person's blow at a bot of a guild, not a
+		// guild-mate's (free mode lets one strike his own guild, and the guild
+		// does not go to war with itself).
+		CGuild* guild = victim->GetGuild();
+		if (guild && attacker->GetDesc() && !attacker->GetDesc()->IsBot() &&
+				attacker->GetGuild() != guild)
+		{
+			TPlayerBotGuildCall& call = s_mapPlayerBotGuildCall[guild->GetID()];
+			const bool freshCall = call.dwAttackerPID != attacker->GetPlayerID() ||
+					dwNow - call.dwAt >= PLAYERBOT_ANTIPK_GUILD_MEMORY_MS;
+			call.dwAttackerVID = attacker->GetVID();
+			call.dwAttackerPID = attacker->GetPlayerID();
+			call.dwVictimPID = victim->GetPlayerID();
+			call.dwAt = dwNow;
+			call.lMapIndex = victim->GetMapIndex();
+			if (freshCall && IsPlayerBotPersonaEnabled())
+				sys_log(0, "PLAYERBOT_ANTIPK: guild called pid=%u name=%s guild=%u by_pid=%u by=%s by_level=%u map=%ld",
+						victim->GetPlayerID(), victim->GetName(), guild->GetID(),
+						attacker->GetPlayerID(), attacker->GetName(),
+						(unsigned int)attacker->GetLevel(), victim->GetMapIndex());
+		}
 		const bool fresh = p.dwStruckByPID != attacker->GetPlayerID() ||
 				dwNow - p.dwStruckAt >= PLAYERBOT_ANTIPK_STRUCK_MEMORY_MS;
 		p.dwStruckByVID = attacker->GetVID();
@@ -146,7 +184,8 @@ namespace
 	// A foe this bot can fight now: standing, on its map, in reach, out of the
 	// safe zones - the engine refuses every blow there - not invisible after
 	// its own death, and one the engine lets it strike.
-	bool IsPlayerBotFoeFightable(LPCHARACTER ch, LPCHARACTER foe)
+	bool IsPlayerBotFoeFightable(LPCHARACTER ch, LPCHARACTER foe,
+			int range = PLAYERBOT_ANTIPK_FOE_RANGE)
 	{
 		if (!ch || !foe || foe == ch || !foe->IsPC() || foe->IsDead() ||
 				foe->GetMapIndex() != ch->GetMapIndex() || IsPlayerBotWarFoeRecovering(foe))
@@ -154,8 +193,7 @@ namespace
 		if (IsPlayerBotSafeZone(ch->GetMapIndex(), ch->GetX(), ch->GetY()) ||
 				IsPlayerBotSafeZone(foe->GetMapIndex(), foe->GetX(), foe->GetY()))
 			return false;
-		if (DISTANCE_APPROX(ch->GetX() - foe->GetX(), ch->GetY() - foe->GetY()) >
-				PLAYERBOT_ANTIPK_FOE_RANGE)
+		if (DISTANCE_APPROX(ch->GetX() - foe->GetX(), ch->GetY() - foe->GetY()) > range)
 			return false;
 		return CanPlayerBotStrikeCharacter(ch, foe);
 	}
@@ -224,6 +262,28 @@ namespace
 		return finder.m_found;
 	}
 
+	// A person who has just struck a bot of this bot's guild, on this map and
+	// within PLAYERBOT_ANTIPK_GUILD_RANGE of it. A bot in a person's party is
+	// that person's to lead, and its own party answers for it anyway.
+	LPCHARACTER FindPlayerBotGuildAggressor(LPCHARACTER ch, DWORD dwNow)
+	{
+		CGuild* guild = ch ? ch->GetGuild() : NULL;
+		if (!guild || (ch->GetParty() && IsPlayerBotHumanLedParty(ch->GetParty())))
+			return NULL;
+		std::map<DWORD, TPlayerBotGuildCall>::const_iterator call =
+				s_mapPlayerBotGuildCall.find(guild->GetID());
+		if (call == s_mapPlayerBotGuildCall.end() || call->second.lMapIndex != ch->GetMapIndex() ||
+				call->second.dwVictimPID == ch->GetPlayerID() ||
+				dwNow - call->second.dwAt >= PLAYERBOT_ANTIPK_GUILD_MEMORY_MS)
+			return NULL;
+		LPCHARACTER attacker = CHARACTER_MANAGER::instance().Find(call->second.dwAttackerVID);
+		if (!attacker || attacker->GetPlayerID() != call->second.dwAttackerPID ||
+				attacker->GetGuild() == guild ||
+				!IsPlayerBotFoeFightable(ch, attacker, PLAYERBOT_ANTIPK_GUILD_RANGE))
+			return NULL;
+		return attacker;
+	}
+
 	// Who this bot fights now, if anybody. The foe in hand first - to the end,
 	// or for a stone's rival until it has left the stone - then the player who
 	// has just struck it, one who has struck its party, one who killed it and
@@ -242,7 +302,9 @@ namespace
 		if (p.dwFoeVID != 0)
 		{
 			LPCHARACTER held = CHARACTER_MANAGER::instance().Find(p.dwFoeVID);
-			bool keep = IsPlayerBotFoeFightable(ch, held);
+			// A guild's aggressor is held from as far as the call reached.
+			bool keep = IsPlayerBotFoeFightable(ch, held, p.bFoeReason == BOT_FOE_GUILD
+					? PLAYERBOT_ANTIPK_GUILD_RANGE : PLAYERBOT_ANTIPK_FOE_RANGE);
 			const char* why = keep ? "" : (!held || held->IsDead() ? "foe_down" : "out_of_reach");
 			if (keep && p.bFoeReason == BOT_FOE_STONE_RIVAL)
 			{
@@ -272,6 +334,8 @@ namespace
 		}
 		if (LPCHARACTER aggressor = FindPlayerBotPartyAggressor(ch, dwNow))
 			return BeginPlayerBotFoe(ch, state, aggressor, BOT_FOE_PARTY, dwNow);
+		if (LPCHARACTER aggressor = FindPlayerBotGuildAggressor(ch, dwNow))
+			return BeginPlayerBotFoe(ch, state, aggressor, BOT_FOE_GUILD, dwNow);
 		std::map<DWORD, TPlayerBotGrudge>::iterator grudge = s_mapPlayerBotGrudge.find(ch->GetPlayerID());
 		if (grudge != s_mapPlayerBotGrudge.end())
 		{

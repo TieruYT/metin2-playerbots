@@ -474,6 +474,10 @@ namespace
 	{
 		long x[2];
 		long y[2];
+		// The battlefield's own centre: the ground both sides were found
+		// round, and what the field's leash is measured from.
+		long groundX;
+		long groundY;
 		bool bKnown;
 	};
 	std::map<long, TPlayerBotWarSide> s_mapPlayerBotWarSides;
@@ -487,6 +491,7 @@ namespace
 		{
 			TPlayerBotWarSide sides;
 			sides.bKnown = false;
+			sides.groundX = sides.groundY = 0;
 			playerbot_empire_rules::TPoint town;
 			long cx = 0, cy = 0;
 			// The margin first (PLAYERBOT_GUILD_WAR_SAFE_MARGIN); a map with no
@@ -504,6 +509,8 @@ namespace
 			if (found)
 			{
 				sides.bKnown = true;
+				sides.groundX = cx;
+				sides.groundY = cy;
 				for (int s = 0; s < 2 && sides.bKnown; ++s)
 				{
 					const long wantX = cx + (s == 0 ? -1 : 1) * PLAYERBOT_GUILD_WAR_RALLY_SPREAD;
@@ -527,6 +534,24 @@ namespace
 		outX = it->second.x[s];
 		outY = it->second.y[s];
 		return true;
+	}
+
+	// Whether a point is on the battlefield: within
+	// PLAYERBOT_GUILD_WAR_FIELD_RADIUS of the ground the sides were found round.
+	// The war used to chase the nearest enemy wherever on the map it stood, so
+	// a foe that walked off after a death drew its enemies after it - up the
+	// slopes of Waryong, onto the bridge and the cliffs of the Shinsoo guild
+	// map, a fight strung out over four kilometres with bots standing in the
+	// rock faces between (prodnathin's screenshots of 21 and 22 September; the
+	// bridge is at (72, 97), 3800 units from the ground). A map whose ground is
+	// not known yet answers yes, as before.
+	bool IsPlayerBotOnWarField(long lMapIndex, long x, long y)
+	{
+		std::map<long, TPlayerBotWarSide>::const_iterator it = s_mapPlayerBotWarSides.find(lMapIndex);
+		if (it == s_mapPlayerBotWarSides.end() || !it->second.bKnown)
+			return true;
+		return DISTANCE_APPROX(x - it->second.groundX, y - it->second.groundY) <=
+				PLAYERBOT_GUILD_WAR_FIELD_RADIUS;
 	}
 
 	// Whether a blow can land on this one where it stands. battle_is_attackable
@@ -586,7 +611,8 @@ namespace
 			LPCHARACTER other = CHARACTER_MANAGER::instance().FindByPID(it->first);
 			if (!other || other == ch || other->IsDead() || other->GetGuild() != enemy ||
 					other->GetMapIndex() != ch->GetMapIndex() || !IsPlayerBotWarTargetable(other) ||
-					it->second.bRecoveringAfterDeath || other->IsAffectFlag(AFF_REVIVE_INVISIBLE))
+					it->second.bRecoveringAfterDeath || other->IsAffectFlag(AFF_REVIVE_INVISIBLE) ||
+					!IsPlayerBotOnWarField(other->GetMapIndex(), other->GetX(), other->GetY()))
 				continue;
 			const int distance = DISTANCE_APPROX(ch->GetX() - other->GetX(), ch->GetY() - other->GetY());
 			if (distance < bestDistance)
@@ -673,15 +699,32 @@ namespace
 		if (ch->GetHorse())
 			ch->HorseSummon(false);
 
-		// The foe in hand is kept while it stands; the roster is searched only
-		// when it is lost, because that search is every bot in the world.
+		// Off the field - chased up a slope, stood up after a death somewhere
+		// else, arrived at the map's edge - the bot walks back to its spot
+		// before it looks for anybody (IsPlayerBotOnWarField).
+		if (!IsPlayerBotOnWarField(ch->GetMapIndex(), ch->GetX(), ch->GetY()))
+		{
+			state.dwTargetVID = 0;
+			ch->SetVictim(NULL);
+			if (dwNow >= state.dwNextGuildWarMoveTime)
+			{
+				state.dwNextGuildWarMoveTime = dwNow + 2000;
+				MovePlayerBot(ch, rallyX, rallyY, dwNow, 8, true, false);
+			}
+			return true;
+		}
+
+		// The foe in hand is kept while it stands on the field; the roster is
+		// searched only when it is lost, because that search is every bot in
+		// the world.
 		LPCHARACTER foe = NULL;
 		if (state.dwTargetVID != 0)
 		{
 			LPCHARACTER held = CHARACTER_MANAGER::instance().Find(state.dwTargetVID);
 			if (held && !held->IsDead() && held->GetGuild() == enemy &&
 					held->GetMapIndex() == ch->GetMapIndex() && IsPlayerBotWarTargetable(held) &&
-					!IsPlayerBotWarFoeRecovering(held))
+					!IsPlayerBotWarFoeRecovering(held) &&
+					IsPlayerBotOnWarField(held->GetMapIndex(), held->GetX(), held->GetY()))
 				foe = held;
 		}
 		if (!foe)

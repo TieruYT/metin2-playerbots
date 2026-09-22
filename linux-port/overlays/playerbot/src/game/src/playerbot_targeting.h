@@ -1293,7 +1293,9 @@ namespace
 						const DWORD raceVnum = candidate->GetRaceNum();
 						if ((botLevel <= 5 && (raceVnum == 101 || raceVnum == 102 || raceVnum == 103)) ||
 							(botLevel >= 6 && botLevel <= 10 && (raceVnum == 104 || raceVnum == 106 || raceVnum == 107 || raceVnum == 108 || raceVnum == 109)) ||
-							(botLevel >= 11 && (raceVnum >= 110 && raceVnum <= 115 || (raceVnum >= 301 && raceVnum <= 394))))
+							(botLevel >= 11 && ((raceVnum >= 110 && raceVnum <= 115) ||
+								(raceVnum >= 139 && raceVnum <= 142) || (raceVnum >= 180 && raceVnum <= 183) ||
+								(raceVnum >= 301 && raceVnum <= 394))))
 						{
 							baseScore += 80000; // Extra focus on hunting mobs!
 						}
@@ -1845,8 +1847,11 @@ namespace
 		// And only a foe the engine agrees may be struck: Damage asks nothing
 		// by itself, so opening this door without that question is what made
 		// duel kills count as murders - see CanPlayerBotStrikeCharacter.
+		// A war foe and the Anti-PK protocol's foe the same way as a duellist
+		// (IsPlayerBotSanctionedFoe): until 2.0.95 this door opened for the
+		// duel alone, so a swing at either played its combo and hurt nobody.
 		const bool bIsDuel = !primary->IsMonster() && !primary->IsStone() &&
-				IsPlayerBotDuelOpponent(ch, primary, get_dword_time()) &&
+				IsPlayerBotSanctionedFoe(ch, primary, get_dword_time()) &&
 				CanPlayerBotStrikeCharacter(ch, primary);
 		const bool bIsTargetValid = (primary->IsMonster() || primary->IsStone() || bIsDuel);
 		if (!bIsTargetValid || primary->IsDead())
@@ -1993,12 +1998,14 @@ namespace
 	{
 		if (!ch || !target || ch->IsDead() || target->IsDead() ||
 				state.bVisitingShop || state.bRecoveringAfterDeath ||
-				// A duel opponent is the one character a bot may swing at. Every
-				// other road to a target asks for a monster or a stone, which is
-				// exactly why an agreed duel used to end in the two of them
-				// standing and looking at one another.
+				// A duel opponent, a war foe and the Anti-PK protocol's foe are
+				// the characters a bot may swing at (IsPlayerBotSanctionedFoe).
+				// Every other road to a target asks for a monster or a stone,
+				// which is exactly why an agreed duel used to end in the two of
+				// them standing and looking at one another - and why a guild war
+				// was fought with skills alone until 2.0.95.
 				(!target->IsMonster() && !target->IsStone() &&
-					(!IsPlayerBotDuelOpponent(ch, target, dwNow) ||
+					(!IsPlayerBotSanctionedFoe(ch, target, dwNow) ||
 					 !CanPlayerBotStrikeCharacter(ch, target))) ||
 				ch->GetMapIndex() != target->GetMapIndex() ||
 				IsPlayerBotSafeZone(ch->GetMapIndex(), ch->GetX(), ch->GetY()) ||

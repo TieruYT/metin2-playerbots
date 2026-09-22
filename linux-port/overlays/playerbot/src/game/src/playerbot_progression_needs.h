@@ -64,7 +64,8 @@ namespace {
         if (!ch || !offer || !ch->IsItemLoaded()) return 0;
         if (offer->GetType() == ITEM_SKILLBOOK) {
             DWORD skill = GetPlayerBotSkillBookSkillVnum(offer);
-            if (!ch->GetSkillGroup() || !IsPlayerBotOwnSkill(ch, skill) || !PlayerBotStudiesAtTheMarket(ch)) return 0;
+            if (!ch->GetSkillGroup() || !IsPlayerBotOwnSkill(ch, skill) ||
+                    !(PlayerBotStudiesAtTheMarket(ch) || PlayerBotBuysBooksAsTrader(ch))) return 0;
             return std::max(0, GetPlayerBotBookKeepLimit(ch, skill) - CountPlayerBotOwnedSkillBooks(ch, skill));
         }
         if (offer->GetVnum() == PLAYERBOT_GRAND_MASTER_STONE_VNUM)
@@ -80,7 +81,9 @@ namespace {
         if (!ch || !ch->IsItemLoaded() || !ch->GetSkillGroup()) return false;
         const TJobSkillBuild build = GetPlayerBotSkillBuild(ch->GetJob(), ch->GetSkillGroup(), ch->GetPlayerID());
         const bool studies = PlayerBotStudiesAtTheMarket(ch);
-        for (BYTE i = 0; studies && i < build.bSkillCount; ++i) {
+        // Books are the trader's too (community patch 2, point 5).
+        const bool studiesBooks = studies || PlayerBotBuysBooksAsTrader(ch);
+        for (BYTE i = 0; studiesBooks && i < build.bSkillCount; ++i) {
             DWORD skill = build.dwSkills[i];
             if (skill && ch->GetSkillMasterType(skill) == SKILL_MASTER &&
                     CountPlayerBotOwnedSkillBooks(ch, skill) < GetPlayerBotBookKeepLimit(ch, skill)) return true;
@@ -96,7 +99,7 @@ namespace {
         // The ledger is advisory; the actual offer is revalidated at purchase.
         const bool studies = PlayerBotStudiesAtTheMarket(ch);
         const TPlayerBotMarketLedgerEntry* books = GetPlayerBotMarketLedgerEntry(50300);
-        if (studies && books && books->dwSupplyUnits > 0 && ch->GetSkillGroup()) {
+        if ((studies || PlayerBotBuysBooksAsTrader(ch)) && books && books->dwSupplyUnits > 0 && ch->GetSkillGroup()) {
             const TJobSkillBuild build = GetPlayerBotSkillBuild(ch->GetJob(), ch->GetSkillGroup(), ch->GetPlayerID());
             for (BYTE i = 0; i < build.bSkillCount; ++i) {
                 DWORD skill = build.dwSkills[i];

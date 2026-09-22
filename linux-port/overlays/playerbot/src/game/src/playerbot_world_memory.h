@@ -253,6 +253,24 @@ namespace
 		return it == s_mapMarketLedger.end() ? NULL : &it->second;
 	}
 
+	// The weapons of PLAYERBOT_JUNK_WEAPON_BASES at +0..+3 standing on the
+	// bots' counters (a person's counter is not counted): recounted with the
+	// ledger once a minute and moved at once by every line put up or taken
+	// off in between, so thirty keepers in one minute do not each find the
+	// market empty of them.
+	int s_iPlayerBotJunkWeaponsOnCounters = 0;
+
+	void NotePlayerBotJunkWeaponOnCounter(DWORD vnum, int units)
+	{
+		if (IsPlayerBotJunkWeaponVnum(vnum))
+			s_iPlayerBotJunkWeaponsOnCounters = std::max(0, s_iPlayerBotJunkWeaponsOnCounters + units);
+	}
+
+	bool IsPlayerBotJunkWeaponMarketFull()
+	{
+		return s_iPlayerBotJunkWeaponsOnCounters >= PLAYERBOT_JUNK_WEAPON_MARKET_CAP;
+	}
+
 	// A stall that has just opened goes on the ledger at once rather than at
 	// the next refresh: three keepers scoring the same material in the same
 	// minute would otherwise each see the counters empty of it and all three

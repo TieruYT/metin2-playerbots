@@ -180,6 +180,15 @@ namespace
 					!IsPlayerBotPastDropperBand(ch, BOT_PERSONALITY_METIN_DROPPER)
 					? BOT_PERSONALITY_METIN_DROPPER : BOT_PERSONALITY_METIN_BREAKER;
 
+		// Iwakura's community patch 2, point 4: under the personalities more
+		// of the bots farm medals, four and a half times the old share, drawn
+		// before the traders so the extra share is its own.
+		if (IsPlayerBotPersonaEnabled() &&
+				(int)(PlayerBotNavHash(ch->GetPlayerID() ^ 0x4d444c34U) % 1000U) <
+					PLAYERBOT_MEDAL_DROPPER_EXTRA_PER_MILLE &&
+				!IsPlayerBotPastDropperBand(ch, BOT_PERSONALITY_MEDAL_DROPPER))
+			return BOT_PERSONALITY_MEDAL_DROPPER;
+
 		// Traders are drawn before the rest: a bot that trades for a living is not
 		// a variant of an adventurer, it is a different way of playing, and the
 		// world was short of one.
@@ -435,6 +444,10 @@ namespace
 			return;
 		if (cohort)
 			lockLevel = CPlayerBotManager::instance().GetMedalDropperCohortLevel();
+		else if (persona && state.bPersonality == BOT_PERSONALITY_MEDAL_DROPPER)
+			// The Tier 4 Grinder holds where its medals are worth farming
+			// (community patch 2, point 4), not at a tier's lock.
+			lockLevel = PLAYERBOT_EXP_LOCK_MEDAL_DROPPER;
 		else if (persona)
 			lockLevel = GetPlayerBotPersonaLockLevel(ch, state);
 		const bool shouldLock = lockLevel != 0 && ch->GetLevel() >= lockLevel;
@@ -3241,6 +3254,18 @@ void CPlayerBotManager::ManageLifeSchedule(DWORD dwNow)
 	}
 
 	std::vector<DWORD> leaving;
+	// No more than PLAYERBOT_LIFE_MAX_RESTING_PERCENT of the cohort rests at
+	// once; a session that ends past that goes on a little longer. Without the
+	// cap the schedule did exactly what it said and a world emptied: every bot
+	// starts with the core, every first session ends inside the same six
+	// hours, and a rest is three to nine - so at six hours nine in ten of the
+	// cohort were resting and only one in ten had come back, and the square
+	// looked abandoned for the whole evening. Kuszaa's chart of 21 September
+	// is that curve to the bot: 500 a kingdom at 14:30, 40 at 20:40, then
+	// back up to 270 and down again ("boty poszly na odpoczynek ale z niego
+	// nie wracaja"). They were coming back; too few at a time.
+	const size_t maxResting = m_setScheduledBots.size() * PLAYERBOT_LIFE_MAX_RESTING_PERCENT / 100;
+	unsigned int heldOn = 0;
 	for (TPlayerBotMap::const_iterator it = m_mapBots.begin(); it != m_mapBots.end(); ++it)
 	{
 		const DWORD pid = it->first;
@@ -3262,6 +3287,17 @@ void CPlayerBotManager::ManageLifeSchedule(DWORD dwNow)
 		if (ch && ch->GetParty() && IsPlayerBotHumanLedParty(ch->GetParty()))
 		{
 			session->second = dwNow + PLAYERBOT_LIFE_POSTPONE_MS;
+			continue;
+		}
+		if (m_mapLifeRestEnd.size() + leaving.size() >= maxResting)
+		{
+			// The resting are at the cap: this one plays on until somebody
+			// comes back, and asks again after a while drawn by pid so the
+			// held do not all leave on the same minute.
+			session->second = dwNow + PLAYERBOT_LIFE_HOLD_MIN_MS +
+					PlayerBotNavHash(pid ^ (dwNow / 1000U) ^ 0x484f4c44U) %
+					(PLAYERBOT_LIFE_HOLD_MAX_MS - PLAYERBOT_LIFE_HOLD_MIN_MS);
+			++heldOn;
 			continue;
 		}
 		leaving.push_back(pid);
@@ -3313,9 +3349,10 @@ void CPlayerBotManager::ManageLifeSchedule(DWORD dwNow)
 	if (m_dwNextLifeCensusTime == 0 || dwNow >= m_dwNextLifeCensusTime)
 	{
 		m_dwNextLifeCensusTime = dwNow + PLAYERBOT_LIFE_CENSUS_INTERVAL;
-		sys_log(0, "PLAYERBOT_LIFE: census online=%u resting=%u returning=%u left_now=%u back_now=%u",
+		sys_log(0, "PLAYERBOT_LIFE: census online=%u resting=%u returning=%u left_now=%u back_now=%u held_on=%u cap=%u",
 				(unsigned int)m_mapBots.size(), (unsigned int)m_mapLifeRestEnd.size(),
-				(unsigned int)m_setLifeReturning.size(), (unsigned int)leaving.size(), back);
+				(unsigned int)m_setLifeReturning.size(), (unsigned int)leaving.size(), back,
+				heldOn, (unsigned int)maxResting);
 	}
 }
 

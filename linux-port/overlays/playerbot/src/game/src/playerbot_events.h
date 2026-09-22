@@ -237,6 +237,16 @@ namespace {
 		}
 	}
 
+	// The end gives the live flag the base back, whatever it holds: while an
+	// event runs the base IS the operator's setting - both panels write it
+	// there during an event (persist_rates_mt2009) and HoldPlayerBotRateEvent
+	// keeps the live flag at the boost of it - so there is no other number to
+	// return to. Until 2.0.95 a live flag that had moved was "left where the
+	// operator put it" and the base kept, and the page read the base: a rate
+	// saved during an event looked as if it had not saved, and did not change
+	// after the event either ("gdy mamy odpalony event ... zmiana rat nie
+	// dziala ... teraz nie mozna ich zmienic mimo ze zaden event nie jest
+	// wlaczony", Monek, CarloMontana, 20 September).
 	void EndPlayerBotRateEvent(int kind, int value)
 	{
 		quest::CQuestManager& q = quest::CQuestManager::instance();
@@ -247,18 +257,80 @@ namespace {
 			const int base = q.GetEventFlag(baseFlag);
 			if (base <= 0)
 				continue;
+			const int current = q.GetEventFlag(flag);
+			q.RequestSetEventFlag(flag, base);
+			q.RequestSetEventFlag(baseFlag, 0);
+			sys_log(0, "PLAYERBOT_EVENT: %s ends: %s %d -> %d (+%d%% over)",
+					playerbot_events::KindName(kind), flag.c_str(), current, base, value);
+		}
+	}
+
+	// While a rate event runs, the live flag is the boost of the base and
+	// nothing else. A panel that saved a rate during the event wrote the base
+	// (and the plain figure to the live flag, which is what the in-game helper
+	// sets too): this puts the boost back on top of the new base within a
+	// second. A request goes out only when the flag disagrees, and again ten
+	// seconds on if it still does - the flag moves only when the db core's
+	// broadcast comes back.
+	DWORD s_adwPlayerBotRateHoldAt[playerbot_events::KIND_MAX][2];
+
+	void HoldPlayerBotRateEvent(int kind, int value, DWORD dwNow)
+	{
+		quest::CQuestManager& q = quest::CQuestManager::instance();
+		for (int premium = 0; premium < 2; ++premium)
+		{
+			const std::string flag = PlayerBotEventRateFlag(kind, premium != 0);
+			const int base = q.GetEventFlag(PlayerBotEventBaseFlag(kind, premium != 0));
+			if (base <= 0)
+				continue;
 			const int boosted = (int)((long long)base * (100 + value) / 100);
 			const int current = q.GetEventFlag(flag);
-			if (current == boosted)
+			DWORD& at = s_adwPlayerBotRateHoldAt[kind][premium];
+			if (current == boosted || (at != 0 && (int)(dwNow - at) < 10000))
+				continue;
+			at = dwNow;
+			q.RequestSetEventFlag(flag, boosted);
+			sys_log(0, "PLAYERBOT_EVENT: %s holds %s at %d (base %d +%d%%, was %d)",
+					playerbot_events::KindName(kind), flag.c_str(), boosted, base, value, current);
+		}
+	}
+
+	// Once, a little after a start, for a kind no event runs on: a base left
+	// behind by an event that ended while the core was down, or by a version
+	// before 2.0.95. The live flag is the boost of it for one of the event
+	// figures on the schedule - then the event's end never happened and the
+	// base is the setting - or it is not, and the operator's number stands.
+	// Either way the base goes, which is what lets both pages show the real
+	// rate again: they read the base first.
+	bool s_bPlayerBotRateBasesReconciled = false;
+	DWORD s_dwPlayerBotRateReconcileAt = 0;
+
+	void ReconcilePlayerBotRateBases(const bool active[playerbot_events::KIND_MAX])
+	{
+		quest::CQuestManager& q = quest::CQuestManager::instance();
+		for (int kind = playerbot_events::KIND_EXP; kind < playerbot_events::KIND_MAX; ++kind)
+		{
+			if (active[kind])
+				continue;
+			for (int premium = 0; premium < 2; ++premium)
 			{
-				q.RequestSetEventFlag(flag, base);
-				sys_log(0, "PLAYERBOT_EVENT: %s ends: %s %d -> %d",
-						playerbot_events::KindName(kind), flag.c_str(), boosted, base);
+				const std::string flag = PlayerBotEventRateFlag(kind, premium != 0);
+				const std::string baseFlag = PlayerBotEventBaseFlag(kind, premium != 0);
+				const int base = q.GetEventFlag(baseFlag);
+				if (base <= 0)
+					continue;
+				const int current = q.GetEventFlag(flag);
+				bool boosted = false;
+				for (size_t i = 0; i < s_vecPlayerBotEvents.size() && !boosted; ++i)
+					if (s_vecPlayerBotEvents[i].kind == kind &&
+							current == (int)((long long)base * (100 + s_vecPlayerBotEvents[i].value) / 100))
+						boosted = true;
+				if (boosted)
+					q.RequestSetEventFlag(flag, base);
+				q.RequestSetEventFlag(baseFlag, 0);
+				sys_log(0, "PLAYERBOT_EVENT: stale base cleared %s base=%d live=%d -> %d",
+						baseFlag.c_str(), base, current, boosted ? base : current);
 			}
-			else
-				sys_log(0, "PLAYERBOT_EVENT: %s ends: %s left at %d (moved during the event; base was %d)",
-						playerbot_events::KindName(kind), flag.c_str(), current, base);
-			q.RequestSetEventFlag(baseFlag, 0);
 		}
 	}
 
@@ -355,13 +427,14 @@ namespace {
 				}
 				else if (st.active)
 				{
-					// A second window or an "activate now" with another figure
-					// while one runs: the rate is re-based on the same base.
-					if (st.value != state.value && kind != playerbot_events::KIND_CHEST && leader)
-					{
-						EndPlayerBotRateEvent(kind, state.value);
-						BeginPlayerBotRateEvent(kind, st.value);
-					}
+					// The live flag held at the boost of the base, which also
+					// carries a second window or an "activate now" with another
+					// figure onto the same base. Ending and beginning again, as
+					// this did, asked for the base to be cleared and read it back
+					// before the clearing had come round - the live flag stayed
+					// boosted after the event.
+					if (kind != playerbot_events::KIND_CHEST && leader)
+						HoldPlayerBotRateEvent(kind, st.value, dwNow);
 					state.value = st.value;
 					state.until = st.until;
 					if (leader && dwNow >= state.nextReminder)
@@ -369,6 +442,21 @@ namespace {
 						state.nextReminder = dwNow + PLAYERBOT_EVENTS_REMINDER_INTERVAL;
 						AnnouncePlayerBotEvent(kind, st.value, st.until, EVENT_PHASE_REMINDER);
 					}
+				}
+			}
+			// The bases an ended event left behind, half a minute into the
+			// leader's life so the event flags have arrived from the db core.
+			if (leader && !s_bPlayerBotRateBasesReconciled)
+			{
+				if (s_dwPlayerBotRateReconcileAt == 0)
+					s_dwPlayerBotRateReconcileAt = dwNow + 30000;
+				else if ((int)(dwNow - s_dwPlayerBotRateReconcileAt) >= 0)
+				{
+					s_bPlayerBotRateBasesReconciled = true;
+					bool active[playerbot_events::KIND_MAX];
+					for (int kind = 0; kind < playerbot_events::KIND_MAX; ++kind)
+						active[kind] = s_aPlayerBotEventState[kind].active;
+					ReconcilePlayerBotRateBases(active);
 				}
 			}
 		}

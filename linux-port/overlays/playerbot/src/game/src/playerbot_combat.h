@@ -346,6 +346,34 @@ namespace
 		return FindPlayerBotDuelOpponent(ch, dwNow) == target;
 	}
 
+	// The characters a bot may swing at besides monsters and stones: its duel
+	// opponent, a member of the guild its own is at war with, and the player
+	// the Anti-PK protocol is fighting (playerbot_anti_pk.h). Every one of them
+	// still goes to battle_is_attackable (CanPlayerBotStrikeCharacter) before a
+	// blow lands - that is the engine's word on who may be struck, and a war
+	// between two guilds is the one thing it answers yes for by itself. The
+	// basic swing knew only the duel, so a war was fought with skills alone
+	// and a bot stood beside its foe between two casts: "boty jedynie uzywaja
+	// umiejetnosci, nie autoatakuja, nie biegaja" (prodnathin, 21 September).
+	// Every fight back of the Anti-PK protocol was the same, and a bot in the
+	// saddle, which casts nothing a transport horse refuses, only followed its
+	// attacker about (Dixdros, "PVP Bots", 21 September).
+	bool IsPlayerBotSanctionedFoe(LPCHARACTER ch, LPCHARACTER target, DWORD dwNow)
+	{
+		if (!ch || !target || !target->IsPC())
+			return false;
+		if (IsPlayerBotDuelOpponent(ch, target, dwNow))
+			return true;
+		TPlayerBotAIStateMap::const_iterator it = s_mapPlayerBotAIStates.find(ch->GetPlayerID());
+		if (it == s_mapPlayerBotAIStates.end())
+			return false;
+		const TPlayerBotAIState& state = it->second;
+		if (state.persona.dwFoeVID != 0 && state.persona.dwFoeVID == (DWORD)target->GetVID())
+			return true;
+		CGuild* theirs = target->GetGuild();
+		return state.dwGuildWarEnemyGID != 0 && theirs && theirs->GetID() == state.dwGuildWarEnemyGID;
+	}
+
 	// Whether the engine will let a blow land on this character.
 	//
 	// CHARACTER::Damage asks nothing - not the agreement, not the protection

@@ -124,6 +124,20 @@ namespace
 		}
 	}
 
+	// The books of a build that is not this bot's, in books.
+	int CountPlayerBotOtherClassBooks(LPCHARACTER ch)
+	{
+		int books = 0;
+		for (WORD cell = 0; ch && cell < PLAYERBOT_BAG_CELLS; ++cell)
+		{
+			LPITEM item = ch->GetInventoryItem(cell);
+			if (item && item->GetCell() == cell && item->GetType() == ITEM_SKILLBOOK &&
+					!IsPlayerBotOwnSkill(ch, GetPlayerBotSkillBookSkillVnum(item)))
+				books += item->GetCount();
+		}
+		return books;
+	}
+
 	int CountPlayerBotSurplusSkillBooks(LPCHARACTER ch)
 	{
 		int surplus = 0;
@@ -735,6 +749,16 @@ namespace
 		// The purse the Perfectionist's share is measured against
 		// (ManagePlayerBotRefining).
 		state.persona.llVisitGoldStart = (long long)ch->GetGold();
+		// The trader's book purse opens with the visit (community patch 2,
+		// point 5).
+		state.persona.llBookBudgetBase = (long long)ch->GetGold();
+		state.persona.llBookBudgetSpent = 0;
+		state.persona.dwBookBudgetSince = dwNow;
+		// And where the level-30 weapon started it (GetPlayerBotLevel30Aim).
+		{
+			LPITEM classLevel30 = FindPlayerBotClassLevel30Weapon(ch);
+			state.persona.bLevel30VisitStartPlus = classLevel30 ? classLevel30->GetRefineLevel() : 0xFF;
+		}
 		if (bDirect)
 		{
 			// Bokjung has no decorative gate split, and neither have Yongan and
@@ -1279,6 +1303,16 @@ namespace
 		return true;
 	}
 
+	// Whether a bot's stand may stand on this map: a first village always, a
+	// second village only while the operator's SHOP_M2 switch says so.
+	bool IsPlayerBotShopMapAllowed(long mapIndex)
+	{
+		long x = 0, y = 0;
+		if (!GetPlayerBotShopCentre(mapIndex, x, y))
+			return false;
+		return !IsPlayerBotM2Map(mapIndex) || IsPlayerBotShopsInM2Enabled();
+	}
+
 	bool IsPlayerBotMerchant(const TPlayerBotAIState& state)
 	{
 		return state.bPersonality == BOT_PERSONALITY_MERCHANT;
@@ -1443,7 +1477,8 @@ namespace
 		// counter share the books dictated and the TRADE weight moved nothing.
 		// At the neutral weight the behaviour is what it was; at the minimum the
 		// stalls actually stop.
-		if (CountPlayerBotSurplusSkillBooks(ch) >= PLAYERBOT_SHOP_BOOK_PRESSURE_MIN &&
+		if ((CountPlayerBotSurplusSkillBooks(ch) >= PLAYERBOT_SHOP_BOOK_PRESSURE_MIN ||
+					CountPlayerBotOtherClassBooks(ch) >= PLAYERBOT_SHOP_OTHER_CLASS_BOOK_MIN) &&
 				PlayerBotWeightedRoll(
 					PlayerBotNavHash(ch->GetPlayerID() ^ 0x424f4f4bU) % 1000U,
 					PLAYERBOT_SHOP_BOOK_ROLL, PLAYERBOT_WEIGHT_TRADE))
@@ -1561,6 +1596,45 @@ namespace
 				(unsigned long long)(100 + delta) / 100ULL));
 	}
 
+	// The world's yang, for the inflation (PLAYERBOT_INFLATION_STEP_YANG). A
+	// character not in the game holds yang too, so the sum is the database's,
+	// asked on the engine's own queue (DBManager::FuncQuery answers on a later
+	// tick of this thread); what the live characters hold there is as old as
+	// the db core's last flush, which for a step of 2.5 billion is nothing.
+	long long s_llPlayerBotWorldYang = 0;
+	DWORD s_dwPlayerBotWorldYangAt = 0;
+
+	int GetPlayerBotInflationPercent()
+	{
+		if (s_llPlayerBotWorldYang < PLAYERBOT_INFLATION_STEP_YANG)
+			return 0;
+		const long long steps = s_llPlayerBotWorldYang / PLAYERBOT_INFLATION_STEP_YANG;
+		return (int)std::min<long long>(steps * PLAYERBOT_INFLATION_STEP_PERCENT,
+				PLAYERBOT_INFLATION_MAX_PERCENT);
+	}
+
+	void RefreshPlayerBotWorldYang(DWORD dwNow)
+	{
+		if (s_dwPlayerBotWorldYangAt != 0 && dwNow - s_dwPlayerBotWorldYangAt < PLAYERBOT_INFLATION_REFRESH_MS)
+			return;
+		s_dwPlayerBotWorldYangAt = dwNow;
+		DBManager::instance().FuncQuery([](SQLMsg* msg)
+		{
+			if (!msg || msg->uiSQLErrno != 0 || !msg->Get() || !msg->Get()->pSQLResult)
+				return;
+			MYSQL_ROW row = mysql_fetch_row(msg->Get()->pSQLResult);
+			if (!row || !row[0])
+				return;
+			const int before = GetPlayerBotInflationPercent();
+			const bool first = s_llPlayerBotWorldYang == 0;
+			s_llPlayerBotWorldYang = std::max(0LL, strtoll(row[0], NULL, 10));
+			const int after = GetPlayerBotInflationPercent();
+			if (first || after != before)
+				sys_log(0, "PLAYERBOT_MARKET: world yang=%lld inflation=%d%% (was %d%%)",
+						s_llPlayerBotWorldYang, after, before);
+		}, "SELECT COALESCE(SUM(gold),0) FROM player.player");
+	}
+
 	// Iwakura's scaling rule, from the top of his sheet: the yang drop rate
 	// (the mob_gold multiplier in percent, 100 when nothing set it, the same
 	// number the panel's rates page writes) against the multiplier it pays -
@@ -1589,19 +1663,25 @@ namespace
 					pct = lo.iPct + (long long)(hi.iPct - lo.iPct) * (rate - lo.iRate) / (hi.iRate - lo.iRate);
 					break;
 				}
+		// And the inflation over the curve (community patch 2, point 8).
 		const unsigned long long scaled = (unsigned long long)base *
-				(unsigned long long)std::max(1LL, pct) / 100ULL;
+				(unsigned long long)std::max(1LL, pct) / 100ULL *
+				(unsigned long long)(100 + GetPlayerBotInflationPercent()) / 100ULL;
 		return scaled > 0xFFFFFFFFULL ? 0xFFFFFFFFUL : (DWORD)scaled;
 	}
 
-	// What a counter's prices were set under: the table version and the yang
-	// rate. The offline service reprices a stand whose stamp differs at the
-	// catch-up pace (PLAYERBOT_OFFLINE_REPRICE_CATCHUP_MS a slice), so a rate
-	// moved while the core runs reaches every counter in hours, not days.
+	// What a counter's prices were set under: the table version, the yang
+	// rate and the inflation. The offline service reprices a stand whose stamp
+	// differs at the catch-up pace (PLAYERBOT_OFFLINE_REPRICE_CATCHUP_MS a
+	// slice), so a rate moved while the core runs - or a world that has just
+	// crossed another 2.5 billion - reaches every counter in hours, not days.
+	// Compared for equality only, so the inflation is mixed in above the bits
+	// the version and the rate use.
 	DWORD GetPlayerBotPriceGeneration()
 	{
 		const int rate = std::max(1, CHARACTER_MANAGER::instance().GetMobGoldAmountRate(NULL));
-		return PLAYERBOT_PRICE_TABLE_VERSION * 1000000UL + (DWORD)std::min(rate, 999999);
+		return (PLAYERBOT_PRICE_TABLE_VERSION * 1000000UL + (DWORD)std::min(rate, 999999)) ^
+				((DWORD)(GetPlayerBotInflationPercent() / PLAYERBOT_INFLATION_STEP_PERCENT) << 24);
 	}
 
 	// Iwakura's base for a book, at this world's yang rate. The rate is the
@@ -2267,6 +2347,10 @@ namespace
 				return -1;
 			return PlayerBotKeepsLevel30ForAnvil(ch, item) ? -1 : 2000;
 		}
+		// Iwakura's fifty-four weapons at +0..+3 stand on the bots' counters
+		// PLAYERBOT_JUNK_WEAPON_MARKET_CAP at a time, world-wide.
+		if (IsPlayerBotCappedJunkWeapon(item) && IsPlayerBotJunkWeaponMarketFull())
+			return -1;
 		// Gear under level thirty goes up at +6 or better and ranks under the
 		// materials whatever is rolled on it, and one counter carries only
 		// PLAYERBOT_SHOP_LOW_GEAR_MAX_LINES of it (CollectPlayerBotShopItems).
@@ -2275,6 +2359,11 @@ namespace
 		if (IsPlayerBotLowLevelGear(item))
 			return item->GetRefineLevel() >= GetPlayerBotLowGearMinRefine(item)
 					? PLAYERBOT_SHOP_LOW_GEAR_SCORE + item->GetRefineLevel() : -1;
+		// A piece of Iwakura's list past what the list keeps, at any refine:
+		// the gamblers' stock (community patch 2, point 9).
+		if (ch && IsPlayerBotLppSurplusGoods(ch, item))
+			return std::max<int>(PLAYERBOT_SHOP_LPP_SURPLUS_SCORE,
+					HasPlayerBotValuableBonus(item) ? 1500 : 0) + item->GetRefineLevel();
 		// Then anything rolled with a bonus a player would go looking for.
 		if (HasPlayerBotValuableBonus(item))
 			return 1500;
@@ -2352,9 +2441,13 @@ namespace
 		// What a player crafts or refines further: the herbalist's herbs, the
 		// Crystal Earrings, the Ghost Face Armour, the level-65 weapons under +4
 		// (from +4 they ranked above already), the Zen Bean and the Blood Pill.
-		// The first beans stay for a rank that ever falls below zero.
+		// The first beans stay for a rank that ever falls below zero - ten to
+		// fifteen of them, counted over the whole bag (GetPlayerBotZenBeanKeep);
+		// a stack holding a bean over the keep is goods, and the cut takes
+		// only what is over it.
 		if (item->GetVnum() == PLAYERBOT_ZEN_BEAN_VNUM &&
-				CountPlayerBotVnumUnitsAhead(ch, item) < PLAYERBOT_ZEN_BEAN_KEEP)
+				!playerbot_stall_rules::HoldsSpare(CountPlayerBotVnumUnitsAhead(ch, item),
+					(int)item->GetCount(), GetPlayerBotCountedGoodsKeep(ch, item)))
 			return -1;
 		// A heap is PLAYERBOT_SHOP_BULK_MIN_UNITS at least: the service visit
 		// put up whatever a cell held, and one root picked up since was a line
@@ -2441,8 +2534,11 @@ namespace
 			if (!playerbot_stall_rules::HoldsSpare(CountPlayerBotSkillBooksAhead(ch, item, skillVnum),
 					(int)item->GetCount(), GetPlayerBotCountedGoodsKeep(ch, item)))
 				return -1;
-			return GetPlayerBotPersonalityByPID(ch->GetPlayerID()) == BOT_PERSONALITY_METIN_DROPPER
-					? 1800 : 400;
+			if (GetPlayerBotPersonalityByPID(ch->GetPlayerID()) == BOT_PERSONALITY_METIN_DROPPER)
+				return 1800;
+			// Another build's book is somebody else's progress and nothing of
+			// this bot's: ahead of the ordinary goods (community patch 2, point 5).
+			return IsPlayerBotOwnSkill(ch, skillVnum) ? 400 : PLAYERBOT_SHOP_OTHER_CLASS_BOOK_SCORE;
 		}
 
 		// Ordinary spare gear, and only if somebody could want it. This used to
@@ -3343,6 +3439,10 @@ namespace
 		long pitchX = 0, pitchY = 0;
 		if (!GetPlayerBotShopCentre(ch->GetMapIndex(), pitchX, pitchY))
 			return false;
+		// A second village takes no new stand unless the operator allows it
+		// (IsPlayerBotShopMapAllowed): the stands belong in the first villages.
+		if (!IsPlayerBotShopMapAllowed(ch->GetMapIndex()))
+			return false;
 		// Bokjung's ring used to be capped, and a keeper that found it full
 		// carried its goods to Joan. Both are gone: a town is meant to fill up,
 		// and a counter refused is a bot with nothing to do (the operator's
@@ -3791,7 +3891,10 @@ namespace
 		// On the ledger now rather than at its next refresh - see
 		// AddPlayerBotMarketSupply for the three keepers this is about.
 		for (size_t i = 0; i < offers.size(); ++i)
+		{
 			AddPlayerBotMarketSupply(offers[i].dwVnum, offers[i].wCount, ch->GetMapIndex());
+			NotePlayerBotJunkWeaponOnCounter(offers[i].dwVnum, offers[i].wCount);
+		}
 		sys_log(0, "PLAYERBOT_SHOP: opened pid=%u name=%s reason=%s items=%u left_behind no_line=%u no_slot=%u antiflag=%u first_vnum=%u first_price=%u pos=(%ld,%ld) sign=\"%s\"",
 				ch->GetPlayerID(), ch->GetName(), GetPlayerBotShopReasonName(state.bShopOpenReason),
 				(unsigned int)tableCount, uNoLine, uNoSlot, uAntiFlag,
@@ -3998,6 +4101,29 @@ namespace
 
 		state.dwTargetVID = 0;
 		ch->SetVictim(NULL);
+
+		// A phase inside Joan's wall taken up by a bot that stands outside it.
+		// A visit is paused, not ended, while the bot is in a person's party,
+		// and the bot goes where the person goes - so a visit begun inside the
+		// wall resumed after the party at the weapon merchant with the bot out
+		// by the fields: the leg's goal was moved onto the bot's own side of the
+		// wall, "arrived" there (nav_out=2) and the phase never moved, until the
+		// inactivity watchdog took it ninety seconds later (MegaDzikDuch22 of
+		// Sammy Suricate's world, 22 September). It crosses the gate again.
+		if (!bDirect && state.bTownVisitPhase >= BOT_TOWN_PHASE_WEAPON_MERCHANT &&
+				state.bTownVisitPhase <= BOT_TOWN_PHASE_BLACKSMITH_WAIT)
+		{
+			CPlayerBotNavigation& navigation = CPlayerBotNavigation::instance(ch->GetMapIndex());
+			if (navigation.Init(ch->GetMapIndex()) &&
+					!navigation.CanReach(ch->GetX(), ch->GetY(), weaponNpcX, weaponNpcY))
+			{
+				PlayerBotLogThrottled("town_outside_wall", dwNow,
+						"PLAYERBOT_TOWN: outside the wall in phase %u pid=%u name=%s, crossing the gate again",
+						(unsigned int)state.bTownVisitPhase, ch->GetPlayerID(), ch->GetName());
+				ClearPlayerBotRoute(state, true);
+				state.bTownVisitPhase = BOT_TOWN_PHASE_GATE_IN;
+			}
+		}
 
 		if (state.bTownVisitPhase == BOT_TOWN_PHASE_NONE)
 		{

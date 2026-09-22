@@ -58,7 +58,9 @@ namespace
 			case BOT_PERSONALITY_METIN_DROPPER: return BOT_PERSONALITY_METIN_BREAKER;
 			case BOT_PERSONALITY_M3_DROPPER:
 			case BOT_PERSONALITY_M2_DROPPER: return BOT_PERSONALITY_GEAR_SPECIALIST;
-			case BOT_PERSONALITY_MEDAL_DROPPER: return BOT_PERSONALITY_WANDERER;
+			// The medal dropper stays one: community patch 2, point 4 asks for
+			// four and a half times as many, where this line made none.
+			case BOT_PERSONALITY_MEDAL_DROPPER: return BOT_PERSONALITY_MEDAL_DROPPER;
 			default: return drawn;
 		}
 	}
@@ -121,6 +123,19 @@ namespace
 		return ch && ch->GetJob() == JOB_WARRIOR && ch->GetSkillGroup() == 2;
 	}
 
+	// The lock a medal dropper holds at instead of a Grinder's, or zero for
+	// any other bot: the operator's cohort at the cohort's level, one drawn
+	// under the personalities at its dungeon's (community patch 2, point 4) -
+	// the answer ManagePlayerBotExpLock holds it at.
+	BYTE GetPlayerBotMedalDropperLock(LPCHARACTER ch, const TPlayerBotAIState& state)
+	{
+		if (!ch)
+			return 0;
+		if (CPlayerBotManager::instance().IsMedalDropperCohortPID(ch->GetPlayerID()))
+			return CPlayerBotManager::instance().GetMedalDropperCohortLevel();
+		return state.bPersonality == BOT_PERSONALITY_MEDAL_DROPPER ? PLAYERBOT_EXP_LOCK_MEDAL_DROPPER : 0;
+	}
+
 	// The level this bot holds at under the switch, or zero for none: a
 	// Conqueror holds nowhere, a Grinder at the lock it reached or, until it
 	// has reached one, at its tier's lock once it gets there. The lock reached
@@ -131,9 +146,43 @@ namespace
 		if (!ch || !IsPlayerBotPersonaEnabled() || !state.persona.bRestored)
 			return 0;
 		TPlayerBotPersona& p = state.persona;
+		// A medal dropper is held at its dungeon's lock whatever tier its level
+		// falls in, and never advances out of it (the goal dropper leaves by
+		// its gear, every other by the dropper band). Written here as well, so
+		// the status file, the census and the Law of Advancement read the lock
+		// the bot is actually held at: they read a Grinder's tier lock before,
+		// and a dropper of eighteen in the Monkey Dungeon showed a lock of
+		// eighteen and could "advance" to Conqueror while it levelled to 33.
+		const BYTE dropperLock = GetPlayerBotMedalDropperLock(ch, state);
+		if (dropperLock != 0)
+		{
+			const BYTE held = ch->GetLevel() >= dropperLock ? dropperLock : 0;
+			if (p.bLockLevel != held || p.bAdvanced)
+			{
+				p.bLockLevel = held;
+				p.bAdvanced = false;
+				p.dwNextAdvanceRoll = 0;
+				p.bDirty = true;
+			}
+			return dropperLock;
+		}
 		if (p.bAdvanced)
 			return 0;
 		const BYTE level = (BYTE)std::min<int>(255, ch->GetLevel());
+		// The Grinders who never hold, and the ones who gave grinding up
+		// (community patch 2, point 2): no lock, and one written before goes.
+		if (playerbot_persona::NeverHoldsAtLocks(ch->GetPlayerID()) || p.bQuitGrinding)
+		{
+			if (p.bLockLevel != 0)
+			{
+				sys_log(0, "PLAYERBOT_PERSONA: grinder lock lifted pid=%u name=%s level=%u was=%u why=%s",
+						ch->GetPlayerID(), ch->GetName(), (unsigned int)level, (unsigned int)p.bLockLevel,
+						p.bQuitGrinding ? "quit" : "never_holds");
+				p.bLockLevel = 0;
+				p.bDirty = true;
+			}
+			return 0;
+		}
 		const BYTE lock = playerbot_persona::GrinderLockFor(level, ch->GetPlayerID());
 		if (p.bLockLevel != 0 && lock == 0)
 		{
@@ -183,6 +232,52 @@ namespace
 		return lock;
 	}
 
+	// Community patch 2, point 14: one in a hundred of the first village's
+	// Grinders farms materials there for sale and does not advance until the
+	// purse pays for its class's level-30 weapon at +8 and an armour of level
+	// 18 or 26 at +9 - or it holds them. Priced on Iwakura's sheet.
+	bool IsPlayerBotM1Farmer(DWORD pid)
+	{
+		return (int)(PlayerBotNavHash(pid ^ 0x4d314641U) % 100U) < PLAYERBOT_M1_FARMER_PERCENT;
+	}
+
+	long long GetPlayerBotGearFamilyPrice(DWORD familyBase, int plus);
+
+	bool PlayerBotM1FarmerGoalMet(LPCHARACTER ch)
+	{
+		if (!ch)
+			return true;
+		LPITEM weapon = FindPlayerBotClassLevel30Weapon(ch);
+		LPITEM armour = ch->GetWear(WEAR_BODY);
+		const DWORD armourBase = GetPlayerBotArmorClassBase(ch);
+		const bool weaponDone = weapon && (int)weapon->GetRefineLevel() >= PLAYERBOT_M1_FARMER_WEAPON_PLUS;
+		const DWORD armourFamily = armour ? armour->GetVnum() - (DWORD)std::max(0, armour->GetRefineLevel()) : 0;
+		const bool armourDone = armour && (int)armour->GetRefineLevel() >= PLAYERBOT_M1_FARMER_ARMOUR_PLUS &&
+				(armourFamily == armourBase + 20 || armourFamily == armourBase + 30);
+		if (weaponDone && armourDone)
+			return true;
+		long long cost = 0;
+		if (!weaponDone)
+		{
+			// The cheapest of the class's level-30 families it could wield.
+			static const DWORD families[] = { 290, 1170, 2150, 3210, 5110, 7160 };
+			long long cheapest = 0;
+			for (size_t i = 0; i < sizeof(families) / sizeof(families[0]); ++i)
+			{
+				const TItemTable* proto = ITEM_MANAGER::instance().GetTable(families[i]);
+				if (!proto || !IsPlayerBotWeaponSubTypeFor(ch, proto->bSubType) || !IsPlayerBotProtoForCharacter(ch, proto))
+					continue;
+				const long long price = GetPlayerBotGearFamilyPrice(families[i], PLAYERBOT_M1_FARMER_WEAPON_PLUS);
+				if (price > 0 && (cheapest == 0 || price < cheapest))
+					cheapest = price;
+			}
+			cost += cheapest;
+		}
+		if (!armourDone)
+			cost += GetPlayerBotGearFamilyPrice(armourBase + 20, PLAYERBOT_M1_FARMER_ARMOUR_PLUS);
+		return cost > 0 && (long long)ch->GetGold() - GetPlayerBotReservedGold(ch) >= cost;
+	}
+
 	// The Law of Advancement, asked of a Grinder that has reached its lock.
 	// Meeting it does not move the bot on: it is asked when the law is first
 	// met and then once an hour, and its character says how likely it is to
@@ -193,6 +288,13 @@ namespace
 		if (!ch || !IsPlayerBotPersonaEnabled() || !state.persona.bRestored)
 			return;
 		TPlayerBotPersona& p = state.persona;
+		// A medal dropper's lock is its dungeon's and the law does not move it
+		// on: the lock is only written down (GetPlayerBotPersonaLockLevel).
+		if (GetPlayerBotMedalDropperLock(ch, state) != 0)
+		{
+			GetPlayerBotPersonaLockLevel(ch, state);
+			return;
+		}
 		if (p.bAdvanced)
 			return;
 		const BYTE lock = GetPlayerBotPersonaLockLevel(ch, state);
@@ -203,6 +305,37 @@ namespace
 		{
 			p.dwNextAdvanceRoll = 0;
 			return;
+		}
+		// The first village's farmer stays until its goal is paid for.
+		if (playerbot_persona::GrinderTierFor((uint8_t)std::min<int>(255, ch->GetLevel())) == 1 &&
+				IsPlayerBotM1Farmer(ch->GetPlayerID()) && !PlayerBotM1FarmerGoalMet(ch))
+		{
+			PlayerBotLogThrottled("m1_farmer_stays", dwNow,
+					"PLAYERBOT_PERSONA: first village farmer stays for its goal pid=%u name=%s level=%u gold=%lld",
+					ch->GetPlayerID(), ch->GetName(), (unsigned int)ch->GetLevel(), (long long)ch->GetGold());
+			p.dwNextAdvanceRoll = 0;
+			return;
+		}
+		// The tenth that may give grinding up rolls its 33% once a tier, the
+		// moment the tier's gear stands (community patch 2, point 2).
+		if (playerbot_persona::MayQuitGrinding(ch->GetPlayerID()) && !p.bQuitGrinding)
+		{
+			const BYTE tier = playerbot_persona::GrinderTierFor((uint8_t)std::min<int>(255, ch->GetLevel()));
+			if (tier != 0 && tier != p.bQuitRolledTier)
+			{
+				p.bQuitRolledTier = tier;
+				p.bDirty = true;
+				if (playerbot_persona::RollQuitGrinding((uint32_t)number(0, 99)))
+				{
+					p.bQuitGrinding = true;
+					p.bLockLevel = 0;
+					p.dwNextAdvanceRoll = 0;
+					sys_log(0, "PLAYERBOT_PERSONA: grinder gives grinding up pid=%u name=%s level=%u tier=%u lock=%u",
+							ch->GetPlayerID(), ch->GetName(), (unsigned int)ch->GetLevel(),
+							(unsigned int)tier, (unsigned int)lock);
+					return;
+				}
+			}
 		}
 		if (p.dwNextAdvanceRoll == 0)
 		{
@@ -377,6 +510,9 @@ namespace
 	// eighty percent alone is a walk over every cell of it.
 	const DWORD PLAYERBOT_PERSONA_DECIDE_INTERVAL = 2000;
 
+	// The goal dropper's look at its purse, further down beside the AFK.
+	void ManagePlayerBotMedalGoal(LPCHARACTER ch, TPlayerBotAIState& state, DWORD dwNow);
+
 	void ManagePlayerBotPersona(LPCHARACTER ch, TPlayerBotAIState& state, DWORD dwNow)
 	{
 		if (!ch || !IsPlayerBotPersonaEnabled() || !state.persona.bRestored)
@@ -385,8 +521,75 @@ namespace
 		if (p.dwNextDecide != 0 && dwNow < p.dwNextDecide)
 			return;
 		p.dwNextDecide = dwNow + PLAYERBOT_PERSONA_DECIDE_INTERVAL;
+		ManagePlayerBotMedalGoal(ch, state, dwNow);
 		ManagePlayerBotAdvancement(ch, state, dwNow);
 		DecidePlayerBotPersona(ch, state, dwNow);
+	}
+
+	// The drops the loot pass would walk to and take (playerbot_loot.h, which
+	// comes later in the include order).
+	size_t CountPlayerBotLootToTake(LPCHARACTER ch, TPlayerBotAIState& state, DWORD dwNow);
+
+	// Iwakura's price of a family at a plus, on his curve, or zero.
+	long long GetPlayerBotGearFamilyPrice(DWORD familyBase, int plus)
+	{
+		if (familyBase == 0 || plus < 0 || plus > 9)
+			return 0;
+		for (size_t i = 0; i < sizeof(PLAYERBOT_GEAR_PRICES) / sizeof(PLAYERBOT_GEAR_PRICES[0]); ++i)
+			if (PLAYERBOT_GEAR_PRICES[i].dwBaseVnum == familyBase)
+				return (long long)ScalePlayerBotIwakuraPrice(PLAYERBOT_GEAR_PRICES[i].adwPrice[plus]);
+		return 0;
+	}
+
+	// The goal droppers: PLAYERBOT_MEDAL_GOAL_PERCENT of the medal droppers.
+	bool IsPlayerBotMedalGoalDropper(DWORD pid)
+	{
+		return (int)(PlayerBotNavHash(pid ^ 0x474f414cU) % 100U) < PLAYERBOT_MEDAL_GOAL_PERCENT;
+	}
+
+	// Whether one worn piece meets its part of the goal: its slot filled at
+	// the plus, by a piece no more than the law's window under the bot.
+	bool PlayerBotWearsGoalPiece(LPCHARACTER ch, BYTE wearCell, int plus)
+	{
+		LPITEM worn = wearCell == WEAR_WEAPON ? GetPlayerBotHandWeapon(ch) : ch->GetWear(wearCell);
+		return worn && (int)worn->GetRefineLevel() >= plus &&
+				(int)GetPlayerBotPersonaLevelLimit(worn) + playerbot_persona::AWANS_LEVEL_WINDOW >= (int)ch->GetLevel();
+	}
+
+	// A goal dropper's look at its purse (community patch 2, point 4): the
+	// medals it sold pay for its level's weapon and armour at +9 and helmet
+	// and shield at +7, or it wears them - and then it is a medal dropper no
+	// more. The Wanderer its draw would have been takes over, the exp lock
+	// comes off with the personality (ManagePlayerBotExpLock), and the market
+	// Perfectionist's rule spends the purse (IsPlayerBotMarketPerfectionist).
+	void ManagePlayerBotMedalGoal(LPCHARACTER ch, TPlayerBotAIState& state, DWORD dwNow)
+	{
+		TPlayerBotPersona& p = state.persona;
+		if (!ch || state.bPersonality != BOT_PERSONALITY_MEDAL_DROPPER || p.bMedalGoalDone ||
+				!IsPlayerBotMedalGoalDropper(ch->GetPlayerID()) ||
+				CPlayerBotManager::instance().IsMedalDropperCohortPID(ch->GetPlayerID()) ||
+				(p.dwNextMedalGoalCheck != 0 && dwNow < p.dwNextMedalGoalCheck))
+			return;
+		p.dwNextMedalGoalCheck = dwNow + PLAYERBOT_MEDAL_GOAL_CHECK_MS;
+		long long cost = 0;
+		const bool wantsShield = PlayerBotWantsShield(ch);
+		if (!PlayerBotWearsGoalPiece(ch, WEAR_WEAPON, PLAYERBOT_MEDAL_GOAL_MAIN_PLUS))
+			cost += GetPlayerBotGearFamilyPrice(GetPlayerBotProgressionWeaponVnum(ch), PLAYERBOT_MEDAL_GOAL_MAIN_PLUS);
+		if (!PlayerBotWearsGoalPiece(ch, WEAR_BODY, PLAYERBOT_MEDAL_GOAL_MAIN_PLUS))
+			cost += GetPlayerBotGearFamilyPrice(GetPlayerBotProgressionArmorVnum(ch), PLAYERBOT_MEDAL_GOAL_MAIN_PLUS);
+		if (!PlayerBotWearsGoalPiece(ch, WEAR_HEAD, PLAYERBOT_MEDAL_GOAL_SIDE_PLUS))
+			cost += GetPlayerBotGearFamilyPrice(GetPlayerBotProgressionHelmetVnum(ch), PLAYERBOT_MEDAL_GOAL_SIDE_PLUS);
+		if (wantsShield && !PlayerBotWearsGoalPiece(ch, WEAR_SHIELD, PLAYERBOT_MEDAL_GOAL_SIDE_PLUS))
+			cost += GetPlayerBotGearFamilyPrice(GetPlayerBotProgressionShieldVnum(ch), PLAYERBOT_MEDAL_GOAL_SIDE_PLUS);
+		const long long spare = (long long)ch->GetGold() - GetPlayerBotReservedGold(ch);
+		if (cost > 0 && spare < cost)
+			return;
+		p.bMedalGoalDone = true;
+		p.bDirty = true;
+		state.bPersonality = BOT_PERSONALITY_WANDERER;
+		sys_log(0, "PLAYERBOT_PERSONA: medal dropper met its goal pid=%u name=%s level=%u gold=%lld cost=%lld",
+				ch->GetPlayerID(), ch->GetName(), (unsigned int)ch->GetLevel(),
+				(long long)ch->GetGold(), cost);
 	}
 
 	// SLABY's stop from the keyboard: every 10-30 minutes, for 2-5, somewhere
@@ -438,8 +641,30 @@ namespace
 		if (busy)
 		{
 			p.dwNextAfkAt = dwNow + 60000;
+			p.dwAfkLootWaitSince = 0;
 			return false;
 		}
+		// What the pack left is picked up first (community patch 2, point 7):
+		// the stop claims the tick above the loot pass, so a bot that went AFK
+		// beside its drop left it to whoever came by. The loot pass's own
+		// collector decides what counts - the drops it would walk to and take,
+		// not the merchant fodder a choosy looter leaves on purpose.
+		const size_t drops = CountPlayerBotLootToTake(ch, state, dwNow);
+		if (drops > 0)
+		{
+			if (p.dwAfkLootWaitSince == 0)
+			{
+				p.dwAfkLootWaitSince = dwNow;
+				sys_log(0, "PLAYERBOT_MOOD: picks up its drop before the stop pid=%u name=%s drops=%u",
+						ch->GetPlayerID(), ch->GetName(), (unsigned int)drops);
+			}
+			if (dwNow - p.dwAfkLootWaitSince < PLAYERBOT_MOOD_AFK_LOOT_WAIT_MAX_MS)
+			{
+				p.dwNextAfkAt = dwNow + PLAYERBOT_MOOD_AFK_LOOT_RETRY_MS;
+				return false;
+			}
+		}
+		p.dwAfkLootWaitSince = 0;
 		p.dwAfkUntil = dwNow + playerbot_persona::AfkDuration((uint32_t)number(0, 0x7fffffff));
 		ClearPlayerBotRoute(state, true);
 		if (ch->IsStateMove())

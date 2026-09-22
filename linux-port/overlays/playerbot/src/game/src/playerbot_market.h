@@ -229,7 +229,7 @@ namespace
 		// at PLAYERBOT_LEVEL30_PROJECT_PLUS against the best the bot has, its
 		// own project included (IsPlayerBotBetterLevel30Offer).
 		if (IsPlayerBotSpecialLevel30Weapon(offer))
-			return IsPlayerBotBetterLevel30Offer(ch, offer);
+			return IsPlayerBotBetterLevel30Offer(ch, offer) || IsPlayerBotMandatedLevel30Offer(ch, offer);
 		// And a refine scroll, for a weapon that is refined under one.
 		if (IsPlayerBotSafeRefineScroll(offer->GetVnum()) && PlayerBotNeedsScrollForWeapon(ch))
 			return true;
@@ -334,6 +334,22 @@ namespace
 					GetPlayerBotStrategicPurchaseCap(ch) >= (long long)GetPlayerBotWeaponGoalPrice(goal.family))
 				return true;
 		}
+		// The finished piece a market Perfectionist's anvil is waiting for
+		// (community patch 2, point 11).
+		if (IsPlayerBotPersonaEnabled())
+		{
+			TPlayerBotAIStateMap::const_iterator st = s_mapPlayerBotAIStates.find(ch->GetPlayerID());
+			if (st != s_mapPlayerBotAIStates.end() && st->second.persona.dwReadyGearWaitUntil != 0 &&
+					get_dword_time() < st->second.persona.dwReadyGearWaitUntil)
+				return true;
+		}
+		// The class's level-30 weapon, which a bot of thirty or more without one
+		// has to have (community patch 2, point 1), while a counter holds one
+		// and it can pay for it.
+		if (PlayerBotLacksClassLevel30Weapon(ch) && PlayerBotMarketHasClassLevel30Weapon(ch) &&
+				GetPlayerBotLevel30PurchaseCap(ch) >=
+					(long long)ScalePlayerBotIwakuraPrice(PLAYERBOT_LEVEL30_BASE_PRICE))
+			return true;
 		// And the level-30 weapon it would otherwise cross the world to farm -
 		// unless it is grinding one already, wears a finished one, no such
 		// weapon could beat what it has (PlayerBotCouldUseLevel30Weapon), or it
@@ -349,8 +365,21 @@ namespace
 		if (price > spare) return false;
 		if (IsPlayerBotProgressionOffer(ch, item)) {
 			const long long fair = GetPlayerBotShopAskingPrice(item);
+			// A book comes out of the visit's book purse (community patch 2,
+			// point 5), which counts what the visit has already spent on books.
+			if (item->GetType() == ITEM_SKILLBOOK)
+				return fair > 0 && price <= fair * 2 && price <= GetPlayerBotBookBudgetLeft(ch);
 			return fair > 0 && price <= fair * 2 && price <= spare * 30 / 100;
 		}
+		// The class's level-30 weapon has its own share (community patch 2,
+		// point 1): PLAYERBOT_LEVEL30_BUDGET_PERCENT for the purchase and the
+		// anvil together.
+		if (IsPlayerBotClassLevel30Weapon(ch, item))
+			return price <= GetPlayerBotLevel30PurchaseCap(ch);
+		// A finished piece the market Perfectionist came for is paid from the
+		// Perfectionist's share (community patch 2, point 11).
+		if (IsPlayerBotReadyGearOffer(ch, item))
+			return price <= spare * playerbot_persona::PERFECT_BUDGET_PERCENT / 100;
 		if (IsPlayerBotStrategicPurchase(item->GetVnum()) || IsPlayerBotStrategicWeaponOffer(ch, item))
 			return price <= GetPlayerBotStrategicPurchaseCap(ch);
 		const long long cap = (long long)GetPlayerBotMarketMedianWallet() * PLAYERBOT_MARKET_STACK_WALLET_PERCENT / 100;
@@ -500,6 +529,8 @@ namespace
 			return false;
 
 		const int goldBefore = ch->GetGold();
+		// Read before the purchase: a sold line's item is the buyer's after it.
+		const bool book = line.pkItem->GetType() == ITEM_SKILLBOOK;
 		ch->SetShopOwner(pick.keeper);
 		CShopManager::instance().Buy(ch, pick.bSlot);
 		// Leaving either of these set would point this bot at a character it is no
@@ -511,6 +542,8 @@ namespace
 			return false;
 
 		const int paid = goldBefore - ch->GetGold();
+		if (book)
+			NotePlayerBotBookBought(ch, paid);
 		// A sale is the one measurement of demand there is. The asking price on
 		// a counter is what a seller hoped for; this is what a buyer did.
 		// With the skill, so a book sale lands on its own market.
@@ -840,6 +873,38 @@ namespace
 		return it == s_mapMarketLedger.end() ? 0 : it->second.dwDemandBots;
 	}
 
+	// Community patch 2, point 1, measured with the ledger's report: of the
+	// bots of thirty and more that are not droppers, how many hold the class's
+	// level-30 weapon, at which plus, and how many do not have one at all.
+	void ReportPlayerBotLevel30Census()
+	{
+		unsigned int eligible = 0, lacking = 0, low = 0, mid = 0;
+		unsigned int auPlus[10] = { 0 };
+		for (TPlayerBotAIStateMap::const_iterator it = s_mapPlayerBotAIStates.begin();
+				it != s_mapPlayerBotAIStates.end(); ++it)
+		{
+			LPCHARACTER ch = CHARACTER_MANAGER::instance().FindByPID(it->first);
+			if (!ch || !ch->IsItemLoaded() || ch->GetLevel() < 30 ||
+					IsPlayerBotDropper(GetPlayerBotPersonalityByPID(it->first)))
+				continue;
+			++eligible;
+			LPITEM weapon = FindPlayerBotClassLevel30Weapon(ch);
+			if (!weapon)
+			{
+				++lacking;
+				continue;
+			}
+			const int plus = std::min(9, std::max(0, (int)weapon->GetRefineLevel()));
+			++auPlus[plus];
+			if (plus <= 3)
+				++low;
+			else if (plus <= 5)
+				++mid;
+		}
+		sys_log(0, "PLAYERBOT_MARKET: level-30 census eligible=%u lacking=%u plus0_3=%u plus4_5=%u plus6=%u plus7=%u plus8=%u plus9=%u",
+				eligible, lacking, low, mid, auPlus[6], auPlus[7], auPlus[8], auPlus[9]);
+	}
+
 	void RefreshPlayerBotMarketLedger(DWORD dwNow)
 	{
 		if (s_dwMarketLedgerTime != 0 &&
@@ -848,6 +913,8 @@ namespace
 		s_dwMarketLedgerTime = dwNow;
 		s_mapMarketLedger.clear();
 		s_mapMarketLocalSupply.clear();
+		s_iPlayerBotJunkWeaponsOnCounters = 0;
+		RefreshPlayerBotWorldYang(dwNow);
 
 		DWORD stalls = 0, lines = 0, demandBots = 0;
 		DWORD auStallsByReason[PLAYERBOT_SHOP_REASON_MAX] = { 0 };
@@ -878,6 +945,7 @@ namespace
 					if (!FindPlayerBotOfferItem(ch, offer))
 						continue;
 					AddPlayerBotMarketSupply(offer.dwVnum, offer.wCount, ch->GetMapIndex());
+					NotePlayerBotJunkWeaponOnCounter(offer.dwVnum, offer.wCount);
 					++lines;
 				}
 			}
@@ -936,9 +1004,10 @@ namespace
 				auStallsByReason[PLAYERBOT_SHOP_REASON_ROLL], auStallsByReason[PLAYERBOT_SHOP_REASON_SPARE],
 				auStallsByReason[PLAYERBOT_SHOP_REASON_HOARD]);
 		ReportPlayerBotWeaponGoals(dwNow);
-		sys_log(0, "PLAYERBOT_MARKET: ledger stalls=%u lines=%u vnums=%u demand_bots=%u wallet=%u decisions list=%u probe=%u no_demand=%u overstock=%u floor=%u top:%s",
+		ReportPlayerBotLevel30Census();
+		sys_log(0, "PLAYERBOT_MARKET: ledger stalls=%u lines=%u vnums=%u demand_bots=%u wallet=%u junk_weapons=%d/%d decisions list=%u probe=%u no_demand=%u overstock=%u floor=%u top:%s",
 				stalls, lines, (unsigned int)s_mapMarketLedger.size(), demandBots,
-				s_dwMarketMedianWallet,
+				s_dwMarketMedianWallet, s_iPlayerBotJunkWeaponsOnCounters, PLAYERBOT_JUNK_WEAPON_MARKET_CAP,
 				s_auMarketDecisions[PLAYERBOT_LIST_LIST], s_auMarketDecisions[PLAYERBOT_LIST_PROBE],
 				s_auMarketDecisions[PLAYERBOT_LIST_NO_DEMAND], s_auMarketDecisions[PLAYERBOT_LIST_OVERSTOCK],
 				s_auMarketDecisions[PLAYERBOT_LIST_FLOOR], top.c_str());
