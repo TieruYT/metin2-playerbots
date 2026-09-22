@@ -1,12 +1,12 @@
 {
   "schema": 1,
   "channel": "stable",
-  "publishedAt": "2026-09-22T22:18:40Z",
-  "statusMessage": "2.0.96 (serwer 2.0.96, klient 2.0.25 - zaktualizuj oba): Auto Lowy 2.0 od Colide'a - przelaczniki Moby/Metiny/Bossy, nastepny cel od razu po zabiciu, luk z daleka, zasieg na ziemi, ustawienia kazdej postaci osobno. Nowy wyglad launchera z tlem. Naprawione: szybkie podnoszenie i inne przyciski po teleporcie, boty w druzynie gracza trzymaja sie gracza (szaman buffuje), bot bez broni na 30 poziom nie krazy miedzy M2 i M3.",
+  "publishedAt": "2026-09-22T23:05:00Z",
+  "statusMessage": "2.0.97 (serwer 2.0.97, klient bez zmian - 2.0.25): boty odpisuja na priv - system rozmow od l0st3k (odpowiada tym, co bot naprawde robi, pamieta rozmowe, wie o swoim sklepie offline). Bot po smierci nie biegnie w sciane komnaty. Zawiera wszystko z 2.0.96: Auto Lowy 2.0, nowy launcher z tlem.",
   "server": {
-    "version": "2.0.96",
-    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.0.96/metin2-server-update-2.0.96.zip",
-    "sha256": "8E56F2E89A085297CA341664CCFDA1DF16A65DE428BE3367CC9C977D16B92BDA"
+    "version": "2.0.97",
+    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.0.97/metin2-server-update-2.0.97.zip",
+    "sha256": "F353A026D1F38518EBF948AB5A9815C74C338909D24E412BDF423408AADB3610"
   },
   "support": {
     "contactUrl": "https://discord.gg/pt5tvnrN6",
