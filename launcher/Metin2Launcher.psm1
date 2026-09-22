@@ -1182,7 +1182,7 @@ function New-M2SupportBundle {
                 if ($core -like 'ch2-*') { $coreDir = '/opt/metin2/var/channel2/' + $core.Substring(4) }
                 Invoke-M2CapturedCommand -OutputPath (Join-Path $work ('playerbot-syslog-' + $core + '.txt')) -Command {
                     docker compose --project-directory $composeDir -f $composeFile exec -T game sh -c `
-                        ('for f in ' + $coreDir + '/log/*/syslog.* ' + $coreDir + '/syslog; do [ -f $f ] && tail -n 400000 $f; done 2>/dev/null | grep -a -e PLAYERBOT_WORLD -e PLAYERBOT_PORTAL -e PLAYERBOT_NAV -e PLAYERBOT_WATCHDOG -e PLAYERBOT_GOAL -e PLAYERBOT_LOAD -e PLAYERBOT_SHOP -e PLAYERBOT_TOWN -e PLAYERBOT_DEPARTURE -e PLAYERBOT_HORSE -e PLAYERBOT_MONKEY -e PLAYERBOT_AUTH -e PLAYERBOT_CHANNEL -e PLAYERBOT_SERVICE -e PLAYERBOT_CONFIG -e PLAYERBOT_EVENT -e PLAYERBOT_LIFE -e PLAYERBOT_CHEST -e PLAYERBOT_COMBAT -e PLAYERBOT_STOCK -e PLAYERBOT_GUILD -e PLAYERBOT_TOWER -e PLAYERBOT_ISHOP -e PLAYERBOT_OFFLINE -e PLAYERBOT_MARKET -e PLAYERBOT_BAG -e INVENTORY_ARRANGE -e PLAYERBOT_AI -e PLAYERBOT_ECONOMY -e PLAYERBOT_PVP -e PLAYERBOT_LOOT -e PLAYERBOT_MOOD -e PLAYERBOT_PERSONA -e PLAYERBOT_ANTIPK -e PLAYERBOT_MERC -e PLAYERBOT_LPP -e PLAYERBOT_PARTY:.accepted -e PLAYERBOT_PARTY:.asked -e PLAYERBOT_LURE:.order -e PLAYERBOT_LURE:.pack.handed -e PLAYERBOT_LURE:.waiting -e QUEST_ITEM -e GMPANEL -e GM_PROFILE -e autospawn | tail -n 40000')
+                        ('for f in ' + $coreDir + '/log/*/syslog.* ' + $coreDir + '/syslog; do [ -f $f ] && tail -n 400000 $f; done 2>/dev/null | grep -a -e PLAYERBOT_WORLD -e PLAYERBOT_PORTAL -e PLAYERBOT_NAV -e PLAYERBOT_WATCHDOG -e PLAYERBOT_GOAL -e PLAYERBOT_LOAD -e PLAYERBOT_SHOP -e PLAYERBOT_TOWN -e PLAYERBOT_DEPARTURE -e PLAYERBOT_HORSE -e PLAYERBOT_MONKEY -e PLAYERBOT_AUTH -e PLAYERBOT_CHANNEL -e PLAYERBOT_SERVICE -e PLAYERBOT_CONFIG -e PLAYERBOT_EVENT -e PLAYERBOT_LIFE -e PLAYERBOT_CHEST -e PLAYERBOT_COMBAT -e PLAYERBOT_STOCK -e PLAYERBOT_GUILD -e PLAYERBOT_TOWER -e PLAYERBOT_ISHOP -e PLAYERBOT_OFFLINE -e PLAYERBOT_MARKET -e PLAYERBOT_BAG -e INVENTORY_ARRANGE -e PLAYERBOT_AI -e PLAYERBOT_ECONOMY -e PLAYERBOT_PVP -e PLAYERBOT_LOOT -e PLAYERBOT_MOOD -e PLAYERBOT_PERSONA -e PLAYERBOT_ANTIPK -e PLAYERBOT_MERC -e PLAYERBOT_LPP -e PLAYERBOT_BONUS -e PLAYERBOT_PARTY:.accepted -e PLAYERBOT_PARTY:.asked -e PLAYERBOT_LURE:.order -e PLAYERBOT_LURE:.pack.handed -e PLAYERBOT_LURE:.waiting -e QUEST_ITEM -e GMPANEL -e GM_PROFILE -e autospawn | tail -n 40000')
                 }
                 Invoke-M2CapturedCommand -OutputPath (Join-Path $work ('syserr-' + $core + '.txt')) -Command {
                     docker compose --project-directory $composeDir -f $composeFile exec -T game sh -c `
@@ -1667,14 +1667,32 @@ function Get-M2VolumeWorldStats {
 }
 
 function Export-M2Database {
-    param([string]$Container, [string]$Database, [string]$OutFile)
+    # -Force dumps past a table mariadb-dump cannot read (a crashed MyISAM
+    # table of the log database, typically) and still says so in its exit
+    # code; the caller decides what that is worth. What the dump said on
+    # stderr goes into the error, because "the dump failed" alone is what a
+    # player sent us on 20 September and nobody could tell which table.
+    param([string]$Container, [string]$Database, [string]$OutFile, [switch]$Force)
     $previous = $ErrorActionPreference; $ErrorActionPreference = 'Continue'
+    $errFile = "$OutFile.err"
     try {
-        $line = "docker exec $Container mariadb-dump -uroot --single-transaction --no-tablespaces --skip-lock-tables $Database > `"$OutFile`""
-        & cmd.exe /c $line 2>$null
-        if ($LASTEXITCODE -ne 0 -or -not (Test-Path -LiteralPath $OutFile)) { throw "Zrzut bazy '$Database' nie powiódł się." }
+        $extra = if ($Force) { ' --force' } else { '' }
+        $line = "docker exec $Container mariadb-dump -uroot --single-transaction --no-tablespaces --skip-lock-tables$extra $Database > `"$OutFile`" 2> `"$errFile`""
+        & cmd.exe /c $line
+        $code = $LASTEXITCODE
+        if ($code -ne 0 -or -not (Test-Path -LiteralPath $OutFile)) {
+            $why = ''
+            if (Test-Path -LiteralPath $errFile) {
+                $why = ((Get-Content -LiteralPath $errFile -ErrorAction SilentlyContinue | Select-Object -First 3) -join ' ').Trim()
+            }
+            if ($why) { throw "Zrzut bazy '$Database' nie powiódł się: $why" }
+            throw "Zrzut bazy '$Database' nie powiódł się."
+        }
     }
-    finally { $ErrorActionPreference = $previous }
+    finally {
+        if (Test-Path -LiteralPath $errFile) { Remove-Item -LiteralPath $errFile -Force -ErrorAction SilentlyContinue }
+        $ErrorActionPreference = $previous
+    }
 }
 
 function Invoke-M2SqlFile {
@@ -1864,13 +1882,39 @@ function New-M2DatabaseBackup {
         New-Item -ItemType Directory -Path $dir -Force | Out-Null
         $container = Start-M2ThrowawayDb -Volume $Volume
         $sizes = @()
+        $skipped = @()
         foreach ($db in $script:M2_DB_LIST) {
             # See the note in Invoke-M2DatabaseImport: no double quote inside a
             # command handed to docker from PowerShell.
             $exists = & docker exec $container mariadb -uroot -N -B -e "SHOW DATABASES LIKE '$db'" 2>$null
             if (-not $exists) { continue }
             $out = Join-Path $dir "$db.sql"
-            Export-M2Database -Container $container -Database $db -OutFile $out
+            try {
+                Export-M2Database -Container $container -Database $db -OutFile $out
+            }
+            catch {
+                # The log database is history only - nothing in the game reads
+                # it - and it is where a crashed MyISAM table lives: 22 million
+                # rows of log.log, killed with the engine. Its dump failing used
+                # to fail the whole backup, and the world reset behind it
+                # ("Zrzut bazy 'log' nie powiodl sie", uxietoszef, 20 September).
+                # It is dumped again past the unreadable tables, and if even that
+                # fails the backup goes on without it and says so. Any other
+                # database is the world itself and still stops the backup.
+                if ($db -ne 'log') { throw }
+                $first = $_.Exception.Message
+                try {
+                    Export-M2Database -Container $container -Database $db -OutFile $out -Force
+                    Write-Host "UWAGA: zrzut bazy 'log' wymagal pominiecia uszkodzonych tabel ($first)."
+                    $skipped += "log (czesciowo: $first)"
+                }
+                catch {
+                    if (Test-Path -LiteralPath $out) { Remove-Item -LiteralPath $out -Force -ErrorAction SilentlyContinue }
+                    Write-Host "UWAGA: pomijam baze 'log' w kopii - to tylko historia, gra jej nie czyta ($first)."
+                    $skipped += "log (pominieta: $first)"
+                    continue
+                }
+            }
             $sizes += [pscustomobject]@{ Name = $db; Bytes = (Get-Item -LiteralPath $out).Length }
         }
         if ($sizes.Count -eq 0) { throw 'Nie znaleziono zadnej bazy gry do zapisania.' }
@@ -1894,6 +1938,9 @@ function New-M2DatabaseBackup {
         [void]$readme.AppendLine('Zawartosc (zrzuty mariadb-dump, latin1 jak w grze):')
         foreach ($s in $sizes) {
             [void]$readme.AppendLine(('  {0,-12} {1,12:N0} B' -f ($s.Name + '.sql'), $s.Bytes))
+        }
+        foreach ($k in $skipped) {
+            [void]$readme.AppendLine("  UWAGA: $k")
         }
         [void]$readme.AppendLine('')
         [void]$readme.AppendLine('Przywrocenie: launcher -> PRZYWROC KOPIE, i wskaz ten folder albo zip.')
