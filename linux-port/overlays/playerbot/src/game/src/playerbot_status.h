@@ -596,6 +596,13 @@ namespace
 				else if (IsPlayerBotOnBattleHorseTrial(ch))
 					snprintf(status, statusSize, "%sZdobywam konia bojowego na pustyni (%d/%d)", prefix,
 							GetPlayerBotBattleHorseKills(ch), PLAYERBOT_BATTLE_HORSE_KILLS);
+				// M3 is the level-30 weapon's farm, whatever the planner's goal:
+				// a bot walking between its hubs read "Zbieram dla Biologa: Zab
+				// Orka" there, and the Orc Tooth is not on the guild map
+				// (Champion of urtopy's world, 21 September).
+				else if (IsPlayerBotM3Map(ch->GetMapIndex()) &&
+						(IsPlayerBotM3DropperOnFarm(ch) || !HasPlayerBotSpecialLevel30Weapon(ch, true)))
+					snprintf(status, statusSize, "%sSzukam broni na 30 poziom na M3", prefix);
 				// Only a medal the bot can hand in. A horse at ten waits for
 				// level thirty-five, a medal dropper carries them for its
 				// counter, and both used to announce the stable keeper on every

@@ -1539,6 +1539,11 @@ namespace
 	// party pass's ten seconds, because following at ten-second granularity is
 	// a bot that is always a screen behind.
 	const int PLAYERBOT_PARTY_FOLLOW_DISTANCE = 1500;
+	// How far from the person a bot in a person's party may pick its monsters
+	// (IsPlayerBotTargetOffHumanLeader): the search reaches
+	// PLAYERBOT_SEARCH_RANGE from the bot itself, and a bot that always had its
+	// next monster in reach never stood idle long enough to be walked back.
+	const int PLAYERBOT_PARTY_HUMAN_HUNT_RANGE = 2500;
 	const DWORD PLAYERBOT_PARTY_FOLLOW_INTERVAL = 2000;
 	// A bot that could not follow its player onto another map tries again this
 	// much later; TransitionPlayerBotMap already says why, once a minute.
@@ -4038,6 +4043,15 @@ namespace
 	const int PLAYERBOT_HORSE_EXPEDITION_NO_COMBAT_HORSE_MULT = 2;
 	const int PLAYERBOT_HORSE_EXPEDITION_MAX_CHANCE = 70;
 	const DWORD PLAYERBOT_M3_MAX_VISIT_TIME = 1200000;
+	// A visit that ran out without the weapon is followed by this long away
+	// from M3, drawn by pid, before the door opens again. The exit sent the bot
+	// to M2 and the M2 branch sent it straight back ("m3_visit_complete" and
+	// "level30_weapon_to_m3" two seconds apart, Champion of urtopy's world, 21
+	// September), so a bot short of the weapon never reached the valley for its
+	// Biologist row or the Monkey Dungeon for its horse, and its status read
+	// the planner's goal over a bot farming something else.
+	const DWORD PLAYERBOT_M3_REVISIT_WAIT_MIN_MS = 45 * 60 * 1000;
+	const DWORD PLAYERBOT_M3_REVISIT_WAIT_MAX_MS = 90 * 60 * 1000;
 	const DWORD PLAYERBOT_MONKEY_REVERSE_PORTAL_BLOCK_TIME = 10000;
 	// The third hand. Worn in a unique slot it makes CHARACTER::RewardGold hand
 	// a kill's yang straight to the killer instead of scattering coin piles on
@@ -5829,6 +5843,7 @@ namespace
 			dwNextRemoteRefineReturnTime(0),
 			dwDungeonEnteredTime(0),
 			dwM3EnteredTime(0),
+			dwM3RevisitAfter(0),
 			dwFrontierEnteredTime(0),
 			dwShopOpenedTime(0),
 			dwShopCloseTime(0),
@@ -6108,6 +6123,9 @@ namespace
 		DWORD dwNextRemoteRefineReturnTime;
 		DWORD dwDungeonEnteredTime;
 		DWORD dwM3EnteredTime;
+		// When the M3 door opens again after a visit that ran out without the
+		// weapon (PLAYERBOT_M3_REVISIT_WAIT_MIN_MS).
+		DWORD dwM3RevisitAfter;
 		DWORD dwFrontierEnteredTime;
 		DWORD dwShopOpenedTime;
 		DWORD dwShopCloseTime;

@@ -1481,7 +1481,11 @@ namespace
 		const bool needsEssentialWeaponSupply = ch->IsItemLoaded() &&
 				(ch->GetWear(WEAR_WEAPON) == NULL || NeedsPlayerBotArrows(ch));
 		const bool m2LevelingCohort = IsPlayerBotM2LevelingCohort(ch);
-		const bool wantsM3 = ShouldPlayerBotVisitM3(ch);
+		// The door waits after a visit that ran out without the weapon
+		// (PLAYERBOT_M3_REVISIT_WAIT_MIN_MS); the M3 dropper lives there.
+		const bool wantsM3 = ShouldPlayerBotVisitM3(ch) &&
+				(IsPlayerBotM3DropperOnFarm(ch) || (int)(dwNow - state.dwM3RevisitAfter) >= 0 ||
+				 state.dwM3RevisitAfter == 0);
 		const bool needsCriticalTownServices = NeedsPlayerBotCriticalTownServices(ch);
 		const bool needsM1OnlyServices = NeedsPlayerBotM1OnlyServices(ch, state, dwNow);
 		// M2 has its own blacksmith. Only the remote M3 farm needs to schedule a
@@ -1933,6 +1937,19 @@ namespace
 				reason = "m3_scheduled_refine_to_m2";
 			else if (visitExpired)
 				reason = "m3_visit_complete";
+			// A visit that ran out without the weapon closes the door for a
+			// while, so the M2 branch gives the valley, the horse and the river
+			// their turn instead of sending the bot straight back here.
+			if (visitExpired && !weaponFound && !IsPlayerBotM3DropperOnFarm(ch) &&
+					(state.dwM3RevisitAfter == 0 || (int)(dwNow - state.dwM3RevisitAfter) >= 0))
+			{
+				state.dwM3RevisitAfter = dwNow + PLAYERBOT_M3_REVISIT_WAIT_MIN_MS +
+						PlayerBotNavHash(ch->GetPlayerID() ^ 0x4d335257U) %
+						(PLAYERBOT_M3_REVISIT_WAIT_MAX_MS - PLAYERBOT_M3_REVISIT_WAIT_MIN_MS);
+				sys_log(0, "PLAYERBOT_WORLD: m3 visit ran out without the weapon pid=%u name=%s level=%u back_in_min=%u",
+						ch->GetPlayerID(), ch->GetName(), (unsigned int)ch->GetLevel(),
+						(unsigned int)((state.dwM3RevisitAfter - dwNow) / 60000));
+			}
 			long gateX = 0, gateY = 0, destMap = 0, destX = 0, destY = 0;
 			if (!GetPlayerBotKingdomLeg(ch, playerbot_empire_rules::MAP_ROLE_M3,
 						playerbot_empire_rules::MAP_ROLE_M2, gateX, gateY, destMap, destX, destY))

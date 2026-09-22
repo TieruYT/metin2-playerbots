@@ -1219,6 +1219,29 @@ namespace
 		return true;
 	}
 
+	// A bot in a person's party hunts round the person, not round itself. The
+	// target search reaches PLAYERBOT_SEARCH_RANGE from the bot, and the follow
+	// pass above only walks a bot that is not fighting - so a bot that always
+	// found its next monster within six kilometres of itself was never idle,
+	// drifted off pack by pack and never came back: "Boty szaman, po dodaniu
+	// ich do party, nadal robia swoje, nie ida za wlascicielem party"
+	// (SIZOWSKI, 20 September), and a Shaman that far off buffs nobody. A
+	// monster further than PLAYERBOT_PARTY_HUMAN_HUNT_RANGE from the person is
+	// no target for such a bot, unless it is hitting this bot - defence is
+	// never refused - and with nothing to fight the follow pass walks it back.
+	bool IsPlayerBotTargetOffHumanLeader(LPCHARACTER ch, LPCHARACTER target)
+	{
+		if (!ch || !target || !ch->GetParty() || !IsPlayerBotHumanLedParty(ch->GetParty()))
+			return false;
+		if (target->GetVictim() == ch)
+			return false;
+		LPCHARACTER leader = ch->GetParty()->GetLeaderCharacter();
+		if (!leader || leader == ch || leader->IsDead() || leader->GetMapIndex() != ch->GetMapIndex())
+			return false;
+		return DISTANCE_APPROX(target->GetX() - leader->GetX(), target->GetY() - leader->GetY()) >
+				PLAYERBOT_PARTY_HUMAN_HUNT_RANGE;
+	}
+
 	// A Shaman in a player's party keeps the player's buffs up, as a Shaman in
 	// a party of people would. CHARACTER::UseSkill hands a buff that is not
 	// SELFONLY to ComputeSkill on the character it is aimed at, and the affect
@@ -5242,6 +5265,8 @@ void CPlayerBotManager::Update()
 			// errand that justified this fight may have finished since it began.
 			(bTargetIsMonster && !IsPlayerBotHeldTargetStillWorth(ch, target, state, dwNow)) ||
 			!bPartyCanContinue ||
+			// In a person's party, round the person (IsPlayerBotTargetOffHumanLeader).
+			(!bTargetIsDuelFoe && IsPlayerBotTargetOffHumanLeader(ch, target)) ||
 			IsPlayerBotSafeZone(ch->GetMapIndex(), target ? target->GetX() : ch->GetX(),
 					target ? target->GetY() : ch->GetY()) ||
 			target->GetMapIndex() != ch->GetMapIndex() ||
@@ -5262,6 +5287,9 @@ void CPlayerBotManager::Update()
 					target = NULL;
 				if (!target)
 					target = FindDistributedTarget(ch, state, dwNow);
+				// Found round the bot; kept only if it is round the person too.
+				if (target && IsPlayerBotTargetOffHumanLeader(ch, target))
+					target = NULL;
 				if (!target)
 					++s_uPlayerBotLoadTargetMisses;
 			}
