@@ -1352,6 +1352,14 @@ def persist_rates_mt2009(values):
             for flag in flags:
                 cursor.execute("REPLACE INTO player.quest (dwPID, szName, szState, lValue) VALUES (0, %s, '', %s)",
                                (flag, int(values[name])))
+            # While a timed event runs, its base flag is the operator's
+            # setting and the core keeps the live flag at the boost of it
+            # (playerbot_events.h): a new setting goes to the base as well, or
+            # the event put the old boost back and its end the old number.
+            kind = MT2009_RATE_EVENT_KIND[name]
+            for base_flag in ("m2_event_%s_base" % kind, "m2_event_%s_base_buyer" % kind):
+                cursor.execute("UPDATE player.quest SET lValue=%s WHERE dwPID=0 AND szName=%s AND lValue>0",
+                               (int(values[name]), base_flag))
         # The classic panel's table too, so both pages show the same numbers.
         try:
             for name in RATE_NAMES:

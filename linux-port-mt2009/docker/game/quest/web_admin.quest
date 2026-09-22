@@ -473,6 +473,22 @@ quest web_admin begin
 								game.set_event_flag("mob_item_buyer", rdrop)
 								game.set_event_flag("mob_gold", ryang)
 								game.set_event_flag("mob_gold_buyer", ryang)
+								-- While a timed event runs its base flag holds the
+								-- setting and the core keeps the live flag at the
+								-- boost of it (playerbot_events.h); a new setting
+								-- goes to the base too, or the core put the old
+								-- boost straight back over it.
+								local rbases = {
+									{"m2_event_exp_base", rexp}, {"m2_event_exp_base_buyer", rexp},
+									{"m2_event_drop_base", rdrop}, {"m2_event_drop_base_buyer", rdrop},
+									{"m2_event_yang_base", ryang}, {"m2_event_yang_base_buyer", ryang},
+								}
+								local rb
+								for rb = 1, table.getn(rbases) do
+									if game.get_event_flag(rbases[rb][1]) > 0 then
+										game.set_event_flag(rbases[rb][1], rbases[rb][2])
+									end
+								end
 							end
 							-- Out of pending in one statement, like the sweep: a
 							-- second core doing the same changes nothing.

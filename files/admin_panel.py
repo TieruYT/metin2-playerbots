@@ -1121,6 +1121,9 @@ def read_ai_weights():
     vals["TOWER"] = 1
     # The bots' ItemShop purchases (playerbot_itemshop.h). On.
     vals["ISHOP"] = 1
+    # Whether a bot's stand may stand in a second village too. Off: the stands
+    # belong in the first villages (Iwakura's idea, 22 September).
+    vals["SHOP_M2"] = 0
     # Iwakura's personalities and moods (playerbot_persona.h). On: the operator
     # asked for them (19 September); off is the world as it was before.
     vals["PERSONA"] = 1
@@ -1161,11 +1164,15 @@ def read_ai_weights():
                     continue
                 if name == "WARS":
                     vals["WARS"] = 0 if parts[1].strip() in ("0", "off", "no") else 1
+                    continue
                 if name == "TOWER":
                     vals["TOWER"] = 0 if parts[1].strip() in ("0", "off", "no") else 1
                     continue
                 if name == "ISHOP":
                     vals["ISHOP"] = 0 if parts[1].strip() in ("0", "off", "no") else 1
+                    continue
+                if name == "SHOP_M2":
+                    vals["SHOP_M2"] = 0 if parts[1].strip() in ("0", "off", "no") else 1
                     continue
                 if name == "PERSONA":
                     vals["PERSONA"] = 0 if parts[1].strip() in ("0", "off", "no") else 1
@@ -1240,6 +1247,8 @@ def write_ai_weights(vals):
     body.append("TOWER\t%d" % (1 if vals.get("TOWER", 1) else 0))
     # Not a weight: whether the bots cash their vouchers and buy in the ItemShop.
     body.append("ISHOP\t%d" % (1 if vals.get("ISHOP", 1) else 0))
+    # Not a weight: whether a bot's stand may stand in a second village too.
+    body.append("SHOP_M2\t%d" % (1 if vals.get("SHOP_M2", 0) else 0))
     # Not a weight: Iwakura's personalities, moods and the Grinder's locks.
     body.append("PERSONA\t%d" % (1 if vals.get("PERSONA", 1) else 0))
     # Percent of stall keepers that sell scrap gear; 0 is off.
@@ -3514,6 +3523,12 @@ T.update({
                   "de":"Ein Bot löst die gefundenen Kupon-SM-Gutscheine (Metinsteine und Bosse lassen sie fallen, M2_DRAGON_COIN_*_PERMILLE) in Drachenmünzen seines Kontos ein und kauft höchstens einmal pro Stunde nur, was seine eigenen Regeln nutzen: einen Kamień Duchowy für eine Großmeister-Fertigkeit, einen Bonus-Wechselstein für die getragene Waffe, wenn sie noch neu gewürfelt würde, mit Drachenmarken eine Segensrolle oder die Angriffstränke des Drachengottes, und jeder vierte Bot einmal eine Frisur. Keine VIP-Gegenstände und kein Pass: jeder Bot hat das Premium-Abo bereits. Aus: die Gutscheine bleiben im Inventar.",
                   "tr":"Bot bulduğu Kupon SM kuponlarını (Metin taşları ve boss'lar düşürür, M2_DRAGON_COIN_*_PERMILLE) hesabının Ejderha Parasına çevirir ve saatte en fazla bir kez, yalnızca kendi kurallarının kullanacağı şeyi alır: Büyük Usta becerisi için Kamień Duchowy, hâlâ yeniden atılmaya değer takılı silah için bonus değiştirme taşı, Ejderha İşaretleriyle Kutsama Parşömeni ya da Ejderha Tanrısı saldırı iksirleri ve dört bottan biri bir kez bir saç modeli. VIP eşya ve geçiş kartı yok: her bot zaten premium aboneliğe sahip. Kapalı: kuponlar çantada kalır."},
  "ai_ishop_on":  {"en":"Enabled","pl":"Włączone","de":"Eingeschaltet","tr":"Açık"},
+ "ai_shop_m2":   {"en":"Bot stands in the second villages","pl":"Sklepy botów także w drugich wioskach (M2)","de":"Bot-Stände auch in den zweiten Dörfern (M2)","tr":"Bot tezgahları ikinci köylerde de (M2)"},
+ "ai_shop_m2_help": {"en":"Off (the default): a bot opens its stand only in the first villages, where the players shop; an expired stand that stood in a second village is renewed on the first village's market ring at its owner's next service visit. On: the stands stand in both villages, as before.",
+                  "pl":"Wyłączone (domyślnie): bot otwiera sklep tylko w pierwszych wioskach, tam gdzie kupują gracze; sklep, który stał w drugiej wiosce, po wygaśnięciu zostaje odnowiony na rynku pierwszej wioski przy najbliższej wizycie właściciela. Włączone: sklepy stoją w obu wioskach, jak wcześniej.",
+                  "de":"Aus (Standard): ein Bot eröffnet seinen Stand nur in den ersten Dörfern, wo die Spieler einkaufen; ein abgelaufener Stand aus einem zweiten Dorf wird beim nächsten Besuch seines Besitzers auf dem Marktring des ersten Dorfes erneuert. An: die Stände stehen in beiden Dörfern, wie bisher.",
+                  "tr":"Kapalı (varsayılan): bot tezgahını yalnızca oyuncuların alışveriş yaptığı ilk köylerde açar; ikinci köyde duran ve süresi dolan tezgah, sahibinin bir sonraki ziyaretinde ilk köyün pazar halkasında yenilenir. Açık: tezgahlar eskisi gibi iki köyde de durur."},
+ "ai_shop_m2_on": {"en":"Allowed","pl":"Dozwolone","de":"Erlaubt","tr":"İzin verildi"},
  "ai_persona":   {"en":"Bot personalities (Iwakura v2)","pl":"Osobowości botów (Iwakura v2)","de":"Bot-Persönlichkeiten (Iwakura v2)","tr":"Bot kişilikleri (Iwakura v2)"},
  "ai_persona_help": {"en":"Iwakura's personality system. A bot's personality follows its situation (Grinder, Conqueror, Trader, Gambler, Perfectionist, Metin slayer, Miner, Fisherman, Mercenary, Companion) and it has a mood (poor, normal, very good) shown on its card. A Grinder holds its level at its tier (15, 23, 30-35, 40-48, 55-62) until it wears a weapon +7, an armour +6 and a shield +6 for its level, and only then may level on as a Conqueror. A bot in a poor mood pauses between packs and goes AFK now and then; only such bots rest in town. Off: the bots play as they did before, with their old personalities.",
                   "pl":"System osobowości Iwakury. Osobowość bota wynika z jego sytuacji (Grinder, Zdobywca, Handlarz, Hazardzista, Perfekcjonista, Pogromca metinów, Górnik, Rybak, Najemnik, Towarzysz), a bot ma nastrój (słaby, normalny, bardzo dobry) widoczny na jego karcie. Grinder trzyma poziom swojego tieru (15, 23, 30-35, 40-48, 55-62), dopóki nie założy broni +7, zbroi +6 i tarczy +6 na swój poziom - dopiero wtedy może dalej expić jako Zdobywca. Bot w słabym nastroju robi przerwy między grupami mobów i co jakiś czas odchodzi od komputera; tylko takie boty odpoczywają w mieście. Wyłączone: boty grają jak wcześniej, ze starymi osobowościami.",
@@ -4224,11 +4239,21 @@ RATES_LIVE_WAIT = 12.0     # the helper's server timer ticks every 5 s
 GM_RELOAD_WAIT = 8.0       # a player timer ticks every 3 s
 
 def persist_rates_mt2009(cur, vals):
-    """The six event-flag rows the db core reads at its next start."""
+    """The six event-flag rows the db core reads at its next start.
+
+    While a timed event runs, the operator's setting lives in the event's base
+    flag and the live flag carries the boost of it (playerbot_events.h holds it
+    there), so a save then writes the base as well: the core puts the boost
+    back on top of the new number within a second, and the event's end returns
+    to it. Writing only the live flag, as this did, was undone by the page
+    itself - it reads the base first - and by the event's end."""
     for name, flags in MT2009_RATE_FLAGS.items():
         for flag in flags:
             cur.execute("REPLACE INTO player.quest (dwPID, szName, szState, lValue) "
                         "VALUES (0, %s, '', %s)", (flag, int(vals[name])))
+        for base_flag in MT2009_RATE_BASE_FLAGS[name]:
+            cur.execute("UPDATE player.quest SET lValue=%s WHERE dwPID=0 AND szName=%s AND lValue>0",
+                        (int(vals[name]), base_flag))
 
 def gm_reload_mt2009():
     """Ask an online IMPLEMENTOR to run /reload a for us. True when one did.
@@ -5736,6 +5761,11 @@ TPL_AI = BASE.replace("__BODY__", """
   <h3 style="margin:0 0 2px">🛒 {{t('ai_ishop')}}</h3>
   <p class="muted" style="margin:0 0 6px">{{t('ai_ishop_help')}}</p>
   <label><input type="checkbox" name="ISHOP" value="1" {% if cur.get('ISHOP', 1) %}checked{% endif %}> {{t('ai_ishop_on')}}</label>
+</div>
+<div style="margin-bottom:18px">
+  <h3 style="margin:0 0 2px">🏪 {{t('ai_shop_m2')}}</h3>
+  <p class="muted" style="margin:0 0 6px">{{t('ai_shop_m2_help')}}</p>
+  <label><input type="checkbox" name="SHOP_M2" value="1" {% if cur.get('SHOP_M2', 0) %}checked{% endif %}> {{t('ai_shop_m2_on')}}</label>
 </div>
 <div style="margin-bottom:18px">
   <h3 style="margin:0 0 2px">♻️ {{t('ai_scrap')}}
@@ -13343,6 +13373,7 @@ def ai_weights():
         vals["WARS"] = 1 if request.form.get("WARS") else 0
         vals["TOWER"] = 1 if request.form.get("TOWER") else 0
         vals["ISHOP"] = 1 if request.form.get("ISHOP") else 0
+        vals["SHOP_M2"] = 1 if request.form.get("SHOP_M2") else 0
         vals["PERSONA"] = 1 if request.form.get("PERSONA") else 0
         try:
             vals["SCRAP"] = max(0, min(100, int(request.form.get("SCRAP", 0))))
