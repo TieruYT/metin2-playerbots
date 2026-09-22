@@ -7260,6 +7260,96 @@ not in `data/`) reworked these point by point. What each hangs on:
   nobody else ("ustawilem 200%, a liczba rybakow nie rosnie", blasty). A
   frontier bot whose roll says fish (`IsPlayerBotRybakNow`) goes home to the
   bank now; a trial and a party are not interrupted for it.
+- **The client's clock starts again at every warp.** `app.GetTime()` is
+  `CTimer`'s, and `CTimer::SetBaseTime()` runs in the handshake of every
+  connection (`PythonNetworkStreamPhaseHandShake.cpp`), which is every
+  teleport. A "next allowed moment" taken on the map before is therefore far
+  in the future on the next one: the quick pickup (`) waited as long as the
+  character had played before the warp, so it "worked only in M1"
+  (GorącyDelfin, 22 September). `client-root/clientclock.py` is a clock that
+  only goes forward (an offset added whenever `app.GetTime()` jumps back), and
+  every hand-written module that keeps a time asks it: pickupnearby,
+  inventoryarrange, safeboxtransfer, autostackpump, shoppricepump,
+  playerbot_status_tail and uiautohunt. `app` is imported inside `Now()`, so a
+  test's stub module can be put in place after the import. A new module that
+  waits for anything must use it too.
+- **A bot in a person's party hunts round the person.** The target search
+  reaches `PLAYERBOT_SEARCH_RANGE` (6000) from the bot and
+  `ManagePlayerBotFollowHumanLeader` walks only a bot with nothing to do, so a
+  bot that always found its next pack was never idle and drifted off for
+  good - SIZOWSKI's Shamans that buffed nobody. `IsPlayerBotTargetOffHumanLeader`
+  refuses a monster further than `PLAYERBOT_PARTY_HUMAN_HUNT_RANGE` (2500)
+  from the leader, both for the held target and for a new one, unless it is
+  hitting the bot. Not watched with a person in a party; the test world has
+  none.
+- **An M3 visit that runs out without the weapon closes M3's door for 45-90
+  minutes.** The exit sent a bot to M2 and the M2 branch's `wantsM3` sent it
+  straight back ("m3_visit_complete" and "level30_weapon_to_m3" two seconds
+  apart, Champion on urtopy's world), so its other errands never ran and its
+  status read the planner's goal. `TPlayerBotAIState::dwM3RevisitAfter`
+  (`PLAYERBOT_M3_REVISIT_WAIT_*`, drawn by pid) is set on such an exit and
+  read by `wantsM3`; the M3 dropper is exempt, because M3 is where it lives.
+  `PLAYERBOT_WORLD: m3 visit ran out without the weapon ... back_in_min=`.
+- **Auto Lowy 2.0 is Colide's (22 September), with our fixes put back.** His
+  window replaced ours; `scratchpad` merge of session 82d3ab90 re-applied what
+  his copy of an older file had lost: the config migration from every older
+  format, mana potions by the item table, the revive share capped at 100, the
+  clock above, and a missing potion or item looked for once an interval
+  instead of on every frame (four pages of cells). New in his protocol:
+  `/autohunt_target <range> <stones> <dx> <dy> <mobs> <bosses> [<skip>]` -
+  the server takes the categories only when a sixth field is there, so an old
+  client's skip VID in the fifth is never read as a switch
+  (`apply_auto_hunt_categories`); a boss is `MOB_RANK_BOSS` and up and goes
+  before a stone only when the window asked for bosses. Three client
+  functions (`clientify apply_auto_hunt_circle`): `player.IsBowEquipped`
+  (`IsBowMode` of the main instance - reach 2400 against 200),
+  `player.IsTargetDead` (the corpse is dropped and skipped for five seconds),
+  `player.SetAutoHuntRangeCircle(range[, x, y, anchored])` (a 120-segment
+  circle on the terrain, drawn after the characters, render states saved and
+  restored). The script asks for each with `hasattr` or under
+  `AttributeError`, and without `IsBowEquipped` falls back to the race and
+  skill group, so a root on an older exe still hunts. Two of his decisions
+  that look like bugs and are not: an "AutoHuntTarget 0" answer keeps the
+  target in hand, and a new target is refused while the one in hand is being
+  walked to beyond reach+200 - switching on every answer is what turned the
+  hunter back and forth. And the target is marked on one pass and the attack
+  key pressed on the next (`GetTargetVID` equal to the target), which the
+  tests step twice for. Settings: `autohunt/config.cfg` (window positions,
+  saved on "Zapisz"), `autohunt/postacie/<name>.cfg` per character, and
+  `autohunt/<name>.cfg` (2.0.17-2.0.24) or `autohunt_<name>.cfg` read until
+  the first save. `tests/uiautohunt_test.py`, 59 tests on 2.7 and 3.
+- **The launcher's window is a layout file over the old controls.**
+  `Metin2-Launcher-GUI.Layout.ps1` (22 September, prepared outside this
+  repository as a UI test and brought in here) is dot-sourced by the GUI
+  after every Click handler and before the timers. It builds no action of its
+  own - it moves the existing controls into a menu of five pages - so the
+  handlers and `Start-LauncherAction`'s guard are untouched; the one new
+  button opens the classic panel's `/rates`. The background
+  (`Metin2-Launcher-GUI.Background.png`) is drawn by a panel compiled with
+  `Add-Type -TypeDefinition`, the first C# the launcher ever compiled: an
+  antivirus or a locked `%TEMP%` can refuse csc, so a refusal falls back to a
+  plain panel with the picture zoomed. Anything that fails after the form
+  was cleared (`$script:ui.Cleared`) writes `.m2launcher-classic-layout`
+  beside the launcher and stops with a message, and the next start opens the
+  plain window - a launcher that cannot open is a launcher that cannot
+  update. Without the layout file the plain window opens too, so a 1.x
+  package carrying the new GUI alone is harmless. Test it with
+  `powershell -STA -File Metin2-Launcher-GUI.ps1 -UiSelfTest -UiLanguage pl
+  -UiTestOutput <dir> -ServerRoot <an installation>`: the window is built off
+  screen, every page is drawn at three sizes into `<dir>`, and the process
+  ends before any timer, Docker question or action. The window is 1280 x 820
+  clamped to the primary screen's working area, and the pages scroll.
+- **"Bots never go back to town" is a question of the world's rates.**
+  SIZOWSKI (22 September) saw it on a world at ordinary rates with the four
+  inventory pages; on m2zip (yang 3000%) the same hour had 888-921 distinct
+  bots a core visiting a town merchant and some 4 000 market trips, almost
+  all of them ending `trip over reason=nothing_on_offer`. What sends a bot to
+  town is mostly the bag (`NeedsPlayerBotCriticalTownServices`' soft half at
+  45%, `IsPlayerBotBagFull` at 80%), both measured against the whole bag, so
+  the fourth page doubled the time between visits wherever drops are slow.
+  Not changed yet: measure on an ordinary-rate world before moving either
+  threshold, because on a fast one the visits are already constant.
+
 
 ## Engine facts worth not re-deriving
 
