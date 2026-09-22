@@ -17,6 +17,246 @@ every version here.
 
 ---
 
+## 2.0.95 — 2026-09-22
+
+Serwer 2.0.95, klient 2.0.24. Zawiera wszystko z 2.0.94. Większość tej wersji
+to **Community Patch 2 od Iwakury** — zmiany osobowości opisane niżej — oraz
+najpoważniejsze błędy z kanału „błędy i bugi".
+
+### Boty wracają z odpoczynku („Boty grają jak żywi ludzie")
+
+Zgłosił **Kuszaa**, z wykresem: po włączeniu przełącznika boty schodziły z
+serwera na odpoczynek i świat pustoszał, bo odpoczynek trwa kilka godzin, a
+sesja jedną–dwie. Rachunek dawał to samo co jego wykres — po kilku godzinach
+większość kohorty odpoczywała naraz. Teraz odpoczywa najwyżej **40% botów**
+jednocześnie; bot, którego sesja kończy się, gdy limit jest pełny, gra dalej
+jeszcze 10–40 minut. Spis w logu (`PLAYERBOT_LIFE: census`) podaje też
+`held_on=` i `cap=`.
+
+### Wojny gildii
+
+Zgłaszało wielu graczy, najdokładniej **prodnathin** (zrzuty z 21 i 22
+września) i **Dixdros**: boty na wojnie tylko rzucały umiejętności, nie biły
+zwykłym atakiem, stały w ścianach i uciekały z pola. Przyczyny były trzy:
+
+- **Zwykły atak bota działał tylko w pojedynku.** Wróg z wojny gildii i
+  gracz, z którym bot walczy w ramach Anti-PK, nie byli przeciwnikami w
+  pojedynku, więc bot bił ich samymi umiejętnościami, a między nimi stał.
+  Teraz zwykły atak dosięga wszystkich trzech; o tym, czy cios może paść,
+  nadal decyduje silnik.
+- **Pole bitwy nie miało granic.** Bot gonił wroga przez całą mapę gildii, w
+  tym w skały między polem a mostem. Teraz bot walczy tylko w promieniu 1800
+  jednostek od miejsca zbiórki; kto z niego wyjdzie, wraca, a wróg poza polem
+  nie jest celem.
+- **Przełącznik wojen w panelu klasycznym kłamał.** Po każdym odświeżeniu
+  strony pokazywał wojny jako włączone, a następny zapis dowolnej zmiany
+  włączał je z powrotem — więc wyłączenie wojen z panelu nigdy nie trzymało.
+
+### Sklepy offline: wygasłe sklepy i sklepy-widma
+
+Zgłosili **ElGrande** i **Iwakura**: sklep, który wygasł, nie dawał się otworzyć
+ponownie, a w M1 i M2 stały sklepy, w które nie dało się kliknąć. To jedna
+przyczyna: sklep offline liczy czas na dwóch zegarach — rdzenia gry i rdzenia
+bazy — a o wygaśnięciu decyduje ten drugi. Zegar obciążonego rdzenia gry
+chodzi szybciej (zmierzyliśmy 26,6 taktu na sekundę zamiast 25), więc sklep
+dochodził u niego do zera wcześniej. Przez ten czas stał na mapie, ale kliknięcie
+nic nie robiło, a odnowienie — już po pobraniu opłaty — rdzeń bazy odrzucał bez
+słowa. Na naszym świecie testowym tak utknęło 368 odnowień botów. Teraz o zerze
+decyduje wyłącznie rdzeń bazy, a odnowienie bez odpowiedzi jest po pięciu
+minutach porzucane i ponawiane.
+
+### Czerwone Konary u Biologa
+
+Zgłosił **! AmaZing ¡**: zadanie Biologa z Czerwonymi Konarami (85 poziom)
+nie dawało się oddać. Paczkowy quest sprawdzał w plecaku **inny przedmiot**
+(30166) niż ten, którego żąda (30167). Wysyłamy poprawioną kopię questa.
+
+### Pilne z Community Patch 2
+
+- **Exp w drużynie „Na równym"** (**SIZOWSKI**): postać gracza nie dostawała
+  doświadczenia za potwory zabite przez boty z drużyny, dopóki sama czegoś nie
+  uderzyła. Przyczyną była blokada doświadczenia Grindera: silnik pomijał
+  zablokowanego napastnika w podziale łupu *całkowicie*, także dla drużyny.
+  Teraz jego ciosy liczą się dla drużyny, jeśli ktokolwiek w niej może zdobywać
+  doświadczenie.
+- **Suwak wędkowania** (**blasty**): przy 200% liczba rybaków nie rosła, bo boty
+  na mapach frontu (Dolina Orków, pustynia i dalej) nigdy nie ruszały na ryby
+  — łowisko jest w pierwszej wiosce. Teraz bot z frontu, który ma wędkować,
+  wraca na nie jak na każdą inną sprawę w mieście.
+- **Fasolki Zen** nie trafiały na sklepy: bot trzymał cały swój stos, więc u
+  blastyego w plecakach leżało 18 000 fasolek, a na ladach żadna. Teraz bot
+  zatrzymuje losowo od 10 do 15 sztuk na trening umiejętności do P (Kamienie
+  Duchowe kosztują rangę, a fasolka ją odbudowuje) i wystawia nadwyżkę po
+  5 sztuk.
+
+### Community Patch 2 — zmiany osobowości (Iwakura)
+
+**Broń na 30 poziom.** Bot od 30 poziomu bez broni na 30 poziom swojej klasy
+— Miecza Pełni Księżyca, Ostrza z Czerwonej Stali, Łuku z Rogu Jelenia,
+Kozika Czarnego Liścia, Antycznego Dzwonu albo Wachlarza Jesiennego Wiatru —
+kupuje ją na rynku przy najbliższej wizycie w mieście, niezależnie od swojego
+poziomu. Z ofert wybiera tę z **najwyższymi średnimi obrażeniami**, a cena
+rozstrzyga dopiero remis („12% za 300k albo 26% za 450k — weźmie droższą").
+Przy włączonych osobowościach na zakup i ulepszanie razem idzie najwyżej 60%
+jego yang, a ulepsza ją jak Perfekcjonista: 60% botów do +6, 13% do +7, 8% do
++8, 5% do +9 (pozostałe 14%, których patch nie przydzielił, też do +6), a przy
+każdej kolejnej wizycie dalej, aż do +8 (+9 dla tych, które wylosowały +9). Ta
+broń jest pierwsza w kolejce do kowala. Broń z 34%+ średnich idzie od +3 pod
+Zwój Błogosławieństwa, a taką z rynku bot dokupuje, jeśli ma wyższe średnie
+niż każda, którą już ma — w ramach tego samego budżetu. Bot, który może ją
+kupić, nie jedzie już po nią farmić na M3.
+
+**Grinder.** 13% botów w ogóle nie zatrzymuje się na blokadach poziomu i
+ulepsza postać głównie przedmiotami z rynku. Kolejne 10% może porzucić styl
+Grindera: na każdym tierze, gdy jego sprzęt spełni Prawo Awansu, ma 33% szans,
+że przestanie się blokować na zawsze.
+
+**Bonusy.** Poprawka błędów z Patcha 1, przez które boty bonowały
+przypadkowo:
+
+- Buty, naszyjnik i bransoleta przed 45 poziomem są bonowane **na każdym
+  poziomie ulepszenia** — wcześniej próg +4 wykluczał prawie całą biżuterię
+  młodego bota.
+- Są zmieniane, dopóki nie mają wymaganych linii: PŻ i co najmniej jednej z
+  pozostałych (buty: kryt, szybkość ataku; naszyjnik: kryt, przeszywanie;
+  bransoleta: % obrażeń do PŻ, przeszywanie, silny na zwierzęta, silny na orki).
+- Broń dostaje kamienie dopiero, gdy dwa z tych trzech przedmiotów mają PŻ, a
+  jej celem jest **30%+ średnich**.
+- **Wymiana sprzętu**: nowy przedmiot czeka w plecaku, dopóki jego bonusy nie
+  przebiją bonusów noszonego — i jest bonowany tam, gdzie leży. Czeka tylko
+  wtedy, gdy bot ma kamień, który może na nim użyć, a sam przedmiot nadaje się
+  do bonowania (od +4; buty, naszyjnik i bransoleta młodego bota na każdym
+  plusie). Inaczej bot zakłada go od razu, jak dotąd — bez tego zbroja +0
+  kupiona u handlarza czekałaby w plecaku bez końca.
+
+**Loch Małp (Tier 4).** Dropków medali jest około cztery razy więcej niż
+dotąd. Pod osobowościami wylosowany dropek medali zostawał Wędrowcem, więc
+medale dropiło tylko 26 botów na tysiąc; teraz zostaje dropkiem, a kolejne
+14% botów bez innej roli jest nim dodatkowo. Na naszym świecie testowym
+dropkiem medali jest teraz co dziesiąty bot spoza kohorty operatora.
+Blokują się na poziomie swojego lochu (33), nie na blokadzie Grindera, i nie
+„awansują" z niej na Zdobywcę; panele pokazują im właśnie tę blokadę. 3% z
+nich zbiera medale tak długo, aż starczy im na broń i zbroję +9 oraz hełm i
+tarczę +7 na swój poziom — wtedy kończą z lochem i kupują: najpierw broń od
+30 poziomu, poniżej niego zbroję.
+
+**Księgi umiejętności.** Bot w mieście w roli Handlarza kupuje księgi
+swoich umiejętności na poziomie M (do G) bez względu na stan sprzętu, za
+najwyżej 30% yang na wizytę, i czyta je od razu. Księgi innych klas wystawia
+chętniej: trafiają na ladę przed zwykłym towarem, a już trzy takie księgi są
+powodem, by otworzyć sklep.
+
+**Szkatułki z bossów** (50070–50082, 50090, 50097, 50098) podnoszą nastrój
+bota o jeden stopień.
+
+**Łup przed AFK.** Bot w słabym nastroju przed odejściem od klawiatury
+najpierw podnosi z ziemi swój łup — najwyżej przez półtorej minuty, żeby łup,
+do którego nie da się dojść, nie odbierał mu nawyku na zawsze.
+
+**Inflacja.** Każde 2,5 miliarda yang zgromadzone łącznie na wszystkich
+postaciach serwera podnosi ceny z cennika o 5%, ponad przelicznik dropu yang.
+Suma jest liczona z bazy co dziesięć minut; sklepy dostosowują ceny, gdy
+inflacja przeskoczy próg. W logu: `PLAYERBOT_MARKET: world yang=... inflation=...`.
+
+**Hazardzista i Lista Przydatnych Przedmiotów.** Lista jest teraz dokładnie
+tą z patcha: wymienione z nazwy kolczyki, bransolety, naszyjniki i buty, bronie
+z jego listy, wszystkie zbroje powyżej 33 poziomu i wszystkie tarcze powyżej 20.
+Przedmioty z listy trafiają **do magazynu przy każdej wizycie**, a nie dopiero z
+pełnego plecaka. To, czego lista nie zatrzymuje, idzie na sklep dla innych
+Hazardzistów, a nie do handlarza. Broni na 30 poziom swojej klasy bot trzyma
+do czterech; takich broni innych klas nie chomikuje już wcale.
+
+**Hazardzista w mieście.** Bot w pierwszej wiosce z bronią +7, zbroją +6 i
+3 000 000 yang (według przelicznika dropu yang i inflacji) zostaje
+Hazardzistą bez losowania: wybiera przedmiot, dokupuje brakujące ulepszacze i
+ulepsza go według zasad tej osobowości.
+
+**Perfekcjonista na rynku.** 15% Perfekcjonistów przed pójściem do
+kowala sprawdza rynek: gdy stoi na nim broń, zbroja, tarcza albo hełm +8/+9 na
+ich poziom (nie niższy niż o 10), kowal czeka 20 minut na zakup, a bot płaci z
+budżetu Perfekcjonisty. Gdy nic takiego nie ma, ulepsza sam.
+
+**Śmieciowe bronie na rynku.** 54 bronie z listy Iwakury na +0..+3 mogą
+stać najwyżej w **pięciu sztukach łącznie** na sklepach wszystkich botów; każda
+następna idzie do handlarza, a nadwyżka wystawiona wcześniej wraca z lady.
+Broń z cennymi bonusami nie jest śmieciem i do limitu się nie liczy.
+
+**Farma w M1.** Boty w pierwszej wiosce biją zaprzysiężonych i
+niedźwiedzie, z których lecą ulepszacze, zamiast psów przy bramie: wybierają
+miejsca, gdzie te potwory stoją (zmierzone na plikach serwera — 15–18 takich
+miejsc w każdej wiosce). 1% Grinderów pierwszej wioski zostaje tam, dopóki nie
+zbierze na broń na 30 poziom +8 i zbroję na 18 lub 26 poziom +9.
+
+**Obrona gildii** (pomysł **Amosa**). Gdy gracz zaatakuje bota, boty z jego
+gildii w promieniu 12 000 jednostek od napastnika rzucają wszystko i atakują
+go razem. Nad głową: „Bronię gildii przed …".
+
+### Pomysły
+
+- **Sklepy botów bez kłódek** (Iwakura; na warunek SIZOWSKIEGO — tylko boty):
+  boty mają do dyspozycji całą ladę, a gracz nie widzi na ich sklepach kłódek.
+  Sklepy graczy bez zmian.
+- **Sklepy tylko w M1** (pomysł Kuszaa): nowe sklepy botów stają tylko w
+  pierwszych wioskach, bo tam kupują gracze. Sklep, który stał w drugiej wiosce,
+  po wygaśnięciu zostaje odnowiony na rynku pierwszej wioski. Przełącznik na
+  stronie AI panelu klasycznego przywraca sklepy w obu wioskach.
+- **Skrzynia Ucznia jako opcja** (pomysł seban latino): launcher pyta o nią
+  razem z ratami przy tworzeniu nowego świata; w pliku `.env` to
+  `M2_STARTER_CHEST` (1 — włączona, jak dotąd).
+
+### Inne poprawki
+
+- **Raty podczas eventu** (**Monek**, **CarloMontana**): zmiana rat w panelu
+  w czasie eventu wyglądała, jakby się nie zapisała, i nie działała też po
+  jego końcu. Teraz panel zapisuje ją jako stawkę bazową eventu, a koniec
+  eventu wraca właśnie do niej. Stawkę bazową, którą zostawił event zakończony
+  przy wyłączonym serwerze albo stara wersja, serwer sprząta po starcie — to
+  przez nią rat nie dało się zmienić nawet wtedy, gdy żaden event nie trwał.
+- **Kopia świata** (**uxietoszef**): kopia przerywała się na uszkodzonej bazie
+  `log`, a razem z nią reset świata. Teraz zrzut próbuje jeszcze raz z
+  pominięciem uszkodzonych tabel, a gdy i to się nie uda, kopia idzie dalej
+  bez tej bazy (to sama historia, gra jej nie czyta) i pisze o tym w pliku
+  README kopii. Każda inna baza to sam świat i nadal zatrzymuje kopię.
+- **Pierścień Teleportacji** działa — poprawkę znalazł **Mur4s**, potwierdził
+  **NerrVoVy**.
+- **Zmiana cen w sklepie offline** (**blastyw**, klient 2.0.24): na dużym
+  świecie czat zgłaszał nieudane zmiany, choć wszystkie ceny zmieniły się za
+  pierwszym razem — klient nie czekał wystarczająco długo na odpowiedź
+  serwera i wysyłał zmiany jeszcze raz.
+- **Mur Joan** (świat **Sammy Suricate**): bot, który wrócił do przerwanej
+  wizyty w mieście po złej stronie muru, stał w miejscu, aż po półtorej minuty
+  ruszył go strażnik bezczynności. Teraz przechodzi z powrotem przez bramę.
+- **Mapa gildii Jinno** (logi **urtopy**): jedno z miejsc polowań leżało na
+  odciętym kawałku terenu, do którego nie da się dojść; zastąpione osiągalnym.
+
+### Czego nie sprawdziliśmy
+
+Obie linie silnika kompilują się bez błędów i bez nowych ostrzeżeń, wszystkie
+testy jednostkowe przechodzą, a świat testowy chodzi na tej wersji bez żadnej
+awarii. Na nim już widać działanie części zmian: inflację (+5% przy 3,19 mld
+yang), licznik śmieciowych broni na rynku, 95 Grinderów, którzy przestali się
+blokować, i dwóch, którzy porzucili ten styl, Perfekcjonistów sprawdzających
+rynek przed kowalem, pierwsze nowe przedmioty wybonowane w plecaku ponad
+noszone i dropki medali w Lochach Małp.
+
+Większości tego patcha nie da się jednak dziś zmierzyć, bo nasz świat testowy
+jest świeżo wyzerowany: boty mają poziomy 0–29, a od 30 poziomu wzwyż są tylko
+cztery. Broń na 30 poziom, Hazardzista w mieście, zakupy Perfekcjonisty, cel
+dropków medali, wojny gildii i obrona gildii przed graczem ruszą dopiero na
+światach z wyższymi poziomami, a obrony gildii i wymiany expa w drużynie z
+graczem nie mamy na czym sprawdzić — na naszym świecie nie gra żaden człowiek.
+Limit odpoczynku przy „Boty grają jak żywi ludzie" jest policzony, ale nie
+obejrzany: u nas ten przełącznik jest wyłączony. Poprawka zegara sklepów
+offline działa od startu; to, że odnowienia nie utykają, pokażą dopiero
+godziny.
+
+Pomogą w tym linie w logu: `PLAYERBOT_MARKET: level-30 census` (co dziesięć
+minut: ile botów od 30 poziomu nie ma broni i na jakim plusie są pozostałe),
+`PLAYERBOT_ANTIPK: guild called`, `PLAYERBOT_PERSONA: medal dropper met its
+goal`, `PLAYERBOT_LIFE: census ... held_on=`, `PLAYERBOT_OFFLINE: renewal
+went unanswered`, `PLAYERBOT_BONUS` (teraz także w paczce wsparcia) oraz
+`PLAYERBOT_OFFLINE: reopen ... moved_from=`.
+
 ## 2.0.94 — 2026-09-20
 
 Serwer 2.0.94. Klient bez zmian (2.0.23). Zawiera wszystko z 2.0.93.
