@@ -22,7 +22,8 @@ def reset_state():
 		'status': {1: 100, 2: 100, 3: 100, 4: 100}, 'pos': (1000, 1000), 'distance': {},
 		'where': {}, 'bag': {}, 'targets': [], 'attack': [], 'picked': [], 'skills': {},
 		'cooling': set(), 'active': set(), 'cast': [], 'walks': [], 'rotations': [],
-		'toggles': set(), 'bag_reads': 0, 'protos': {},
+		'toggles': set(), 'bag_reads': 0, 'protos': {}, 'target': 0, 'cleared': 0,
+		'dead': set(), 'bow': False, 'circles': [],
 	})
 
 
@@ -61,6 +62,15 @@ class StubWidget(object):
 	def IsShow(self):
 		return self.shown
 
+	def GetLocalPosition(self):
+		return self.position or (0, 0)
+
+	def SetSliderPos(self, pos):
+		self.sliderPos = pos
+
+	def GetSliderPos(self):
+		return getattr(self, 'sliderPos', 0.0)
+
 	def __getattr__(self, name):
 		if name.startswith('__'):
 			raise AttributeError(name)
@@ -83,6 +93,38 @@ def proto(index):
 	return STATE['protos'].get(STATE.get('selected'), (0, 0, (0,) * 6))[index]
 
 
+def set_target(vid):
+	STATE['targets'].append(vid)
+	STATE['target'] = vid
+
+
+def clear_target():
+	STATE['cleared'] += 1
+	STATE['target'] = 0
+
+
+# What the client 2.0.25 exe adds to the player module (clientify
+# apply_auto_hunt_circle). The window asks for each with hasattr or under
+# AttributeError, so the stub module has none of them unless a test puts
+# them there.
+NEW_EXE = {
+	'IsBowEquipped': lambda: STATE['bow'],
+	'IsTargetDead': lambda vid: vid in STATE['dead'],
+	'SetAutoHuntRangeCircle': lambda *args: STATE['circles'].append(args),
+}
+
+
+def with_new_exe(test):
+	stub = sys.modules['player']
+	for name, func in NEW_EXE.items():
+		setattr(stub, name, func)
+
+	def remove():
+		for name in NEW_EXE:
+			delattr(stub, name)
+	test.addCleanup(remove)
+
+
 def install_stubs():
 	sys.modules['app'] = module('app', GetTime=lambda: STATE['now'])
 	sys.modules['chat'] = module('chat', CHAT_TYPE_INFO=1, AppendChat=lambda kind, text: STATE['chat'].append(text))
@@ -101,7 +143,9 @@ def install_stubs():
 		GetMainCharacterPosition=lambda: (STATE['pos'][0], STATE['pos'][1], 0),
 		GetCharacterDistance=lambda vid: STATE['distance'].get(vid, -1),
 		GetItemIndex=read_bag,
-		SetTarget=lambda vid: STATE['targets'].append(vid),
+		SetTarget=set_target,
+		GetTargetVID=lambda: STATE['target'],
+		ClearTarget=clear_target,
 		SetAttackKeyState=lambda on: STATE['attack'].append(on),
 		GetSkillIndex=lambda slot: STATE['skills'].get(slot, 0),
 		IsSkillCoolTime=lambda slot: slot in STATE['cooling'],
@@ -124,7 +168,8 @@ def install_stubs():
 	sys.modules['mouseModule'] = module('mouseModule')
 	sys.modules['wndMgr'] = module('wndMgr', GetScreenWidth=lambda: 800, GetScreenHeight=lambda: 600)
 	ui = module('ui', BoardWithTitleBar=StubBoard, ThinBoard=StubWidget, TextLine=StubWidget,
-		Button=StubWidget, SlotWindow=StubWidget, SlotBar=StubWidget, EditLine=StubWidget, Bar=StubWidget)
+		Button=StubWidget, SlotWindow=StubWidget, SlotBar=StubWidget, EditLine=StubWidget, Bar=StubWidget,
+		SliderBar=StubWidget)
 	setattr(ui, '__mem_func__', lambda func: func)
 	sys.modules['ui'] = ui
 
@@ -248,8 +293,10 @@ class HelpersTest(unittest.TestCase):
 			self.assertTrue(0.0 <= degree <= 360.0, (target, degree))
 
 	def test_config_paths_keep_names_to_letters(self):
-		self.assertEqual(uiautohunt.ConfigPath('Ab c/1'), os.path.join('autohunt', 'Ab_c_1.cfg'))
-		self.assertEqual(uiautohunt.OldConfigPath('Ab c/1'), 'autohunt_Ab_c_1.cfg')
+		self.assertEqual(uiautohunt.ConfigPath('Ab c/1'), os.path.join('autohunt', 'postacie', 'Ab_c_1.cfg'))
+		self.assertEqual(uiautohunt.OldConfigPath('Ab c/1'), os.path.join('autohunt', 'Ab_c_1.cfg'))
+		self.assertEqual(uiautohunt.OldestConfigPath('Ab c/1'), 'autohunt_Ab_c_1.cfg')
+		self.assertEqual(uiautohunt.GlobalConfigPath(), os.path.join('autohunt', 'config.cfg'))
 
 	def test_mana_items_by_their_table_and_by_the_list(self):
 		# USE_POTION restoring mana, USE_POTION restoring health, a mana
@@ -270,6 +317,27 @@ class HelpersTest(unittest.TestCase):
 		self.assertTrue(uiautohunt.IsManaItem(50021))
 		self.assertFalse(uiautohunt.IsManaItem(0))
 
+	def test_the_file_of_2_0_24_is_read_until_the_first_save(self):
+		import shutil
+		import tempfile
+		here = os.getcwd()
+		folder = tempfile.mkdtemp()
+		try:
+			os.chdir(folder)
+			os.makedirs('autohunt')
+			with open(os.path.join('autohunt', 'Tester.cfg'), 'w') as handle:
+				handle.write('range=3000\nskill7_slot=4\nitem9_vnum=70038\nconfig_version=4\n')
+			with open('autohunt_Tester.cfg', 'w') as handle:
+				handle.write('range=1000\nconfig_version=2\n')
+			hunter = uiautohunt.Hunter()
+			hunter.configName = 'Tester'
+			hunter.LoadConfig()
+			self.assertEqual((hunter.config['range'], hunter.config['skill7_slot'], hunter.config['item9_vnum']), (3000, 4, 70038))
+			self.assertEqual((hunter.config['mobs'], hunter.config['stones'], hunter.config['bosses']), (1, 1, 0))
+		finally:
+			os.chdir(here)
+			shutil.rmtree(folder, ignore_errors=True)
+
 	def test_settings_go_to_their_folder_and_the_old_file_is_still_read(self):
 		import shutil
 		import tempfile
@@ -280,12 +348,15 @@ class HelpersTest(unittest.TestCase):
 			with open('autohunt_Tester.cfg', 'w') as handle:
 				handle.write('range=3000\nhp_vnum=27001\nconfig_version=2\n')
 			hunter = uiautohunt.Hunter()
+			hunter.configName = 'Tester'
 			hunter.LoadConfig()
 			self.assertEqual((hunter.config['range'], hunter.config['item0_vnum']), (3000, 27001))
 			hunter.config['range'] = 4000
 			self.assertTrue(hunter.SaveConfig())
-			self.assertTrue(os.path.exists(os.path.join('autohunt', 'Tester.cfg')))
+			self.assertTrue(os.path.exists(os.path.join('autohunt', 'postacie', 'Tester.cfg')))
+			self.assertTrue(os.path.exists(os.path.join('autohunt', 'config.cfg')))
 			again = uiautohunt.Hunter()
+			again.configName = 'Tester'
 			again.LoadConfig()
 			self.assertEqual(again.config['range'], 4000)
 		finally:
@@ -302,7 +373,7 @@ class HuntTest(unittest.TestCase):
 
 	def test_asks_the_server_from_the_start_point(self):
 		step(self.hunter)
-		self.assertEqual(commands('/autohunt_target'), ['/autohunt_target 2000 0 0 0'])
+		self.assertEqual(commands('/autohunt_target'), ['/autohunt_target 2000 1 0 0 1 0'])
 		self.assertEqual(commands('/autohunt_loot'), ['/autohunt_loot 2000 127 0 0'])
 		step(self.hunter, 0.5)
 		self.assertEqual(len(commands('/autohunt_target')), 1)
@@ -328,6 +399,9 @@ class HuntTest(unittest.TestCase):
 		self.assertEqual(STATE['walks'], [(1380, 1000)])
 		self.assertEqual(STATE['attack'], [])
 		STATE['distance'][55] = 150
+		step(self.hunter, 0.1)
+		self.assertEqual(STATE['targets'], [55])
+		self.assertEqual(STATE['attack'], [])
 		step(self.hunter, 0.1)
 		self.assertEqual(STATE['targets'], [55])
 		self.assertEqual(STATE['attack'], [True])
@@ -368,15 +442,34 @@ class HuntTest(unittest.TestCase):
 		self.assertEqual(STATE['attack'], [])
 		self.assertEqual(STATE['cast'], [1])
 
-	def test_a_new_target_releases_the_attack_key(self):
+	def test_a_new_target_in_reach_releases_the_attack_key(self):
 		STATE['where'][55] = (1100, 1000, 0)
 		STATE['distance'][55] = 100
 		self.hunter.OnServerTarget('55')
 		step(self.hunter)
+		step(self.hunter, 0.1)
 		self.assertEqual(STATE['attack'], [True])
+		# "Nothing" from the server keeps the one in hand: the server takes
+		# a corpse away two or three seconds after it fell.
 		self.hunter.OnServerTarget('0')
+		self.assertEqual(self.hunter.targetVid, 55)
+		self.assertEqual(STATE['attack'], [True])
+		self.hunter.OnServerTarget('56')
 		self.assertEqual(STATE['attack'], [True, False])
-		self.assertEqual(self.hunter.targetVid, 0)
+		self.assertEqual(self.hunter.targetVid, 56)
+
+	def test_keeps_walking_to_its_target_when_another_is_named(self):
+		# Switching on every answer is what made the hunter turn back and
+		# forth between two monsters (Colide, 22 September).
+		STATE['where'][55] = (2000, 1000, 0)
+		STATE['distance'][55] = 900
+		self.hunter.OnServerTarget('55')
+		step(self.hunter)
+		self.hunter.OnServerTarget('56')
+		self.assertEqual(self.hunter.targetVid, 55)
+		STATE['distance'][55] = -1
+		self.hunter.OnServerTarget('56')
+		self.assertEqual(self.hunter.targetVid, 56)
 
 	def test_walks_to_loot_and_picks_it_up(self):
 		self.hunter.OnServerLoot('77', '600', '0')
@@ -394,8 +487,9 @@ class HuntTest(unittest.TestCase):
 		self.hunter.OnServerTarget('55')
 		self.hunter.OnServerLoot('77', '50', '0')
 		step(self.hunter)
-		self.assertEqual(STATE['attack'], [True])
 		self.assertEqual(STATE['picked'], [77])
+		step(self.hunter, 0.1)
+		self.assertEqual(STATE['attack'], [True])
 
 	def test_leaves_loot_it_cannot_reach_alone_for_a_while(self):
 		self.hunter.OnServerLoot('77', '2000', '0')
@@ -539,6 +633,7 @@ class HuntTest(unittest.TestCase):
 		STATE['status'][1] = 60
 		step(self.hunter, 1.0)
 		self.assertFalse(self.hunter.justRevived)
+		step(self.hunter, 0.1)
 		self.assertEqual(STATE['attack'], [True])
 
 	def test_a_share_over_a_hundred_waits_for_full_health_only(self):
@@ -550,6 +645,7 @@ class HuntTest(unittest.TestCase):
 		self.hunter.OnServerTarget('55')
 		step(self.hunter)
 		self.assertFalse(self.hunter.justRevived)
+		step(self.hunter, 0.1)
 		self.assertEqual(STATE['attack'], [True])
 
 	def test_gives_up_on_a_target_it_cannot_reach(self):
@@ -567,25 +663,76 @@ class HuntTest(unittest.TestCase):
 		STATE['distance'][55] = 900
 		self.hunter.OnServerTarget('55')
 		step(self.hunter)
-		self.assertEqual(commands('/autohunt_target'), ['/autohunt_target 2000 1 0 0'])
+		self.assertEqual(commands('/autohunt_target'), ['/autohunt_target 2000 1 0 0 1 0'])
 		step(self.hunter, 8.5)
 		self.assertEqual(self.hunter.targetVid, 0)
 		del STATE['commands'][:]
 		step(self.hunter, 2.5)
-		self.assertEqual(commands('/autohunt_target'), ['/autohunt_target 2000 1 0 0 55'])
+		self.assertEqual(commands('/autohunt_target'), ['/autohunt_target 2000 1 0 0 1 0 55'])
 		del STATE['commands'][:]
 		step(self.hunter, 60.0)
-		self.assertEqual(commands('/autohunt_target'), ['/autohunt_target 2000 1 0 0'])
+		self.assertEqual(commands('/autohunt_target'), ['/autohunt_target 2000 1 0 0 1 0'])
 
-	def test_an_archer_shoots_from_afar(self):
+	def test_a_bow_in_the_hand_shoots_from_afar(self):
+		with_new_exe(self)
+		STATE['bow'] = True
+		STATE['where'][55] = (2700, 1000, 0)
+		STATE['distance'][55] = 1700
+		self.hunter.OnServerTarget('55')
+		step(self.hunter)
+		step(self.hunter, 0.1)
+		self.assertEqual(STATE['attack'], [True])
+		self.assertEqual(STATE['walks'], [])
+
+	def test_an_archer_with_daggers_in_the_hand_walks_in(self):
+		with_new_exe(self)
 		STATE['race'] = 5
 		STATE['group'] = 2
 		STATE['where'][55] = (1700, 1000, 0)
 		STATE['distance'][55] = 700
 		self.hunter.OnServerTarget('55')
 		step(self.hunter)
+		self.assertEqual(STATE['attack'], [])
+		self.assertEqual(STATE['walks'], [(1580, 1000)])
+
+	def test_an_older_exe_takes_the_archery_school_for_a_bow(self):
+		STATE['race'] = 5
+		STATE['group'] = 2
+		STATE['where'][55] = (1700, 1000, 0)
+		STATE['distance'][55] = 700
+		self.hunter.OnServerTarget('55')
+		step(self.hunter)
+		step(self.hunter, 0.1)
 		self.assertEqual(STATE['attack'], [True])
 		self.assertEqual(STATE['walks'], [])
+
+	def test_a_corpse_is_let_go_and_skipped(self):
+		with_new_exe(self)
+		STATE['where'][55] = (1100, 1000, 0)
+		STATE['distance'][55] = 100
+		self.hunter.OnServerTarget('55')
+		step(self.hunter)
+		step(self.hunter, 0.1)
+		self.assertEqual(STATE['attack'], [True])
+		STATE['dead'].add(55)
+		del STATE['commands'][:]
+		step(self.hunter, 0.1)
+		self.assertEqual(STATE['attack'], [True, False])
+		self.assertEqual(STATE['target'], 0)
+		self.assertEqual(self.hunter.targetVid, 0)
+		del STATE['commands'][:]
+		step(self.hunter, 0.1)
+		self.assertEqual(commands('/autohunt_target'), ['/autohunt_target 2000 1 0 0 1 0 55'])
+		del STATE['commands'][:]
+		step(self.hunter, 5.5)
+		self.assertEqual(commands('/autohunt_target'), ['/autohunt_target 2000 1 0 0 1 0'])
+
+	def test_the_switches_for_what_is_fought(self):
+		self.hunter.config['mobs'] = 0
+		self.hunter.config['stones'] = 0
+		self.hunter.config['bosses'] = 1
+		step(self.hunter)
+		self.assertEqual(commands('/autohunt_target'), ['/autohunt_target 2000 0 0 0 0 1'])
 
 	def test_walks_back_when_idle_far_from_the_start(self):
 		STATE['pos'] = (2000, 1000)
@@ -607,6 +754,7 @@ class HuntTest(unittest.TestCase):
 		self.hunter.OnServerTarget('55')
 		self.hunter.OnServerLoot('77', '700', '0')
 		step(self.hunter)
+		step(self.hunter, 0.1)
 		self.assertEqual(STATE['attack'], [True])
 		self.assertEqual(STATE['walks'], [])
 
@@ -618,8 +766,15 @@ class HuntTest(unittest.TestCase):
 	def test_the_start_point_goes_as_an_offset(self):
 		STATE['pos'] = (1500, 800)
 		step(self.hunter)
-		self.assertEqual(commands('/autohunt_target'), ['/autohunt_target 2000 0 -500 200'])
+		self.assertEqual(commands('/autohunt_target'), ['/autohunt_target 2000 1 -500 200 1 0'])
 		self.assertEqual(commands('/autohunt_loot'), ['/autohunt_loot 2000 127 -500 200'])
+
+	def test_without_the_walk_back_the_range_goes_with_the_character(self):
+		self.hunter.config['return'] = 0
+		STATE['pos'] = (1500, 800)
+		step(self.hunter)
+		self.assertEqual(commands('/autohunt_target'), ['/autohunt_target 2000 1 0 0 1 0'])
+		self.assertEqual(commands('/autohunt_loot'), ['/autohunt_loot 2000 127 0 0'])
 
 	def test_the_loot_answer_is_an_offset_from_the_character(self):
 		STATE['pos'] = (5000, 7000)
@@ -634,9 +789,18 @@ class HuntTest(unittest.TestCase):
 
 
 class WindowTest(unittest.TestCase):
+	# The windows save their places (autohunt/config.cfg) when they open and
+	# close, so every test here runs in a folder of its own.
 	def setUp(self):
+		import shutil
+		import tempfile
 		reset_state()
 		uiautohunt._manaItems.clear()
+		self.here = os.getcwd()
+		self.folder = tempfile.mkdtemp()
+		os.chdir(self.folder)
+		self.addCleanup(shutil.rmtree, self.folder, True)
+		self.addCleanup(os.chdir, self.here)
 
 	def test_k_opens_both_windows_side_by_side_and_closes_them(self):
 		hunter = uiautohunt.Hunter()
@@ -661,9 +825,46 @@ class WindowTest(unittest.TestCase):
 		loot.OnToggle('loot_weapon')
 		self.assertEqual(hunter.config['loot_weapon'], 0)
 		self.assertEqual(loot.toggles['loot_weapon'][0].text, 'Bro\xf1: nie')
-		loot.OnRange()
-		self.assertEqual(hunter.config['range'], 3000)
-		self.assertEqual(loot.rangeButton.text, 'Zasi\xeag 3000')
+		loot.OnToggle('bosses')
+		self.assertEqual(hunter.config['bosses'], 1)
+		self.assertEqual(loot.toggles['bosses'][0].text, 'Bossy: tak')
+		loot.rangeSlider.SetSliderPos(0.5)
+		loot.OnChangeRange()
+		self.assertEqual(hunter.config['range'], 2650)
+		self.assertEqual(loot.rangeText.text, 'Zasi\xeag: 2650')
+
+	def test_the_range_is_drawn_while_the_settings_are_open(self):
+		with_new_exe(self)
+		hunter = uiautohunt.Hunter()
+		hunter.ToggleWindow()
+		hunter.lootWindow.rangeSlider.SetSliderPos(0.5)
+		hunter.lootWindow.OnChangeRange()
+		self.assertEqual(STATE['circles'][-1], (2650, 0.0, 0.0, 0))
+		hunter.Start()
+		step(hunter)
+		self.assertEqual(STATE['circles'][-1], (2650, 1000.0, 1000.0, 1))
+		hunter.lootWindow.Close()
+		self.assertEqual(STATE['circles'][-1], (0,))
+
+	def test_the_windows_come_back_where_they_were_left(self):
+		import shutil
+		import tempfile
+		here = os.getcwd()
+		folder = tempfile.mkdtemp()
+		try:
+			os.chdir(folder)
+			hunter = uiautohunt.Hunter()
+			hunter.ToggleWindow()
+			hunter.mainWindow.SetPosition(20, 30)
+			hunter.lootWindow.SetPosition(400, 40)
+			hunter.SaveGlobalConfig()
+			again = uiautohunt.Hunter()
+			again.ToggleWindow()
+			self.assertEqual(again.mainWindow.position, (20, 30))
+			self.assertEqual(again.lootWindow.position, (400, 40))
+		finally:
+			os.chdir(here)
+			shutil.rmtree(folder, ignore_errors=True)
 
 	def test_the_fight_window_has_a_slot_and_a_field_for_every_item(self):
 		hunter = uiautohunt.Hunter()

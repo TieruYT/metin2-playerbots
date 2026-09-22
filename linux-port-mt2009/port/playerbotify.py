@@ -1427,6 +1427,7 @@ def main(root):
     apply_four_inventory_pages(common, game, db)
     apply_world_clock(game)
     apply_auto_hunt_stone_priority(game)
+    apply_auto_hunt_categories(game)
     apply_inventory_arrange(game)
     apply_quickslot_chain_word(game)
     apply_regen_spawn_count(game)
@@ -3601,6 +3602,96 @@ def apply_auto_hunt_stone_priority(game):
          '\n'
          '\tFAutoHuntTarget f(ch, anchorX, anchorY, range, stones != 0, skipVID);\n',
          marker='\tFAutoHuntTarget f(ch, anchorX, anchorY, range, stones != 0, skipVID);\n')
+
+
+def apply_auto_hunt_categories(game):
+    """Auto Lowy 2.0 (Colide, 22 September): monsters, stones and bosses.
+
+    The window has three switches now - Moby, Metiny, Bossy - and "if all
+    three are on, the server always takes a boss first, then a Metin, and
+    ordinary monsters only when neither is in range". The client sends
+    "/autohunt_target <range> <stones> <dx> <dy> <mobs> <bosses> [skip]"; the
+    old window's "<range> <stones> <dx> <dy> [skip]" still means what it did
+    (every monster, bosses among them, no boss priority), because a player
+    on the old client and a new server must not have his skip VID read as a
+    switch. A boss is a monster of MOB_RANK_BOSS and up.
+    """
+    path = os.path.join(game, 'cmd_general.cpp')
+    edit(path,
+         '\tDWORD\t\tm_dwSkipVID;\n'
+         '\tLPCHARACTER\tm_pkBest;\n'
+         '\tint\t\tm_iBestScore;\n'
+         '\n'
+         '\tFAutoHuntTarget(LPCHARACTER ch, int anchorX, int anchorY, int range, bool stones, DWORD skipVID)\n'
+         '\t\t: m_ch(ch), m_iAnchorX(anchorX), m_iAnchorY(anchorY), m_iRange(range), m_bStones(stones),\n'
+         '\t\tm_dwSkipVID(skipVID), m_pkBest(NULL), m_iBestScore(0x7fffffff)\n',
+         '\tDWORD\t\tm_dwSkipVID;\n'
+         '\tbool\t\tm_bMobs;\n'
+         '\tbool\t\tm_bBosses;\n'
+         '\tbool\t\tm_bBossPriority;\n'
+         '\tLPCHARACTER\tm_pkBest;\n'
+         '\tint\t\tm_iBestScore;\n'
+         '\n'
+         '\tFAutoHuntTarget(LPCHARACTER ch, int anchorX, int anchorY, int range, bool stones, DWORD skipVID,\n'
+         '\t\t\tbool mobs = true, bool bosses = true, bool bossPriority = false)\n'
+         '\t\t: m_ch(ch), m_iAnchorX(anchorX), m_iAnchorY(anchorY), m_iRange(range), m_bStones(stones),\n'
+         '\t\tm_dwSkipVID(skipVID), m_bMobs(mobs), m_bBosses(bosses), m_bBossPriority(bossPriority),\n'
+         '\t\tm_pkBest(NULL), m_iBestScore(0x7fffffff)\n',
+         marker='\tbool\t\tm_bBossPriority;\n')
+    edit(path,
+         '\t\tif (!victim->IsMonster() && !(m_bStones && victim->IsStone()))\n'
+         '\t\t\treturn;\n',
+         '\t\tif (!victim->IsMonster() && !(m_bStones && victim->IsStone()))\n'
+         '\t\t\treturn;\n'
+         '\t\t// Auto Lowy 2.0: a boss only with "Bossy", any other monster only\n'
+         '\t\t// with "Moby" (the old window sends neither and gets both).\n'
+         '\t\tconst bool boss = victim->IsMonster() && victim->GetMobRank() >= MOB_RANK_BOSS;\n'
+         '\t\tif (victim->IsMonster() && (boss ? !m_bBosses : !m_bMobs))\n'
+         '\t\t\treturn;\n',
+         marker='\t\t// Auto Lowy 2.0: a boss only with "Bossy", any other monster only\n')
+    edit(path,
+         '\t\tif (m_bStones && victim->IsStone())\n'
+         '\t\t\tscore -= 1000000;\n',
+         '\t\tif (m_bStones && victim->IsStone())\n'
+         '\t\t\tscore -= 1000000;\n'
+         '\t\t// And a boss before a stone, when the new window asks for bosses.\n'
+         '\t\tif (m_bBossPriority && boss)\n'
+         '\t\t\tscore -= 2000000;\n',
+         marker='\t\t// And a boss before a stone, when the new window asks for bosses.\n')
+    # The two switches and the new place of the skip VID. Written beside the
+    # stone priority's lines rather than over them: its markers are the parse
+    # of arg5 and the old constructor call, and an edit that rewrote either
+    # would have it apply itself again on the next run and fail.
+    edit(path,
+         '\tFAutoHuntTarget f(ch, anchorX, anchorY, range, stones != 0, skipVID);\n',
+         '\t// Auto Lowy 2.0 sends "<mobs> <bosses>" fifth and sixth and its skip\n'
+         '\t// VID seventh; the old window names the VID fifth and nothing after\n'
+         '\t// it (playerbotify apply_auto_hunt_categories).\n'
+         '\tint mobs = 1;\n'
+         '\tint bosses = 1;\n'
+         '\tbool categories = false;\n'
+         '\t{\n'
+         '\t\tchar skip1[256], skip2[256], skip3[256], skip4[256], skip5[256], arg6[256], arg7[256];\n'
+         '\t\tconst char * more = two_arguments(argument, skip1, sizeof(skip1), skip2, sizeof(skip2));\n'
+         '\t\tmore = two_arguments(more, skip3, sizeof(skip3), skip4, sizeof(skip4));\n'
+         '\t\tmore = one_argument(more, skip5, sizeof(skip5));\n'
+         '\t\ttwo_arguments(more, arg6, sizeof(arg6), arg7, sizeof(arg7));\n'
+         '\t\tif (*arg6)\n'
+         '\t\t{\n'
+         '\t\t\tcategories = true;\n'
+         '\t\t\tstr_to_number(mobs, arg5);\n'
+         '\t\t\tstr_to_number(bosses, arg6);\n'
+         '\t\t\tskipVID = 0;\n'
+         '\t\t\tif (*arg7)\n'
+         '\t\t\t\tstr_to_number(skipVID, arg7);\n'
+         '\t\t}\n'
+         '\t}\n'
+         '\n'
+         '\tFAutoHuntTarget f(ch, anchorX, anchorY, range, stones != 0, skipVID);\n'
+         '\tf.m_bMobs = mobs != 0;\n'
+         '\tf.m_bBosses = bosses != 0;\n'
+         '\tf.m_bBossPriority = categories && bosses != 0;\n',
+         marker='\t// Auto Lowy 2.0 sends "<mobs> <bosses>" fifth and sixth and its skip\n')
 
 
 

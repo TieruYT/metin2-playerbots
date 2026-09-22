@@ -385,6 +385,249 @@ def apply_coop_game_host(ui):
          marker='rkNet.SetGameHost(m_strAddr.c_str());')
 
 
+AUTO_HUNT_CIRCLE_RENDER = (
+    '// Auto Lowy 2.0 (Colide, 22 September): the hunt\'s range drawn on the\n'
+    '// ground round the character, or - with "Wracaj" - round the point the\n'
+    '// hunt returns to, with a cross on that point. Three rings of 120\n'
+    '// segments that follow the terrain, the middle one pulsing. The window\n'
+    '// sets the range (player.SetAutoHuntRangeCircle) and zero hides it. The\n'
+    '// render states it changes are saved and put back, not set to fixed\n'
+    '// values, so the passes after it draw as they did.\n'
+    'static void RenderAutoHuntRangeCircle()\n'
+    '{\n'
+    '\tconst DWORD dwAutoHuntRange = CPythonPlayer::Instance().GetAutoHuntRangeCircle();\n'
+    '\tif (dwAutoHuntRange == 0)\n'
+    '\t\treturn;\n'
+    '\tCInstanceBase* pMainInst = CPythonCharacterManager::Instance().GetMainInstancePtr();\n'
+    '\tif (!pMainInst)\n'
+    '\t\treturn;\n'
+    '\n'
+    '\tfloat fAnchorX = 0.0f, fAnchorY = 0.0f;\n'
+    '\tbool bIsReturn = false;\n'
+    '\tCPythonPlayer::Instance().GetAutoHuntRangeCirclePosition(&fAnchorX, &fAnchorY, &bIsReturn);\n'
+    '\n'
+    '\tfloat cx, cy;\n'
+    '\tDWORD dwBaseColor;\n'
+    '\tif (bIsReturn)\n'
+    '\t{\n'
+    '\t\tcx = fAnchorX;\n'
+    '\t\tcy = -fAnchorY;\n'
+    '\t\tdwBaseColor = 0x0000FF00;\n'
+    '\t}\n'
+    '\telse\n'
+    '\t{\n'
+    '\t\tconst D3DXVECTOR3& c_rv3Center = pMainInst->GetGraphicThingInstancePtr()->GetPosition();\n'
+    '\t\tcx = c_rv3Center.x;\n'
+    '\t\tcy = c_rv3Center.y;\n'
+    '\t\tdwBaseColor = 0x0000BFFF;\n'
+    '\t}\n'
+    '\n'
+    '\tconst float fTime = GetTickCount() / 1000.0f;\n'
+    '\tconst float fPulse = (sinf(fTime * 3.0f) + 1.0f) * 0.5f;\n'
+    '\tconst int iAlpha = 80 + (int)(fPulse * 100.0f);\n'
+    '\tconst DWORD dwCircleColor = dwBaseColor | ((DWORD)iAlpha << 24);\n'
+    '\tconst DWORD dwEdgeColor = dwBaseColor | ((DWORD)(iAlpha / 2) << 24);\n'
+    '\n'
+    '\tD3DXMATRIX matWorld;\n'
+    '\tD3DXMatrixIdentity(&matWorld);\n'
+    '\tSTATEMANAGER.SaveTransform(D3DTS_WORLD, &matWorld);\n'
+    '\tSTATEMANAGER.SetTexture(0, NULL);\n'
+    '\tSTATEMANAGER.SetTexture(1, NULL);\n'
+    '\tSTATEMANAGER.SaveRenderState(D3DRS_ALPHABLENDENABLE, TRUE);\n'
+    '\tSTATEMANAGER.SaveRenderState(D3DRS_SRCBLEND, D3DBLEND_SRCALPHA);\n'
+    '\tSTATEMANAGER.SaveRenderState(D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA);\n'
+    '\tSTATEMANAGER.SaveRenderState(D3DRS_LIGHTING, FALSE);\n'
+    '\tSTATEMANAGER.SaveRenderState(D3DRS_ZENABLE, FALSE);\n'
+    '\tSTATEMANAGER.SetFVF(D3DFVF_XYZ | D3DFVF_DIFFUSE);\n'
+    '\n'
+    '\tstruct FVF_XYZ_DIFFUSE\n'
+    '\t{\n'
+    '\t\tfloat x, y, z;\n'
+    '\t\tDWORD diffuse;\n'
+    '\t};\n'
+    '\tconst int iSegments = 120;\n'
+    '\tstatic std::vector<FVF_XYZ_DIFFUSE> s_vertices(iSegments + 1);\n'
+    '\tconst float fRadii[3] = { (float)dwAutoHuntRange - 3.0f, (float)dwAutoHuntRange, (float)dwAutoHuntRange + 3.0f };\n'
+    '\tfor (int r = 0; r < 3; ++r)\n'
+    '\t{\n'
+    '\t\tconst float fRadius = fRadii[r];\n'
+    '\t\tfor (int i = 0; i <= iSegments; ++i)\n'
+    '\t\t{\n'
+    '\t\t\tconst float fAngle = D3DX_PI * 2.0f * (float)i / (float)iSegments;\n'
+    '\t\t\tconst float x = cx + fRadius * cosf(fAngle);\n'
+    '\t\t\tconst float y = cy - fRadius * sinf(fAngle);\n'
+    '\t\t\ts_vertices[i].x = x;\n'
+    '\t\t\ts_vertices[i].y = y;\n'
+    '\t\t\ts_vertices[i].z = CPythonBackground::Instance().GetHeight(x, y) + 5.0f;\n'
+    '\t\t\ts_vertices[i].diffuse = r == 1 ? dwCircleColor : dwEdgeColor;\n'
+    '\t\t}\n'
+    '\t\tSTATEMANAGER.DrawPrimitiveUP(D3DPT_LINESTRIP, iSegments, &s_vertices[0], sizeof(FVF_XYZ_DIFFUSE));\n'
+    '\t}\n'
+    '\tif (bIsReturn)\n'
+    '\t{\n'
+    '\t\tconst float az = CPythonBackground::Instance().GetHeight(cx, cy) + 5.0f;\n'
+    '\t\tconst float as = 30.0f;\n'
+    '\t\tFVF_XYZ_DIFFUSE anchor[4] = {\n'
+    '\t\t\t{ cx - as, cy, az, dwCircleColor }, { cx + as, cy, az, dwCircleColor },\n'
+    '\t\t\t{ cx, cy - as, az, dwCircleColor }, { cx, cy + as, az, dwCircleColor },\n'
+    '\t\t};\n'
+    '\t\tSTATEMANAGER.DrawPrimitiveUP(D3DPT_LINELIST, 2, &anchor[0], sizeof(FVF_XYZ_DIFFUSE));\n'
+    '\t}\n'
+    '\n'
+    '\tSTATEMANAGER.RestoreRenderState(D3DRS_ZENABLE);\n'
+    '\tSTATEMANAGER.RestoreRenderState(D3DRS_LIGHTING);\n'
+    '\tSTATEMANAGER.RestoreRenderState(D3DRS_DESTBLEND);\n'
+    '\tSTATEMANAGER.RestoreRenderState(D3DRS_SRCBLEND);\n'
+    '\tSTATEMANAGER.RestoreRenderState(D3DRS_ALPHABLENDENABLE);\n'
+    '\tSTATEMANAGER.RestoreTransform(D3DTS_WORLD);\n'
+    '}\n'
+    '\n'
+)
+
+
+def apply_auto_hunt_circle(ui):
+    # Colide's Auto Lowy 2.0 (22 September): three functions for the window
+    # (player.SetAutoHuntRangeCircle, IsBowEquipped, IsTargetDead) and the
+    # range drawn on the ground. His own client files carried exactly these
+    # changes on top of the package's; the render is one function called
+    # after both of RenderGame's m_kChrMgr.Render() (the perf checker's and
+    # the ordinary one) rather than the same block pasted twice.
+    header = os.path.join(ui, 'PythonPlayer.h')
+    edit(header,
+         '\t\tDWORD\tGetPlayTime();\n'
+         '\t\tvoid\tSetPlayTime(DWORD dwPlayTime);\n',
+         '\t\tDWORD\tGetPlayTime();\n'
+         '\t\tvoid\tSetPlayTime(DWORD dwPlayTime);\n'
+         '\n'
+         '\t\t// Auto Lowy 2.0 (Colide): the hunt\'s range drawn on the ground.\n'
+         '\t\tvoid\tSetAutoHuntRangeCircle(DWORD dwRange, float fX = 0.0f, float fY = 0.0f, bool bIsReturn = false);\n'
+         '\t\tDWORD\tGetAutoHuntRangeCircle();\n'
+         '\t\tvoid\tGetAutoHuntRangeCirclePosition(float* pfX, float* pfY, bool* pbIsReturn);\n',
+         marker='\t\tDWORD\tGetAutoHuntRangeCircle();\n')
+    edit(header,
+         '\t\tDWORD\t\t\t\t\tm_dwPlayTime;\n',
+         '\t\tDWORD\t\t\t\t\tm_dwPlayTime;\n'
+         '\t\t// Auto Lowy 2.0: the circle\'s range and, in "Wracaj", its fixed centre.\n'
+         '\t\tDWORD\t\t\t\t\tm_dwAutoHuntRange;\n'
+         '\t\tfloat\t\t\t\t\tm_fAutoHuntCircleX;\n'
+         '\t\tfloat\t\t\t\t\tm_fAutoHuntCircleY;\n'
+         '\t\tbool\t\t\t\t\tm_bAutoHuntCircleIsReturn;\n',
+         marker='\t\tDWORD\t\t\t\t\tm_dwAutoHuntRange;\n')
+    player = os.path.join(ui, 'PythonPlayer.cpp')
+    edit(player,
+         '\tm_dwPlayTime = 0;\n',
+         '\tm_dwPlayTime = 0;\n'
+         '\tm_dwAutoHuntRange = 0;\n'
+         '\tm_fAutoHuntCircleX = 0.0f;\n'
+         '\tm_fAutoHuntCircleY = 0.0f;\n'
+         '\tm_bAutoHuntCircleIsReturn = false;\n',
+         marker='\tm_dwAutoHuntRange = 0;\n')
+    edit(player,
+         "//martysama0134's 4e4e75d8b719b9240e033009cf4d7b0f",
+         '// Auto Lowy 2.0 (Colide): the range circle the window asks the render for.\n'
+         'void CPythonPlayer::SetAutoHuntRangeCircle(DWORD dwRange, float fX, float fY, bool bIsReturn)\n'
+         '{\n'
+         '\tm_dwAutoHuntRange = dwRange;\n'
+         '\tm_fAutoHuntCircleX = fX;\n'
+         '\tm_fAutoHuntCircleY = fY;\n'
+         '\tm_bAutoHuntCircleIsReturn = bIsReturn;\n'
+         '}\n'
+         '\n'
+         'DWORD CPythonPlayer::GetAutoHuntRangeCircle()\n'
+         '{\n'
+         '\treturn m_dwAutoHuntRange;\n'
+         '}\n'
+         '\n'
+         'void CPythonPlayer::GetAutoHuntRangeCirclePosition(float* pfX, float* pfY, bool* pbIsReturn)\n'
+         '{\n'
+         '\t*pfX = m_fAutoHuntCircleX;\n'
+         '\t*pfY = m_fAutoHuntCircleY;\n'
+         '\t*pbIsReturn = m_bAutoHuntCircleIsReturn;\n'
+         '}\n'
+         '\n'
+         "//martysama0134's 4e4e75d8b719b9240e033009cf4d7b0f",
+         marker='void CPythonPlayer::SetAutoHuntRangeCircle(DWORD dwRange, float fX, float fY, bool bIsReturn)\n')
+    module = os.path.join(ui, 'PythonPlayerModule.cpp')
+    edit(module,
+         'void initPlayer()\n{\n\tstatic PyMethodDef s_methods[] =\n',
+         '// Auto Lowy 2.0 (Colide, 22 September), for client-root/uiautohunt.py:\n'
+         '// the range circle, whether the hand holds a bow (the reach goes from\n'
+         '// melee to the bow\'s), and whether a target is already dead in this\n'
+         '// client - the server keeps a corpse for two or three seconds and\n'
+         '// named it again as the nearest monster.\n'
+         'PyObject* playerSetAutoHuntRangeCircle(PyObject* poSelf, PyObject* poArgs)\n'
+         '{\n'
+         '\tint iRange;\n'
+         '\tif (!PyTuple_GetInteger(poArgs, 0, &iRange))\n'
+         '\t\treturn Py_BuildException();\n'
+         '\tfloat fX = 0.0f;\n'
+         '\tfloat fY = 0.0f;\n'
+         '\tint iIsReturn = 0;\n'
+         '\tif (PyTuple_Size(poArgs) >= 3)\n'
+         '\t{\n'
+         '\t\tPyTuple_GetFloat(poArgs, 1, &fX);\n'
+         '\t\tPyTuple_GetFloat(poArgs, 2, &fY);\n'
+         '\t}\n'
+         '\tif (PyTuple_Size(poArgs) >= 4)\n'
+         '\t\tPyTuple_GetInteger(poArgs, 3, &iIsReturn);\n'
+         '\tCPythonPlayer::Instance().SetAutoHuntRangeCircle((DWORD)(iRange > 0 ? iRange : 0), fX, fY, iIsReturn != 0);\n'
+         '\treturn Py_BuildNone();\n'
+         '}\n'
+         '\n'
+         'PyObject* playerIsBowEquipped(PyObject* poSelf, PyObject* poArgs)\n'
+         '{\n'
+         '\tCInstanceBase* pMainInst = CPythonCharacterManager::Instance().GetMainInstancePtr();\n'
+         '\tif (!pMainInst)\n'
+         '\t\treturn Py_BuildValue("i", 0);\n'
+         '\treturn Py_BuildValue("i", pMainInst->IsBowMode() ? 1 : 0);\n'
+         '}\n'
+         '\n'
+         'PyObject* playerIsTargetDead(PyObject* poSelf, PyObject* poArgs)\n'
+         '{\n'
+         '\tint iVID;\n'
+         '\tif (!PyTuple_GetInteger(poArgs, 0, &iVID))\n'
+         '\t\treturn Py_BuildException();\n'
+         '\tCInstanceBase* pInstance = CPythonCharacterManager::Instance().GetInstancePtr(iVID);\n'
+         '\tif (!pInstance)\n'
+         '\t\treturn Py_BuildValue("i", 1);\n'
+         '\treturn Py_BuildValue("i", pInstance->IsDead() ? 1 : 0);\n'
+         '}\n'
+         '\n'
+         'void initPlayer()\n{\n\tstatic PyMethodDef s_methods[] =\n',
+         marker='PyObject* playerSetAutoHuntRangeCircle(PyObject* poSelf, PyObject* poArgs)\n')
+    edit(module,
+         '\t\t{ "GetBonusSP",playerGetBonusSP,\t\t\t\t\tMETH_VARARGS },\n',
+         '\t\t{ "GetBonusSP",playerGetBonusSP,\t\t\t\t\tMETH_VARARGS },\n'
+         '\t\t{ "SetAutoHuntRangeCircle",\t\tplayerSetAutoHuntRangeCircle,\t\tMETH_VARARGS },\n'
+         '\t\t{ "IsBowEquipped",\t\t\t\tplayerIsBowEquipped,\t\t\t\tMETH_VARARGS },\n'
+         '\t\t{ "IsTargetDead",\t\t\t\tplayerIsTargetDead,\t\t\t\t\tMETH_VARARGS },\n',
+         marker='\t\t{ "SetAutoHuntRangeCircle",\t\tplayerSetAutoHuntRangeCircle,')
+    app = os.path.join(ui, 'PythonApplication.cpp')
+    edit(app,
+         '#include "PythonSystem.h"\n',
+         '#include "PythonSystem.h"\n'
+         '#include "../EterLib/StateManager.h"\n',
+         marker='#include "../EterLib/StateManager.h"\n')
+    edit(app,
+         'void CPythonApplication::RenderGame()\n',
+         AUTO_HUNT_CIRCLE_RENDER + 'void CPythonApplication::RenderGame()\n',
+         marker='static void RenderAutoHuntRangeCircle()\n')
+    edit(app,
+         '\t\tm_pyBackground.SetCharacterDirLight();\n'
+         '\t\tm_kChrMgr.Render();\n',
+         '\t\tm_pyBackground.SetCharacterDirLight();\n'
+         '\t\tm_kChrMgr.Render();\n'
+         '\t\tRenderAutoHuntRangeCircle();\n',
+         marker='\t\tm_kChrMgr.Render();\n\t\tRenderAutoHuntRangeCircle();\n')
+    edit(app,
+         '\tDWORD t10=ELTimer_GetMSec();\n'
+         '\tm_kChrMgr.Render();\n',
+         '\tDWORD t10=ELTimer_GetMSec();\n'
+         '\tm_kChrMgr.Render();\n'
+         '\tRenderAutoHuntRangeCircle();\n',
+         marker='\tm_kChrMgr.Render();\n\tRenderAutoHuntRangeCircle();\n')
+
+
 def main(root):
     ui = os.path.join(root, 'UserInterface')
     if not os.path.isfile(os.path.join(ui, 'PythonTextTail.cpp')):
@@ -394,6 +637,7 @@ def main(root):
     apply_discord_presence(ui)
     apply_four_inventory_pages(ui)
     apply_coop_game_host(ui)
+    apply_auto_hunt_circle(ui)
 
 
 if __name__ == '__main__':
