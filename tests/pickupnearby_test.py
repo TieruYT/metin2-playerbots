@@ -20,6 +20,7 @@ sys.modules['app'] = app
 sys.modules['net'] = net
 sys.path.insert(0, ROOT)
 
+import clientclock  # noqa: E402
 import pickupnearby  # noqa: E402
 
 
@@ -28,6 +29,7 @@ class PickupNearbyTest(unittest.TestCase):
         del SENT[:]
         CLOCK['t'] += 10.0
         pickupnearby._state['next'] = 0.0
+        clientclock.Reset()
 
     def test_first_press_asks_the_server(self):
         self.assertTrue(pickupnearby.Request())
@@ -40,6 +42,18 @@ class PickupNearbyTest(unittest.TestCase):
             self.assertFalse(pickupnearby.Request())
         self.assertEqual(len(SENT), 1)
         CLOCK['t'] += 0.2
+        self.assertTrue(pickupnearby.Request())
+        self.assertEqual(len(SENT), 2)
+
+    def test_a_warp_does_not_hold_the_key_for_the_time_played_before_it(self):
+        # An hour on the first map, then a warp: the handshake calls
+        # CTimer::SetBaseTime and app.GetTime() starts again from zero. The
+        # half second is the only wait; it used to be the hour (GoracyDelfin).
+        CLOCK['t'] = 3600.0
+        self.assertTrue(pickupnearby.Request())
+        CLOCK['t'] = 0.1
+        self.assertFalse(pickupnearby.Request())
+        CLOCK['t'] = 1.0
         self.assertTrue(pickupnearby.Request())
         self.assertEqual(len(SENT), 2)
 

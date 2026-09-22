@@ -34,6 +34,7 @@
 # Python 2.7 as the client has it.
 
 import app
+import clientclock
 import chat
 import constInfo
 import ui
@@ -101,11 +102,11 @@ class ShopPricePump(ui.Window):
 		if self.edits:
 			self._send()
 			return
-		if self.verifyAt and app.GetTime() >= self.verifyAt:
+		if self.verifyAt and clientclock.Now() >= self.verifyAt:
 			self._verify()
 
 	def _send(self):
-		now = app.GetTime()
+		now = clientclock.Now()
 		if now < self.nextTick:
 			return
 		self.nextTick = now + TICK
@@ -145,9 +146,9 @@ class ShopPricePump(ui.Window):
 			return
 		# Not answered yet is not refused: the db core's queue can hold an
 		# edit for seconds on a busy world, and its answer is on its way.
-		if app.GetTime() - self.lastSentAt < PATIENCE:
+		if clientclock.Now() - self.lastSentAt < PATIENCE:
 			self.asked = list(missed)
-			self.verifyAt = app.GetTime() + CHECK_EVERY
+			self.verifyAt = clientclock.Now() + CHECK_EVERY
 			return
 		if self.passesLeft > 0:
 			self.passesLeft -= 1

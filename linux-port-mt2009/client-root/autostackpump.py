@@ -10,6 +10,7 @@
 # Python 2.7 as the client has it.
 
 import app
+import clientclock
 import net
 import ui
 import uiPrivateShopBuilder
@@ -35,7 +36,7 @@ class AutoStackPump(ui.Window):
 	def OnUpdate(self):
 		if not self.moves:
 			return
-		now = app.GetTime()
+		now = clientclock.Now()
 		if now < self.nextTick:
 			return
 		self.nextTick = now + TICK

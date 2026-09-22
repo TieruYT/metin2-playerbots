@@ -19,6 +19,7 @@
 # ASCII. Python 2.7 as the client has it.
 
 import app
+import clientclock
 import chat
 import mouseModule
 import net
@@ -59,7 +60,7 @@ def _int(value):
 
 
 def IsPending():
-	return app.GetTime() < _state['pendingUntil']
+	return clientclock.Now() < _state['pendingUntil']
 
 
 def Request():
@@ -71,7 +72,7 @@ def Request():
 	if uiPrivateShopBuilder.IsBuildingPrivateShop():
 		chat.AppendChat(chat.CHAT_TYPE_INFO, MSG_SHOP)
 		return False
-	_state['pendingUntil'] = app.GetTime() + PENDING_TIMEOUT
+	_state['pendingUntil'] = clientclock.Now() + PENDING_TIMEOUT
 	net.SendChatPacket('/inventory_arrange')
 	return True
 

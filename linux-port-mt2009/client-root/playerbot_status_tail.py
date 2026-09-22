@@ -221,8 +221,8 @@ class TitleKeeper(object):
 		if not TitlesEnabled():
 			self.titles = {}
 			return
-		import app
-		now = app.GetTime()
+		import clientclock
+		now = clientclock.Now()
 		if now < self.nextRefresh:
 			return
 		self.nextRefresh = now + TITLE_REFRESH_SECONDS
@@ -252,6 +252,6 @@ def show_title(vid_arg, personality_arg):
 	decoded = decode_title(vid_arg, personality_arg)
 	if decoded is None or not attach_title(decoded[0], decoded[1]):
 		return False
-	import app
-	GetTitleKeeper().Remember(decoded[0], decoded[1], app.GetTime())
+	import clientclock
+	GetTitleKeeper().Remember(decoded[0], decoded[1], clientclock.Now())
 	return True

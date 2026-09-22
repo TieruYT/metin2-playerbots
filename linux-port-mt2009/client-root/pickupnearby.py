@@ -9,6 +9,7 @@
 # Python 2.7 as the client has it.
 
 import app
+import clientclock
 import net
 
 MIN_INTERVAL = 0.5
@@ -17,7 +18,7 @@ _state = {'next': 0.0}
 
 
 def Request():
-	now = app.GetTime()
+	now = clientclock.Now()
 	if now < _state['next']:
 		return False
 	_state['next'] = now + MIN_INTERVAL
