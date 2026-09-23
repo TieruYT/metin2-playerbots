@@ -120,39 +120,55 @@ function Test-RebuildPending {
     return (Test-Path -LiteralPath $rebuildMarkerPath -PathType Leaf)
 }
 
-function Read-State {
-    # An interrupted update leaves the new VERSION file on disk while the running
-    # containers are still the old ones. Reporting that version would make the
-    # update check answer "already up to date" and never rebuild, which is the
-    # state a player cannot get out of on their own.
-    if (Test-RebuildPending) {
-        return [pscustomobject]@{ schema = 1; server = 'unknown'; client = 'unknown' }
+function Read-RecordedState {
+    # What the files on disk are, whatever the images are: the versions the
+    # last updates recorded, else VERSION and the client the full package
+    # shipped (New-M2DeployTree.ps1 puts CLIENT_VERSION beside VERSION). A
+    # recorded "unknown" is no record - older launchers wrote one back (see
+    # Read-State) - and a state file that does not parse, which a crash can
+    # leave behind, must not stop every action.
+    $versionFile = Join-Path $serverRoot 'VERSION'
+    $onDisk = if (Test-Path -LiteralPath $versionFile -PathType Leaf) {
+        (Get-Content -LiteralPath $versionFile -Raw).Trim()
     }
-    # The client the full package shipped, until a client update records a
-    # newer one: New-M2DeployTree.ps1 puts CLIENT_VERSION beside VERSION.
+    else { 'unknown' }
     $clientMarker = Join-Path $serverRoot 'CLIENT_VERSION'
     $shippedClient = if (Test-Path -LiteralPath $clientMarker -PathType Leaf) {
         (Get-Content -LiteralPath $clientMarker -Raw).Trim()
     }
     else { 'unknown' }
+    $server = ''
+    $client = ''
     if (Test-Path -LiteralPath $statePath -PathType Leaf) {
-        $state = Get-Content -LiteralPath $statePath -Raw -Encoding UTF8 | ConvertFrom-Json
-        if ((-not [string]$state.client -or [string]$state.client -eq 'unknown') -and $shippedClient -ne 'unknown') {
-            $state.client = $shippedClient
+        try {
+            $saved = Get-Content -LiteralPath $statePath -Raw -Encoding UTF8 | ConvertFrom-Json
+            if ($saved -and $saved.PSObject.Properties['server']) { $server = ([string]$saved.server).Trim() }
+            if ($saved -and $saved.PSObject.Properties['client']) { $client = ([string]$saved.client).Trim() }
         }
-        return $state
+        catch { }
     }
-    $versionFile = Join-Path $serverRoot 'VERSION'
-    $serverVersion = if (Test-Path -LiteralPath $versionFile) {
-        (Get-Content -LiteralPath $versionFile -Raw).Trim()
-    }
-    else { 'unknown' }
-    return [pscustomobject]@{ schema = 1; server = $serverVersion; client = $shippedClient }
+    if (-not $server -or $server -eq 'unknown') { $server = $onDisk }
+    if (-not $client -or $client -eq 'unknown') { $client = $shippedClient }
+    return [pscustomobject]@{ schema = 1; server = $server; client = $client }
+}
+
+function Read-State {
+    # An interrupted update leaves the new VERSION file on disk while the running
+    # containers are still the old ones. Reporting that version would make the
+    # update check answer "already up to date" and never rebuild, which is the
+    # state a player cannot get out of on their own. The server alone: nothing
+    # of the client is built, and hiding its version as well had two costs -
+    # the update offered the client again, and Save-State, which read through
+    # here, wrote "unknown" over the version a client update had just recorded
+    # (pattsito, 23 September, client 2.0.26 recorded and lost two minutes later).
+    $state = Read-RecordedState
+    if (Test-RebuildPending) { $state.server = 'unknown' }
+    return $state
 }
 
 function Save-State {
     param([string]$ServerVersion, [string]$ClientVersion)
-    $state = Read-State
+    $state = Read-RecordedState
     if ($ServerVersion) { $state.server = $ServerVersion }
     if ($ClientVersion) { $state.client = $ClientVersion }
     $state | Select-Object schema, server, client | ConvertTo-Json | Set-Content -LiteralPath $statePath -Encoding UTF8
@@ -204,6 +220,26 @@ function Assert-DockerPrerequisites {
     if (-not $report.CanStart) {
         throw (@($report.BlockingIssues) -join [Environment]::NewLine)
     }
+}
+
+function Assert-DockerDiskWritable {
+    # Before a build, and before an update swaps a single file: a Docker disk
+    # gone read-only fails every build at its first write, and after the
+    # first failure Docker only says "failed to solve: exit code: 255".
+    # pattsito (23 September) downloaded and applied the same update five
+    # times in forty minutes against such a disk. An engine that is not
+    # running cannot be asked; Rebuild-Server starts it and asks again.
+    # -KeepRebuildPending: the files are already the new ones, so a later
+    # GRAJ must still finish the build.
+    param([switch]$KeepRebuildPending, [string]$Before = 'budowanie serwera')
+    if (-not (Test-M2DockerRunning)) { return }
+    $fault = Get-M2DockerDiskFault
+    if (-not $fault) { return }
+    if ($KeepRebuildPending) {
+        Set-Content -LiteralPath $rebuildMarkerPath -Value ([DateTime]::UtcNow.ToString('o')) -Encoding UTF8
+    }
+    throw ("Przerywam $Before - dysk Dockera nie przyjmuje zapisu:" + [Environment]::NewLine +
+           $fault + [Environment]::NewLine + [Environment]::NewLine + (Get-M2DockerDiskRemedy))
 }
 
 function Start-Server {
@@ -341,6 +377,7 @@ function Rebuild-Server {
         Write-Host 'Silnik Dockera jest zatrzymany - uruchamiam go przed budowaniem.' -ForegroundColor Yellow
         Start-Docker
     }
+    Assert-DockerDiskWritable -KeepRebuildPending
     # Compose needs the .env before it can build anything - the database
     # passwords are required variables. A copy unpacked by hand has no .env
     # until start-server.ps1 writes one, and that used to run only after this
@@ -482,6 +519,18 @@ function Update-Server {
         Write-Host "Serwer jest już aktualny (wersja $($component.version))." -ForegroundColor Green
         return
     }
+    # A build that failed after the files were swapped leaves them at the new
+    # version with only the images missing, and applying the same package
+    # again changes nothing but the backups folder: pattsito's five attempts
+    # were five downloads of 47.8 MB and five copies of 7042 files, on the
+    # drive whose room was the likeliest cause of the failure. Finish the build.
+    if ((Test-RebuildPending) -and (Test-InstalledVersion -Installed ([string](Read-RecordedState).server) -Available ([string]$component.version))) {
+        Write-Host "Pliki serwera w wersji $($component.version) są już na dysku - dokańczam budowanie bez ponownego pobierania." -ForegroundColor Yellow
+        Rebuild-Server
+        Write-Host "Serwer działa w wersji $($component.version)." -ForegroundColor Green
+        return
+    }
+    Assert-DockerDiskWritable -Before 'aktualizację (niczego nie pobrano ani nie podmieniono)'
     if (-not (Confirm-Operation 'Zaktualizować pliki serwera i przebudować kontenery? Baza postaci pozostanie bez zmian.')) {
         Write-Host 'Anulowano.' -ForegroundColor Yellow
         return
@@ -1462,7 +1511,13 @@ function Create-Logs {
         $preflightLog,
         (Format-M2DockerPreflightReport -Report $report),
         [Text.UTF8Encoding]::new($false))
-    $bundle = New-M2SupportBundle -ServerRoot $serverRoot
+    # Free space and the size of Docker's disk: whether the drive was full is
+    # the first question a report of a read-only Docker disk raises, and the
+    # bundle could not answer it (pattsito, 23 September).
+    $extra = @{}
+    try { $extra['disk-space.txt'] = Get-M2DiskSpaceReport -ServerRoot $serverRoot }
+    catch { $extra['disk-space.txt'] = "Nie udalo sie odczytac miejsca na dyskach: $($_.Exception.Message)" }
+    $bundle = New-M2SupportBundle -ServerRoot $serverRoot -ExtraFiles $extra
     Write-Host "Gotowa paczka diagnostyczna: $bundle" -ForegroundColor Green
     return $bundle
 }

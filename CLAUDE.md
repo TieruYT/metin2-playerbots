@@ -1456,6 +1456,33 @@ not in `data/`) reworked these point by point. What each hangs on:
   reported that as "OK: Docker Engine odpowiada (wersja Error response...)",
   which also suppressed the WSL remedy - it is only raised when the engine is
   known to be down. A version is digits and dots.
+- **An engine that answers is not an engine that can build.** Docker Desktop
+  keeps images, the build cache and every volume on one ext4 disk inside
+  `docker_data.vhdx`, ext4 answers its first I/O error by remounting itself
+  read-only, and `docker info` goes on answering. pattsito (23 September), a
+  fresh install: 17 seconds into its first build buildkit said `input/output
+  error` about its own database and containerd `read-only file system`; every
+  build after that said only `failed to solve: exit code: 255`, which no
+  guidance rule can read, so the dialog said "run Diagnostics" and Diagnostics
+  said "mozna uruchomic serwer". Five update clicks in forty minutes each
+  downloaded and applied the same 47.8 MB with a backup of 7 042 files,
+  because a pending build masks the installed server as "unknown" - and
+  Save-State, reading through that mask, wrote "unknown" over the client
+  version a client update had just recorded. Now `Get-M2DockerDiskFault`
+  writes to that disk (a labelled volume, created and removed) in the
+  preflight, before an update touches a file and before every build, and
+  names the daemon's own words; the preflight warns under 15 GB free on the
+  drive holding Docker's disk (`Get-M2DockerDataLocation`:
+  `customWslDistroDir`/`dataFolder` in Docker's settings, else
+  `%LOCALAPPDATA%\Docker\wsl`) and only warns, because a disk image that grew
+  before has room of its own that no Windows number shows; `Update-Server`
+  finishes a pending build of the version on offer without downloading it;
+  `Read-State` masks the server alone; the bundle carries `disk-space.txt`.
+  The same bundle put his panel password on a public channel:
+  `Protect-M2LogContent` knew English "password=" and nothing of the Polish
+  lines the launcher prints (`tests/launcher_log_redaction_test.ps1`). And
+  the remedy's own `wsl --shutdown` must end its line: the guidance reads
+  whole outputs, and "wsl" followed on one line by "error" is the WSL rule's.
 - **Yang goes straight to the purse, for everybody, by patch 0010.**
   `CHARACTER::RewardGold` gave a kill's yang to the killer only with the
   premium or `IsEquipUniqueGroup(UNIQUE_GROUP_AUTOLOOT)` (72016..72018 on

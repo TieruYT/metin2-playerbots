@@ -30,6 +30,20 @@ $cases = @(
         Expected = 'DOCKER_DISK_BROKEN'
     },
     [pscustomobject]@{
+        # What the first build on a disk gone bad says (pattsito, 23 September).
+        Name = 'Docker buildkit I/O error'
+        Text = '#16 ERROR: file sync error: sync /var/lib/docker/buildkit/containerd-overlayfs/metadata_v2.db: input/output error'
+        Expected = 'DOCKER_DISK_BROKEN'
+    },
+    [pscustomobject]@{
+        # The preflight's write, refused, followed by the remedy it prints:
+        # "wsl --shutdown" in the remedy must not read as a broken WSL.
+        Name = 'Docker disk probe refused'
+        Text = ("BŁĄD: dysk Dockera nie przyjmuje zapisu (Error response from daemon: create m2-disk-probe-0123456789ab: error while creating volume root path '/var/lib/docker/volumes/m2-disk-probe-0123456789ab/_data': mkdir /var/lib/docker/volumes/m2-disk-probe-0123456789ab: read-only file system)." +
+                [Environment]::NewLine + (Get-M2DockerDiskRemedy))
+        Expected = 'DOCKER_DISK_BROKEN'
+    },
+    [pscustomobject]@{
         Name = 'Broken WSL'
         Text = 'There was a problem with WSL. wsl.exe exit status 1'
         Expected = 'WSL_BROKEN'
@@ -45,9 +59,18 @@ $cases = @(
         Expected = 'LEGACY_INSTALLER_DESTINATION'
     },
     [pscustomobject]@{
+        # Since 2.0.77 only a 404 said of the manifest itself (see the rule).
         Name = 'Unpublished update channel'
-        Text = 'Serwer zdalny zwrócił błąd: (404) Nie znaleziono.'
+        Text = 'Nie udalo sie pobrac https://raw.githubusercontent.com/TieruYT/metin2-playerbots/main/update-manifest-mt2009.json: Serwer zdalny zwrócił błąd: (404) Nie znaleziono.'
         Expected = 'UPDATE_CHANNEL_UNPUBLISHED'
+    },
+    [pscustomobject]@{
+        # ... and a 404 anywhere else in a failed action's output is not one:
+        # a panel's missing icon sent archonek to wait for a channel that was
+        # there all along (18 September).
+        Name = 'A 404 that is not the manifest'
+        Text = 'GET /static/icons/50300.png HTTP/1.1" 404 -'
+        Expected = 'UNKNOWN'
     }
 )
 
@@ -64,6 +87,74 @@ foreach ($case in $cases) {
 $unknown = Get-M2LauncherErrorGuidance -Text 'unexpected test failure'
 if ($unknown.Code -ne 'UNKNOWN') {
     throw "Nieznany błąd powinien używać kodu UNKNOWN, otrzymano $($unknown.Code)."
+}
+
+# The remedy alone - which is all the "prepare" dialog shows - must not be
+# taken for a broken WSL either, line by line.
+if ((Get-M2LauncherErrorGuidance -Text (Get-M2DockerDiskRemedy)).Code -eq 'WSL_BROKEN') {
+    throw 'Rada dla dysku Dockera nie może wyglądać jak zepsuty WSL.'
+}
+
+# Where Docker keeps its disk: a folder always, a drive and its free space when
+# Windows answers. A bundle's disk report never carries the profile path.
+$dockerData = Get-M2DockerDataLocation
+if (-not $dockerData -or -not $dockerData.Directory) {
+    throw 'Nie ustalono folderu dysku Dockera.'
+}
+$diskReport = Get-M2DiskSpaceReport -ServerRoot $root
+if ($diskReport -notmatch 'Dyski Windows' -or $diskReport -notmatch 'Docker Desktop') {
+    throw "Raport miejsca na dyskach jest niepełny: $diskReport"
+}
+$profilePath = [Environment]::GetFolderPath('UserProfile')
+if ($profilePath -and $diskReport.IndexOf($profilePath, [StringComparison]::OrdinalIgnoreCase) -ge 0) {
+    throw 'Raport miejsca na dyskach nie może zawierać ścieżki profilu użytkownika.'
+}
+
+# A refused write, as the daemon words it on a read-only disk, is a fault named
+# by its last line; a write refused for any other reason is not this check's
+# to name. The docker call is replaced inside the module for that.
+$module = Get-Module Metin2Launcher.Diagnostics
+$refusals = @(
+    @{ Output = "Error response from daemon: create m2-disk-probe-x: error while creating volume root path '/var/lib/docker/volumes/m2-disk-probe-x/_data': mkdir /var/lib/docker/volumes/m2-disk-probe-x: read-only file system"; Fault = $true },
+    @{ Output = "Error response from daemon: write /var/lib/docker/volumes/metadata.db: input/output error"; Fault = $true },
+    @{ Output = "Error response from daemon: open /var/lib/docker/volumes/x: no space left on device"; Fault = $true },
+    @{ Output = "Error response from daemon: permission denied"; Fault = $false },
+    @{ Output = 'Polecenie nie odpowiedziało w wyznaczonym czasie.'; Fault = $false }
+)
+foreach ($refusal in $refusals) {
+    $answer = & $module {
+        param($Text)
+        $script:probeText = $Text
+        function script:Invoke-M2DiagnosticProcess {
+            param([string]$FileName, [string]$Arguments, [int]$TimeoutMilliseconds)
+            return [pscustomobject]@{ ExitCode = 1; TimedOut = $false; Output = ("Unrelated first line`n" + $script:probeText) }
+        }
+        try { return (Get-M2DockerDiskFault) }
+        finally { Remove-Item -LiteralPath 'function:script:Invoke-M2DiagnosticProcess' -ErrorAction SilentlyContinue }
+    } $refusal.Output
+    if ($refusal.Fault -and $answer -ne $refusal.Output) {
+        throw "Odmowa zapisu powinna zostać nazwana ostatnią linią demona, otrzymano: [$answer]"
+    }
+    if (-not $refusal.Fault -and $answer) {
+        throw "Odmowa z innego powodu nie jest usterką dysku, otrzymano: [$answer]"
+    }
+}
+# The module's own docker call is back after the stub.
+Import-Module $modulePath -Force
+
+# On an engine that works the write succeeds and leaves no volume behind.
+$previousPreference = $ErrorActionPreference
+$ErrorActionPreference = 'Continue'
+& docker info --format '{{.ServerVersion}}' 1>$null 2>$null
+$engineUp = $LASTEXITCODE -eq 0
+$ErrorActionPreference = $previousPreference
+if ($engineUp) {
+    $fault = Get-M2DockerDiskFault
+    if ($fault) { throw "Zapis na działający dysk Dockera nie powinien zawieść: $fault" }
+    $ErrorActionPreference = 'Continue'
+    $leftovers = @(& docker volume ls --filter 'label=com.metin2.probe=1' --format '{{.Name}}' 2>$null | Where-Object { $_ })
+    $ErrorActionPreference = $previousPreference
+    if ($leftovers.Count -ne 0) { throw "Próba zapisu zostawiła wolumeny: $($leftovers -join ', ')" }
 }
 
 # The collision that actually stops an update is not the panel's. 7790 is the
@@ -142,4 +233,5 @@ if (@(Get-M2PublishedPortMatches -PortsText '7789/tcp' -Ports @(7789)).Count -ne
     ParserErrors = @($parserErrors).Count
     ClassifiedCases = $cases.Count
     UnknownFallback = $unknown.Code
+    DockerDiskProbed = $engineUp
 } | ConvertTo-Json

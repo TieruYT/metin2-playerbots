@@ -136,15 +136,22 @@ function Get-M2LauncherErrorGuidance {
     }
 
     # Docker Desktop's own Linux disk went read-only or ran out of room, so the
-    # image could not be written. Nothing of the server is touched; the fix is
-    # a clean restart of the WSL machine and free space - never Docker's
-    # "Clean / Purge data", which takes the database with it.
-    if ($value -match '(?i)read-only file system|no space left on device|desktop-containerd.+(?:input/output error|meta\.db)') {
+    # image could not be written. Nothing of the server's files is touched;
+    # the fix is free space and a clean restart of the WSL machine - and
+    # Docker's "Clean / Purge data" only where there is no world yet, because
+    # the database lives on that same disk. ext4 answers its first I/O error by
+    # remounting itself read-only, so the first build says "input/output
+    # error" about buildkit's own files, the next says "read-only file
+    # system", and every one after that only "failed to solve: exit code:
+    # 255" - which no pattern here can read, and which is why the preflight
+    # now writes to that disk before anything is built (pattsito, 23
+    # September: five updates in forty minutes, each ending there).
+    if ($value -match '(?i)read-only file system|no space left on device|(?:/var/lib/(?:docker|desktop-containerd)|buildkit)[^\r\n]*input/output error|desktop-containerd.+meta\.db') {
         return [pscustomobject]@{
             Code = 'DOCKER_DISK_BROKEN'
             Title = 'Dysk maszyny Dockera jest tylko do odczytu albo pełny'
-            Message = 'Docker nie mógł zapisać obrazu na swoim dysku WSL (komunikat „read-only file system” albo „no space left on device”). Pliki serwera i baza są w porządku; to stan maszyny wirtualnej Docker Desktop po nieczystym zamknięciu lub braku miejsca.'
-            Remedy = 'Zamknij Docker Desktop (ikona w zasobniku → Quit), w PowerShell wykonaj: wsl --shutdown, sprawdź wolne miejsce na dysku z folderem %LOCALAPPDATA%\Docker\wsl (potrzeba kilku GB), uruchom Docker Desktop ponownie i kliknij GRAJ. Nie używaj w Docker Desktop opcji „Clean / Purge data” ani „Reset to factory defaults” - usuwają bazę z postaciami.'
+            Message = 'Docker nie mógł zapisać na swoim dysku (plik docker_data.vhdx) - komunikat „read-only file system”, „input/output error” albo „no space left on device”. Zwykle zabrakło miejsca na dysku Windows, na którym leży ten plik, albo Docker Desktop zamknął się nieczysto. Pliki serwera są w porządku; baza świata leży na tym samym dysku Dockera.'
+            Remedy = (Get-M2DockerDiskRemedy)
         }
     }
     if ($value -match "(?i)playerbot-migrate.+didn.t complete successfully|database import was not ready after|user: 'unauthenticated'") {
@@ -203,6 +210,160 @@ function Get-M2LauncherErrorGuidance {
         Message = if ($value) { ($value -split '\r?\n' | Select-Object -Last 1) } else { 'Nie otrzymano szczegółów błędu.' }
         Remedy = 'Uruchom „Diagnostyka”, następnie „Zbierz logi (ZIP)” i prześlij utworzony plik na kanał pomocy projektu.'
     }
+}
+
+# What to do about a Docker disk that refuses writes: the guidance dialog, the
+# preflight's blocking issue and the updater's refusal all say the same thing.
+# One line per step, and never "wsl" followed on its line by "error",
+# "failed" or "exit status": Get-M2LauncherErrorGuidance reads whole outputs,
+# and a sentence of this remedy printed by the preflight must not look like a
+# broken WSL to the rule above it.
+function Get-M2DockerDiskRemedy {
+    return ('1. Zwolnij miejsce na dysku z folderem Dockera (%LOCALAPPDATA%\Docker, zwykle C:) - budowa serwera potrzebuje ok. 15 GB.' + [Environment]::NewLine +
+            '2. Zamknij Docker Desktop (ikona w zasobniku → Quit) i w PowerShell wpisz: wsl --shutdown' + [Environment]::NewLine +
+            '3. Uruchom Docker Desktop, poczekaj na „Engine running” i kliknij GRAJ - launcher dokończy budowanie bez ponownego pobierania.' + [Environment]::NewLine +
+            'Jeśli to nie pomoże, a masz już świat z postaciami, nie używaj w Docker Desktop „Clean / Purge data” ani „Reset to factory defaults” (kasują bazę) - wyślij logi na Discorda. ' +
+            'Na świeżej instalacji, która jeszcze ani razu nie wystartowała, Docker Desktop → Troubleshoot → Clean / Purge data niczego nie zabierze i zakłada Dockerowi nowy dysk.')
+}
+
+function Format-M2Bytes {
+    param([long]$Bytes)
+    if ($Bytes -ge 1GB) { return ('{0:N1} GB' -f ($Bytes / 1GB)) }
+    return ('{0:N0} MB' -f ($Bytes / 1MB))
+}
+
+# Where Docker Desktop keeps its Linux disk, and how much room the Windows
+# drive under it has left. Images, the build cache and every volume - the
+# world's database with them - live in one ext4 file system inside
+# docker_data.vhdx, which grows as a build writes; when Windows cannot give it
+# the room, ext4 takes the write error and remounts itself read-only. Moved
+# with Docker Desktop's "Disk image location", the folder is named in its
+# settings (customWslDistroDir; dataFolder for the Hyper-V backend).
+function Get-M2DockerDataLocation {
+    $directory = ''
+    $appData = [Environment]::GetFolderPath('ApplicationData')
+    if ($appData) {
+        foreach ($name in @('settings-store.json', 'settings.json')) {
+            $path = Join-Path (Join-Path $appData 'Docker') $name
+            if (-not (Test-Path -LiteralPath $path -PathType Leaf)) { continue }
+            try {
+                $settings = Get-Content -LiteralPath $path -Raw -Encoding UTF8 | ConvertFrom-Json
+                foreach ($property in @($settings.PSObject.Properties)) {
+                    if ($property.Name -match '(?i)^(?:customWslDistroDir|dataFolder)$' -and [string]$property.Value) {
+                        $directory = [string]$property.Value
+                        break
+                    }
+                }
+            }
+            catch {}
+            if ($directory) { break }
+        }
+    }
+    $localAppData = [Environment]::GetFolderPath('LocalApplicationData')
+    if (-not $directory -and $localAppData) { $directory = Join-Path (Join-Path $localAppData 'Docker') 'wsl' }
+    if (-not $directory) { return $null }
+
+    $disks = @()
+    if (Test-Path -LiteralPath $directory -PathType Container) {
+        $disks = @(Get-ChildItem -LiteralPath $directory -Filter '*.vhdx' -Recurse -Depth 2 -File -ErrorAction SilentlyContinue |
+            ForEach-Object { [pscustomobject]@{ Path = $_.FullName; Bytes = [long]$_.Length } })
+    }
+    $free = $null
+    $total = $null
+    $driveName = ''
+    try {
+        $rootPath = [IO.Path]::GetPathRoot([IO.Path]::GetFullPath($directory))
+        if ($rootPath) {
+            $drive = [IO.DriveInfo]::new($rootPath)
+            $driveName = $drive.Name.TrimEnd('\')
+            if ($drive.IsReady) {
+                $free = [long]$drive.AvailableFreeSpace
+                $total = [long]$drive.TotalSize
+            }
+        }
+    }
+    catch {}
+    return [pscustomobject]@{
+        Directory = $directory
+        Drive = $driveName
+        FreeBytes = $free
+        TotalBytes = $total
+        Disks = @($disks)
+    }
+}
+
+# A write to Docker's disk, and nothing else. The engine goes on answering
+# `docker info' after its disk has gone read-only, so the preflight said
+# "mozna uruchomic serwer" while every build died at its first write. A volume
+# created and removed at once is a write there (its directory and the volume
+# store's database) that touches nothing of the stack. Answers the daemon's
+# own words when the write fails for want of a disk, '' otherwise - including
+# when it fails for any other reason, which is not this check's to name.
+function Get-M2DockerDiskFault {
+    $name = 'm2-disk-probe-' + [Guid]::NewGuid().ToString('N').Substring(0, 12)
+    $create = Invoke-M2DiagnosticProcess -FileName 'docker.exe' -Arguments ('volume create --label com.metin2.probe=1 ' + $name) -TimeoutMilliseconds 15000
+    if ($create.ExitCode -eq 0) {
+        [void](Invoke-M2DiagnosticProcess -FileName 'docker.exe' -Arguments ('volume rm -f ' + $name) -TimeoutMilliseconds 15000)
+        return ''
+    }
+    $text = ([string]$create.Output).Trim()
+    if ($text -notmatch '(?i)read-only file system|input/output error|no space left on device') { return '' }
+    $lines = @($text -split '\r?\n' | Where-Object { $_.Trim() })
+    return ([string]$lines[$lines.Count - 1]).Trim()
+}
+
+# What a support bundle says about disks, because the one question a report
+# like pattsito's cannot answer without it is whether the drive was full.
+# User profile paths are shortened to %USERPROFILE%.
+function Get-M2DiskSpaceReport {
+    param([Parameter(Mandatory = $true)][string]$ServerRoot)
+
+    $profilePath = [Environment]::GetFolderPath('UserProfile')
+    $hide = {
+        param([string]$Path)
+        if ($profilePath -and $Path.StartsWith($profilePath, [StringComparison]::OrdinalIgnoreCase)) {
+            return '%USERPROFILE%' + $Path.Substring($profilePath.Length)
+        }
+        return $Path
+    }
+    $lines = [Collections.Generic.List[string]]::new()
+    $lines.Add('Dyski Windows:')
+    foreach ($drive in @([IO.DriveInfo]::GetDrives())) {
+        try {
+            if ($drive.DriveType -ne [IO.DriveType]::Fixed -or -not $drive.IsReady) { continue }
+            $lines.Add(('  {0} wolne {1} z {2}' -f $drive.Name.TrimEnd('\'), (Format-M2Bytes $drive.AvailableFreeSpace), (Format-M2Bytes $drive.TotalSize)))
+        }
+        catch {}
+    }
+    $lines.Add('')
+    $lines.Add('Docker Desktop:')
+    $data = Get-M2DockerDataLocation
+    if ($data) {
+        $lines.Add('  folder dysku: ' + (& $hide $data.Directory))
+        if (@($data.Disks).Count -eq 0) { $lines.Add('  (nie znaleziono plikow .vhdx)') }
+        foreach ($disk in @($data.Disks)) {
+            $lines.Add(('  {0}: {1}' -f (& $hide $disk.Path), (Format-M2Bytes $disk.Bytes)))
+        }
+        if ($null -ne $data.FreeBytes) {
+            $lines.Add(('  wolne na dysku {0} {1}' -f $data.Drive, (Format-M2Bytes $data.FreeBytes)))
+        }
+    }
+    else {
+        $lines.Add('  (nie ustalono folderu dysku)')
+    }
+    $lines.Add('')
+    $lines.Add('Kopie aktualizacji (backups):')
+    $backups = Join-Path ([IO.Path]::GetFullPath($ServerRoot)) 'backups'
+    if (Test-Path -LiteralPath $backups -PathType Container) {
+        $copies = @(Get-ChildItem -LiteralPath $backups -Directory -ErrorAction SilentlyContinue)
+        $bytes = 0L
+        foreach ($file in @(Get-ChildItem -LiteralPath $backups -Recurse -File -Force -ErrorAction SilentlyContinue)) { $bytes += [long]$file.Length }
+        $lines.Add(('  {0} katalogow, razem {1}' -f $copies.Count, (Format-M2Bytes $bytes)))
+    }
+    else {
+        $lines.Add('  (brak)')
+    }
+    return ($lines -join [Environment]::NewLine)
 }
 
 function Get-M2InstallationProjectName {
@@ -798,6 +959,34 @@ function Get-M2DockerPreflight {
         }
     }
 
+    # The disk under the engine: a write that must succeed, and the room the
+    # Windows drive has left to grow it. The write stops the start - nothing
+    # can be built or created on a read-only disk, and without this the
+    # player downloads and applies the update first and learns it from an
+    # "exit code: 255". The room is only a warning: a disk image that has
+    # grown before carries free space of its own that no Windows number shows.
+    if ($dockerEngineReady) {
+        $diskFault = Get-M2DockerDiskFault
+        if ($diskFault) {
+            [void]$checks.Add("BŁĄD: dysk Dockera nie przyjmuje zapisu ($diskFault).")
+            [void]$blocking.Add('Dysk, na którym Docker Desktop trzyma obrazy i bazę świata (docker_data.vhdx), nie przyjmuje zapisu (read-only file system).' + [Environment]::NewLine + (Get-M2DockerDiskRemedy))
+        }
+        else {
+            [void]$checks.Add('OK: dysk Dockera przyjmuje zapis.')
+        }
+    }
+    $dockerData = Get-M2DockerDataLocation
+    if ($dockerData -and $null -ne $dockerData.FreeBytes) {
+        $where = if ($dockerData.Drive) { $dockerData.Drive } else { $dockerData.Directory }
+        if ($dockerData.FreeBytes -lt 15GB) {
+            [void]$checks.Add(('UWAGA: na dysku {0} zostało {1} wolnego miejsca, a tam Docker trzyma swój dysk.' -f $where, (Format-M2Bytes $dockerData.FreeBytes)))
+            [void]$warnings.Add(('Na dysku {0} zostało tylko {1} wolnego miejsca. Docker trzyma tam swój dysk (docker_data.vhdx), który rośnie przy budowie serwera - świeża budowa potrzebuje ok. 15 GB. Gdy miejsca zabraknie w trakcie budowy, dysk Dockera przechodzi w tryb tylko do odczytu. Zwolnij miejsce przed kliknięciem GRAJ albo ZAINSTALUJ AKTUALIZACJE.' -f $where, (Format-M2Bytes $dockerData.FreeBytes)))
+        }
+        else {
+            [void]$checks.Add(('OK: na dysku {0} jest {1} wolnego miejsca dla Dockera.' -f $where, (Format-M2Bytes $dockerData.FreeBytes)))
+        }
+    }
+
     return [pscustomobject]@{
         CanStart = $blocking.Count -eq 0
         DockerCliPresent = $dockerCliPresent
@@ -837,6 +1026,10 @@ function Format-M2DockerPreflightReport {
 
 Export-ModuleMember -Function @(
     'Get-M2LauncherErrorGuidance',
+    'Get-M2DockerDiskRemedy',
+    'Get-M2DockerDataLocation',
+    'Get-M2DockerDiskFault',
+    'Get-M2DiskSpaceReport',
     'Get-M2DockerPreflight',
     'Format-M2DockerPreflightReport',
     'Get-M2StackHostPorts',

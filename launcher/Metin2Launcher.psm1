@@ -1093,7 +1093,13 @@ function Invoke-M2CapturedCommand {
 }
 
 function New-M2SupportBundle {
-    param([Parameter(Mandatory = $true)][string]$ServerRoot)
+    param(
+        [Parameter(Mandatory = $true)][string]$ServerRoot,
+        # Text files the caller made, by name - what another module knows
+        # (the disk report is the diagnostics module's), without this one
+        # reaching into it.
+        [hashtable]$ExtraFiles = @{}
+    )
 
     $root = [IO.Path]::GetFullPath($ServerRoot).TrimEnd('\')
     $outputDir = Join-Path $root 'support-bundles'
@@ -1129,6 +1135,11 @@ function New-M2SupportBundle {
         }
         $summary = $summary -join [Environment]::NewLine
         [IO.File]::WriteAllText((Join-Path $work 'summary.txt'), $summary, [Text.UTF8Encoding]::new($false))
+        foreach ($extra in @($ExtraFiles.Keys)) {
+            $extraName = [IO.Path]::GetFileName([string]$extra)
+            if (-not $extraName) { continue }
+            [IO.File]::WriteAllText((Join-Path $work $extraName), [string]$ExtraFiles[$extra], [Text.UTF8Encoding]::new($false))
+        }
 
         $versionFile = Join-Path $root 'VERSION'
         if (Test-Path -LiteralPath $versionFile -PathType Leaf) {
