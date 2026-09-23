@@ -1,12 +1,12 @@
 {
   "schema": 1,
   "channel": "stable",
-  "publishedAt": "2026-09-23T13:44:33Z",
-  "statusMessage": "2.2.0 (serwer 2.2.0, klient bez zmian - 2.0.26): nowa mapa dla botow Doyyumhwaji (66-80, kazde krolestwo wchodzi i wraca swoja brama), boty w druzynie z graczem robia zakupy i ulepszenia w miescie, rynek bez pustych kursow, poprawiony update.sh na Linuksie. Zawiera wszystko z 2.1.0.",
+  "publishedAt": "2026-09-23T15:50:53Z",
+  "statusMessage": "2.2.1 (serwer 2.2.1, klient bez zmian - 2.0.26): po 1500 botow w kazdym krolestwie (nowe postacie Shinsoo i Jinno, liczby na krolestwo do 1500), bonusy po jednym przedmiocie naraz, Podglad w oknie GM otwiera nasz panel WWW, launcher nie radzi zmiany portu logowania. Zawiera wszystko z 2.2.0.",
   "server": {
-    "version": "2.2.0",
-    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.0/metin2-server-update-2.2.0.zip",
-    "sha256": "C0D468773D9DFE0DE152CFEA3A39C798B9017D69ACCA258B0BD0F143E8C861CD"
+    "version": "2.2.1",
+    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.1/metin2-server-update-2.2.1.zip",
+    "sha256": "F1654AC464E645B16912CDEB43A261D945DCBBC49950DC040428B2D977C272D0"
   },
   "support": {
     "contactUrl": "https://discord.gg/pt5tvnrN6",
