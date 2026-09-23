@@ -161,7 +161,12 @@ function Get-M2UpdateManifest {
         try {
             $response = Invoke-WebRequest -Uri $apiUri -Method Get -UseBasicParsing -TimeoutSec $TimeoutSec `
                 -Headers @{ Accept = 'application/vnd.github.raw+json'; 'User-Agent' = 'metin2-playerbots-launcher' }
-            $text = [string]$response.Content
+            # Windows PowerShell 5.1 hands this media type back as a byte[],
+            # and [string] of one is its numbers joined by spaces - so this
+            # branch never matched and every launcher read the five-minute CDN
+            # instead (m2zip saw 2.2.5 twice after 2.2.6 was pushed).
+            $content = $response.Content
+            $text = if ($content -is [byte[]]) { [Text.Encoding]::UTF8.GetString($content) } else { [string]$content }
             if ($text.TrimStart().StartsWith('{')) {
                 return ConvertFrom-M2ManifestText -Text $text -Origin ([string]$apiUri)
             }

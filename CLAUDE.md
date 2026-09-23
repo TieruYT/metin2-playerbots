@@ -7900,6 +7900,14 @@ not in `data/`) reworked these point by point. What each hangs on:
   writes `game1.cfg` back when it closes - and a "No" is kept for that client
   folder in `.m2client-language-declined` beside the launcher's settings,
   because `Save-M2LauncherConfig` keeps a fixed set of fields.
+- **The manifest's API path was dead on Windows PowerShell 5.1.**
+  `Get-M2UpdateManifest` asks the contents API first because
+  raw.githubusercontent.com caches for five minutes, but with
+  `Accept: application/vnd.github.raw+json` PowerShell 5.1 returns the body
+  as a `byte[]`, and `[string]` of one is its numbers joined by spaces - so
+  the branch never matched and every launcher read the CDN. After 2.2.6 was
+  pushed, m2zip's launcher said "2.2.5 is the newest" twice. The bytes are
+  decoded as UTF-8 now (committed after 2.2.6, ships with the next release).
 - **The Useful Items List is the gambler's, and a limit counts the box.**
   Community Patch 2, point 9 sat under "Zarzadzanie ekwipunkiem Hazardzisty"
   and every bot kept the list, which names every body armour over 33 and
