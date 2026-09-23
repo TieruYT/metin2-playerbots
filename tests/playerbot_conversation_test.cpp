@@ -637,6 +637,11 @@ static void TestAliasesAndMoney()
 	CHECK(ItemNameMatches("Miecz Szponu Ducha+3", "szpon"), "szpon alone is still the sword");
 	CHECK(!ItemNameMatches("Szpon Wilka", "szpon tygrysa"), "szpon tygrysa is not Szpon Wilka");
 	CHECK(!ItemNameMatches("Boski Luk Moreli", "morelek +9"), "morelek +9 is not morela");
+	// The short forms the changelog promises for the names the topics take.
+	CHECK(ItemNameMatches("Ksiega Misji (Latwa)", "km"), "km is Ksiega Misji");
+	CHECK(ItemNameMatches("Kamien Duchowy", "kd"), "kd is Kamien Duchowy");
+	CHECK(IntentOf("masz km?") == I_ITEM_OWN && IntentOf("masz kd?") == I_ITEM_OWN, "masz km/kd -> ITEM_OWN: %s %s",
+			IntentName(IntentOf("masz km?")), IntentName(IntentOf("masz kd?")));
 
 	// money
 	TTokens t;
