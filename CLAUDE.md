@@ -7865,6 +7865,41 @@ not in `data/`) reworked these point by point. What each hangs on:
   `PLAYERBOT_POLYMORPH_BOSS_VNUMS` names 1093 and 1095 (Niebieska Smierc, the
   name Tieru gave from memory) and nothing else; a marble a bot does not
   spend stays goods for its counter (`PLAYERBOT_SHOP_MARBLE_LINES`).
+- **A bot's status line has an English twin, and the client picks.** The
+  server cannot know a client's language, so since 2.2.6 it builds the line
+  twice (`BuildPlayerBotStatusText(..., en)`, every format a
+  `PBT(en, "pl", "en")` pair) and sends both in one command,
+  `PlayerBotStatus <vid> <hex> <hex_en>`; a root from before ignores the third
+  word (the handler takes `*rest`), client 2.0.28's `playerbot_status_tail.py`
+  draws it for any language but Polish, English being what a Romanian or a
+  German reads first ("Chat language", JFK). A monster's or a stone's name in
+  the English line is `{m<vnum>}` and a Biologist item `{i<vnum>}`, which the
+  client fills in from its own tables (`nonplayer.GetMonsterName`,
+  `item.SelectItem` + `GetItemName` - the getter ignores an argument and names
+  whatever is selected). The English formats are runtime strings the compiler
+  cannot check against their arguments, so `status_en.py` (session 82d3ab90)
+  asserted that each pair carries the same conversions; keep them paired by
+  hand from now on. Two lines of 159 bytes as hex stay far under the 1024
+  bytes the client reads a chat packet into without a bound check. Bot chat,
+  whispers, shouts, shop names, notices and NPC names are still Polish: the
+  conversation layer understands and writes Polish only, and an NPC's name is
+  the server's `mob_proto`.
+- **A level the panels read is written when it moves.** Both panels read
+  `player.player.level`, which the db core writes from its cache every seven
+  minutes, so a young bot read three levels behind itself (NieBijOddam, 23
+  September: Lv 13 in the game, Lv 10 in both panels). `MirrorPlayerBotLevel`
+  saves the character (the delayed save, so the cache holds the new level)
+  and updates `level`/`exp` in the row at once when a bot's level changes;
+  the cache's later flush then writes the same level, never an older one.
+- **The launcher offers English to the game client.** The client's language
+  is the `LANGUAGE` line of `game1.cfg` beside the exe (`CPythonSystem`; no
+  file or no line means Polish) and its own switch is on the login screen and
+  closes the client. With the launcher in English and a Polish client, the
+  launcher asks when the client is chosen and before it starts one
+  (`Confirm-ClientLanguageForLauncher`), never while the client runs - it
+  writes `game1.cfg` back when it closes - and a "No" is kept for that client
+  folder in `.m2client-language-declined` beside the launcher's settings,
+  because `Save-M2LauncherConfig` keeps a fixed set of fields.
 - **The Useful Items List is the gambler's, and a limit counts the box.**
   Community Patch 2, point 9 sat under "Zarzadzanie ekwipunkiem Hazardzisty"
   and every bot kept the list, which names every body armour over 33 and

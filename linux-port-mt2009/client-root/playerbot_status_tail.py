@@ -39,8 +39,96 @@ def decode_status(vid_arg, hex_arg):
 	return vid, "".join(chars)
 
 
-def show(vid_arg, hex_arg):
+# Since server 2.2.6 the command may carry the same status in English as a
+# third word: "PlayerBotStatus <vid> <hex> <hex_en>". A client whose language is
+# not Polish draws the English one - English being what a Romanian or a German
+# reads before Polish - and a monster's or an item's name in it arrives as
+# "{m<vnum>}" or "{i<vnum>}", filled in here from the client's own tables, in
+# the client's own language. Anything that does not decode falls back to the
+# Polish line, so an older server and a broken word both still show a status.
+PLACEHOLDER_OPEN = "{"
+PLACEHOLDER_CLOSE = "}"
+PLACEHOLDER_MAX = 8
+
+
+def client_language():
+	try:
+		import systemSetting
+		return systemSetting.GetLanguage()
+	except Exception:
+		return "pl"
+
+
+def monster_name(vnum):
+	try:
+		import nonplayer
+		name = nonplayer.GetMonsterName(vnum)
+		if name:
+			return name
+	except Exception:
+		pass
+	return "?"
+
+
+def item_name(vnum):
+	# item.GetItemName names the selected item and ignores an argument, so
+	# the item is selected first, the way every tooltip does it (an unknown
+	# vnum selects 60001 and says so in syserr.txt; the server sends none).
+	try:
+		import item
+		item.SelectItem(vnum)
+		name = item.GetItemName()
+		if name:
+			return name
+	except Exception:
+		pass
+	return "?"
+
+
+def expand_names(text):
+	"""Every {m<vnum>} and {i<vnum>} replaced by the client's own name for it."""
+	out = []
+	i = 0
+	while i < len(text):
+		start = text.find(PLACEHOLDER_OPEN, i)
+		if start < 0:
+			out.append(text[i:])
+			break
+		end = text.find(PLACEHOLDER_CLOSE, start)
+		out.append(text[i:start])
+		if end < 0:
+			out.append(text[start:])
+			break
+		token = text[start + 1:end]
+		kind, digits = token[:1], token[1:]
+		if kind in ("m", "i") and digits.isdigit() and len(digits) <= PLACEHOLDER_MAX:
+			vnum = int(digits)
+			out.append(monster_name(vnum) if kind == "m" else item_name(vnum))
+		else:
+			out.append(text[start:end + 1])
+		i = end + 1
+	return "".join(out)
+
+
+def choose_status(vid_arg, hex_arg, hex_en=None, language=None):
+	"""(vid, text) to draw, or None: the English line for a non-Polish client."""
 	status = decode_status(vid_arg, hex_arg)
+	if status is None:
+		return None
+	if hex_en is None:
+		return status
+	if language is None:
+		language = client_language()
+	if language == "pl":
+		return status
+	english = decode_status(vid_arg, hex_en)
+	if english is None:
+		return status
+	return english[0], expand_names(english[1])
+
+
+def show(vid_arg, hex_arg, *rest):
+	status = choose_status(vid_arg, hex_arg, rest[0] if rest else None)
 	if status is None:
 		return
 	import textTail

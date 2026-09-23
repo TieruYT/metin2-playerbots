@@ -237,7 +237,7 @@ EDITS = {
          b'\t\t# A bot\'s status as a text tail and nothing in the chat history\r\n'
          b'\t\t# (playerbot_status_tail.py; SendPlayerBotOverheadChat on the server).\r\n'
          b'\t\timport playerbot_status_tail\r\n'
-         b'\t\tplayerbot_status_tail.show(vid, encodedText)\r\n'
+         b'\t\tplayerbot_status_tail.show(vid, encodedText, *rest)\r\n'
          b'\r\n'
          b'\t# Same transport as PlayerbotOverhead above (SendPlayerBotOverheadTail),\r\n'),
         # Auto Lowy (uiautohunt.py, hand-written beside serverinfo.py): the

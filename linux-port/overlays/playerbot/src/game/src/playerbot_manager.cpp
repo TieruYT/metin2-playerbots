@@ -483,6 +483,37 @@ namespace
 #endif
 	}
 
+	// A bot's level, where the panels read it. Both read player.player, and the
+	// db core writes a character's row out of its cache every seven minutes
+	// (g_iPlayerCacheFlushSeconds), so a young bot that levels every few
+	// minutes stood three levels behind itself in both rankings: Lv 13 over
+	// its head, Lv 10 in the two panels ("strona nie aktualizuje poziomow
+	// botow", NieBijOddam, 23 September). A level that moved is put in the db
+	// core's cache (Save, the delayed save) and written to the row at once,
+	// both, so the cache's own flush later writes the same level and never an
+	// older one. A level-up is rare enough that one row each costs nothing.
+	void MirrorPlayerBotLevel(LPCHARACTER ch)
+	{
+		static std::map<DWORD, int> s_mapPlayerBotLevelWritten;
+		if (!ch || !ch->IsPC())
+			return;
+		const DWORD pid = ch->GetPlayerID();
+		const int level = (int)ch->GetLevel();
+		std::map<DWORD, int>::iterator it = s_mapPlayerBotLevelWritten.find(pid);
+		if (it == s_mapPlayerBotLevelWritten.end())
+		{
+			// The row was read at the login; nothing to write until it moves.
+			s_mapPlayerBotLevelWritten[pid] = level;
+			return;
+		}
+		if (it->second == level)
+			return;
+		it->second = level;
+		ch->Save();
+		DBManager::instance().Query("UPDATE player.player SET level=%d, exp=%u WHERE id=%u",
+				level, (unsigned int)ch->GetExp(), pid);
+	}
+
 	// When a marble is worth more than the whole skill rotation.
 	//
 	// A polymorph marble gives a large flat damage bonus for five minutes and
@@ -4946,6 +4977,7 @@ void CPlayerBotManager::Update()
 		// marble is spent on the Reaper. Both are cheap tests that end on the
 		// first lines for everybody they do not concern.
 		ManagePlayerBotExpLock(ch, state);
+		MirrorPlayerBotLevel(ch);
 		ManagePlayerBotPolymorph(ch, state, dwNow);
 		ManagePlayerBotGuild(ch, state, dwNow);
 		// Answered every tick and not on the party pass's own clock: the engine

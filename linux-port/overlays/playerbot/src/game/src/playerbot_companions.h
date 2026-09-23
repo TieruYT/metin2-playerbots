@@ -880,7 +880,7 @@ namespace
 	// walk to offer one. Only when it is not fighting: a fight says what it is
 	// fighting.
 	bool BuildPlayerBotMercStatus(LPCHARACTER ch, const TPlayerBotAIState& state, const char* prefix,
-			char* status, size_t statusSize)
+			char* status, size_t statusSize, bool en)
 	{
 		if (!ch || !status || statusSize == 0)
 			return false;
@@ -892,11 +892,13 @@ namespace
 			const TPlayerBotMercContract& c = own->second;
 			LPCHARACTER client = CHARACTER_MANAGER::instance().FindByPID(c.clientPid);
 			if (c.pausedSince != 0)
-				snprintf(status, statusSize, "%sNajemnik: przerwa w kontrakcie, wroce do %s", prefix,
-						client ? client->GetName() : "klienta");
+				snprintf(status, statusSize,
+						PBT(en, "%sNajemnik: przerwa w kontrakcie, wroce do %s", "%sMercenary: contract paused, back to %s soon"),
+						prefix, client ? client->GetName() : PBT(en, "klienta", "the client"));
 			else
-				snprintf(status, statusSize, "%sNajemnik: chronie %s (jeszcze %u min)", prefix,
-						client ? client->GetName() : "klienta", c.leftMs / 60000u + 1u);
+				snprintf(status, statusSize,
+						PBT(en, "%sNajemnik: chronie %s (jeszcze %u min)", "%sMercenary: protecting %s (%u min left)"),
+						prefix, client ? client->GetName() : PBT(en, "klienta", "the client"), c.leftMs / 60000u + 1u);
 			return true;
 		}
 		std::map<DWORD, DWORD>::const_iterator hired = s_mapPlayerBotMercClientOf.find(pid);
@@ -907,18 +909,20 @@ namespace
 				return false;
 			LPCHARACTER merc = CHARACTER_MANAGER::instance().FindByPID(hired->second);
 			if (it->second.pausedSince != 0)
-				snprintf(status, statusSize, "%sCzekam na najemnika %s", prefix,
-						merc ? merc->GetName() : "?");
+				snprintf(status, statusSize, PBT(en, "%sCzekam na najemnika %s", "%sWaiting for my mercenary %s"),
+						prefix, merc ? merc->GetName() : "?");
 			else
-				snprintf(status, statusSize, "%sWynajalem najemnika %s (jeszcze %u min)", prefix,
-						merc ? merc->GetName() : "?", it->second.leftMs / 60000u + 1u);
+				snprintf(status, statusSize,
+						PBT(en, "%sWynajalem najemnika %s (jeszcze %u min)", "%sHired the mercenary %s (%u min left)"),
+						prefix, merc ? merc->GetName() : "?", it->second.leftMs / 60000u + 1u);
 			return true;
 		}
 		if (state.persona.dwMercClientPid != 0 && dwNow < state.persona.dwMercApproachUntil)
 		{
 			LPCHARACTER client = CHARACTER_MANAGER::instance().FindByPID(state.persona.dwMercClientPid);
-			snprintf(status, statusSize, "%sIde zaoferowac pomoc %s (%lld yang za godzine)", prefix,
-					client ? client->GetName() : "?", GetPlayerBotMercPrice());
+			snprintf(status, statusSize,
+					PBT(en, "%sIde zaoferowac pomoc %s (%lld yang za godzine)", "%sGoing to offer %s my help (%lld yang an hour)"),
+					prefix, client ? client->GetName() : "?", GetPlayerBotMercPrice());
 			return true;
 		}
 		return false;

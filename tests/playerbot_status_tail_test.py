@@ -73,6 +73,72 @@ class StatusTailTest(unittest.TestCase):
                 sys.modules['textTail'] = old
 
 
+class EnglishStatusTest(unittest.TestCase):
+    """Server 2.2.6: the English line as a third word, and the names in it."""
+
+    def setUp(self):
+        self.saved = dict((name, sys.modules.get(name)) for name in ('nonplayer', 'item'))
+        mobs = types.ModuleType('nonplayer')
+        mobs.GetMonsterName = lambda vnum: {101: 'Wild Dog', 8001: 'Metin of Sorrow'}.get(vnum, '')
+        items = types.ModuleType('item')
+        selected = [0]
+        items.SelectItem = lambda vnum: selected.__setitem__(0, vnum)
+        items.GetItemName = lambda: {50721: 'Gango Root'}.get(selected[0], '')
+        sys.modules['nonplayer'] = mobs
+        sys.modules['item'] = items
+
+    def tearDown(self):
+        for name, module in self.saved.items():
+            if module is None:
+                sys.modules.pop(name, None)
+            else:
+                sys.modules[name] = module
+
+    def test_a_polish_client_keeps_the_polish_line(self):
+        pl, en = hexed(b'Walcze z Dziki Pies'), hexed(b'Fighting {m101}')
+        self.assertEqual(status.choose_status('42', pl, en, 'pl'), (42, 'Walcze z Dziki Pies'))
+
+    def test_any_other_language_takes_the_english_line_with_names(self):
+        pl, en = hexed(b'Walcze z Dziki Pies'), hexed(b'Fighting {m101}')
+        for language in ('en', 'de', 'ro'):
+            self.assertEqual(status.choose_status('42', pl, en, language), (42, 'Fighting Wild Dog'))
+        self.assertEqual(status.choose_status('42', hexed(b'x'), hexed(b'Collecting: {i50721}'), 'en'),
+                         (42, 'Collecting: Gango Root'))
+
+    def test_an_old_server_or_a_broken_word_falls_back_to_polish(self):
+        pl = hexed(b'Walcze')
+        self.assertEqual(status.choose_status('42', pl, None, 'en'), (42, 'Walcze'))
+        self.assertEqual(status.choose_status('42', pl, 'zz', 'en'), (42, 'Walcze'))
+        self.assertIsNone(status.choose_status('42', 'zz', hexed(b'Fighting'), 'en'))
+
+    def test_placeholders(self):
+        self.assertEqual(status.expand_names('Breaking {m8001} now'), 'Breaking Metin of Sorrow now')
+        self.assertEqual(status.expand_names('{m999}'), '?')
+        self.assertEqual(status.expand_names('{x12} {m} {m12a} {m123456789}'), '{x12} {m} {m12a} {m123456789}')
+        self.assertEqual(status.expand_names('open { and no close'), 'open { and no close')
+        self.assertEqual(status.expand_names('[PT] Guild war with {Clan}'), '[PT] Guild war with {Clan}')
+
+    def test_show_passes_the_third_word(self):
+        calls = []
+        native = types.ModuleType('textTail')
+        native.RegisterChatTail = lambda vid, text: calls.append((vid, text))
+        setting = types.ModuleType('systemSetting')
+        setting.GetLanguage = lambda: 'en'
+        saved = dict((name, sys.modules.get(name)) for name in ('textTail', 'systemSetting'))
+        sys.modules['textTail'] = native
+        sys.modules['systemSetting'] = setting
+        try:
+            status.show('42', hexed(b'Walcze z Dziki Pies'), hexed(b'Fighting {m101}'))
+            status.show('42', hexed(b'Walcze'))
+            self.assertEqual(calls, [(42, 'Fighting Wild Dog'), (42, 'Walcze')])
+        finally:
+            for name, module in saved.items():
+                if module is None:
+                    sys.modules.pop(name, None)
+                else:
+                    sys.modules[name] = module
+
+
 class TitleTest(unittest.TestCase):
     def setUp(self):
         self.calls = []

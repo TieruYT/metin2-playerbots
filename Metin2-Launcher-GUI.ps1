@@ -259,6 +259,13 @@ $script:Strings = @{
         importInfo   = 'Wybierz zrodlowa instalacje. Jej swiat (postacie, poziomy, ekwipunek) zostanie skopiowany do biezacej instalacji.'
         importOk     = 'Importuj'
         langSwitched = 'Jezyk zmieniony. Uruchom launcher ponownie, zeby zobaczyc zmiane.'
+        clientLangTitle = 'Język gry'
+        clientLangAsk = "Launcher jest po angielsku, a klient gry po polsku.`r`n`r`nPrzełączyć klienta gry na angielski? Język można potem zmienić na ekranie logowania (Ustawienia)."
+        clientLangDone = 'Klient gry uruchomi się po angielsku.'
+        clientPickTitle = 'Wybierz plik uruchamiający klienta Metin2'
+        clientPickFilter = 'Program klienta Metin2 (*.exe)|*.exe|Wszystkie pliki (*.*)|*.*'
+        clientNotChosen = 'Nie wybrano klienta. Użyj przycisku „Wybierz klienta”.'
+        clientStartFailed = 'Nie udało się uruchomić klienta'
     }
     en = @{
         formTitle    = 'Metin2 Singleplayer Playerbots - All in One'
@@ -317,6 +324,13 @@ $script:Strings = @{
         importInfo   = 'Pick the source installation. Its world - characters, levels, equipment - is copied into this one.'
         importOk     = 'Import'
         langSwitched = 'Language changed. Restart the launcher to see it.'
+        clientLangTitle = 'Game language'
+        clientLangAsk = "The launcher is in English, but the game client is set to Polish.`r`n`r`nSwitch the game client to English? You can change it later on the login screen (Settings)."
+        clientLangDone = 'The game client will start in English.'
+        clientPickTitle = 'Choose the Metin2 client program'
+        clientPickFilter = 'Metin2 client program (*.exe)|*.exe|All files (*.*)|*.*'
+        clientNotChosen = 'No client chosen. Use the "CHOOSE CLIENT" button.'
+        clientStartFailed = 'Could not start the client'
     }
 }
 
@@ -359,17 +373,92 @@ function Save-ClientExecutable {
 function Select-ClientExecutable {
     $config = Get-LauncherConfig
     $dialog = [Windows.Forms.OpenFileDialog]::new()
-    $dialog.Title = 'Wybierz plik uruchamiający klienta Metin2'
-    $dialog.Filter = 'Program klienta Metin2 (*.exe)|*.exe|Wszystkie pliki (*.*)|*.*'
+    $dialog.Title = T 'clientPickTitle'
+    $dialog.Filter = T 'clientPickFilter'
     $dialog.CheckFileExists = $true
     if ($config.clientRoot -and (Test-Path -LiteralPath $config.clientRoot -PathType Container)) {
         $dialog.InitialDirectory = $config.clientRoot
     }
     if ($dialog.ShowDialog($script:form) -eq [Windows.Forms.DialogResult]::OK) {
         Save-ClientExecutable -Executable $dialog.FileName
+        Confirm-ClientLanguageForLauncher -Executable $dialog.FileName
         return $dialog.FileName
     }
     return ''
+}
+
+# The game client keeps its language in game1.cfg beside the exe, one line
+# "LANGUAGE <code>" (CPythonSystem::LoadConfig; with no file or no line it is
+# Polish), and its own switch is on the login screen and closes the client. A
+# player who set the launcher to English had to find it (Tieru, 23 September:
+# "zeby nie musieli szukac zmiany jezyka gry"), so the launcher offers it
+# itself, when it chooses the client and before it starts one.
+function Get-ClientGameLanguage {
+    param([Parameter(Mandatory = $true)][string]$ClientRoot)
+    $cfg = Join-Path $ClientRoot 'game1.cfg'
+    if (-not (Test-Path -LiteralPath $cfg -PathType Leaf)) { return 'pl' }
+    foreach ($line in [IO.File]::ReadAllLines($cfg, [Text.Encoding]::Default)) {
+        $parts = @($line.Trim() -split '\s+', 2)
+        if ($parts.Count -eq 2 -and $parts[0] -ieq 'LANGUAGE') { return $parts[1].Trim().ToLowerInvariant() }
+    }
+    return 'pl'
+}
+
+function Set-ClientGameLanguage {
+    param(
+        [Parameter(Mandatory = $true)][string]$ClientRoot,
+        [Parameter(Mandatory = $true)][string]$Language
+    )
+    $cfg = Join-Path $ClientRoot 'game1.cfg'
+    $lines = New-Object 'System.Collections.Generic.List[string]'
+    $written = $false
+    if (Test-Path -LiteralPath $cfg -PathType Leaf) {
+        foreach ($line in [IO.File]::ReadAllLines($cfg, [Text.Encoding]::Default)) {
+            $parts = @($line.Trim() -split '\s+', 2)
+            if ($parts[0] -ieq 'LANGUAGE') {
+                if (-not $written) { $lines.Add("LANGUAGE`t`t`t`t$Language"); $written = $true }
+                continue
+            }
+            $lines.Add($line)
+        }
+    }
+    # A client that has never run has no file; one line is enough, the client
+    # fills in the rest with its defaults and writes the whole file on exit.
+    if (-not $written) { $lines.Add("LANGUAGE`t`t`t`t$Language") }
+    [IO.File]::WriteAllText($cfg, (($lines -join "`r`n") + "`r`n"), [Text.Encoding]::Default)
+}
+
+# Asked only while the launcher is in English and the client in Polish: another
+# language is somebody's own choice. Not while the client runs, because it
+# writes game1.cfg back when it closes. A "No" is kept for that client folder
+# in a file beside the launcher's settings, so it is asked once.
+function Confirm-ClientLanguageForLauncher {
+    param([string]$Executable)
+    if ($script:Lang -ne 'en' -or -not $Executable) { return }
+    try {
+        $clientRoot = Split-Path -Parent $Executable
+        if ((Get-ClientGameLanguage -ClientRoot $clientRoot) -ne 'pl') { return }
+        $declinedFile = Join-Path $root '.m2client-language-declined'
+        if ((Test-Path -LiteralPath $declinedFile -PathType Leaf) -and
+            ([IO.File]::ReadAllText($declinedFile).Trim() -ieq $clientRoot)) { return }
+        if ((Get-Command Get-M2FolderProcesses -ErrorAction SilentlyContinue) -and
+            @(Get-M2FolderProcesses -Root $clientRoot).Count -gt 0) { return }
+        $answer = [Windows.Forms.MessageBox]::Show((T 'clientLangAsk'), (T 'clientLangTitle'),
+            [Windows.Forms.MessageBoxButtons]::YesNo, [Windows.Forms.MessageBoxIcon]::Question)
+        if ($answer -eq [Windows.Forms.DialogResult]::Yes) {
+            Set-ClientGameLanguage -ClientRoot $clientRoot -Language 'en'
+            Write-LocalLog "Client language set to English: $clientRoot"
+            [Windows.Forms.MessageBox]::Show((T 'clientLangDone'), (T 'clientLangTitle'),
+                [Windows.Forms.MessageBoxButtons]::OK, [Windows.Forms.MessageBoxIcon]::Information) | Out-Null
+        }
+        else {
+            [IO.File]::WriteAllText($declinedFile, $clientRoot)
+            Write-LocalLog "Client language left in Polish: $clientRoot"
+        }
+    }
+    catch {
+        Write-LocalLog "Client language not changed: $($_.Exception.Message)"
+    }
 }
 
 function Find-ClientExecutable {
@@ -394,17 +483,18 @@ function Start-ConfiguredClient {
     if (-not $executable) { $executable = Select-ClientExecutable }
     if (-not $executable) {
         [Windows.Forms.MessageBox]::Show(
-            'Nie wybrano klienta. Użyj przycisku „Wybierz klienta”.',
+            (T 'clientNotChosen'),
             'Metin2 Playerbots', 'OK', 'Information') | Out-Null
         return
     }
+    Confirm-ClientLanguageForLauncher -Executable $executable
     try {
         Start-Process -FilePath $executable -WorkingDirectory (Split-Path -Parent $executable)
         Write-LocalLog "Uruchomiono klienta: $([IO.Path]::GetFileName($executable))"
     }
     catch {
         Write-LocalLog "BŁĄD uruchamiania klienta: $($_.Exception.Message)"
-        [Windows.Forms.MessageBox]::Show($_.Exception.Message, 'Nie udało się uruchomić klienta', 'OK', 'Error') | Out-Null
+        [Windows.Forms.MessageBox]::Show($_.Exception.Message, (T 'clientStartFailed'), 'OK', 'Error') | Out-Null
     }
 }
 

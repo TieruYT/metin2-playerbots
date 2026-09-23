@@ -3724,19 +3724,19 @@ namespace
 				bReason == PLAYERBOT_SHOP_REASON_HOARD;
 	}
 
-	inline const char* GetPlayerBotShopReasonName(BYTE bReason)
+	inline const char* GetPlayerBotShopReasonName(BYTE bReason, bool en = false)
 	{
 		switch (bReason)
 		{
-			case PLAYERBOT_SHOP_REASON_MERCHANT:         return "handlarz";
-			case PLAYERBOT_SHOP_REASON_POOR:             return "brak yang na mikstury";
-			case PLAYERBOT_SHOP_REASON_BAG_FULL:         return "pelny plecak";
-			case PLAYERBOT_SHOP_REASON_DROPPER_PRESSURE: return "dropper, pelny plecak";
-			case PLAYERBOT_SHOP_REASON_BOOKS:            return "nadmiar ksiag";
+			case PLAYERBOT_SHOP_REASON_MERCHANT:         return en ? "merchant" : "handlarz";
+			case PLAYERBOT_SHOP_REASON_POOR:             return en ? "no yang for potions" : "brak yang na mikstury";
+			case PLAYERBOT_SHOP_REASON_BAG_FULL:         return en ? "full bag" : "pelny plecak";
+			case PLAYERBOT_SHOP_REASON_DROPPER_PRESSURE: return en ? "dropper, full bag" : "dropper, pelny plecak";
+			case PLAYERBOT_SHOP_REASON_BOOKS:            return en ? "too many books" : "nadmiar ksiag";
 			case PLAYERBOT_SHOP_REASON_DROPPER_ROLL:     return "dropper";
-			case PLAYERBOT_SHOP_REASON_ROLL:             return "los";
-			case PLAYERBOT_SHOP_REASON_SPARE:            return "zbedny duplikat";
-			case PLAYERBOT_SHOP_REASON_HOARD:            return "nadmiar towaru";
+			case PLAYERBOT_SHOP_REASON_ROLL:             return en ? "chance" : "los";
+			case PLAYERBOT_SHOP_REASON_SPARE:            return en ? "spare duplicate" : "zbedny duplikat";
+			case PLAYERBOT_SHOP_REASON_HOARD:            return en ? "surplus goods" : "nadmiar towaru";
 			default:                                     return "?";
 		}
 	}
