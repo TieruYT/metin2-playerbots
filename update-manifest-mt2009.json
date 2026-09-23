@@ -1,12 +1,12 @@
 {
   "schema": 1,
   "channel": "stable",
-  "publishedAt": "2026-09-23T09:27:33Z",
-  "statusMessage": "2.1.0 (serwer 2.1.0, klient bez zmian - 2.0.26): czas czekania na ksiegi umiejetnosci w poziomie trudnosci, osobno dla graczy i dla botow (sredni 7 h, trudny 21 h, latwy bez zmian); poziom trudnosci ustawisz tez w panelu WWW. Zawiera wszystko z 2.0.99.",
+  "publishedAt": "2026-09-23T13:44:33Z",
+  "statusMessage": "2.2.0 (serwer 2.2.0, klient bez zmian - 2.0.26): nowa mapa dla botow Doyyumhwaji (66-80, kazde krolestwo wchodzi i wraca swoja brama), boty w druzynie z graczem robia zakupy i ulepszenia w miescie, rynek bez pustych kursow, poprawiony update.sh na Linuksie. Zawiera wszystko z 2.1.0.",
   "server": {
-    "version": "2.1.0",
-    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.1.0/metin2-server-update-2.1.0.zip",
-    "sha256": "58BF1D3430CAEA6F5377F51270A1E3CA7CC9EA06B9AC5A17530140125B10B1A7"
+    "version": "2.2.0",
+    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.0/metin2-server-update-2.2.0.zip",
+    "sha256": "C0D468773D9DFE0DE152CFEA3A39C798B9017D69ACCA258B0BD0F143E8C861CD"
   },
   "support": {
     "contactUrl": "https://discord.gg/pt5tvnrN6",
