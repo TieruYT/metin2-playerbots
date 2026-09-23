@@ -16,34 +16,93 @@
 # opens the plain window (see the dot-source in Metin2-Launcher-GUI.ps1).
 
 # Native background renderer: proportional cover, right alignment and a contrast
-# veil. The artwork stays unchanged on disk. Double buffering avoids resize flicker.
-if (-not ('M2LauncherArtPanel' -as [type])) {
+# veil. The artwork stays unchanged on disk.
+#
+# The picture is composed once per size into a bitmap and every paint copies
+# its own rectangle of that bitmap 1:1. It used to be scaled from 1536 x 1024
+# with a bicubic filter on every paint - and almost every control above it has
+# a transparent or half-transparent background, which WinForms paints by asking
+# the parent for its background, so one step of a window resize scaled the
+# whole picture some forty times: 378 ms a step, the lag players saw. Between
+# the form's ResizeBegin and ResizeEnd the bitmap is made with a cheap filter,
+# and the fine one once when the mouse is let go. A new class name, because a
+# type compiled by Add-Type lives as long as its process.
+if (-not ('M2LauncherArtPanel2' -as [type])) {
     try {
     Add-Type -ReferencedAssemblies System.Windows.Forms,System.Drawing -TypeDefinition @'
 using System;
 using System.Drawing;
 using System.Drawing.Drawing2D;
+using System.Drawing.Imaging;
 using System.Windows.Forms;
-public class M2LauncherArtPanel : Panel {
-    public Image SceneImage { get; set; }
-    public M2LauncherArtPanel() {
-        DoubleBuffered = true;
-        ResizeRedraw = true;
+public class M2LauncherArtPanel2 : Panel {
+    private Image scene;
+    private Bitmap composed;
+    private bool composedRough;
+    private bool liveResize;
+    public M2LauncherArtPanel2() {
+        SetStyle(ControlStyles.AllPaintingInWmPaint | ControlStyles.OptimizedDoubleBuffer |
+            ControlStyles.UserPaint | ControlStyles.ResizeRedraw, true);
     }
-    protected override void OnPaintBackground(PaintEventArgs e) {
-        base.OnPaintBackground(e);
-        if (SceneImage == null || Width < 1 || Height < 1) return;
-        float scale = Math.Max((float)Width / SceneImage.Width, (float)Height / SceneImage.Height);
-        float w = SceneImage.Width * scale, h = SceneImage.Height * scale;
-        e.Graphics.InterpolationMode = InterpolationMode.HighQualityBicubic;
-        e.Graphics.DrawImage(SceneImage, new RectangleF(Width - w, (Height - h) / 2, w, h));
-        using (var veil = new LinearGradientBrush(ClientRectangle,
-            Color.FromArgb(150, 9, 15, 19), Color.FromArgb(12, 9, 15, 19), 0f)) {
-            e.Graphics.FillRectangle(veil, ClientRectangle);
+    public Image SceneImage {
+        get { return scene; }
+        set { scene = value; DropComposed(); Invalidate(); }
+    }
+    public bool LiveResize {
+        get { return liveResize; }
+        set {
+            if (liveResize == value) return;
+            liveResize = value;
+            if (!liveResize && composedRough) { DropComposed(); Invalidate(true); }
         }
     }
+    private void DropComposed() {
+        if (composed != null) { composed.Dispose(); composed = null; }
+    }
+    protected override void OnSizeChanged(EventArgs e) {
+        DropComposed();
+        base.OnSizeChanged(e);
+    }
+    private Bitmap Composed() {
+        int width = ClientSize.Width, height = ClientSize.Height;
+        if (width < 1 || height < 1) return null;
+        if (composed != null && composed.Width == width && composed.Height == height) return composed;
+        DropComposed();
+        composed = new Bitmap(width, height, PixelFormat.Format32bppPArgb);
+        composedRough = liveResize;
+        using (Graphics g = Graphics.FromImage(composed)) {
+            g.Clear(BackColor);
+            if (scene != null) {
+                float scale = Math.Max((float)width / scene.Width, (float)height / scene.Height);
+                float w = scene.Width * scale, h = scene.Height * scale;
+                g.InterpolationMode = liveResize ? InterpolationMode.Bilinear : InterpolationMode.HighQualityBicubic;
+                g.PixelOffsetMode = liveResize ? PixelOffsetMode.HighSpeed : PixelOffsetMode.HighQuality;
+                g.DrawImage(scene, new RectangleF(width - w, (height - h) / 2, w, h));
+            }
+            Rectangle all = new Rectangle(0, 0, width, height);
+            using (LinearGradientBrush veil = new LinearGradientBrush(all,
+                Color.FromArgb(150, 9, 15, 19), Color.FromArgb(12, 9, 15, 19), 0f)) {
+                g.FillRectangle(veil, all);
+            }
+        }
+        return composed;
+    }
+    protected override void OnPaintBackground(PaintEventArgs e) {
+        Bitmap picture = Composed();
+        if (picture == null) { base.OnPaintBackground(e); return; }
+        // A transparent child's request arrives with the graphics shifted to
+        // the child and the clip in this panel's coordinates.
+        Rectangle area = Rectangle.Intersect(e.ClipRectangle, new Rectangle(0, 0, picture.Width, picture.Height));
+        if (area.Width <= 0 || area.Height <= 0) return;
+        e.Graphics.CompositingMode = CompositingMode.SourceCopy;
+        e.Graphics.InterpolationMode = InterpolationMode.NearestNeighbor;
+        e.Graphics.DrawImage(picture, area, area, GraphicsUnit.Pixel);
+    }
     protected override void Dispose(bool disposing) {
-        if (disposing && SceneImage != null) { SceneImage.Dispose(); SceneImage = null; }
+        if (disposing) {
+            DropComposed();
+            if (scene != null) { scene.Dispose(); scene = null; }
+        }
         base.Dispose(disposing);
     }
 }
@@ -207,10 +266,31 @@ $languageButton.AccessibleName = UI-Text 'Zmień język launchera' 'Change launc
 $header.Controls.Add($languageButton)
 $script:ui.Cards += @{ Page = 'header'; Button = $languageButton; Card = $header; Hint = $null }
 
-$artPanel = 'M2LauncherArtPanel' -as [type]
+$artPanel = 'M2LauncherArtPanel2' -as [type]
 if ($artPanel) { $main = $artPanel::new() }
 else { $main = [Windows.Forms.Panel]::new(); $main.BackgroundImageLayout = 'Zoom' }
 $main.Dock = 'Fill'; $body.Controls.Add($main)
+# A drag of the window's edge. Laying the pages out is some 75 ms of every
+# step even with the picture composed once (a hundred controls, the table
+# grids, the ellipsised captions), so the cards keep their places while the
+# edge moves - the picture follows the window at once - and are laid out once
+# when the mouse is let go. A plain move raises the same two events and asks
+# for no layout, so ResumeLayout then does nothing. Maximise and restore raise
+# neither and are laid out in one pass.
+function Start-UILiveResize {
+    if ($script:ui.LiveResize) { return }
+    $script:ui.LiveResize = $true
+    if ($main.PSObject.Properties['LiveResize']) { $main.LiveResize = $true }
+    $main.SuspendLayout()
+}
+function Stop-UILiveResize {
+    if (-not $script:ui.LiveResize) { return }
+    $script:ui.LiveResize = $false
+    $main.ResumeLayout($true)
+    if ($main.PSObject.Properties['LiveResize']) { $main.LiveResize = $false }
+}
+$script:form.Add_ResizeBegin({ Start-UILiveResize })
+$script:form.Add_ResizeEnd({ Stop-UILiveResize })
 $scenePath = Join-Path $PSScriptRoot 'Metin2-Launcher-GUI.Background.png'
 if (Test-Path -LiteralPath $scenePath -PathType Leaf) {
     try {
@@ -449,6 +529,28 @@ function Invoke-LayoutSelfTest([string]$OutputDirectory) {
     $script:logBox.AppendText("`r`nScroll test appended line")
     if ($script:logBox.SelectionStart -ne $script:logBox.TextLength) { throw 'New log line did not scroll' }
     $script:logBox.Text = $previewLog
+    # What a drag of the window's edge costs: forty sizes between the same
+    # two calls ResizeBegin and ResizeEnd make, each painted whole into a
+    # bitmap (the window is off screen, so a plain Refresh would paint
+    # nothing), then the one layout the release costs. 378 ms a step before
+    # the picture was composed once per size and the pages waited for the
+    # release.
+    $resizeBitmap = [Drawing.Bitmap]::new(1400, 900)
+    $resizeClock = [Diagnostics.Stopwatch]::StartNew()
+    Start-UILiveResize
+    for ($i = 0; $i -lt 40; $i++) {
+        $script:form.ClientSize = [Drawing.Size]::new(1020 + (($i % 20) * 13), 780 + (($i % 20) * 2))
+        [Windows.Forms.Application]::DoEvents()
+        $script:form.DrawToBitmap($resizeBitmap, [Drawing.Rectangle]::new(0, 0, $script:form.Width, $script:form.Height))
+    }
+    $resizeClock.Stop()
+    $releaseClock = [Diagnostics.Stopwatch]::StartNew()
+    Stop-UILiveResize
+    [Windows.Forms.Application]::DoEvents()
+    $script:form.DrawToBitmap($resizeBitmap, [Drawing.Rectangle]::new(0, 0, $script:form.Width, $script:form.Height))
+    $releaseClock.Stop(); $resizeBitmap.Dispose()
+    $resizeMsPerStep = [Math]::Round($resizeClock.Elapsed.TotalMilliseconds / 40, 1)
+    $releaseMs = [Math]::Round($releaseClock.Elapsed.TotalMilliseconds, 1)
     $results = @()
     foreach ($dimensions in @(@(1280, 820), @(1120, 820), @(1004, 741))) {
         $script:form.ClientSize = [Drawing.Size]::new($dimensions[0], $dimensions[1])
@@ -486,6 +588,6 @@ function Invoke-LayoutSelfTest([string]$OutputDirectory) {
     foreach ($button in $expected) {
         if (@($script:ui.Cards | Where-Object { $_.Button -eq $button }).Count -ne 1) { throw "Missing/duplicate action: $($button.Text)" }
     }
-    [pscustomobject]@{ Checks = $results; ActionCards = $expected.Count; Navigation = 'OK'; Sidebar = 'OK'; LogToggle = 'OK'; LogScroll = 'OK'; RatesRoute = 'OK'; CoffeeLink = 'OK' } | ConvertTo-Json -Depth 4
+    [pscustomobject]@{ Checks = $results; ActionCards = $expected.Count; Navigation = 'OK'; Sidebar = 'OK'; LogToggle = 'OK'; LogScroll = 'OK'; RatesRoute = 'OK'; CoffeeLink = 'OK'; ResizeMsPerStep = $resizeMsPerStep; ResizeReleaseMs = $releaseMs } | ConvertTo-Json -Depth 4
     $script:form.Close()
 }
