@@ -17,6 +17,48 @@ every version here.
 
 ---
 
+## 2.2.5 — 2026-09-23
+
+Serwer; klient zostaje 2.0.27. Zawiera wszystko z 2.2.4.
+
+### Tarcza i zbroja: decydują liczby, a nie poziom przedmiotu (zgłosił Tieru, wyjaśnił Iwakura)
+
+Bot nosił Pięciokątną Tarczę+4 (34 obrony, −6% szybkości ruchu), choć
+w plecaku miał Bojową Tarczę+7 (45 obrony, −2% szybkości). Ocena odejmowała
+obronę każdemu pancerzowi, którego wymagany poziom był o ponad 20 niższy od
+poziomu bota. Bojowa Tarcza nie ma wymaganego poziomu, więc bot na 35 poziomie
+liczył jej 45 obrony tak, jakby miała około 20. Iwakura wyjaśnił, że
+wbudowane bonusy przedmiotu, takie jak obrona i szybkość, też są bonusami.
+
+- Tarczę, zbroję, hełm i buty ocenia się teraz po tym, co naprawdę dają:
+  obronie, wbudowanych bonusach i wylosowanych bonusach. Wymagany poziom
+  rozstrzyga tylko remis.
+- Bot dalej przechodzi na wyższe tarcze i zbroje. Kupiec sprzedaje mu następny
+  stopień według poziomu, a kowal ulepsza przedmiot wyższego stopnia z plecaka,
+  aż jego liczby wygrają. Pięciokątna wygrywa z Bojową+7 od +6.
+- Taki przedmiot wyższego stopnia nie staje się też powodem do otwarcia
+  straganu, bo i tak nie trafia na sprzedaż.
+
+Na naszym świecie testowym w 17 minut po zmianie botów z wyraźnie lepszą
+tarczą w plecaku ubyło z 35 do 10.
+
+### Medale konne na straganach po 2 sztuki (Tieru)
+
+Boty wystawiały medale konne całymi stosami, po 3 do 20 w jednej pozycji,
+i nikt ich nie kupował. Teraz pozycja ma najwyżej 2 medale. Dłuższe pozycje,
+które już stoją, bot zdejmuje przy następnej obsłudze straganu i wystawia po 2.
+Większość medali sprzedają dropki medali, a one obsługują stragan raz na
+40–60 minut, więc porządkowanie sklepów potrwa do godziny.
+
+### Launcher: opisy w oknie liczby botów (Tieru)
+
+Przy każdym ustawieniu w oknie LICZBA BOTÓW jest przycisk „?”. Najechanie na
+niego myszką pokazuje, co robi to ustawienie, a kliknięcie otwiera okienko
+z wyjaśnieniem i przykładem. Dotyczy to liczby botów, wejścia botów po starcie
+serwera, dodatkowych botów, które dołączają później, czasu ich dołączania,
+osobnych wartości dla królestw i drugiego kanału. Podpisy pól są też jaśniejsze,
+a menu tekstowe launchera wyjaśnia te pola przed pytaniami.
+
 ## 2.2.4 — 2026-09-23
 
 Serwer 2.2.4 i klient 2.0.27. Zaktualizuj oba („AKTUALIZUJ wszystko”
