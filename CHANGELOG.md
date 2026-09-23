@@ -17,6 +17,48 @@ every version here.
 
 ---
 
+## 2.1.0 — 2026-09-23
+
+Serwer i launcher; klient zostaje 2.0.26. Zawiera wszystko z 2.0.99.
+
+**Kto ma ustawiony poziom trudności średni albo trudny:** od tej wersji ten
+poziom obejmuje też księgi umiejętności (7 h albo 21 h czekania między
+dwiema księgami tej samej umiejętności, dla graczy i dla botów). Jeśli tego
+nie chcesz, wybierz poziom „Własny” i wpisz przy księgach 0. Na poziomie
+łatwym, domyślnym, nic się nie zmienia.
+
+### Czas czekania na księgi umiejętności w poziomie trudności
+
+Od 2.0.12 każdą kolejną księgę dało się przeczytać od razu, więc Zwój
+Egzorcyzmu nie miał nic do roboty. Teraz czas między dwiema księgami tej
+samej umiejętności jest częścią poziomu trudności, osobno dla graczy
+i osobno dla botów (pomysł drip9660):
+
+- **łatwy**: bez czekania, jak dotąd;
+- **średni**: 7 godzin;
+- **trudny**: 21 godzin, tak jak w oryginalnej grze;
+- **własny**: dowolna liczba godzin, osobno dla graczy i dla botów
+  (0 = od razu, ułamki dozwolone).
+
+Zwój Egzorcyzmu pomija to czekanie, także botom, które mają go w plecaku.
+Obniżony czas działa od razu: nikt nie czeka dłużej, niż mówi aktualne
+ustawienie. Ten sam czas obowiązuje przy Instrukcji Jazdy Konnej, tak jak
+w oryginale.
+
+### Poziom trudności w panelu WWW
+
+- **Panel WWW ma kartę „Poziom trudności”** (strona z mnożnikami serwera):
+  Biolog, Stajenny i księgi graczy oraz botów. Zmiana działa od razu, gdy
+  ktoś jest w grze, i zostaje po restarcie serwera, dopóki nie zmienisz
+  poziomu trudności w launcherze. Obowiązuje to ustawienie, które
+  zmieniono ostatnio.
+- **Okno poziomu trudności w launcherze ma dwa nowe pola**: księgi graczy
+  i księgi botów.
+- Przełącznik „Księgi umiejętności bez dobowej przerwy” na stronie AI
+  zastąpił czas dla botów w poziomie trudności.
+- Poprawione: w oknie poziomu trudności godziny z ułamkiem (np. 0,5)
+  pokazywały się jako 0, a „Zastosuj” zapisywało to 0.
+
 ## 2.0.99 — 2026-09-23
 
 Tylko serwer i launcher; klient zostaje 2.0.26. Zawiera wszystko z 2.0.98.
