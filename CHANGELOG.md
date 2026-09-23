@@ -17,6 +17,119 @@ every version here.
 
 ---
 
+## 2.2.4 — 2026-09-23
+
+Serwer 2.2.4 i klient 2.0.27. Zaktualizuj oba („AKTUALIZUJ wszystko”
+w launcherze): nowy klient pozwala szukać w sklepach jednego klikniętego
+przedmiotu i poprawia Auto Łowy. Poprzedni klient działa z nowym serwerem
+tak jak dotąd. Zawiera wszystko z 2.2.3.
+
+### Magazyny pełne zbroi: Lista Przydatnych Przedmiotów tylko dla Hazardzisty (zgłosił Tieru, wyjaśnił Iwakura)
+
+Każdy bot chował do magazynu wszystkie zbroje powyżej 33 poziomu i
+wszystkie tarcze powyżej 20 poziomu, i to dla wszystkich klas. Bot na 40
+poziomie trzymał więc zbroje z 34, 42, 48, 54, 61 i 66 poziomu dla czterech
+klas. Po każdym restarcie serwera dokładał kolejne, bo nie pamiętał, co już
+tam leży. Na naszym świecie testowym w magazynach botów leżało 33 521 sztuk
+sprzętu, w tym 14 345 zbroi, a w jednym magazynie aż 68 sztuk.
+
+Iwakura wyjaśnił, że punkt 9 Community Patch 2 był przeznaczony tylko dla
+Hazardzisty. Teraz jest tak:
+
+- Listę Przydatnych Przedmiotów trzymają tylko boty, które z natury są
+  Hazardzistami. To mniej więcej co piąty bot: najczęściej handlarze
+  i wędrowcy, nigdy dropki.
+- Pozostałe boty sprzedają zwykłe zbroje u handlarza. To, co już leży w ich
+  magazynie, wyjmują po 6 sztuk przy wizycie w mieście i od razu idą z tym
+  do handlarza.
+- Limit to 2 sztuki jednego przedmiotu łącznie w ekwipunku i w magazynie.
+  Dotąd biżuteria i tarcze miały limit 3. Broń na 30 poziom dla własnej
+  klasy: 4 sztuki, licząc tę, którą bot właśnie ulepsza.
+
+### Hazardzista wystawia to, co ulepszył (Iwakura)
+
+Hazardzista ulepszał, ale jego pracy nie było widać na rynku. Z każdej
+rodziny przedmiotów Lista zostawiała sobie najlepszą sztukę, czyli tę
+z najwyższym plusem. To, co Hazardzista właśnie wbił na +6 czy +7, wracało
+więc do magazynu, a na sklep szły zwykłe +0.
+
+Teraz każdy przedmiot, nad którym Hazardzista pracował w sesji, idzie na
+sprzedaż. Lista w ogóle nie trzyma przedmiotów od +7 wzwyż: to już towar,
+a nie baza do ulepszania. Nasz świat testowy pokazał też, jak rzadko
+sesja coś kończy. Na 51 sesji wypadło 861 prób ulepszenia, 120
+przedmiotów się spaliło, a do celu doszło 12. Najczęściej bot kończy
+sesję, bo następna stawka przekracza jego budżet (40% yang) albo brakuje
+mu materiałów. Co 10 minut w logu pojawia się teraz spis: ile sesji
+ruszyło, co z nich wyszło i dlaczego inne boty sesji nie zaczęły.
+
+### Wieża Demonów: na 7. piętrze najpierw moby, potem Metin (zgłosił prodnathin)
+
+Na piętrze z Metinem Morderstwa boty rzucały się na kamień i biły go do
+końca, a potwory, które podchodziły, rozbijały je jednego po drugim.
+Teraz bot nie bierze kamienia, dopóki obok niego stoi potwór. Jeśli bije
+kamień, a potwór podejdzie, zostawia kamień i najpierw zabija to, co ma przy
+sobie.
+
+### Broń na 30 poziom: co najmniej +6 (poprawka Iwakury)
+
+Bot z bronią na 30 poziom o bardzo wysokich średnich obrażeniach (37% i
+więcej) ulepszał ją tylko zwojami, więc bez zwoju zostawała na +0. Broń
+z 30–36% szła do kowala tylko do +3 albo +4.
+
+- Bot, który ma yang, ulepsza teraz broń na 30 poziom swojej klasy co
+  najmniej do +6, bez względu na średnie obrażenia. Jeśli ma odpowiedni
+  zwój, używa zwoju, a jeśli nie ma, idzie do zwykłego kowala.
+- Jeśli broń się spali, bot od razu szuka na rynku następnej, o ile go na
+  nią stać.
+- Usunięta reguła „od 34% średnich obrażeń zwoje już od +3” i obowiązek
+  kupowania każdej takiej broni z rynku.
+
+### Rybak otwiera co piątą małżę (zgłosił LazyBastarden)
+
+Rybak otwierał każdą małżę ponad to, czego potrzebuje jego kowal. Na młodym
+świecie boty miały więc perły, których przed 48 poziomem nikt nie używa,
+a na sklepach brakowało małży, choć zużywa je 26 przepisów ulepszeń. Teraz
+Rybak otwiera jedną małżę na każde pięć zdobytych, a pozostałe cztery idą na
+sklep i do kowala.
+
+### Zmiana ceny wielu przedmiotów naraz (zgłosił blasty)
+
+Przy zmianie ceny wielu przedmiotów (Ctrl + prawy przycisk) część zmian
+dostawała „Zaczekaj chwilę, przed kolejną akcją”, a ponowienia przychodziły
+z opóźnieniem. Kto za wcześnie wyłączył tryb edycji, zostawał ze starą ceną.
+Serwer przyjmował jedną zmianę na 200 ms, a po chwilowym przycięciu połączenia
+dwie zmiany docierały naraz. Teraz przyjmuje do dziesięciu zmian na sekundę,
+a limit na minutę, który chroni przed zalewem, zostaje bez zmian. Poprawka
+jest po stronie serwera i działa z każdym klientem.
+
+### Wyszukiwarka sklepów: jeden, kliknięty przedmiot (Tyrion)
+
+W oknie wyszukiwarki można teraz kliknąć ikonę przedmiotu z listy po prawej
+(drugie kliknięcie ją odznacza). „Szukaj” znajdzie wtedy tylko sklepy, które
+mają ten jeden przedmiot, na przykład sam Małż albo księgę jednej
+umiejętności. Bez kliknięcia wyszukiwarka szuka całej kategorii, jak dotąd.
+Potrzebny jest klient 2.0.27; ze starszym klientem wszystko działa po
+staremu. Dziękujemy Tyrionowi za poprawkę.
+
+### Auto Łowy: najbliższy potwór zamiast pościgu (zgłosił Buby)
+
+Postać z włączonymi Auto Łowami potrafiła gonić jednego potwora przez pół
+mapy, choć obok stały inne. Teraz, gdy biegnie do celu, którego jeszcze nie
+sięga, a wyraźnie bliżej (co najmniej 3 metry) stoi inny potwór, przełącza
+się na niego. Dwa potwory w podobnej odległości nie przerzucają jej tam
+i z powrotem. Poprawka jest w kliencie 2.0.27.
+
+### Rada Pustelnika (zgłosił DUDU)
+
+Boty nie używały Rady Pustelnika. Traktowały ją jak Zwój Egzorcyzmu i
+sięgały po nią tylko wtedy, gdy musiały czekać na następną księgę, a przy
+szybkich księgach nie czekają nigdy.
+
+Teraz bot używa Rady tuż przed przeczytaniem księgi umiejętności swojej
+klasy, więc to czytanie na pewno się uda. Nie marnuje jej na księgi ogólne
+(Combo, Dowodzenie) ani na Kamień Duchowy. Rady i Zwoje Egzorcyzmu z
+itemshopu nie trafiają już do handlarza.
+
 ## 2.2.3 — 2026-09-23
 
 Serwer; klient zostaje 2.0.26. Zawiera wszystko z 2.2.2.
