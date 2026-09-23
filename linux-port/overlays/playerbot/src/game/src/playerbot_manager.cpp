@@ -1151,6 +1151,40 @@ namespace
 				(int)finder.m_pFound->GetEmpire(), ch->GetMapIndex());
 	}
 
+	// A person's village is the bot's village too. A bot serving a person ran
+	// no errand at all, because the errand and the follow pass took turns
+	// (2.0.49, Pabloo's fix), and so a party of bots never refined, sold or
+	// restocked for as long as it lasted: "if you don't quit the party, the
+	// other 7 players won't upgrade their equipment" (_johnlennon, 23
+	// September). In a village with a person of the party standing in it,
+	// the town visit takes the bot nowhere that person is not - the
+	// blacksmith, the merchants and the storekeeper are all in the village -
+	// so there it runs and the follow pass waits for it. The moment the person
+	// leaves the map the visit is paused again and the bot follows, as before.
+	bool IsPlayerBotBesidePersonInVillage(LPCHARACTER ch)
+	{
+		if (!ch || !IsPlayerBotVillageMap(ch->GetMapIndex()))
+			return false;
+		LPPARTY party = ch->GetParty();
+		if (!party)
+			return false;
+		struct FFindPersonHere
+		{
+			long mapIndex;
+			bool found;
+			explicit FFindPersonHere(long m) : mapIndex(m), found(false) {}
+			void operator()(LPCHARACTER member)
+			{
+				if (member && member->IsPC() && (!member->GetDesc() || !member->GetDesc()->IsBot()) &&
+						member->GetMapIndex() == mapIndex)
+					found = true;
+			}
+		};
+		FFindPersonHere finder(ch->GetMapIndex());
+		party->ForEachOnlineMember(finder);
+		return finder.found;
+	}
+
 	// Walking with the player who invited you.
 	//
 	// Claims the tick when it moves, because the alternative is the wander pass
@@ -1212,6 +1246,12 @@ namespace
 		// side. The leader changing map is handled above and ends the course
 		// anyway, so only the walk on this map stands down.
 		if (state.bLureStage != LURE_STAGE_NONE)
+			return false;
+		// Nor is a town visit in the village the leader stands in
+		// (IsPlayerBotBesidePersonInVillage): the blacksmith is further off
+		// than the follow distance, and fetching the bot back from the anvil
+		// on every other tick is the loop 2.0.49 ended by forbidding the visit.
+		if (state.bVisitingShop && IsPlayerBotVillageMap(ch->GetMapIndex()))
 			return false;
 		const int dist = DISTANCE_APPROX(ch->GetX() - leader->GetX(), ch->GetY() - leader->GetY());
 		if (dist <= PLAYERBOT_PARTY_FOLLOW_DISTANCE)
@@ -4868,6 +4908,9 @@ void CPlayerBotManager::Update()
 		// IsPlayerBotHeldForCompany already knew the first two.
 		const bool bServingPerson = bHumanLedParty || IsPlayerBotHeldForCompany(ch) ||
 				state.dwLurePlayerPID != 0;
+		// Except for the town visit in a village the person stands in: there
+		// it runs (IsPlayerBotBesidePersonInVillage).
+		const bool bTownVisitAllowed = !bServingPerson || IsPlayerBotBesidePersonInVillage(ch);
 		// Keeping up with the player comes before the bot's own plans for the
 		// tick, or the wander pass walks it out of the party it just joined.
 		if (ManagePlayerBotFollowHumanLeader(ch, state, dwNow))
@@ -5026,7 +5069,7 @@ void CPlayerBotManager::Update()
 		// the next tier loops forever between the weapon and armour merchants and
 		// never returns to combat (or to its local party).
 		const bool bOnTownMap = IsPlayerBotVillageMap(ch->GetMapIndex());
-		if (!bServingPerson && bOnTownMap && !state.bVisitingShop && !state.bMultiPullActive &&
+		if (bTownVisitAllowed && bOnTownMap && !state.bVisitingShop && !state.bMultiPullActive &&
 				!bFightingMetin &&
 				(bNeedsProfession || dwNow > state.dwNextShopCheckTime))
 		{
@@ -5086,7 +5129,7 @@ void CPlayerBotManager::Update()
 		// A visit is an adaptive, persistent route. The bot only visits specialists
 		// needed by its current inventory: weapon merchant, armor merchant, Misc
 		// Merchant and/or blacksmith. Goals never change in the middle of a route.
-		if (!bServingPerson && HandlePlayerBotTownVisit(ch, state, dwNow))
+		if (bTownVisitAllowed && HandlePlayerBotTownVisit(ch, state, dwNow))
 			continue;
 
 		// A normal horse is for transport only, so it comes off before buffs
