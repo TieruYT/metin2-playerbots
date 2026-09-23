@@ -7633,6 +7633,14 @@ not in `data/`) reworked these point by point. What each hangs on:
   the work is done; `scratchpad/upd_selfoverwrite/` of session 82d3ab90 is the
   harness (a mock tree, the network overridden, the running script kept at the
   size a player's is).
+- **An empty hand is not a missing weapon.** `ManagePlayerBotWeaponMerchant`
+  bought the emergency weapon for any bot with nothing in the weapon slot,
+  while `PrepareWeapon` - the pass that would have put a bag weapon on - runs
+  on its own retry clock: on a world started that morning twelve were bought
+  in five minutes, and bots of level one carried four swords (Iwakura, 23
+  September). `BuyPlayerBotEmergencyWeapon` wears a bag weapon first and buys
+  nothing while one of the bot's sort and level lies there, even one the
+  engine refuses for the second and a half after a blow.
 
 
 ## Engine facts worth not re-deriving

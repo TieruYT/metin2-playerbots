@@ -3107,6 +3107,23 @@ namespace
 		if (!ch || ch->GetWear(WEAR_WEAPON))
 			return ch && ch->GetWear(WEAR_WEAPON);
 
+		// A weapon the bag already holds is put on, not bought a second time.
+		// The weapon merchant bought for any empty hand, and a new bot's hand
+		// is empty with its starter weapon or a chest's in the bag - twelve
+		// purchases in five minutes on a world started that morning, and bots
+		// of level one carrying four swords (Iwakura, 23 September). One the
+		// engine refuses only for the moment (the second and a half after a
+		// blow) is worn on the next try, so it stops the purchase too.
+		if (EquipFirstAvailablePlayerBotWeapon(ch))
+			return true;
+		for (WORD cell = 0; cell < PLAYERBOT_BAG_CELLS; ++cell)
+		{
+			LPITEM held = ch->GetInventoryItem(cell);
+			if (IsPlayerBotWeapon(ch, held) && held->CanUsedBy(ch) &&
+					held->GetLevelLimit() <= ch->GetLevel())
+				return false;
+		}
+
 		const DWORD vnum = GetPlayerBotEmergencyWeaponVnum(ch);
 		const long long price = GetPlayerBotEmergencyWeaponPrice(ch);
 		if (vnum == 0)
