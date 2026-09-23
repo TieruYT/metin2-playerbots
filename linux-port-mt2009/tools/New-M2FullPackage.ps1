@@ -43,8 +43,14 @@ function Invoke-Mirror {
 
 try {
     Write-Host "staging the server from $Deploy"
+    # Every copy of .env the launcher leaves beside it - .env.last-good after
+    # each identity step, .env.bak-<version>, .env.damaged-<stamp> - carries
+    # the database's passwords like .env itself; the 2.0.86 package shipped two
+    # of them from the test world. The scan below refuses any other shape.
     Invoke-Mirror -From $Deploy -To (Join-Path $stageRoot 'Serwer') `
-        -ExcludeFiles @('.env', '.m2install.json', '.m2launcher.json', '.m2launcher-state.json', '*.log') `
+        -ExcludeFiles @('.env', '.env.last-good', '.env.bak*', '.env.damaged*', '.env.new', '.env.tmp',
+                        '.m2install.json', '.m2coop.json', '.m2launcher.json', '.m2launcher-state.json',
+                        '.m2launcher-offers.json', '.m2launcher-classic-layout', '*.log') `
         -ExcludeDirs @('launcher-logs', 'backups', 'support-bundles')
     foreach ($must in @('VERSION', 'Metin2-Launcher-GUI.bat', 'linux-port\docker\ENGINE', 'linux-port\docker\.env.example',
                         'linux-port\docker\game\src\server\game\src\playerbot_manager.cpp',
@@ -54,9 +60,27 @@ try {
     if (Test-Path -LiteralPath (Join-Path $stageRoot 'Serwer\linux-port\docker\.env')) { throw '.env leaked into the staging' }
 
     Write-Host "staging the client from $Client"
+    # A player's client writes its own settings beside the exe: the COOP
+    # server entry (coop.cfg - a friend's world and password), Auto Lowy per
+    # character, the bot-title switch, the login preload log; and the packs'
+    # *.bak are the operator's repack backups under pack\.
     Invoke-Mirror -From $Client -To (Join-Path $stageRoot 'Klient') `
-        -ExcludeFiles @('syserr.txt', 'credentials.json', 'game_settings.json') `
-        -ExcludeDirs @('screenshot', 'upload')
+        -ExcludeFiles @('syserr.txt', 'credentials.json', 'game_settings.json', 'coop.cfg',
+                        'playerbot_titles.cfg', 'autohunt_*.cfg', 'login_preload.log', '*.bak') `
+        -ExcludeDirs @('screenshot', 'upload', 'autohunt')
+
+    # The exclusions above name what is known; this names the shape, so a new
+    # kind of copy the launcher starts leaving refuses the package instead of
+    # travelling in it.
+    $private = @(Get-ChildItem -LiteralPath $stageRoot -Recurse -Force -File | Where-Object {
+        ($_.Name -like '.env*' -and $_.Name -ne '.env.example') -or
+        (@('.m2install.json', '.m2coop.json', 'coop.cfg', 'credentials.json', 'm2panel.conf') -contains $_.Name) -or
+        $_.Name -like 'metin2-support-*.zip'
+    })
+    if ($private.Count -gt 0) {
+        throw ('installation-private files in the staging: ' +
+            (($private | ForEach-Object { $_.FullName.Substring($stageRoot.Length + 1) }) -join ', '))
+    }
 
     Copy-Item -LiteralPath (Join-Path $PSScriptRoot '..\CZYTAJ.txt') -Destination (Join-Path $stageRoot 'CZYTAJ.txt') -Force
 

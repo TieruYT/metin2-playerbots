@@ -7387,6 +7387,28 @@ not in `data/`) reworked these point by point. What each hangs on:
   bot began itself, no core died, and the tick at 7.0 s of 60 against 6.5 to
   6.9 before. Never watched with a person whispering: the test world has
   none, and the author runs it on their own.
+- **A full package is built from an installation, and an installation keeps
+  secrets beside its files.** The 2.0.71, 2.0.85 and 2.0.86 full packages
+  carried the test client's saved logins (`Klient/cache/credentials.json`,
+  the login window's "save account": passwords XORed with a key made from the
+  machine's MAC address and base64'd, so readable by anybody who guesses the
+  MAC), and 2.0.85/86 two copies of the test world's `.env`
+  (`.env.last-good`, `.env.bak-2.0.39`: the database, panel and session
+  passwords). The builders left out `.env` by its exact name only, and the
+  client's `credentials.json` only in the repository's script - not in the
+  session script the packages were actually made with. Both now leave out
+  every `.env*` but `.env.example`, the client's saved logins, its COOP entry
+  (`coop.cfg`), Auto Lowy's settings and the title switch, and both refuse a
+  package whose finished staging or zip still holds a file of that shape
+  (the scan in `linux-port-mt2009/tools/New-M2FullPackage.ps1`). Check a
+  full package's names against that shape before it goes anywhere. Found
+  answering Kordyl13 (23 September), whose VPS had followed the 1.x
+  `installer/install.sh` into `/opt/metin2/stack` and stopped at
+  `COPY schema/`: `docs/INSTALL.md` now opens with the 2.x line (the package
+  and `sh linux-port/tools/update.sh`), and the 2.x `.env.example` says what
+  the code does - on this line the classic panel opens without a passphrase
+  on any address while `M2_PANEL_LOCAL_ONLY` is empty, and the advanced one
+  starts with its own switch off, so a VPS keeps both on 127.0.0.1.
 
 
 ## Engine facts worth not re-deriving
