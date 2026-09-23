@@ -17,6 +17,114 @@ every version here.
 
 ---
 
+## 2.2.0 — 2026-09-23
+
+Serwer i panel WWW; klient zostaje 2.0.26. Zawiera wszystko z 2.1.0.
+
+### Nowa mapa dla botów: Doyyumhwaji (Ognista Ziemia)
+
+Boty od 66 do 80 poziomu polują teraz także w Doyyumhwaji. Trafia tam co
+trzeci z nich, reszta jak dotąd do lasów, na Górę Sohan i do Świątyni Hwang.
+
+- Każde królestwo wchodzi tam, gdzie po teleporcie staje gracz z tego
+  królestwa: Shinsoo w północno-zachodnim rogu mapy, Chunjo w
+  południowo-zachodnim, Jinno na wschodnim skraju. I wraca przez własną
+  bramę, do swojej drugiej wioski (Jayang, Bokjung, Bakra).
+- Na mapie: Sługa Walczącego Tygrysa i Ognisty Duch (69), Walczący Tygrys
+  (70), Płomień (71) i Ognisty Wojownik (72); co 28–42 minuty dwa elitarne
+  potwory z obstawą (Piekielny Żarłacz Dusz, Płomienny Egzekutor); cztery
+  Metiny Morderstwa (70), więc zagląda tam też część łowców Metinów; i mniej
+  więcej co dwie godziny Ognisty Król (73) w jednym z trzech miejsc, na
+  którego boty ruszają drużynami.
+- Do gospodarki trafiają ulepszacze z tej mapy: Pazur Tygrysa, Płonąca
+  Grzywa, Łuski Smoka i Symbol Wojownika.
+- Boty polują w 27 miejscach wyznaczonych z samej mapy, także we wschodniej
+  części, gdzie wchodzi Jinno.
+- Mapa przeszła na ten sam rdzeń serwera, na którym żyją boty (game1). Gracze
+  dostają się na nią jak dotąd.
+- Mapa na żywo w panelu WWW ma Doyyumhwaji na liście map, z terenem.
+
+Sprawdzone na naszym świecie testowym: boty każdego królestwa stają przy
+swoim wejściu i wracają przez swoją bramę, a z każdego wejścia da się dojść
+do wszystkich miejsc polowania. Boty 66+ nie polowały tam jeszcze na naszym
+świecie, bo nie ma na nim tak wysokich botów.
+
+### Boty w drużynie z graczem robią zakupy i ulepszenia w mieście
+
+Bot w drużynie gracza nie robił żadnych sprawunków, żeby nie odchodził od
+gracza, więc przez całą drużynę nie ulepszał ekwipunku, nie sprzedawał i nie
+kupował mikstur („if you don't quit the party, the other 7 players won't
+upgrade their equipment”, JFK). Teraz, gdy gracz z drużyny stoi w tej samej
+wiosce, bot idzie do kowala, handlarzy i magazyniera jak każdy inny bot, a
+gracz nie ściąga go z powrotem, dopóki nie skończy. Gdy gracz zmieni mapę,
+bot idzie za nim od razu, jak dotąd. Stajenny, Biolog i wyprawy na inne mapy
+dalej czekają do końca drużyny.
+
+### Boty nie chodzą na rynek na darmo
+
+Na linii 2.x stoiska botów to sklepy offline, a boty wciąż wybierały się na
+„wycieczki na rynek” napisane dla zwykłych stoisk, których tu nie ma. Każda
+taka wycieczka kończyła się niczym: w godzinę na jednym rdzeniu naszego
+świata testowego było ich ponad 4 400, w tym około 580 kursów z drugiej
+wioski do pierwszej i z powrotem, z których tylko co jedenasty kończył się
+zakupem. Na czas wycieczki bot nie kupował nawet ze sklepów offline, które
+miał tuż obok.
+
+Teraz:
+
+- w pierwszej wiosce bot kupuje ze stoisk w zasięgu, bez spacerów na środek
+  rynku;
+- z drugiej wioski idzie do pierwszej tylko po konkretną rzecz z konkretnego
+  stoiska, której szuka i na którą go stać, a po dojściu idzie prosto do tego
+  stoiska;
+- rzecz, po którą bot już idzie, jest dla niego zarezerwowana: inne boty jej
+  nie wybierają, więc kilka nie ściga się już o jedną linię;
+- bot, który dojdzie do stoiska akurat wtedy, gdy właściciel je obsługuje,
+  czeka chwilę zamiast odchodzić, a właściciel nie zaczyna obsługi własnego
+  stoiska w trakcie swoich zakupów;
+- bot, który nie znajdzie potrzebnego materiału, nadal woła o niego na czacie
+  handlowym.
+
+Na naszym świecie testowym zakupem kończy się teraz 87% kursów do pierwszej
+wioski (wcześniej 9%), a kursów bez celu jest kilka razy mniej.
+
+### Aktualizacja na Linuksie (update.sh)
+
+`update.sh` rozpakowywał paczkę, w której jest on sam, nadpisując pliki w
+miejscu. Uruchomiona powłoka czytała wtedy dalej już nowy plik, od środka, i
+po udanej aktualizacji kończyła się błędem („Unterminated quoted string”,
+kod 2) albo wykonywała kawałek przypadkowej linii (zgłosił Tyrion). Teraz
+każdy plik jest podmieniany w całości, a skrypt jest wczytany do końca,
+zanim cokolwiek podmieni.
+
+Pierwsza aktualizacja do tej wersji jest jeszcze wykonywana przez stary
+skrypt, więc może po zakończeniu pokazać ten sam błąd albo zbudować serwer
+drugi raz. Serwer jest wtedy już zaktualizowany; od następnej aktualizacji
+tego nie będzie.
+
+### Rybak
+
+Część botów nie mogła dojść do Rybaka: miejsce, do którego szły, wypadało na
+odciętym kawałku terenu, więc sesja łowienia kończyła się od razu, za każdym
+razem. Teraz taki bot podchodzi do Rybaka z najbliższego miejsca, do którego
+da się dojść.
+
+### Mikstury
+
+Boty co chwilę przelewały mikstury z tylnego stosu do przedniego, nie
+zwalniając przy tym żadnego miejsca w plecaku, dziesiątki tysięcy razy na
+godzinę. Teraz łączą stosy tylko wtedy, gdy to zwalnia kratkę.
+
+### Drobne
+
+- Boty na nowym świecie potrafiły mieć na 1 poziomie po 2–4 bronie (zgłosił
+  Iwakura): handlarz bronią sprzedawał im broń „awaryjną”, gdy nie trzymały
+  nic w ręce, nawet jeśli w plecaku leżała broń domyślna albo broń ze
+  skrzyni. Teraz bot najpierw zakłada to, co ma w plecaku, i kupuje broń
+  tylko wtedy, gdy naprawdę nie ma żadnej do założenia.
+- Bot idący do Lasu, Czerwonego Lasu albo Wieży Demonów miał nad głową
+  „Szukam lepszego miejsca”; teraz pisze, dokąd idzie.
+
 ## 2.1.0 — 2026-09-23
 
 Serwer i launcher; klient zostaje 2.0.26. Zawiera wszystko z 2.0.99.
