@@ -17,6 +17,68 @@ every version here.
 
 ---
 
+## 2.2.6 — 2026-09-24
+
+Serwer 2.2.6 i klient 2.0.28. Zaktualizuj oba („AKTUALIZUJ wszystko”
+w launcherze): nowy klient pokazuje statusy botów po angielsku, gdy gra jest
+ustawiona na inny język niż polski. Poprzedni klient działa z nowym serwerem
+tak jak dotąd, ze statusami po polsku. Zawiera wszystko z 2.2.5.
+
+### Wieża Demonów: poprawki z listy prodnathina (zgłosił prodnathin, doprecyzował Tieru)
+
+- **Drop:** w Wieży bot podnosi swój drop niezależnie od wartości, także
+  mikstury i stary sprzęt, które poza Wieżą bogaty bot zostawia na ziemi.
+  Robi to między dwoma przeciwnikami, w promieniu 15 m, jeśli ma co najmniej
+  połowę HP.
+- **Marmury polimorfii:** bot używa marmuru tylko na Umarłym Rozpruwaczu
+  (9. piętro) i na Niebieskiej Śmierci. Na Królach Demonów i na innych
+  bossach już ich nie zużywa.
+- **Kowal na 6. piętrze:** bot daje kowalowi przedmiot z plecaka, nigdy ten,
+  który nosi: przedmiot na sprzedaż od +4 albo zapasowy lepszy przedmiot,
+  który założy później. Najpierw bierze ten z najwyższym plusem, np. +6 na
+  +7, bo kowal w Wieży nie wymaga materiałów. O tym, co bot mu daje, decyduje
+  to, który kowal stoi: od broni, od zbroi, tarczy i hełmu albo od biżuterii
+  i butów.
+- **Wynik u kowala na zwykłym czacie:** po każdej próbie bot pisze na zwykłym
+  czacie, nie na wołaniu, czy się udało i co ulepszał, np. „Kowal w Wiezy:
+  udalo sie! Miecz Półtoraręczny z +6 na +7” albo „Kowal w Wiezy: nie
+  wyszlo, … - przedmiot spalony”.
+- **Krótsze czekanie po kowalu:** kolejne piętro rusza najpóźniej 45 s po
+  pojawieniu się kowala (było 150 s). Jeden bot ma na swoją turę najwyżej
+  20 s, więc bot, który nie może dojść do kowala, nie wstrzymuje reszty.
+- **Łucznicy:** w Wieży ninja z łukiem strzela także w kamienie, z dystansu,
+  zamiast podbiegać ze sztyletem. Sztylet wyjmuje tylko wtedy, gdy skończą
+  mu się strzały.
+
+Przejścia Wieży z tymi zmianami na naszym świecie testowym nie widzieliśmy,
+bo nie ma tam gildii botów, która by do niej weszła.
+
+### Metiny bez konia bojowego (zgłosił prodnathin)
+
+Bot zsiada z konia do bicia Metina, także z konia bojowego, bo tak robią
+gracze. Właściciel konia bojowego nie wybiera się też już dwa razy częściej
+na wyprawy po Metiny.
+
+### Statusy botów po angielsku (JFK)
+
+Klient 2.0.28 ustawiony na inny język niż polski (angielski, niemiecki,
+rumuński…) pokazuje nad głowami botów statusy po angielsku, a nazwy potworów
+i przedmiotów w nich w języku klienta. Klient po polsku pokazuje je jak
+dotąd. Czat botów, szepty, nazwy sklepów i ogłoszenia są na razie po polsku.
+
+### Launcher: język gry po angielsku (Tieru)
+
+Gdy launcher jest po angielsku, a klient gry po polsku, launcher przy wyborze
+klienta i przed uruchomieniem gry pyta, czy przełączyć klienta na angielski.
+Po odpowiedzi „Nie” nie pyta ponownie. Okna wyboru i uruchamiania klienta są
+też po angielsku.
+
+### Panele pokazują aktualny poziom botów (zgłosił NieBijOddam)
+
+Oba panele czytają poziom z bazy, a serwer zapisuje tam postać co kilka
+minut, więc młody bot był w rankingach kilka poziomów niżej niż w grze. Teraz
+serwer zapisuje poziom bota w bazie od razu, gdy się zmieni.
+
 ## 2.2.5 — 2026-09-23
 
 Serwer; klient zostaje 2.0.27. Zawiera wszystko z 2.2.4.
