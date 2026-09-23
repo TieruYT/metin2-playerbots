@@ -43,7 +43,9 @@ function Set-DotEnvValue { param([string]$Key, [string]$Value) $script:written[$
 function Confirm-Operation { param([string]$Question) return $script:confirmAnswer }
 
 $script:confirmAnswer = $false
-$RateExp = -1; $RateDrop = -1; $RateYang = -1; $HoldBots = -1; $Yes = $false
+# The starter chest joined these in 2.0.94 and the test did not, so every run
+# stopped at "$StarterChest cannot be retrieved" under StrictMode.
+$RateExp = -1; $RateDrop = -1; $RateYang = -1; $HoldBots = -1; $StarterChest = -1; $Yes = $false
 
 try {
     Write-Host '== the numbers a caller passes are written, and nothing else is =='
@@ -65,6 +67,18 @@ try {
     $HoldBots = 0
     Set-FreshWorldSettings -Reason 'test'
     Check 'not held' '0' $script:written['M2_PLAYERBOT_START_HELD']
+
+    Write-Host '== the starter chest is 1 or 0 and nothing else is written =='
+    $script:written = @{}
+    $RateExp = -1; $RateDrop = -1; $RateYang = -1; $HoldBots = -1; $StarterChest = 0; $Yes = $true
+    Set-FreshWorldSettings -Reason 'test'
+    Check 'no chest' '0' $script:written['M2_STARTER_CHEST']
+    Check 'and one key' 1 $script:written.Keys.Count
+    $script:written = @{}
+    $StarterChest = 1
+    Set-FreshWorldSettings -Reason 'test'
+    Check 'the chest' '1' $script:written['M2_STARTER_CHEST']
+    $StarterChest = -1
 
     Write-Host '== -Yes with nothing to say writes nothing =='
     $script:written = @{}
