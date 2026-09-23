@@ -7676,6 +7676,14 @@ not in `data/`) reworked these point by point. What each hangs on:
   (`/block_player`, `/block_pool`) were always commands to this server. The
   client's only other mt2009 address, the gatekeeper POST in intrologin.py,
   sits behind `constInfo.GATEKEEPER_CHECK = True` and never runs.
+- **The login and channel ports are the client's, not .env's.** The launcher's
+  preflight told a player whose 11000 was held by MSI_GamebarTool to "change
+  the port in .env" (Kordix, 23 September), and that starts a server nobody
+  can log in to: the local entry in serverinfo.py dials 11000, and the login
+  answer names the core's port inside the container, 13000 and up.
+  `Get-M2StackHostPorts` marks those `ClientFixed` and the message says to
+  close the program instead; the panels, the ItemShop and the database are
+  reached through the port .env publishes and keep the old advice.
 
 
 ## Engine facts worth not re-deriving

@@ -532,17 +532,24 @@ function Get-M2StackHostPorts {
             if ("$line" -match '^\s*([A-Za-z0-9_]+)=(.*)$') { $values[$Matches[1]] = $Matches[2].Trim() }
         }
     }
+    # ClientFixed: a port the game client dials by its own number. The local
+    # server entry in the client's serverinfo.py logs in on 11000, and the
+    # login answer names the core's own port inside the container, 13000 and
+    # up - so moving either in .env starts a server nobody can log in to.
+    # Kordix (23 September) was told by this check to do exactly that when
+    # MSI_GamebarTool held 11000. Only the panels, the ItemShop and the
+    # database are reached through the port .env publishes.
     $ports = @()
     foreach ($entry in @(
-            @{ Key = 'M2_PANEL_PUBLIC_PORT'; Default = 7788; Name = 'panel WWW' },
-            @{ Key = 'M2_SEBAN_PANEL_PORT'; Default = 7790; Name = 'panel zaawansowany' },
-            @{ Key = 'M2_ITEMSHOP_PUBLIC_PORT'; Default = 7791; Name = 'ItemShop' },
-            @{ Key = 'M2_AUTH_PORT'; Default = 11000; Name = 'serwer logowania' },
-            @{ Key = 'M2_DB_PUBLISH_PORT'; Default = 3306; Name = 'baza danych' })) {
+            @{ Key = 'M2_PANEL_PUBLIC_PORT'; Default = 7788; Name = 'panel WWW'; ClientFixed = $false },
+            @{ Key = 'M2_SEBAN_PANEL_PORT'; Default = 7790; Name = 'panel zaawansowany'; ClientFixed = $false },
+            @{ Key = 'M2_ITEMSHOP_PUBLIC_PORT'; Default = 7791; Name = 'ItemShop'; ClientFixed = $false },
+            @{ Key = 'M2_AUTH_PORT'; Default = 11000; Name = 'serwer logowania'; ClientFixed = $true },
+            @{ Key = 'M2_DB_PUBLISH_PORT'; Default = 3306; Name = 'baza danych'; ClientFixed = $false })) {
         $value = [string]$values[$entry.Key]
         $number = [int]$entry.Default
         if ($value -match '^\d+$') { $number = [int]$value }
-        $ports += [pscustomobject]@{ Port = $number; Name = [string]$entry.Name }
+        $ports += [pscustomobject]@{ Port = $number; Name = [string]$entry.Name; ClientFixed = [bool]$entry.ClientFixed }
     }
     # "13000-13002": each channel binds its own port and any one of them can be
     # the one that is taken.
@@ -554,7 +561,7 @@ function Get-M2StackHostPorts {
     if ($last -lt $first) { $last = $first }
     if (($last - $first) -gt 32) { $last = $first + 32 }
     for ($p = $first; $p -le $last; $p++) {
-        $ports += [pscustomobject]@{ Port = [int]$p; Name = 'kanal gry' }
+        $ports += [pscustomobject]@{ Port = [int]$p; Name = 'kanal gry'; ClientFixed = $true }
     }
     return $ports
 }
@@ -836,6 +843,7 @@ function Get-M2DockerPreflight {
                 $busy += [pscustomobject]@{
                     Port = [int]$entry.Port
                     Name = [string]$entry.Name
+                    ClientFixed = [bool]$entry.ClientFixed
                     Listener = $listener
                 }
             }
@@ -869,7 +877,12 @@ function Get-M2DockerPreflight {
             else {
                 $who = if ($entry.Listener.Name) { "proces $($entry.Listener.Name), PID $($entry.Listener.Pid)" } else { "PID $($entry.Listener.Pid)" }
                 [void]$checks.Add("BŁĄD: port $($entry.Port) ($($entry.Name)) zajmuje $who.")
-                [void]$blocking.Add("Port $($entry.Port) ($($entry.Name)) zajmuje $who. Zamknij ten program albo zmień port w pliku linux-port\docker\.env.")
+                if ($entry.ClientFixed) {
+                    [void]$blocking.Add("Port $($entry.Port) ($($entry.Name)) zajmuje $who. Zamknij ten program (Menedżer zadań, karta Szczegóły, Zakończ zadanie) i kliknij GRAJ jeszcze raz. Nie zmieniaj tego portu w pliku .env: klient gry łączy się zawsze z portem 11000 i kanałami od 13000, więc po zmianie nie dałoby się zalogować.")
+                }
+                else {
+                    [void]$blocking.Add("Port $($entry.Port) ($($entry.Name)) zajmuje $who. Zamknij ten program albo zmień port w pliku linux-port\docker\.env.")
+                }
             }
         }
         if ($foreignHolders.Count -gt 0) {
