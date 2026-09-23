@@ -7676,6 +7676,32 @@ not in `data/`) reworked these point by point. What each hangs on:
   (`/block_player`, `/block_pool`) were always commands to this server. The
   client's only other mt2009 address, the gatekeeper POST in intrologin.py,
   sits behind `constInfo.GATEKEEPER_CHECK = True` and never runs.
+- **A bonus pass works on one piece, and comes back to it.** It walked the
+  slots and gave each piece one stone, three a visit, so a bot added a line to
+  the boots, one to the necklace and one to the bracelet and finished none
+  (Iwakura's QUICK FIX nr 3, 23 September); on m2zip five of 26 passes in a
+  quarter of an hour put stones on two pieces, and two of those on the worn
+  armour *and* the new one the swap rule held in the bag for its slot.
+  `GetPlayerBotBonusStep` is now the one answer to "what would a stone do to
+  this piece" - worn, held (`PLAYERBOT_BONUS_TARGET_HELD`, which stands in for
+  its slot's worn piece) or goods - and the swap rule's wait
+  (`PlayerBotHoldsBonusStoneFor`) asks it too. A visit spends its stones on one
+  piece, remembered in `dwBonusFocusItem` and kept while a stone in the bag
+  fits it, whatever it is doing (lines to four, the marble's fifth, changes to
+  the finish); a new piece is the first in the order that can take a line,
+  then the first that can take a change, so pieces are filled before anything
+  is mixed. A change stone waits for `PLAYERBOT_BONUS_CHANGE_MIN_LINES` (three)
+  and a piece of three takes an add stone first when one fits it - his second
+  half, which also lets a piece of three be mixed where it used to wait for
+  the fourth. No stone waits for a piece it cannot fit: that would have
+  undone Sammy's green stones and parked every add stone behind a weapon being
+  rerolled for its average. `PLAYERBOT_BONUS: focus` names each new piece.
+  Measured on m2zip in the twelve minutes after the deploy: 81 passes, 194
+  stones, none of them on a second piece, no change under three lines - and
+  147 of the 161 changes on pieces of three whose bag held no add stone that
+  fitted, change stones that had waited for a fourth line before. Measure it as
+  the stone lines (`added`/`rerolled`/`marbled`) of one pid in one second
+  (`scratchpad/bonus_scatter.py` of session 82d3ab90 is the shape).
 - **The login and channel ports are the client's, not .env's.** The launcher's
   preflight told a player whose 11000 was held by MSI_GamebarTool to "change
   the port in .env" (Kordix, 23 September), and that starts a server nobody

@@ -1429,6 +1429,12 @@ namespace
 	// ("boty dodaja sobie 5 bonusow", 12 September).
 	const int PLAYERBOT_BONUS_MAX_LINES = 4;
 	const int PLAYERBOT_BONUS_MARBLE_LINES = 5;
+	// Iwakura's QUICK FIX nr 3 (23 September): "Boty moga uzywac zmianek
+	// wylacznie na przedmiotach, ktore posiadaja juz co najmniej 3 dodane
+	// bonusy (z priorytetem dobicia do pelnych 4 bonusow przed rozpoczeciem
+	// mieszania)". A change stone waits for this many lines, and a piece of
+	// three takes an add stone first whenever there is one it can use.
+	const int PLAYERBOT_BONUS_CHANGE_MIN_LINES = 3;
 	// What the lines rolled on a piece add to what a stall asks for it.
 	//
 	// A counter wanted the same 150 000 for boots +7 carrying five bonus lines
@@ -5870,6 +5876,7 @@ namespace
 			dwRetreatThreatVID(0),
 			dwNextRefineCheckTime(0),
 			dwNextBonusCheckTime(0),
+			dwBonusFocusItem(0),
 			dwNextChatTime(0),
 			dwLastStatusChatTime(0),
 			dwNextStatusProbeTime(0),
@@ -6140,6 +6147,9 @@ namespace
 		DWORD dwRetreatThreatVID;
 		DWORD dwNextRefineCheckTime;
 		DWORD dwNextBonusCheckTime;
+		// The piece the bonus pass is working on (its item id), kept until it
+		// is done or no stone in the bag fits it (ManagePlayerBotBonusReroll).
+		DWORD dwBonusFocusItem;
 		DWORD dwNextChatTime;
 		DWORD dwLastStatusChatTime;
 		DWORD dwNextStatusProbeTime;
