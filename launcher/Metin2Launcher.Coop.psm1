@@ -39,6 +39,12 @@ $script:CoopInvitePrefix = 'M2COOP1:'
 # and only somebody who can host can hand one out.
 $script:CoopAccessSalt = '7efd8b1a3ea2fc99'
 $script:CoopAccessDigest = '75b8d736837c3268d3109b68010047a71e6e841972087efb5ab83f3e13d7f11e'
+# Further passwords that unlock hosting. A match still records the digest
+# above as the proof, so an install unlocked before keeps its unlock and the
+# testers' password keeps working beside these.
+$script:CoopAccessExtraDigests = @(
+    'e0edd3546db3b2833030ea8c2151502eab3f9b61afae2e4a3827b1bd3f9cc001'
+)
 
 # ---------------------------------------------------------------- paths/env
 
@@ -96,7 +102,8 @@ function Grant-M2CoopAccess {
     # True and remembered when the password is the testers' one; false and
     # nothing written otherwise. The password itself is never stored.
     param([Parameter(Mandatory = $true)][string]$ServerRoot, [Parameter(Mandatory = $true)][AllowEmptyString()][string]$Password)
-    if ((Get-M2CoopAccessDigest -Password $Password) -ne $script:CoopAccessDigest) { return $false }
+    $digest = Get-M2CoopAccessDigest -Password $Password
+    if ($digest -ne $script:CoopAccessDigest -and $script:CoopAccessExtraDigests -notcontains $digest) { return $false }
     $state = Read-M2CoopState -ServerRoot $ServerRoot
     if ($state.PSObject.Properties.Name -contains 'access') { $state.access = $script:CoopAccessDigest }
     else { $state | Add-Member -NotePropertyName access -NotePropertyValue $script:CoopAccessDigest }
