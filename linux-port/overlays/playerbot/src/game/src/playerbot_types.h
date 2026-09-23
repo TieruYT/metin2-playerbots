@@ -1346,6 +1346,27 @@ namespace
 	// monster at a time ("atakuja po jednym przeciwniku", Nagash, 19 September).
 	const int PLAYERBOT_TOWER_BOTS_PER_MONSTER = 2;
 	const int PLAYERBOT_TOWER_SPREAD_RANGE = 600;
+	// The sixth floor's smith. Once the Elite Demon King is down every
+	// character in the instance may have one piece raised there for the fee
+	// alone - no materials, at the anvil's own odds, and a failure burns the
+	// piece as at any blacksmith (DoRefine(item, true), the engine's
+	// REFINE_TYPE_MONEY_ONLY). A bot of UPPER_LEVEL takes the run past him
+	// once everybody has had the turn, or after SMITH_REFINE_WAIT_MS; it used
+	// to do so the moment he stood, and nobody ever used him ("nikt nie
+	// korzysta z mozliwosci ulepszania przedmiotow u kowala", prodnathin,
+	// 23 September).
+	const DWORD PLAYERBOT_TOWER_SMITH_REFINE_WAIT_MS = 150 * 1000;
+	// The floors' drop. Inside, the fight never ends - a bot always holds a
+	// foe and a pack always stands round it - so the ordinary loot pass only
+	// ever took what lay at a bot's feet, and a floor jumps four to eight
+	// seconds after its last monster falls: "sporo dropu zostaje na ziemi"
+	// (prodnathin). Between two foes a bot takes what it may within
+	// LOOT_RANGE, while its health holds LOOT_MIN_HP_PERCENT.
+	const int PLAYERBOT_TOWER_LOOT_RANGE = 1500;
+	const int PLAYERBOT_TOWER_LOOT_MIN_HP_PERCENT = 50;
+	// A raid is a guild and not a party, so the party buffs never reached it:
+	// the tower's Shaman keeps its fellows' buffs up itself, one cast a pass.
+	const DWORD PLAYERBOT_TOWER_ALLY_BUFF_INTERVAL = 3000;
 	// metin2_map_deviltower1's base in cells (Setting.txt), the ground
 	// floor's entrance the quest warps a player to, and the Metin of
 	// Toughness's spawn point (regen.txt: cell 195,690 off the base).
@@ -1904,6 +1925,16 @@ namespace
 	// Below it a bot always dismounts to fight; at or above it the target
 	// decides.
 	const BYTE PLAYERBOT_BATTLE_HORSE_LEVEL = 11;
+	// And the level of an attack skill at which the saddle stops being worth
+	// it. The engine lets a rider cast nothing of its class from any horse:
+	// CHARACTER::UseSkill refuses every skill but Sprint below a military
+	// horse, and every one but the four horse skills on one, which no bot
+	// has. So a warrior or a sura fighting from a battle horse swung its
+	// weapon and did nothing else, aura and berserk included ("sura bez
+	// skilli na koniu se expi", prodnathin, 23 September). From one attack
+	// skill at Master a bot is stronger on foot and fights there; the horse
+	// still carries it between fights (PlayerBotSkillsBeatTheSaddle).
+	const int PLAYERBOT_SADDLE_SKILL_LEVEL = 20;
 
 	const long PLAYERBOT_MAP_CHUNJO_M1 = 21;
 	// Joan's inner town is walled: the misc merchant and the blacksmith stand

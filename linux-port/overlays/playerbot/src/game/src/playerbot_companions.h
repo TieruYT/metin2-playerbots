@@ -1226,57 +1226,19 @@ namespace
 		const bool hunting = fighting || state.dwTargetVID != 0 ||
 				(state.dwLastCombatActionTime != 0 &&
 				 dwNow - state.dwLastCombatActionTime < PLAYERBOT_BUFF_COMBAT_WINDOW);
-		const TJobSkillBuild build = GetPlayerBotSkillBuild(ch->GetJob(), ch->GetSkillGroup(), ch->GetPlayerID());
-		for (size_t i = 0; i < sizeof(build.dwBuffSkills) / sizeof(build.dwBuffSkills[0]); ++i)
-		{
-			const DWORD vnum = build.dwBuffSkills[i];
-			if (vnum == 0 || ch->GetSkillLevel(vnum) == 0)
-				continue;
-			if (!hunting && !IsPlayerBotOutOfCombatBuff(vnum))
-				continue;
-			CSkillProto* proto = CSkillManager::instance().Get(vnum);
-			if (!proto || IS_SET(proto->dwFlag, SKILL_FLAG_SELFONLY))
-				continue;
-			LPCHARACTER target = NULL;
-			for (size_t m = 0; m < collect.members.size(); ++m)
-			{
-				LPCHARACTER member = collect.members[m];
-				if (proto->dwTargetRange != 0 &&
-						DISTANCE_APPROX(ch->GetX() - member->GetX(), ch->GetY() - member->GetY()) >
-								(int)proto->dwTargetRange)
-					continue;
-				if (vnum == 109) // Cure / Heal
-				{
-					if (member->GetMaxHP() <= 0 ||
-							(long long)member->GetHP() * 100 / member->GetMaxHP() > PLAYERBOT_PARTY_LEADER_CURE_HP_PERCENT)
-						continue;
-				}
-				else if (IsPlayerBotBuffAffectOn(member, vnum))
-					continue;
-				target = member;
-				break;
-			}
-			if (!target)
-				continue;
-			if (ch->IsRiding() && !CanPlayerBotEverFightOnHorse(ch))
-			{
-				SetPlayerBotRidingForTravel(ch, state, false, dwNow, "party_buff");
-				next = dwNow + PLAYERBOT_BUFF_RECHECK_FAST;
-				return true;
-			}
-			if (!ch->UseSkill(vnum, target))
-				continue;
-			SendPlayerBotSkillPacket(ch, vnum);
-			state.dwLastBotSkillTime = dwNow;
-			state.dwNextAttackTime = dwNow + PLAYERBOT_SKILL_ANIMATION_LOCK;
-			next = dwNow + PLAYERBOT_BUFF_RECHECK_FAST;
+		LPCHARACTER target = NULL;
+		DWORD vnum = 0;
+		const int done = CastPlayerBotSupportBuff(ch, state, dwNow, collect.members, hunting,
+				"party_buff", target, vnum);
+		if (done == 0)
+			return false;
+		next = dwNow + PLAYERBOT_BUFF_RECHECK_FAST;
+		if (done == 2)
 			PlayerBotLogThrottled("companion_buff", dwNow,
 					"PLAYERBOT_PARTY: buffed a member pid=%u name=%s member=%s person=%d vnum=%u",
 					ch->GetPlayerID(), ch->GetName(), target->GetName(),
 					(!target->GetDesc() || !target->GetDesc()->IsBot()) ? 1 : 0, vnum);
-			return true;
-		}
-		return false;
+		return true;
 	}
 }
 

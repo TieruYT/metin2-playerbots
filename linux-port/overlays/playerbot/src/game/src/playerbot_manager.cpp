@@ -1358,7 +1358,10 @@ namespace
 				SetPlayerBotAction(state, BOT_ACTION_TRAVEL, dwNow);
 				return true;
 			}
-			if (ch->IsRiding() && !CanPlayerBotEverFightOnHorse(ch))
+			// From any saddle: a battle horse casts no skill of a class
+			// either (PLAYERBOT_SADDLE_SKILL_LEVEL), and the cast below would
+			// be refused without a word.
+			if (ch->IsRiding())
 			{
 				SetPlayerBotRidingForTravel(ch, state, false, dwNow, "leader_buff");
 				next = dwNow + PLAYERBOT_BUFF_RECHECK_FAST;

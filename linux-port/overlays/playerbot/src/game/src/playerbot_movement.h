@@ -879,6 +879,20 @@ namespace
 		return true;
 	}
 
+	// Defined with the builds (playerbot_skills.h), which come later.
+	bool PlayerBotSkillsBeatTheSaddle(LPCHARACTER ch);
+
+	// A battle horse (level 11+) and a weapon that can be swung from it: what a
+	// player raises for the stones, whatever the bot then does with it.
+	bool HasPlayerBotBattleHorse(LPCHARACTER ch)
+	{
+		if (!ch || ch->GetHorseLevel() < PLAYERBOT_BATTLE_HORSE_LEVEL)
+			return false;
+		LPITEM weapon = ch->GetWear(WEAR_WEAPON);
+		return weapon && weapon->GetType() == ITEM_WEAPON &&
+				weapon->GetSubType() != WEAPON_BOW;
+	}
+
 	// A battle horse (level 11+) lets its rider strike from the saddle. Bots that
 	// own one should ride into a fight instead of dismounting on the approach, but
 	// only when the weapon and target actually make mounted combat sensible.
@@ -886,13 +900,15 @@ namespace
 	// The horse and the weapon decide that much on their own, and the tick has
 	// to know it before a target exists - that is the moment it decides whether
 	// to climb down.
+	//
+	// And the skills decide the rest. No skill of a class can be cast from a
+	// saddle (PLAYERBOT_SADDLE_SKILL_LEVEL), so a bot whose attack skills are
+	// trained fights on foot like any rider of a transport horse: the target
+	// section climbs down when it picks a foe, and so do the duel, the Anti-PK
+	// fight and the tower.
 	bool CanPlayerBotEverFightOnHorse(LPCHARACTER ch)
 	{
-		if (!ch || ch->GetHorseLevel() < PLAYERBOT_BATTLE_HORSE_LEVEL)
-			return false;
-		LPITEM weapon = ch->GetWear(WEAR_WEAPON);
-		return weapon && weapon->GetType() == ITEM_WEAPON &&
-				weapon->GetSubType() != WEAPON_BOW;
+		return HasPlayerBotBattleHorse(ch) && !PlayerBotSkillsBeatTheSaddle(ch);
 	}
 
 	bool CanPlayerBotFightOnHorse(LPCHARACTER ch, LPCHARACTER target)

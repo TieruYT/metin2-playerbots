@@ -164,7 +164,8 @@ namespace
 		// Nor from the saddle of a transport horse: CHARACTER::UseSkill refuses
 		// every non-horse skill while riding one, and a rider on a long leg
 		// now keeps its horse until it has a target. The aura goes up on the
-		// tick after it climbs down.
+		// tick after it climbs down. A rider that fights from its battle horse
+		// climbs down for the buff itself, below.
 		if (ch->IsRiding() && !CanPlayerBotEverFightOnHorse(ch))
 			return false;
 		// A bot minding its own stall is not hunting. Casting does not close a
@@ -196,7 +197,8 @@ namespace
 		// town casting an aura they would lose long before reaching the monsters a
 		// kilometre away. "Hunting" is the middle ground - in a fight, or recently
 		// enough in one that another is coming.
-		const bool inCombat = duel || state.dwTargetVID != 0 || ch->GetVictim() != NULL ||
+		const bool fighting = duel || state.dwTargetVID != 0 || ch->GetVictim() != NULL;
+		const bool inCombat = fighting ||
 				(state.dwLastCombatActionTime != 0 &&
 				 dwNow - state.dwLastCombatActionTime < PLAYERBOT_BUFF_COMBAT_WINDOW);
 
@@ -217,6 +219,25 @@ namespace
 			{
 				if (ch->GetMaxHP() <= 0 || (ch->GetHP() * 100) / ch->GetMaxHP() > 60)
 					continue;
+			}
+
+			// No skill of a class is cast from a saddle, a battle horse's
+			// included: UseSkill refuses it without a word, and a warrior that
+			// fought from one went without its aura and its berserk for good.
+			// So the rider climbs down for the buff - only in a fight, and not
+			// for the walking buffs, which a horse outruns anyway. The flip
+			// hold keeps it on foot while the set goes up
+			// (PLAYERBOT_HORSE_TRAVEL_FLIP_HOLD_MS against a cast every
+			// PLAYERBOT_BUFF_RECHECK_FAST), and the target section puts it back
+			// in the saddle afterwards.
+			if (ch->IsRiding())
+			{
+				if (!fighting || IsPlayerBotOutOfCombatBuff(buffVnum))
+					continue;
+				if (!SetPlayerBotRidingForTravel(ch, state, false, dwNow, "buff"))
+					return false;
+				state.dwNextBuffCheckTime = dwNow + PLAYERBOT_BUFF_RECHECK_FAST;
+				return true;
 			}
 
 			// Self-buff if not active
@@ -301,6 +322,72 @@ namespace
 		}
 
 		return false;
+	}
+
+	// One support buff from a Shaman to the first of `members`, in the
+	// caller's order, that lacks it and stands within the skill's reach: the
+	// build's own buff list less what is SELFONLY, Cure only to a member under
+	// PLAYERBOT_PARTY_LEADER_CURE_HP_PERCENT, and outside a fight only the
+	// walking buffs. A rider climbs down first, because nothing of a class is
+	// cast from a saddle, and the cast waits for the caller's next pass.
+	// Returns 0 when nothing was done, 1 for the climb-down and 2 for a cast,
+	// whose target and skill come back in outTarget and outVnum.
+	int CastPlayerBotSupportBuff(LPCHARACTER ch, TPlayerBotAIState& state, DWORD dwNow,
+			const std::vector<LPCHARACTER>& members, bool hunting, const char* dismountReason,
+			LPCHARACTER& outTarget, DWORD& outVnum)
+	{
+		outTarget = NULL;
+		outVnum = 0;
+		const TJobSkillBuild build = GetPlayerBotSkillBuild(ch->GetJob(), ch->GetSkillGroup(), ch->GetPlayerID());
+		for (size_t i = 0; i < sizeof(build.dwBuffSkills) / sizeof(build.dwBuffSkills[0]); ++i)
+		{
+			const DWORD vnum = build.dwBuffSkills[i];
+			if (vnum == 0 || ch->GetSkillLevel(vnum) == 0)
+				continue;
+			if (!hunting && !IsPlayerBotOutOfCombatBuff(vnum))
+				continue;
+			CSkillProto* proto = CSkillManager::instance().Get(vnum);
+			if (!proto || IS_SET(proto->dwFlag, SKILL_FLAG_SELFONLY))
+				continue;
+			LPCHARACTER target = NULL;
+			for (size_t m = 0; m < members.size(); ++m)
+			{
+				LPCHARACTER member = members[m];
+				if (proto->dwTargetRange != 0 &&
+						DISTANCE_APPROX(ch->GetX() - member->GetX(), ch->GetY() - member->GetY()) >
+								(int)proto->dwTargetRange)
+					continue;
+				if (vnum == 109) // Cure / Heal
+				{
+					if (member->GetMaxHP() <= 0 ||
+							(long long)member->GetHP() * 100 / member->GetMaxHP() > PLAYERBOT_PARTY_LEADER_CURE_HP_PERCENT)
+						continue;
+				}
+				else if (IsPlayerBotBuffAffectOn(member, vnum))
+					continue;
+				target = member;
+				break;
+			}
+			if (!target)
+				continue;
+			// From any saddle: a battle horse casts no skill of a class either
+			// (PLAYERBOT_SADDLE_SKILL_LEVEL), and the cast below would be
+			// refused without a word.
+			if (ch->IsRiding())
+			{
+				SetPlayerBotRidingForTravel(ch, state, false, dwNow, dismountReason);
+				return 1;
+			}
+			if (!ch->UseSkill(vnum, target))
+				continue;
+			SendPlayerBotSkillPacket(ch, vnum);
+			state.dwLastBotSkillTime = dwNow;
+			state.dwNextAttackTime = dwNow + PLAYERBOT_SKILL_ANIMATION_LOCK;
+			outTarget = target;
+			outVnum = vnum;
+			return 2;
+		}
+		return 0;
 	}
 
 	// A splash skill is for a crowd, and a Metin stone is never a crowd.

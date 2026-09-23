@@ -500,7 +500,20 @@ namespace
 		// dashes for them - or the bots that are not fighting will have them.
 		const bool metinDash = state.dwStoneBrokenTime != 0 &&
 				dwNow - state.dwStoneBrokenTime < PLAYERBOT_METIN_LOOT_DASH_TIME;
-		if ((bFightingActiveTarget || state.bLootThreatNearby) && !metinDash)
+		// Inside the Demon Tower the fight never ends: the floor pass hands a
+		// bot its next foe the moment the last one falls, and a pack always
+		// stands about, so this pass only ever took what lay at a bot's feet -
+		// and a floor jumps a few seconds after its last monster, taking the
+		// rest with it ("sporo dropu zostaje na ziemi", prodnathin,
+		// 23 September). Between two foes, with its health holding, a bot
+		// there goes for what it may take within PLAYERBOT_TOWER_LOOT_RANGE
+		// before the next one is picked.
+		const bool towerDash = !bFightingActiveTarget &&
+				IsPlayerBotDemonTowerInstance(ch->GetMapIndex()) &&
+				!state.bRecoveringAfterDeath && ch->GetMaxHP() > 0 &&
+				(long long)ch->GetHP() * 100 >=
+						(long long)ch->GetMaxHP() * PLAYERBOT_TOWER_LOOT_MIN_HP_PERCENT;
+		if ((bFightingActiveTarget || state.bLootThreatNearby) && !metinDash && !towerDash)
 		{
 			TryPlayerBotCombatPickup(ch, state, dwNow);
 			return false;
@@ -509,7 +522,8 @@ namespace
 			return false;
 
 		CCollectPlayerBotLoot collector(ch,
-				metinDash ? PLAYERBOT_METIN_LOOT_DASH_RANGE : PLAYERBOT_LOOT_SEARCH_RANGE,
+				metinDash ? PLAYERBOT_METIN_LOOT_DASH_RANGE
+						: towerDash ? PLAYERBOT_TOWER_LOOT_RANGE : PLAYERBOT_LOOT_SEARCH_RANGE,
 				state.mapFailedLootVIDs, dwNow);
 		ch->GetSectree()->ForEachAround(collector);
 		collector.Sort();

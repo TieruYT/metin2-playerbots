@@ -7747,6 +7747,63 @@ not in `data/`) reworked these point by point. What each hangs on:
   generation and the memory all ask it. Measured with a six-minute +100% event
   on m2zip: mob_gold 200 -> 400, the base flag 200, no "yang rate changed" line
   and no repricing.
+- **No skill of a class is cast from a saddle, a battle horse's included.**
+  mt2009's `CHARACTER::UseSkill`: a rider without `CanUseHorseSkill()` (horse
+  grade 3 - level 21 and up, `(level - 1) / 10 + 1` - and health left) is
+  refused everything but Sprint, and one with it everything but the four
+  SKILL_TYPE_HORSE skills (137-140, which no bot has) and Sprint
+  (`IsSkillUsableWhileRiding`). The 3 September mounted combat (the spec's
+  Module 2) kept a battle-horse rider in the saddle for a stone and, a warrior
+  or a sura, for everything - so from level thirty-five those two fought with
+  the swing alone, aura and berserk included, because the buff pass asked the
+  engine and the engine refused without a word ("sura bez skilli na koniu se
+  expi", prodnathin, 23 September). `CanPlayerBotEverFightOnHorse` is
+  `HasPlayerBotBattleHorse && !PlayerBotSkillsBeatTheSaddle` now (one attack
+  skill of the build at `PLAYERBOT_SADDLE_SKILL_LEVEL`, Master), so every path
+  that climbs down for a fight - the top of the tick, the target section, the
+  duel, the Anti-PK fight, the tower - treats a skilled rider like a rider of a
+  transport horse. One that still fights mounted climbs down for a missing
+  buff in a fight (`PLAYERBOT_HORSE: dismounted ... reason=buff`) and the
+  flip hold keeps it on foot while the set goes up; the three support-buff
+  passes climb down from any saddle. The planner's twice-as-many Metin
+  expeditions stay with the horse (`HasPlayerBotBattleHorse`). On foot the
+  buffs were always cast: ten minutes of game1 before the change had aura
+  601, berserk 567, strong body 390, enchanted blade 476 casts. No bot on
+  m2zip owns a battle horse (the four GM characters do), so the saddle half
+  is compiled and read, not watched.
+- **A raid is a guild, and nothing written for a party reached it.** Inside
+  the Demon Tower the Shamans buffed themselves and nobody else: the
+  companion pass needs a party, and the party branch of the self-buff pass
+  runs only when the self-cast fails. `BuffPlayerBotTowerFellows` points the
+  companion pass's cast (`CastPlayerBotSupportBuff`, in playerbot_combat.h,
+  shared with it) at whoever stands in the tower of the Shaman's kingdom, the
+  people first. The loot pass took only what lay at a bot's feet in there,
+  because a bot always holds a foe and a pack always stands about, and a
+  floor jumps a few seconds after its last monster: between two foes a bot
+  now goes for what it may within `PLAYERBOT_TOWER_LOOT_RANGE` while its
+  health holds (`towerDash` in `HandleLoot`). A bot under
+  `PLAYERBOT_TOWER_MIN_LEVEL` inside an instance leaves it, and goes home from
+  the ground floor, unless a person's party brought it - the tower's keeper
+  tells a player forty too. And the sixth floor's smith is used: the quest's
+  1092.kill sets `deviltower_zone.can_refine` for everybody in the instance,
+  and a drag onto him is `DoRefine(item, true)` - the fee, no materials, the
+  anvil's odds, a burn on failure; 20074 takes a weapon, 20075 a body armour,
+  shield or helmet, 20076 the rest (`CanReceiveItem`), and the refine sets he
+  refuses are the elite 501 and 530 on mt2009 (`IsEliteRefine`) but everything
+  from 500 on r40250 (`DEVIL_TOWER_REFINE_HACK`). `UsePlayerBotTowerSmith`
+  gives him the piece the bot's own anvil rules would raise, keeps back a
+  weapon or body armour with nothing in the bag to replace it, and the bot of
+  seventy-five takes the run on only once everybody has had the turn or
+  `PLAYERBOT_TOWER_SMITH_REFINE_WAIT_MS` has passed. None of it has been
+  watched in a run: m2zip has no guild with four bots of forty. A read-only
+  census from a deploy-only build asked the picker about m2zip's 212 bots of
+  thirty and up: a piece for the weapon smith from 93, the armour smith 128,
+  the accessory smith 35 - and it caught the picker offering the weapon smith
+  a rod, which is why it asks the item type the way `CanReceiveItem` does.
+  The same census counted 38 of the 212 whose attack skills beat the saddle:
+  the players' skill order puts the buffs first, so most bots of thirty to
+  forty hold their attack skills at one and still ride into a fight - now
+  climbing down for their buffs.
 
 
 ## Engine facts worth not re-deriving

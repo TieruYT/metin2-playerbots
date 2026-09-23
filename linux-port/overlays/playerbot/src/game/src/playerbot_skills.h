@@ -379,6 +379,23 @@ namespace
 		return build;
 	}
 
+	// Declared in playerbot_movement.h: whether this bot's attack skills are
+	// worth more than the saddle, which casts none of them. One skill of the
+	// build's attack list at PLAYERBOT_SADDLE_SKILL_LEVEL is enough - a
+	// Master skill hits several times as hard as a swing, and a bot on a
+	// horse has nothing but the swing.
+	bool PlayerBotSkillsBeatTheSaddle(LPCHARACTER ch)
+	{
+		if (!ch || ch->GetSkillGroup() == 0)
+			return false;
+		const TJobSkillBuild build = GetPlayerBotSkillBuild(ch->GetJob(), ch->GetSkillGroup(), ch->GetPlayerID());
+		for (size_t i = 0; i < sizeof(build.dwOffensiveSkills) / sizeof(build.dwOffensiveSkills[0]); ++i)
+			if (build.dwOffensiveSkills[i] != 0 &&
+					ch->GetSkillLevel(build.dwOffensiveSkills[i]) >= PLAYERBOT_SADDLE_SKILL_LEVEL)
+				return true;
+		return false;
+	}
+
 	// Whether a buff skill's affect is up on a character: the bot itself, or the
 	// player a Shaman keeps buffed (ManagePlayerBotBuffHumanLeader). The bot's
 	// own fallback clock is IsPlayerBotBuffActive's business.
