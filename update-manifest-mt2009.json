@@ -1,12 +1,12 @@
 {
   "schema": 1,
   "channel": "stable",
-  "publishedAt": "2026-09-23T20:12:15Z",
-  "statusMessage": "2.2.4 (serwer 2.2.4, klient 2.0.27 - zaktualizuj oba): Lista Przydatnych Przedmiotow tylko dla Hazardzisty (magazyny bez zbroi), Hazardzista wystawia ulepszone przedmioty, bron na 30 poziom co najmniej do +6, Rada Pustelnika uzywana przy ksiegach, wyszukiwarka sklepow szuka jednego kliknietego przedmiotu, Auto Lowy biora najblizszego potwora, Wieza: na 7. pietrze najpierw moby, Rybak otwiera co piata malze, zmiana ceny wielu przedmiotow bez gubienia pozycji. Zawiera wszystko z 2.2.3.",
+  "publishedAt": "2026-09-23T21:02:33Z",
+  "statusMessage": "2.2.5 (serwer; klient zostaje 2.0.27): tarcza i zbroja oceniane po obronie i bonusach, a nie po poziomie przedmiotu (bot nie nosi juz Pieciokatnej+4 z Bojowa+7 w plecaku), medale konne na straganach po 2 sztuki, przycisk ? przy kazdym ustawieniu w oknie liczby botow. Zawiera wszystko z 2.2.4.",
   "server": {
-    "version": "2.2.4",
-    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.4/metin2-server-update-2.2.4.zip",
-    "sha256": "23BA56301472A562BF2CAAE601C0028C7F8A46BAF79FAC128547D5C5546EC9A7"
+    "version": "2.2.5",
+    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.5/metin2-server-update-2.2.5.zip",
+    "sha256": "0EF50ADB826F4B7277B23C7858B9B64121A0A9D6F4B4B5DCFD3EE477DF6FBCAE"
   },
   "support": {
     "contactUrl": "https://discord.gg/pt5tvnrN6",
