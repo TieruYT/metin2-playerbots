@@ -209,7 +209,10 @@ if app.ENABLE_LOCALE_COMMON:
 
 if systemSetting.GetLanguage() == "en":
 	import english_gui
-	globals().update(english_gui.GAME)
+	for _key, _text in english_gui.GAME.items():
+		if callable(globals().get(_key)):
+			_text = ('%' in _text.replace('%%', '') and SA or SNA)(_text)
+		globals()[_key] = _text
 
 if app.ENABLE_CHEQUE_SYSTEM:
 	def NumberToGold(n) :

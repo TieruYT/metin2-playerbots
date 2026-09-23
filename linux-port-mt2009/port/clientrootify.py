@@ -43,6 +43,11 @@ Writes into client-root/ (beside serverinfo.py, which is hand-written):
   * constinfo.py  - GAME_VERSION 1.1.0: the version the client sends before
                     logging in, and the server's server_version refuses the
                     two-page client below it (m2-render-config).
+  * uirefine.py   - a refine window that fails to open sends the cancel, so
+                    the server's refine mode does not lock the bag, and its
+                    two texts fall back to the plain numbers.
+  * localeinfo.py - English over the loaded texts (english_gui.py), keeping
+                    a typed line a function.
 
 Exact-string edits on the stock CP1250/CRLF files, byte for byte otherwise.
 Idempotent; re-run after a new client package.
@@ -53,6 +58,17 @@ import os
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 OUT = os.path.normpath(os.path.join(HERE, '..', 'client-root'))
+
+# english_gui's texts over the loaded ones, keeping a typed line (SA, SNA...)
+# a function: the scripts call those, and a plain string where they call one
+# raises. SA when the English text takes an argument, SNA when it does not.
+ENGLISH_OVERLAY = (
+    b'if systemSetting.GetLanguage() == "en":\r\n'
+    b'\timport english_gui\r\n'
+    b'\tfor _key, _text in english_gui.GAME.items():\r\n'
+    b'\t\tif callable(globals().get(_key)):\r\n'
+    b"\t\t\t_text = ('%' in _text.replace('%%', '') and SA or SNA)(_text)\r\n"
+    b'\t\tglobals()[_key] = _text\r\n')
 
 EDITS = {
     # --- Osiem jezykow (Lostek) i angielski interfejs (Codex), 2.0.23 -------
@@ -97,15 +113,23 @@ EDITS = {
     # ktorych locale_interface.txt EN nie ma, zostaja po polsku w kazdym innym
     # jezyku dzieki setdefault ponizej - wiec DE/ES/IT/PT/RO/TR nic nie traca.
     'localeinfo.py': [
+        # Migration of the overlay's first form (client 2.0.9 to 2.0.25): it
+        # put english_gui's plain texts over typed lines too, and a typed line
+        # is a function the scripts call - WHISPER_ERROR[mode](name) - so an
+        # English player whispering someone they had blocked got "'str' object
+        # is not callable" instead of the message.
+        (b'if systemSetting.GetLanguage() == "en":\r\n'
+         b'\timport english_gui\r\n'
+         b'\tglobals().update(english_gui.GAME)\r\n',
+         ENGLISH_OVERLAY,
+         True),
         (b'\r\n'
          b'\r\n'
          b'if app.ENABLE_CHEQUE_SYSTEM:\r\n'
          b'\tdef NumberToGold(n) :\r\n',
          b'\r\n'
          b'\r\n'
-         b'if systemSetting.GetLanguage() == "en":\r\n'
-         b'\timport english_gui\r\n'
-         b'\tglobals().update(english_gui.GAME)\r\n'
+         + ENGLISH_OVERLAY +
          b'\r\n'
          b'if app.ENABLE_CHEQUE_SYSTEM:\r\n'
          b'\tdef NumberToGold(n) :\r\n'),
@@ -800,6 +824,42 @@ EDITS = {
          b'\t\tslotCount = player.INVENTORY_MAX_NUM\r\n'
          b'\r\n'
          b'\tfor i in xrange(slotCount):\r\n'),
+    ],
+    'uirefine.py': [
+        # The server is in refine mode from the moment it sends the dialog and
+        # refuses every move in the bag until the window answers. A window that
+        # raised before Show() never answers: German, Spanish, Italian,
+        # Portuguese, Romanian and Turkish players had REFINE_COST taking a
+        # number where NumberToMoneyString hands a string, and every one of
+        # them lost the bag at the blacksmith until the next login (23
+        # September). The texts are fixed (localeify.py); this is so the next
+        # bad text, or anything else in Open, costs a window and not a bag.
+        (b'\tdef Open(self, targetItemPos, nextGradeItemVnum, cost, prob, type):\r\n'
+         b'\r\n'
+         b'\t\tif False == self.isLoaded:\r\n',
+         b'\tdef Open(self, targetItemPos, nextGradeItemVnum, cost, prob, type):\r\n'
+         b'\t\ttry:\r\n'
+         b'\t\t\tself.__OpenWindow(targetItemPos, nextGradeItemVnum, cost, prob, type)\r\n'
+         b'\t\texcept:\r\n'
+         b'\t\t\t# The cancel is the answer the server waits for; the error\r\n'
+         b'\t\t\t# still goes to syserr.txt.\r\n'
+         b'\t\t\tnet.SendRefinePacket(255, 255)\r\n'
+         b'\t\t\tself.Hide()\r\n'
+         b'\t\t\traise\r\n'
+         b'\r\n'
+         b'\tdef __OpenWindow(self, targetItemPos, nextGradeItemVnum, cost, prob, type):\r\n'
+         b'\r\n'
+         b'\t\tif False == self.isLoaded:\r\n'),
+        (b'\t\tself.probText.SetText(localeInfo.REFINE_SUCCESS_PROBALITY % (self.percentage))\r\n'
+         b'\t\tself.costText.SetText(localeInfo.REFINE_COST % localeInfo.NumberToMoneyString(self.cost))\r\n',
+         b'\t\ttry:\r\n'
+         b'\t\t\tself.probText.SetText(localeInfo.REFINE_SUCCESS_PROBALITY % (self.percentage))\r\n'
+         b'\t\texcept:\r\n'
+         b'\t\t\tself.probText.SetText("%d%%" % (self.percentage))\r\n'
+         b'\t\ttry:\r\n'
+         b'\t\t\tself.costText.SetText(localeInfo.REFINE_COST % localeInfo.NumberToMoneyString(self.cost))\r\n'
+         b'\t\texcept:\r\n'
+         b'\t\t\tself.costText.SetText(localeInfo.NumberToMoneyString(self.cost))\r\n'),
     ],
     'constinfo.py': [
         (b'\t"major" : 0,\r\n\t"minor" : 15,\r\n',
