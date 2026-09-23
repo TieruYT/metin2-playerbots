@@ -91,7 +91,9 @@ namespace
 	// Iwakura's Useful Items List (playerbot_lpp.h, after the gambler): what
 	// the bot keeps rather than sells, what goes to the box, what comes out.
 	bool IsPlayerBotLppKeptItem(LPCHARACTER ch, LPITEM item);
-	bool IsPlayerBotLppStoredSurplus(LPCHARACTER ch, LPITEM item);
+	void CollectPlayerBotLppBoxRelease(LPCHARACTER ch, CSafebox* box, std::set<DWORD>& ids);
+	DWORD GetPlayerBotLppFamily(LPITEM item);
+	int GetPlayerBotHeldFamilyLimit(LPCHARACTER ch, LPITEM item);
 	bool IsPlayerBotLppHerb(LPITEM item);
 	void CollectPlayerBotSafeboxLpp(LPCHARACTER ch, const TPlayerBotAIState& state, std::vector<WORD>& cells);
 	void RefreshPlayerBotLppStored(LPCHARACTER ch, TPlayerBotPersona& p, CSafebox* box);
@@ -161,6 +163,9 @@ namespace
 		if (!ch || state.mapStallUnsold.empty() || (!IsPlayerBotBagFull(ch) &&
 				CountPlayerBotFreeInventoryCells(ch) > PLAYERBOT_BAG_PRESSURE_FREE_CELLS))
 			return;
+		// Two of a family at most in the box, whatever put them there
+		// (GetPlayerBotHeldFamilyLimit): past that a piece stays goods.
+		std::map<DWORD, int> going;
 		for (WORD cell = 0; cell < PLAYERBOT_BAG_CELLS; ++cell)
 		{
 			LPITEM item = ch->GetInventoryItem(cell);
@@ -180,6 +185,16 @@ namespace
 				continue;
 			if (IsPlayerBotWearableUpgrade(ch, item, cell))
 				continue;
+			if (IsPlayerBotPersonaEnabled())
+			{
+				const DWORD family = GetPlayerBotLppFamily(item);
+				std::map<DWORD, BYTE>::const_iterator stored = state.persona.mapGearStored.find(family);
+				int& n = going[family];
+				if ((stored != state.persona.mapGearStored.end() ? stored->second : 0) + n >=
+						GetPlayerBotHeldFamilyLimit(ch, item))
+					continue;
+				++n;
+			}
 			cells.push_back(cell);
 		}
 	}
@@ -264,6 +279,29 @@ namespace
 		return !cells.empty();
 	}
 
+	// A visit for what the box lets go of alone (wLppReleasable, as the last
+	// visit left it) - or to look at a box no visit has opened since the bot
+	// came into the world, since only a look can say what is there and an old
+	// version filled boxes with the list's gear. By a bot already in a village
+	// (the visit starts nowhere else), at most every
+	// PLAYERBOT_LPP_RELEASE_VISIT_GAP_MS, and only into a bag the withdrawal
+	// will take a piece into: room for the tallest piece of gear, and clear of
+	// the pressure the deposit waits for, or the visit would take nothing and
+	// come again.
+	bool PlayerBotWantsLppRelease(LPCHARACTER ch, const TPlayerBotAIState& state, DWORD dwNow)
+	{
+		const TPlayerBotPersona& p = state.persona;
+		if (!ch || !IsPlayerBotPersonaEnabled() || !p.bRestored ||
+				(p.bLppStoredKnown && p.wLppReleasable == 0) || dwNow < p.dwLppReleaseVisitAt)
+			return false;
+		// A bot that never paid for a page has nothing down there to look at.
+		if (!p.bLppStoredKnown && ch->GetQuestFlag(PLAYERBOT_SAFEBOX_PAID_FLAG) <= 0)
+			return false;
+		const int freeAfter = CountPlayerBotFreeInventoryCells(ch) - 3;
+		return ch->GetEmptyInventory(3) >= 0 && freeAfter > PLAYERBOT_BAG_PRESSURE_FREE_CELLS &&
+				(PLAYERBOT_BAG_CELLS - freeAfter) * 100 < PLAYERBOT_BAG_CELLS * PLAYERBOT_BAG_FULL_PERCENT;
+	}
+
 	// And out of it again, the way CInputMain::SafeboxCheckout does it.
 	//
 	// The store was one-way for as long as it has existed, and the note above
@@ -290,13 +328,20 @@ namespace
 	// next steps consume.
 	int WithdrawPlayerBotSafebox(LPCHARACTER ch, CSafebox* box,
 			const std::set<DWORD>* pJustDeposited = NULL, TPlayerBotPersona* pGambler = NULL,
-			TPlayerBotPersona* pPersona = NULL)
+			TPlayerBotPersona* pPersona = NULL, int* pReleased = NULL)
 	{
+		if (pReleased)
+			*pReleased = 0;
 		if (!ch || !box)
 			return 0;
 		std::set<DWORD> gambleMaterials;
 		if (pGambler)
 			CollectPlayerBotGambleMaterials(ch, gambleMaterials);
+		// The gear the box lets go of, decided over the whole box before any
+		// of it moves: which copy of a family stays depends on the others.
+		std::set<DWORD> lppRelease;
+		if (!pGambler)
+			CollectPlayerBotLppBoxRelease(ch, box, lppRelease);
 		int taken = 0;
 		for (DWORD pos = 0; pos < SAFEBOX_MAX_NUM &&
 				taken < PLAYERBOT_SAFEBOX_WITHDRAW_MAX; ++pos)
@@ -382,12 +427,14 @@ namespace
 			else if (!pGambler && IsPlayerBotPersonaEnabled() &&
 					(item->GetType() == ITEM_WEAPON || item->GetType() == ITEM_ARMOR))
 			{
-				// Iwakura's list lets a stored piece go - outgrown, or a plain
-				// copy of a family now worn at +9 - and it goes to the market
-				// ("zwalnia miejsce w magazynie, wystawiajac stare zapasy na
-				// rynek"), into a bag that stays clear of pressure.
+				// Iwakura's list lets a stored piece go - outgrown, a plain copy
+				// of a family now worn at +9, a copy past its family's two, or
+				// any piece at all of a bot that is no gambler - and it goes to
+				// the market ("zwalnia miejsce w magazynie, wystawiajac stare
+				// zapasy na rynek"), or a gambler's never-merchant surplus aside,
+				// to the merchant, into a bag that stays clear of pressure.
 				const int freeAfter = CountPlayerBotFreeInventoryCells(ch) - (int)item->GetSize();
-				wanted = IsPlayerBotLppStoredSurplus(ch, item) &&
+				wanted = lppRelease.find(item->GetID()) != lppRelease.end() &&
 						freeAfter > PLAYERBOT_BAG_PRESSURE_FREE_CELLS &&
 						(PLAYERBOT_BAG_CELLS - freeAfter) * 100 < PLAYERBOT_BAG_CELLS * PLAYERBOT_BAG_FULL_PERCENT;
 				why = "lpp_released";
@@ -442,8 +489,13 @@ namespace
 			sys_log(0, "PLAYERBOT_TOWN: safebox withdraw pid=%u name=%s vnum=%u count=%u reason=%s",
 					ch->GetPlayerID(), ch->GetName(), item->GetVnum(),
 					(unsigned int)item->GetCount(), why);
-			if (pPersona && !strcmp(why, "lpp_released"))
-				NotePlayerBotLppReleased(*pPersona, item->GetID());
+			if (!strcmp(why, "lpp_released"))
+			{
+				if (pPersona)
+					NotePlayerBotLppReleased(*pPersona, item->GetID());
+				if (pReleased)
+					++*pReleased;
+			}
 			if (pGambler && (item->GetType() == ITEM_WEAPON || item->GetType() == ITEM_ARMOR))
 				++pGambler->bGambleSafeboxTaken;
 			++taken;
@@ -736,7 +788,8 @@ namespace
 				IsPlayerBotGambling(state, dwNow);
 		// The gambler's first stop is the storekeeper, once a session.
 		state.bTownNeedSafebox = HasPlayerBotSafeboxDeposit(ch, state) ||
-				(IsPlayerBotGambling(state, dwNow) && !state.persona.bGambleSafeboxChecked);
+				(IsPlayerBotGambling(state, dwNow) && !state.persona.bGambleSafeboxChecked) ||
+				PlayerBotWantsLppRelease(ch, state, dwNow);
 		if (!state.bTownNeedTrainer && !state.bTownNeedSkillReset && !state.bTownNeedMisc &&
 				!state.bTownNeedWeaponMerchant && !state.bTownNeedSafebox &&
 				!state.bTownNeedArmorMerchant && !state.bTownNeedBlacksmith)
@@ -2297,6 +2350,10 @@ namespace
 		}
 		// A retired item is nobody's goods (IsPlayerBotRetiredItem).
 		if (IsPlayerBotRetiredItem(item->GetVnum()))
+			return -1;
+		// Nor a Rada Pustelnika or an Exorcism Scroll: the book pass reads
+		// with them (the item shop's copies are the ones a counter would take).
+		if (IsPlayerBotBookAffectItem(item))
 			return -1;
 		// Nor is a piece Iwakura's list keeps for the storekeeper
 		// (playerbot_lpp.h): only its copies past the keep are for sale.
@@ -4339,6 +4396,7 @@ namespace
 						sys_log(0, "PLAYERBOT_TOWN: safebox unaffordable pid=%u name=%s gold=%lld",
 								ch->GetPlayerID(), ch->GetName(), (long long)ch->GetGold());
 						state.bTownNeedSafebox = false;
+						state.persona.dwLppReleaseVisitAt = dwNow + PLAYERBOT_LPP_RELEASE_VISIT_GAP_MS;
 						state.bTownVisitPhase = bDirect
 								? GetPlayerBotFirstDirectTownPhase(state)
 								: ((state.bTownNeedMisc || state.bTownNeedBlacksmith)
@@ -4384,6 +4442,7 @@ namespace
 			ch->Stop();
 			ch->SetPosition(POS_STANDING);
 			bool done = false;
+			int released = 0;
 			CSafebox* box = ch->GetSafebox();
 			// The page the fee just bought is created by the DB core one round
 			// trip late, so the box that loads on the first paid visit can have
@@ -4399,6 +4458,7 @@ namespace
 						"PLAYERBOT_TOWN: safebox page not ready pid=%u name=%s books=%d",
 						ch->GetPlayerID(), ch->GetName(), CountPlayerBotSkillBooks(ch));
 				// leave bTownNeedSafebox set; back off a little and try next visit.
+				state.persona.dwLppReleaseVisitAt = dwNow + PLAYERBOT_LPP_RELEASE_VISIT_GAP_MS;
 				state.bTownVisitPhase = bDirect
 						? GetPlayerBotFirstDirectTownPhase(state)
 						: ((state.bTownNeedMisc || state.bTownNeedBlacksmith)
@@ -4421,7 +4481,8 @@ namespace
 				// back the one material it came for. A gambler also takes its
 				// pieces and their materials, once a session.
 				const int taken = WithdrawPlayerBotSafebox(ch, box, &justDeposited,
-						IsPlayerBotGambling(state, dwNow) ? &state.persona : NULL, &state.persona);
+						IsPlayerBotGambling(state, dwNow) ? &state.persona : NULL, &state.persona,
+						&released);
 #if defined(PLAYERBOT_ENGINE_MT2009)
 				// The box poured together and laid out the way a player's
 				// "Scal i uporzadkuj" does it (ArrangeSafebox, playerbot_arrange.cpp):
@@ -4450,13 +4511,28 @@ namespace
 				ch->CancelSafeboxLoad();
 				sys_err("PLAYERBOT_TOWN: safebox never opened pid=%u name=%s map=%ld pos=(%ld,%ld)",
 						ch->GetPlayerID(), ch->GetName(), ch->GetMapIndex(), ch->GetX(), ch->GetY());
+				// Not straight back for the release alone (PlayerBotWantsLppRelease).
+				state.persona.dwLppReleaseVisitAt = dwNow + PLAYERBOT_LPP_RELEASE_VISIT_GAP_MS;
 				done = true;
 			}
 			if (done)
 			{
 				state.bTownNeedSafebox = false;
+				// What the box let go of came out to be sold, and the merchants
+				// were passed on the way here: back to them on this visit rather
+				// than the next, which would find the bag full of it.
+				if (released > 0)
+				{
+					state.bTownNeedWeaponMerchant = state.bTownNeedWeaponMerchant ||
+							HasPlayerBotJunkForMerchant(ch, BOT_MERCHANT_WEAPON);
+					state.bTownNeedArmorMerchant = state.bTownNeedArmorMerchant ||
+							HasPlayerBotJunkForMerchant(ch, BOT_MERCHANT_ARMOR);
+				}
+				const bool backToMerchants = !bDirect && released > 0 &&
+						(state.bTownNeedWeaponMerchant || state.bTownNeedArmorMerchant);
 				state.bTownVisitPhase = bDirect
 						? GetPlayerBotFirstDirectTownPhase(state)
+						: backToMerchants ? GetPlayerBotFirstExteriorTownPhase(state)
 						: ((state.bTownNeedMisc || state.bTownNeedBlacksmith)
 							? BOT_TOWN_PHASE_GATE_IN : BOT_TOWN_PHASE_NONE);
 				state.dwTownWaitUntil = 0;

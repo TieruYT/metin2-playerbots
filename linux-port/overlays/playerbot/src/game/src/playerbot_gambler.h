@@ -32,6 +32,32 @@ namespace
 		return state.persona.bGambling && dwNow < state.persona.dwGambleUntil;
 	}
 
+	// What the gamblers did and why the rest did not start, for the census
+	// every ten minutes (ReportPlayerBotGambleCensus): "czy strategia
+	// hazardzisty sie odpala" (Iwakura, 23 September) is a question the log
+	// could only answer one session at a time.
+	struct TPlayerBotGambleCensus
+	{
+		unsigned int started, ended, attempts, finished, burned, nines;
+		long long spent;
+		unsigned int restNotOver, notHere, afterPerfect, purse, ownGear, noBases, rollLost;
+		TPlayerBotGambleCensus() : started(0), ended(0), attempts(0), finished(0), burned(0), nines(0),
+			spent(0), restNotOver(0), notHere(0), afterPerfect(0), purse(0), ownGear(0), noBases(0),
+			rollLost(0) {}
+	};
+	TPlayerBotGambleCensus s_PlayerBotGambleCensus;
+
+	// A piece a session worked on is goods from then on: the list keeps it
+	// no longer and no session takes it again.
+	bool IsPlayerBotGambleForSale(LPCHARACTER ch, LPITEM item)
+	{
+		if (!ch || !item)
+			return false;
+		TPlayerBotAIStateMap::const_iterator st = s_mapPlayerBotAIStates.find(ch->GetPlayerID());
+		return st != s_mapPlayerBotAIStates.end() &&
+				st->second.persona.setGambleForSale.find(item->GetID()) != st->second.persona.setGambleForSale.end();
+	}
+
 	// Iwakura's price of this piece at another refine, on his curve, or zero
 	// when his sheet does not carry the family - GetPlayerBotGearAskingBase at
 	// a refine of the caller's choosing. What the session stakes and loses is
@@ -113,6 +139,9 @@ namespace
 		if (item == backup || IsPlayerBotWearableUpgrade(ch, item, item->GetCell()) ||
 				IsPlayerBotHigherTierSpare(ch, item) || IsPlayerBotLevel30Project(ch, item) ||
 				IsPlayerBotArcherStoneWeapon(ch, item) || IsPlayerBotRefineBagCandidate(ch, item))
+			return false;
+		// What an earlier session made is for sale as it is.
+		if (IsPlayerBotGambleForSale(ch, item))
 			return false;
 		return !IsPlayerBotJunkItem(ch, item);
 	}
@@ -249,6 +278,23 @@ namespace
 		if (!p.bGambling)
 			return;
 		p.bGambling = false;
+		// Every piece the session took is for sale now, finished or stopped
+		// short: the list used to keep the best copy of a family - the highest
+		// plus - so what the anvil had just made went back to the storekeeper
+		// and the plain copies to the counter ("boty dobrze skladuja eq ale nie
+		// ulepszaja na sell", Iwakura, 23 September).
+		for (size_t i = 0; i < p.vecGamblePlans.size(); ++i)
+		{
+			if (p.setGambleForSale.size() >= 64)
+				p.setGambleForSale.erase(p.setGambleForSale.begin());
+			p.setGambleForSale.insert(p.vecGamblePlans[i].dwItemId);
+		}
+		++s_PlayerBotGambleCensus.ended;
+		s_PlayerBotGambleCensus.attempts += p.wGambleAttempts;
+		s_PlayerBotGambleCensus.finished += p.bGambleFinished;
+		s_PlayerBotGambleCensus.burned += p.bGambleBurned;
+		s_PlayerBotGambleCensus.nines += p.bGambleNines;
+		s_PlayerBotGambleCensus.spent += p.llGambleSpent;
 		p.dwNextGambleAt = dwNow + number(PLAYERBOT_GAMBLE_REST_MIN_MS, PLAYERBOT_GAMBLE_REST_MAX_MS);
 		p.dwNextDecide = 0;
 		const long long budget = p.llGambleGoldStart * playerbot_persona::GAMBLE_BUDGET_PERCENT / 100;
@@ -277,20 +323,34 @@ namespace
 		if (!ch || !IsPlayerBotPersonaEnabled())
 			return false;
 		TPlayerBotPersona& p = state.persona;
-		if (!p.bRestored || p.bGambling || dwNow < p.dwNextGambleAt)
+		if (!p.bRestored || p.bGambling)
 			return false;
+		if (dwNow < p.dwNextGambleAt)
+		{
+			++s_PlayerBotGambleCensus.restNotOver;
+			return false;
+		}
 		const long mapIndex = ch->GetMapIndex();
 		// "Nie jest aktualnie przypisany do zadnej aktywnej grupy (PT)"; and a
 		// dropper is a drop character, whose purse is its counter's.
 		if (!IsPlayerBotVillageMap(mapIndex) || ch->GetParty() || IsPlayerBotDropper(state.bPersonality))
+		{
+			++s_PlayerBotGambleCensus.notHere;
 			return false;
+		}
 		// Not straight after the Perfectionist, whose visit this may be.
 		if (p.bPersona == playerbot_persona::PERSONA_PERFEKCJONISTA ||
 				(p.dwPerfectEndedAt != 0 && dwNow - p.dwPerfectEndedAt < PLAYERBOT_GAMBLE_AFTER_PERFECT_MS))
+		{
+			++s_PlayerBotGambleCensus.afterPerfect;
 			return false;
+		}
 		const long long gold = (long long)ch->GetGold();
 		if (gold < (long long)ScalePlayerBotIwakuraPrice(PLAYERBOT_GAMBLE_MIN_PURSE_BASE))
+		{
+			++s_PlayerBotGambleCensus.purse;
 			return false;
+		}
 		// Iwakura's community patch 2, point 10: back in its first village as
 		// the Trader, with a weapon at +7, an armour at +6 and three million on
 		// his scale, a bot turns gambler whatever the draw says - it picks a
@@ -307,7 +367,10 @@ namespace
 		// The bot's own gear comes first - the Perfectionist is "absolutny
 		// fundament", the gambler what a bot does with what is left over.
 		if (!townTrigger && HasPlayerBotRefineOpportunity(ch))
+		{
+			++s_PlayerBotGambleCensus.ownGear;
 			return false;
+		}
 		std::vector<LPITEM> bases;
 		CollectPlayerBotGambleBases(ch, bases);
 		size_t workable = 0;
@@ -315,12 +378,17 @@ namespace
 			if (IsPlayerBotGambleWorkable(ch, bases[i]))
 				++workable;
 		if (workable == 0 && !(townTrigger && !p.mapLppStored.empty()))
+		{
+			++s_PlayerBotGambleCensus.noBases;
 			return false;
+		}
 		if (!townTrigger && number(1, 100) > GetPlayerBotGambleChance(state.bPersonality))
 		{
 			p.dwNextGambleAt = dwNow + number(PLAYERBOT_GAMBLE_RETRY_MIN_MS, PLAYERBOT_GAMBLE_RETRY_MAX_MS);
+			++s_PlayerBotGambleCensus.rollLost;
 			return false;
 		}
+		++s_PlayerBotGambleCensus.started;
 
 		p.bGambling = true;
 		p.llGambleGoldStart = gold;
@@ -623,6 +691,26 @@ namespace
 			}
 		}
 		return true;
+	}
+
+	// Every ten minutes: the sessions and what they made, and why the visits
+	// that could have turned gambler did not - the gates in the order they are
+	// asked, each visit counted at the first one that stopped it.
+	void ReportPlayerBotGambleCensus(DWORD dwNow)
+	{
+		static DWORD s_dwReported = 0;
+		if (s_dwReported != 0 && dwNow - s_dwReported < 600000)
+			return;
+		const bool first = s_dwReported == 0;
+		s_dwReported = dwNow;
+		if (!first && IsPlayerBotPersonaEnabled())
+		{
+			const TPlayerBotGambleCensus& c = s_PlayerBotGambleCensus;
+			sys_log(0, "PLAYERBOT_PERSONA: gambler census started=%u ended=%u attempts=%u finished=%u burned=%u nines=%u spent=%lld not_started: resting=%u not_here=%u after_perfect=%u purse=%u own_gear=%u no_bases=%u roll=%u",
+					c.started, c.ended, c.attempts, c.finished, c.burned, c.nines, c.spent,
+					c.restNotOver, c.notHere, c.afterPerfect, c.purse, c.ownGear, c.noBases, c.rollLost);
+		}
+		s_PlayerBotGambleCensus = TPlayerBotGambleCensus();
 	}
 
 	// The gambler's second source, after the storekeeper: the counters. "Jesli

@@ -20,7 +20,9 @@
 // advances it by the time between two ticks, so what a bot remembers across a
 // logout is how long it still has to run, and a bot that moves to another core
 // takes the same numbers with it through its quest flags.
+#include <algorithm>
 #include <cstdint>
+#include <vector>
 
 namespace playerbot_persona
 {
@@ -859,9 +861,13 @@ namespace playerbot_persona
 	// and the armours of his "70 lvl"; and any piece with a line of tier 5 or 6
 	// rolled at least half-way up ("Wysoka Wartosc" - a line of that class at
 	// the bottom of its roll is not what he means by one). Of each family
-	// the bot keeps two of a weapon or an armour and three of a piece of
-	// jewellery or a shield for its own class, one for another class (the
-	// gambler's trade), and one of his level-15 and level-20 weapons. A family
+	// the bot keeps two for its own class, one for another class (the
+	// gambler's trade), and one of his level-15 and level-20 weapons. His
+	// first document let a piece of jewellery or a shield have three; his
+	// correction of 23 September makes two the most of any kind, counted over
+	// the bag and the box together ("maksymalnie 2 sztuki danego typu ...
+	// bo w ekwipunku i magazynie"). And the list is the gambler's alone
+	// (GamblerByNature below). A family
 	// the bot already wears at +9 needs no backups ("Zasada Osiagnietej
 	// Perfekcji"): its plain copies go to the market, the ones worth keeping
 	// for their lines stay. And what the bot has outgrown goes to the market
@@ -883,7 +889,7 @@ namespace playerbot_persona
 	const int LPP_VALUE_MIN_BONUS_TIER = 5;
 	const int LPP_VALUE_MIN_ROLL_PERCENT = 50;
 	const int LPP_OWN_GEAR_LIMIT = 2;
-	const int LPP_OWN_SMALL_LIMIT = 3;
+	const int LPP_OWN_SMALL_LIMIT = 2;
 	const int LPP_OTHER_CLASS_LIMIT = 1;
 	const int LPP_ONLY_ONE_LIMIT = 1;
 	const int LPP_OUTGROWN_LEVELS = AWANS_LEVEL_WINDOW;
@@ -953,6 +959,65 @@ namespace playerbot_persona
 	{
 		return bonusTier >= LPP_VALUE_MIN_BONUS_TIER && maxRoll > 0 && value > 0 &&
 				(long long)value * 100 >= (long long)maxRoll * LPP_VALUE_MIN_ROLL_PERCENT;
+	}
+
+	// Whose list it is. "Dalem to tylko na HAZARDZISTE" (Iwakura, 23
+	// September): what the list gathers is the gambler's stock, pieces to
+	// raise and sell, so only a bot that is a gambler by nature keeps it.
+	// His gambler is a turn a bot's evening takes, not a bot, and a stock is
+	// gathered over days, so the nature is drawn by pid (`hash`) in the very
+	// share its character already turns gambler at when a visit ends with a
+	// heavy purse (`chance`, in percent): half the traders, a third of the
+	// wanderers, one careful collector in twenty. Every other bot sells what
+	// the list names by the ordinary rules, and a plain armour goes to the
+	// merchant ("te zbroje nadaja sie do handlarza", Tieru).
+	inline bool GamblerByNature(uint32_t hash, int chance)
+	{
+		return chance > 0 && (int)(hash % 100U) < chance;
+	}
+
+	// What the box lets go of. Every piece of gear in it comes with its
+	// family, its rank (the plus first, then the lines), how many of its
+	// family the bot may hold, bag and box together, and whether the bot has
+	// outgrown it. An outgrown piece goes; of the rest each family keeps its
+	// best `limit` - a tie to the earlier position - and the others go. A
+	// limit of zero lets a whole family go, which is what every piece of the
+	// list is to a bot that is no gambler.
+	struct TLppBoxPiece
+	{
+		uint32_t id;
+		uint32_t family;
+		int rank;
+		int limit;
+		bool obsolete;
+	};
+
+	// `release` gets the ids to take out. `pieces` is taken by value because
+	// it is sorted; it comes in box order, which is what breaks a tie.
+	inline void PlanLppBoxRelease(std::vector<TLppBoxPiece> pieces, std::vector<uint32_t>& release)
+	{
+		release.clear();
+		std::stable_sort(pieces.begin(), pieces.end(),
+				[](const TLppBoxPiece& a, const TLppBoxPiece& b)
+				{
+					return a.family != b.family ? a.family < b.family : a.rank > b.rank;
+				});
+		uint32_t family = 0;
+		int kept = 0;
+		for (size_t i = 0; i < pieces.size(); ++i)
+		{
+			if (i == 0 || pieces[i].family != family)
+			{
+				family = pieces[i].family;
+				kept = 0;
+			}
+			if (!pieces[i].obsolete && kept < pieces[i].limit)
+			{
+				++kept;
+				continue;
+			}
+			release.push_back(pieces[i].id);
+		}
 	}
 
 	// The soul stones he keeps: +3 of PvE tier 3 at least, for the early gear

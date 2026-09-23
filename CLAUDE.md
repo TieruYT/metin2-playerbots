@@ -381,12 +381,21 @@ not in `data/`) reworked these point by point. What each hangs on:
   (60/13/8/5 percent for +6/+7/+8/+9; the fourteen the sheet leaves over also
   +6) while the weapon walked into town under it, then
   `PLAYERBOT_LEVEL30_LONG_TERM_PLUS` (+9 for the +9 draw) at every visit after.
-  From `PLAYERBOT_LEVEL30_BLESSING_FROM_3_AVERAGE` it goes under a Blessing
-  Scroll from +3 (the operator's 37%-and-up scroll-only rule answers first),
-  and a counter's piece at that average beating every one the bot holds is
-  bought as well (`IsPlayerBotMandatedLevel30Offer`). A bot that can buy one is
-  not sent to farm M3 for it. `PLAYERBOT_MARKET: level-30 census` counts the
-  eligible, the lacking and the pluses every ten minutes. Droppers are left out.
+  Iwakura's quick fix of 23 September took back the rest of the point - "from
+  34% under a Blessing Scroll from +3" and the purchase of every such piece
+  that beat the bot's own - and put a floor in its place: the class's own
+  weapon goes to `PLAYERBOT_LEVEL30_MIN_PLUS` (+6) whatever its average, under
+  a scroll when one fits the step and at the plain anvil when none does
+  (`IsPlayerBotLevel30UnderFloor` - past the operator's 37% scroll-only hold
+  and his 30-36% ceiling of +4, which apply from +6 up). A burnt one is bought
+  again on the next look at the market, which the burn brings forward
+  (`IsPlayerBotMandatedLevel30Offer` is "none held" now). A bot that can buy
+  one is not sent to farm M3 for it. `PLAYERBOT_MARKET: level-30 census` counts
+  the eligible, the lacking and the pluses every ten minutes: on m2zip that
+  evening 196 of 235 bots of thirty had none, bot 105 having bought a Full
+  Moon Sword for 3.62 million and burnt it at +5 six minutes later - the family
+  runs 90/85/75/65/55/45 to +6, so the floor is some ten weapons a bot at the
+  plain anvil. Droppers are left out.
 - **Two Grinder styles** (point 2), one draw by pid (`GrinderStyleRoll`):
   thirteen percent never hold at a lock (`NeverHoldsAtLocks`), and ten percent
   more may give grinding up - a 33% roll once per tier, the moment the Law of
@@ -7804,6 +7813,85 @@ not in `data/`) reworked these point by point. What each hangs on:
   the players' skill order puts the buffs first, so most bots of thirty to
   forty hold their attack skills at one and still ride into a fight - now
   climbing down for their buffs.
+- **The Useful Items List is the gambler's, and a limit counts the box.**
+  Community Patch 2, point 9 sat under "Zarzadzanie ekwipunkiem Hazardzisty"
+  and every bot kept the list, which names every body armour over 33 and
+  every shield over 20 of every class: m2zip's boxes held 33 521 pieces of
+  gear on 23 September, 14 345 of them body armour, 68 in one box, and a
+  warrior's box five copies of one level-34 plate - the "until a visit has
+  looked, the box counts as empty" rule let every restart put down more.
+  Tieru's screenshot was a shaman of forty with a box of armour of 34 and 42
+  ("te zbroje nadaja sie do handlarza"), and Iwakura's answer was that the
+  point was the gambler's alone and that its "2 sztuki w ekwipunku" means
+  the bag and the box together ("trzeba zrobic zeby to byl warunek zawsze").
+  That sentence reads two ways; what shipped is: the list's gear is kept by
+  a gambler by nature only (`IsPlayerBotGamblerByNature` - drawn by pid in
+  the share `GetPlayerBotGambleChance` gives the character, droppers never,
+  plus any bot while its session runs: 170 of 888 on m2zip), and the two
+  counts everywhere a bot holds gear - the list (a small piece's three is
+  two now), the unsold-stands deposit (`mapGearStored`), a level-30 weapon
+  of another class ground for sale, and the class's own level-30 weapon at
+  four with the project and the class's own among the four. Everybody else
+  sells what the list names by the ordinary rules, which send a plain armour
+  to the merchant. What the boxes already hold comes out through
+  `CollectPlayerBotLppBoxRelease` (the pure half is `PlanLppBoxRelease`,
+  unit-tested): six pieces a visit, into a bag clear of pressure, and a visit
+  that released anything goes back to the merchants on the same visit.
+  `PlayerBotWantsLppRelease` brings a bot already in a village to its box for
+  that alone every four minutes at most - and once, to look, at a box no
+  visit has opened since the start, because only a look can say what an
+  older version put there. The first bot to do it on m2zip took five
+  Smiert. Zbroja Plytowa and a Smocza out and sold the six ten seconds later,
+  and in seventeen minutes the boxes went from 33 521 pieces of gear to
+  29 195.
+- **What a gambler made is goods, and the list's rank used to hide it.**
+  The list keeps the best copies of a family by `GetPlayerBotLppRank`, the
+  plus first, so the one piece a session had just taken to +6 or +7 was the
+  copy kept and went back to the storekeeper while the plain ones went on
+  the counter ("boty dobrze skladuja eq ale nie ulepszaja na sell", Iwakura,
+  23 September). `EndPlayerBotGamble` now puts every piece its plans touched
+  into `setGambleForSale`, and `IsPlayerBotLppFinished` - that set, or a
+  piece at `GAMBLE_SAFE_PLUS` (+7) or past it, which is goods whether a
+  restart forgot the set or not - is neither kept nor held in the box
+  (`CollectPlayerBotLppBoxRelease`) nor taken by the next session
+  (`IsPlayerBotGambleBase`). Measured the same day on game1 before it: 51
+  sessions, 861 attempts, 120 pieces burnt, 12 finished, none at +9, 78.9
+  million spent; 101 steps refused because the stake - the fee, the
+  materials and the whole piece on a burn - outran what was left of the 40%,
+  and 53 for want of materials. So the gambler does fire, rarely (once every
+  three to six hours a bot, and only past `HasPlayerBotRefineOpportunity`),
+  and mostly burns. `PLAYERBOT_PERSONA: gambler census` every ten minutes
+  counts the sessions, what they made, and at which gate the other visits
+  stopped (resting, not_here, after_perfect, purse, own_gear, no_bases,
+  roll) - read that before tuning any of it.
+- **A stone held to its end is a pack taken apart.** On the seventh floor
+  the Metin of Murder is broken ten times for the map and the regen never
+  stops; the pack took the stone the moment nothing stood within 1500 of it
+  and held it as the foe in hand until it fell, while the demons that
+  walked up killed the bots hitting it ("lapia aggro na metina i olewaja
+  moby", prodnathin; "najpierw moby, potem kamien", Tieru, 23 September).
+  `IsPlayerBotTowerStoneWaiting` is a monster within
+  `PLAYERBOT_TOWER_STONE_THREAT_RANGE` of the bot on that floor: the stone is
+  then no candidate, a held one is let go (`PLAYERBOT_TOWER: stone waits`),
+  and the fight is ranked from the bot rather than from the stone. Compiled
+  and not watched: m2zip has no guild to take a raid that far.
+- **Rada Pustelnika is one certain read, and the pass took it for an
+  Exorcism Scroll.** `LearnSkillByBook` rolls a hundred instead of
+  thirty-five for a class book while `AFFECT_SKILL_BOOK_BONUS` is on (on
+  r40250's english table: nothing against sixty-five), and takes the affect
+  off at the next read of any kind - a passive book's or `LearnGrandMasterSkill`'s
+  too, which gain nothing from it on mt2009. The book pass knew 71001 and
+  71094 as "the scrolls that unlock a wait" and used either only while a
+  wait stood in the way, which with the bots' wait at zero is never ("Boty
+  nie uzywaja rady ... kazdemu botowi nadalem po 5 sztuk, zaden nie uzyl",
+  DUDU, 23 September). Both are found by what they do now - USE_AFFECT with
+  the affect in value0 (`IsPlayerBotBookAffectItem`: three Radas and four
+  Exorcism Scrolls on mt2009, the item shop's copies without ANTI_SELL
+  among them, which the junk rule used to sell) - the Rada is used the
+  moment before a class book is read and never while one is on, and the
+  general books and a Kamien Duchowy wait while an active Rada has a class
+  book to be read with. `read skill book ... advice=1` is a read the Rada
+  made certain.
 
 
 ## Engine facts worth not re-deriving

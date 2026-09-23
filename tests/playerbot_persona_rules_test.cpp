@@ -576,8 +576,9 @@ int main()
 
 	// --- the Useful Items List --------------------------------------------------
 	{
-		// The keeps: two of a weapon or an armour, three of a small piece, one
-		// of another class's, one of his level-15 and level-20 weapons.
+		// The keeps: two of anything of the bot's class - a small piece too,
+		// since the correction of 23 September - one of another class's, one
+		// of his level-15 and level-20 weapons.
 		TLppPiece sword;
 		sword.kind = LPP_WEAPON;
 		sword.level = 75;
@@ -587,7 +588,7 @@ int main()
 		TLppPiece ring = sword;
 		ring.kind = LPP_JEWEL;
 		ring.small = true;
-		assert(LppLimit(ring, false) == 3);
+		assert(LppLimit(ring, false) == 2);
 		TLppPiece foreign = sword;
 		foreign.ownClass = false;
 		assert(LppLimit(foreign, false) == 1);
@@ -639,8 +640,54 @@ int main()
 		assert(!LppKeeps(sword, 80, false, 2));
 		assert(!LppKeeps(sword, 80, true, 0));
 		assert(!LppKeeps(blade, 36, false, 0));
-		assert(LppKeeps(shield, 90, false, 2));
-		assert(!LppKeeps(shield, 90, false, 3));
+		assert(LppKeeps(shield, 90, false, 1));
+		assert(!LppKeeps(shield, 90, false, 2));
+
+		// The list is the gambler's: drawn by pid in the share the character
+		// gambles at, never for a character that does not gamble.
+		assert(GamblerByNature(0, 1));
+		assert(GamblerByNature(49, 50));
+		assert(!GamblerByNature(50, 50));
+		assert(GamblerByNature(149, 50));
+		assert(!GamblerByNature(0, 0));
+		{
+			int drawn = 0;
+			for (uint32_t h = 0; h < 1000; ++h)
+				drawn += GamblerByNature(h * 2654435761U, 30) ? 1 : 0;
+			assert(drawn > 200 && drawn < 400);
+		}
+
+		// What the box lets go of: outgrown pieces, and past each family's
+		// limit the worst copies, a tie to the earlier position.
+		{
+			std::vector<TLppBoxPiece> box;
+			TLppBoxPiece a = { 1, 11240, 0, 2, false };
+			TLppBoxPiece b = { 2, 11240, 16, 2, false };
+			TLppBoxPiece c = { 3, 11240, 0, 2, false };
+			TLppBoxPiece d = { 4, 11250, 0, 2, true };
+			TLppBoxPiece e = { 5, 17100, 3, 1, false };
+			TLppBoxPiece f = { 6, 17100, 3, 1, false };
+			box.push_back(a);
+			box.push_back(b);
+			box.push_back(c);
+			box.push_back(d);
+			box.push_back(e);
+			box.push_back(f);
+			std::vector<uint32_t> release;
+			PlanLppBoxRelease(box, release);
+			std::sort(release.begin(), release.end());
+			// The +1 and the first plain one stay; the second plain one, the
+			// outgrown armour and the later of two equal earrings go.
+			assert(release.size() == 3);
+			assert(release[0] == 3 && release[1] == 4 && release[2] == 6);
+			// A bot that is no gambler holds none of the list.
+			for (size_t i = 0; i < box.size(); ++i)
+				box[i].limit = 0;
+			PlanLppBoxRelease(box, release);
+			assert(release.size() == box.size());
+			PlanLppBoxRelease(std::vector<TLppBoxPiece>(), release);
+			assert(release.empty());
+		}
 
 		// "Wysoka Wartosc": a tier 5-6 line rolled half-way up at least.
 		assert(LppValueLine(6, 1000, 2000));

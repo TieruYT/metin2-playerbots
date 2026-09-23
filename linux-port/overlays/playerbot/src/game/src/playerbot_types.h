@@ -531,8 +531,10 @@ namespace
 	//
 	// Measured on this world's own refine_proto, because the table's last line
 	// says "unless the anvil is certain": the level-30 family runs
-	// 80/70/60/50/40/30/20/10 percent from +0 to +8, so it never is - a weapon
-	// over 37% average has no anvil step worth taking at all.
+	// 90/85/75/65/55/45/35/25/20 percent from +0 to +9 (world.refine_proto,
+	// sets 352-360), so it never is - a weapon over 37% average has no anvil
+	// step worth taking at all, which is why its own class's copy is taken
+	// to PLAYERBOT_LEVEL30_MIN_PLUS under a scroll when the bag holds one.
 	const long PLAYERBOT_LEVEL30_ANVIL_AVG_CHEAP = 14;
 	const long PLAYERBOT_LEVEL30_ANVIL_AVG_GOOD = 21;
 	const long PLAYERBOT_LEVEL30_ANVIL_AVG_BETTER = 29;
@@ -600,10 +602,15 @@ namespace
 	const int PLAYERBOT_LEVEL30_FIRST_PLUS8_PERCENT = 8;
 	const int PLAYERBOT_LEVEL30_FIRST_PLUS9_PERCENT = 5;
 	const BYTE PLAYERBOT_LEVEL30_LONG_TERM_PLUS = 8;
-	// From this average a level-30 weapon goes under a Blessing Scroll from +3
-	// (the anvil's ceiling, GetPlayerBotLevel30AnvilCeiling), and one on a
-	// counter carrying it is bought when it beats every one the bot holds.
-	const long PLAYERBOT_LEVEL30_BLESSING_FROM_3_AVERAGE = 34;
+	// Iwakura's quick fix of 23 September, in place of community patch 2's
+	// "od 34% Zwojami Blogoslawienstwa juz od +3" and the purchase of every
+	// such weapon, both of which he took back: the class's own level-30
+	// weapon is refined to at least this, whatever its average, under a
+	// scroll when the bag holds one for the step and at the plain anvil when
+	// it does not ("Botom surowo zabrania sie biegania po mapach z bronia +0,
+	// nawet jesli posiada ona bardzo wysokie SR"). A burnt one is bought
+	// again (PlayerBotLacksClassLevel30Weapon) as soon as the budget allows.
+	const BYTE PLAYERBOT_LEVEL30_MIN_PLUS = 6;
 	// The monster a blow is modelled against: the bot's own level, its defence
 	// about fifteen over that on this proto (GetPlayerBotWeaponHitDamageAt).
 	const int PLAYERBOT_MONSTER_DEFENCE_OVER_LEVEL = 15;
@@ -1338,6 +1345,13 @@ namespace
 	const int PLAYERBOT_TOWER_STONE_CLEAR_LIMIT = 25;
 	// ... or with no monster this close to the stone itself.
 	const int PLAYERBOT_TOWER_STONE_CLEAR_RADIUS = 1500;
+	// The seventh floor: the monsters first and the Metin of Murder after
+	// ("niech najpierw skupia sie na mobach, a potem zabieraja sie za kamien",
+	// Tieru, after prodnathin's "lapia aggro na metina i olewaja moby", 23
+	// September). While a monster stands this close to a bot the stone is not
+	// its target, one it holds is let go, and what it fights is ranked from
+	// where it stands rather than from the stone.
+	const int PLAYERBOT_TOWER_STONE_THREAT_RANGE = 1000;
 	// The pack spreads its blows, not itself: an ordinary monster is taken
 	// from the few standing nearest the pack, about this many bots to each,
 	// and only among those no further than SPREAD_RANGE beyond the nearest
@@ -5635,6 +5649,20 @@ namespace
 	// Iwakura's Useful Items List (playerbot_lpp.h): under this many free
 	// single cells in the box the list stops keeping the bag's pieces.
 	const int PLAYERBOT_LPP_BOX_MIN_FREE_CELLS = 9;
+	// The most of one family of gear a bot holds, the bag and the box
+	// together, whatever keeps it there - his correction of 23 September to
+	// community patch 2, point 9: "maksymalnie 2 sztuki danego typu
+	// przedmiotu ze wszystkich kategorii ... w ekwipunku i magazynie"; its
+	// class's level-30 weapon is the exception, PLAYERBOT_LEVEL30_KEEP_MAX.
+	const int PLAYERBOT_HELD_FAMILY_LIMIT = 2;
+	// The salt of the draw that makes a bot a gambler by nature, the one
+	// that keeps the list (IsPlayerBotGamblerByNature).
+	const DWORD PLAYERBOT_LPP_GAMBLER_SALT = 0x48415a41U;
+	// A box holding what the list lets go of is visited for it alone - by a
+	// bot already in a village, with room in its bag - at most this often;
+	// a visit that takes six pieces out sends it to the merchants for them
+	// and the next one comes back for six more.
+	const DWORD PLAYERBOT_LPP_RELEASE_VISIT_GAP_MS = 4 * 60 * 1000;
 
 	// Why a bot is fighting a player (playerbot_anti_pk.h): the status line
 	// says it, so it lives here with the state.
@@ -5813,6 +5841,17 @@ namespace
 		// the bag's pieces (they sell as they always did) until a visit finds
 		// room again, or a full box would leave a full bag for good.
 		bool bLppBoxFull;
+		// What the box lets go of (CollectPlayerBotLppBoxRelease) as the last
+		// visit left it, and when a visit may come for that alone; and how
+		// many of each gear family it holds, list or no list, which the
+		// unsold-stands rule asks before it puts a third one down.
+		WORD wLppReleasable;
+		DWORD dwLppReleaseVisitAt;
+		std::map<DWORD, BYTE> mapGearStored;
+		// The pieces a gambler's session worked on, by item id: goods for the
+		// counter from the moment the session ends, never the list's to keep
+		// or the next session's to take (EndPlayerBotGamble).
+		std::set<DWORD> setGambleForSale;
 
 		TPlayerBotPersona() : bRestored(false), bDirty(false), dwLastTick(0), dwNextSave(0),
 			bPersona(playerbot_persona::PERSONA_GRINDER), dwPersonaSince(0), dwNextDecide(0),
@@ -5836,7 +5875,7 @@ namespace
 			dwCompanionBreakUntil(0), bWasInParty(false), dwAskedHumanPid(0), dwAskedHumanAt(0),
 			bAskedHow(0), dwNextHumanAsk(0), dwMercClientPid(0), dwMercApproachUntil(0),
 			dwNextMercScan(0), dwMercCooldownUntil(0), bBagFull(false), bLppStoredKnown(false),
-			bLppBoxFull(false) {}
+			bLppBoxFull(false), wLppReleasable(0), dwLppReleaseVisitAt(0) {}
 	};
 
 	enum EPlayerBotAmbition

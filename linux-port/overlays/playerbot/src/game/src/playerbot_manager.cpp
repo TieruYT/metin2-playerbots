@@ -1837,6 +1837,43 @@ namespace
 		return false;
 	}
 
+	// The two affects the engine's book reading asks about, found in the bag
+	// by what the item does rather than by vnum: USE_AFFECT with the affect in
+	// value0 - AFFECT_SKILL_BOOK_BONUS for Rada Pustelnika (39030, 71094 and
+	// the item shop's 71294 on this line) and AFFECT_SKILL_NO_BOOK_DELAY for
+	// the Exorcism Scroll (39008, 71001, 71201, 72310). The pass knew two
+	// vnums and took the Rada for a second Exorcism Scroll.
+	int FindPlayerBotBookAffectCell(LPCHARACTER ch, DWORD affectType)
+	{
+		for (WORD cell = 0; cell < PLAYERBOT_BAG_CELLS; ++cell)
+		{
+			LPITEM item = ch->GetInventoryItem(cell);
+			if (item && item->GetCell() == cell && !item->isLocked() && IsPlayerBotBookAffectItem(item) &&
+					(DWORD)item->GetValue(0) == affectType)
+				return cell;
+		}
+		return -1;
+	}
+
+	// A class book this bot can read now or once its wait is over: its own
+	// skill, at Master, 20 to 29. What an active Rada is kept for.
+	bool PlayerBotHoldsReadableClassBook(LPCHARACTER ch)
+	{
+		for (WORD cell = 0; cell < PLAYERBOT_BAG_CELLS; ++cell)
+		{
+			LPITEM item = ch->GetInventoryItem(cell);
+			if (!item || item->GetType() != ITEM_SKILLBOOK)
+				continue;
+			const DWORD skill = GetPlayerBotSkillBookSkillVnum(item);
+			if (!IsPlayerBotOwnSkill(ch, skill))
+				continue;
+			const BYTE level = ch->GetSkillLevel(skill);
+			if (ch->GetSkillMasterType(skill) == SKILL_MASTER && level >= 20 && level < 30)
+				return true;
+		}
+		return false;
+	}
+
 	// Whether LearnSkillByBook will read at all: under the level cap it wants
 	// PLAYERBOT_BOOK_READ_EXP in hand (FN_should_check_exp - mt2009 waves the
 	// cap through, r40250's english locale asks at every level).
@@ -1891,7 +1928,7 @@ namespace
 				const bool ready = IsPlayerBotFastBooksEnabled() ||
 					get_global_time() >= ch->GetSkillNextReadTime(skillVnum) ||
 					ch->FindAffect(AFFECT_SKILL_NO_BOOK_DELAY);
-				const bool canUnlock = ch->CountSpecifyItem(71001) || ch->CountSpecifyItem(71094);
+				const bool canUnlock = FindPlayerBotBookAffectCell(ch, AFFECT_SKILL_NO_BOOK_DELAY) >= 0;
 				if (!ready && !canUnlock) continue;
 				const int priority = (ready ? 100000 : 0) +
 					(skillVnum == build.dwPrimaryMaxSkill ? 10000 : 0) + skillLevel;
@@ -1906,22 +1943,19 @@ namespace
 
 		if (bestCell < 0 || bestSkillVnum == 0)
 		{
-			ReadPlayerBotGeneralSkillBook(ch, state, dwNow);
+			// A Rada already on is kept for the class book it was taken for: a
+			// general book's read takes it off for nothing on this line.
+			if (!ch->FindAffect(AFFECT_SKILL_BOOK_BONUS) || !PlayerBotHoldsReadableClassBook(ch))
+				ReadPlayerBotGeneralSkillBook(ch, state, dwNow);
 			return;
 		}
 
 		if (!IsPlayerBotFastBooksEnabled() && !ch->FindAffect(AFFECT_SKILL_NO_BOOK_DELAY) &&
 				get_global_time() < ch->GetSkillNextReadTime(bestSkillVnum))
 		{
-			for (WORD cell = 0; cell < PLAYERBOT_BAG_CELLS; ++cell)
-			{
-				LPITEM scroll = ch->GetInventoryItem(cell);
-				if (scroll && (scroll->GetVnum() == 71001 || scroll->GetVnum() == 71094))
-				{
-					ch->UseItem(TItemPos(INVENTORY, cell));
-					break;
-				}
-			}
+			const int exorcism = FindPlayerBotBookAffectCell(ch, AFFECT_SKILL_NO_BOOK_DELAY);
+			if (exorcism >= 0)
+				ch->UseItem(TItemPos(INVENTORY, (WORD)exorcism));
 		}
 
 		// The day's wait the engine puts between two reads of one skill
@@ -1965,16 +1999,35 @@ namespace
 #if defined(PLAYERBOT_ENGINE_MT2009)
 		const bool exorcised = get_global_time() < ch->GetSkillNextReadTime(bestSkillVnum);
 #endif
+		// Rada Pustelnika makes this read certain: while AFFECT_SKILL_BOOK_BONUS
+		// is on, LearnSkillByBook rolls a hundred where it rolls thirty-five
+		// (r40250's english table: nothing against sixty-five), and it takes
+		// the affect off at the next read of any kind - a passive book's or a
+		// Kamien Duchowy's, which gain nothing from it on this line. So it is
+		// used here, the moment before a class book is read and every check
+		// that could refuse the read has passed, and never while one is on.
+		// The pass knew the Rada as a second Exorcism Scroll and used it only
+		// while a wait stood in the way, which with the BOOKS switch on is
+		// never: DUDU gave five to every bot and not one was used ("Rada
+		// pustelnika vnum 71094", 23 September).
+		bool advice = ch->FindAffect(AFFECT_SKILL_BOOK_BONUS) != NULL;
+		if (!advice)
+		{
+			const int adviceCell = FindPlayerBotBookAffectCell(ch, AFFECT_SKILL_BOOK_BONUS);
+			if (adviceCell >= 0 && ch->UseItem(TItemPos(INVENTORY, (WORD)adviceCell)))
+				advice = ch->FindAffect(AFFECT_SKILL_BOOK_BONUS) != NULL;
+		}
 		if (ch->UseItem(TItemPos(INVENTORY, bestCell)))
 		{
 #if defined(PLAYERBOT_ENGINE_MT2009)
 			NotePlayerBotBookRead(ch, bestSkillVnum, exorcised);
 #endif
 			SetPlayerBotAction(state, BOT_ACTION_READ_BOOK, dwNow);
-			sys_log(0, "PLAYERBOT_AI: read skill book pid=%u name=%s skill=%u old_level=%u new_level=%u success=%d",
+			sys_log(0, "PLAYERBOT_AI: read skill book pid=%u name=%s skill=%u old_level=%u new_level=%u success=%d advice=%d",
 					ch->GetPlayerID(), ch->GetName(), bestSkillVnum, oldLevel,
 					ch->GetSkillLevel(bestSkillVnum),
-					ch->GetSkillLevel(bestSkillVnum) > oldLevel ? 1 : 0);
+					ch->GetSkillLevel(bestSkillVnum) > oldLevel ? 1 : 0,
+					advice && !ch->FindAffect(AFFECT_SKILL_BOOK_BONUS) ? 1 : 0);
 		}
 	}
 
@@ -2012,6 +2065,12 @@ namespace
 		}
 		if (!stone)
 			return;
+#if defined(PLAYERBOT_ENGINE_MT2009)
+		// LearnGrandMasterSkill takes a Rada's affect off for nothing on this
+		// line; one that is on waits for the class book it was taken for.
+		if (ch->FindAffect(AFFECT_SKILL_BOOK_BONUS) && PlayerBotHoldsReadableClassBook(ch))
+			return;
+#endif
 
 		const char* nextTimeFlag = "training_grandmaster_skill.next_time";
 		const int now = get_global_time();
@@ -5595,6 +5654,7 @@ void CPlayerBotManager::Update()
 	ReportPlayerBotPersonaCensus();
 	ReportPlayerBotMercCensus(get_dword_time());
 	ReportPlayerBotLppCensus(get_dword_time());
+	ReportPlayerBotGambleCensus(get_dword_time());
 
 	// Publish one compact, atomic snapshot per game core. The web panel reads
 	// these files from the shared read-only game-var volume, so it sees the real

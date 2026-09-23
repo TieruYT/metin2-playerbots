@@ -1311,6 +1311,7 @@ namespace
 				return false;
 			if (IsPlayerBotBoosterItem(item) || IsPlayerBotMetinDetector(vnum) ||
 					(GetPlayerBotAutoPotionAffect(vnum) != 0 && !IsPlayerBotAutoPotionEmpty(item)) ||
+					IsPlayerBotBookAffectItem(item) ||
 					sub == USE_ADD_ATTRIBUTE || sub == USE_CHANGE_ATTRIBUTE || sub == USE_ADD_ATTRIBUTE2)
 				return false;
 		}
@@ -2386,6 +2387,11 @@ namespace
 			// however low the family's odds run below it.
 			const bool scrollOnly = IsPlayerBotScrollOnlyWeapon(item);
 			const bool level30Grind = !scrollOnly && IsPlayerBotSpecialLevel30Weapon(item);
+			// Iwakura's quick fix of 23 September: the class's own level-30
+			// weapon goes to +6 at least whatever its average - under a scroll
+			// when the bag holds one for the step, at the plain anvil when it
+			// does not - rather than wait at +0 for a scroll that never comes.
+			const bool level30Floor = IsPlayerBotLevel30UnderFloor(ch, item);
 			// The weapon in the hand - or the one going back into it, since the
 			// session keeps it in the bag - at a step that can burn it, with no
 			// backup and nothing a merchant sells at its level: under a scroll or
@@ -2403,7 +2409,9 @@ namespace
 				// average, the lower the ceiling - what is being protected is
 				// the roll, not the plus.
 				const long average = SumPlayerBotItemLines(item, APPLY_NORMAL_HIT_DAMAGE_BONUS);
-				const int anvilCeiling = GetPlayerBotLevel30AnvilCeiling(average);
+				int anvilCeiling = GetPlayerBotLevel30AnvilCeiling(average);
+				if (IsPlayerBotClassLevel30Weapon(ch, item))
+					anvilCeiling = std::max<int>(anvilCeiling, PLAYERBOT_LEVEL30_MIN_PLUS);
 				const bool aboveCeiling = (int)plusLevel >= anvilCeiling;
 				// A common roll is worth a gamble even above its ceiling: the
 				// weapon is everywhere and the scroll is not.
@@ -2427,7 +2435,7 @@ namespace
 					(plusLevel >= PLAYERBOT_SCROLL_REFINE_MIN_PLUS || IsPlayerBotPrizeItem(item) ||
 						wornStepCanBurn || handAtRisk))
 				scrollCell = FindPlayerBotRefineScrollCell(ch, plusLevel, stepProb);
-			if (scrollCell < 0 && scrollOnly)
+			if (scrollCell < 0 && scrollOnly && !level30Floor)
 			{
 				PlayerBotLogThrottled("refine_scroll_only", dwNow,
 						"PLAYERBOT_AI: refine held, scroll-only weapon and no scroll pid=%u name=%s vnum=%u plus=%u prob=%d",
@@ -2444,7 +2452,8 @@ namespace
 			// floor forbids is held for good, the shape of the deadlock that
 			// once parked 451 weapons on +4. Under SCROLL_FROM it takes the
 			// plain anvil's odds like everything else, which is the setting.
-			if (scrollCell < 0 && scrollStepAllowed && !level30Grind && IsPlayerBotPrizeItem(item))
+			if (scrollCell < 0 && scrollStepAllowed && !level30Grind && !level30Floor &&
+					IsPlayerBotPrizeItem(item))
 			{
 				const TRefineTable* prt = CRefineManager::instance().GetRefineRecipe(item->GetRefineSet());
 				// Hold only where a failure really costs something. Ninety and
@@ -2460,6 +2469,8 @@ namespace
 					continue;
 				}
 			}
+			// Asked before the attempt, which may destroy the item.
+			const bool classLevel30 = IsPlayerBotClassLevel30Weapon(ch, item);
 			bool attempted = false;
 			if (scrollCell >= 0)
 			{
@@ -2482,9 +2493,23 @@ namespace
 					NotePlayerBotMoodRefine(ch, (int)plusLevel + 1);
 				}
 				else
+				{
 					// And a failure on the way to them costs a level of mood.
 					NotePlayerBotMoodRefineFailure(ch, (int)plusLevel + 1,
 							scrollCell >= 0 ? "downgraded" : "burned");
+					// A burnt class weapon is bought again straight away, while the
+					// bot still stands in the village ("bot ma obowiazek zakupic
+					// kolejna sztuke broni na 30. poziom z rynku, jesli pozwala na to
+					// jego budzet", Iwakura): the market's next look is now, not in
+					// two to four minutes, when the bot may be on its way out.
+					if (classLevel30 && scrollCell < 0)
+					{
+						state.dwNextShoppingTime = 0;
+#if defined(PLAYERBOT_ENGINE_MT2009) && defined(ENABLE_IKASHOP_RENEWAL)
+						state.offlineShop.nextBrowse = 0;
+#endif
+					}
+				}
 				sys_log(0, "PLAYERBOT_AI: refine %s pid=%u name=%s old_vnum=%u new_vnum=%u plus=%u scroll=%d materials=%s",
 						success ? "SUCCESS" : (scrollCell >= 0 ? "FAILED_DOWNGRADED" : "FAILED_BURNED"),
 						ch->GetPlayerID(), ch->GetName(), oldVnum, nextVnum, plusLevel + 1, scrollCell >= 0 ? 1 : 0,
@@ -2851,8 +2876,10 @@ namespace
 		if (!recipe)
 			return false;
 		// A weapon refined only under a scroll is no errand without one: the
-		// planner asks this before it sends a bot to the blacksmith.
-		if (IsPlayerBotScrollOnlyWeapon(item) &&
+		// planner asks this before it sends a bot to the blacksmith. The
+		// class's own level-30 weapon under +6 is, scroll or no scroll
+		// (IsPlayerBotLevel30UnderFloor).
+		if (IsPlayerBotScrollOnlyWeapon(item) && !IsPlayerBotLevel30UnderFloor(ch, item) &&
 				FindPlayerBotRefineScrollCell(ch, item->GetRefineLevel(), (int)recipe->prob) < 0)
 			return false;
 		// Nor is the weapon in the hand at a step that can burn it with nothing

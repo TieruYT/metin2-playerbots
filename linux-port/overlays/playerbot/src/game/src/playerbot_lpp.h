@@ -19,11 +19,24 @@
 // his "30 lvl+" band has the operator's own rules already - the anvil's share,
 // the grind for sale - and is left to them), the level-61 shields with
 // resistances and the armours of his "70 lvl", and any piece with a tier 5-6
-// line rolled at least half-way up; two of a weapon or an armour and three of
-// a small piece for the bot's own class, one for another class. The soul
+// line rolled at least half-way up; two of a family for the bot's own class,
+// one for another class, counted over the bag and the box together. The soul
 // stones he keeps (every +4, a +3 of PvE tier 3) are held five of a kind and
 // go to the box when the bot has no socket for them; the herbs a bot picks up
 // go there too under bag pressure, and come back out for the Zielarz.
+//
+// Whose list: the gambler's, and only the gambler's. Community patch 2,
+// point 9 put the list under "Zarzadzanie ekwipunkiem Hazardzisty" and every
+// bot kept it, so a shaman of forty that never gambled filled its whole box
+// with body armour of 34 to 66 of four classes, which the merchant pays for
+// in any case ("czemu oni tam chomikuja takie zbroje w calym magazynie? te
+// zbroje nadaja sie do handlarza", Tieru; "dalem to tylko na HAZARDZISTE",
+// Iwakura, 23 September). A bot that is not a gambler by nature
+// (IsPlayerBotGamblerByNature) keeps none of the list's gear: the ordinary
+// rules sell it, and what an older version put in its box comes back out,
+// six pieces a visit, for the merchant or the counter to take
+// (CollectPlayerBotLppBoxRelease). The soul stones and the herbs are the
+// document's other modules, not point 9, and stay every bot's.
 //
 // The box is only seen when it is open, so what it holds is remembered from
 // the last visit (TPlayerBotPersona::mapLppStored). Until a visit has looked,
@@ -44,6 +57,35 @@ namespace
 	unsigned int s_uPlayerBotLppBoxesFull = 0;
 
 	void NotePlayerBotLppDeposit() { ++s_uPlayerBotLppDeposits; }
+
+	// A gambler by nature: drawn by pid in the share its character turns
+	// gambler at (GetPlayerBotGambleChance, playerbot_persona_rules.h's
+	// GamblerByNature). A dropper never - its purse is its counter's, and it
+	// never gambles. On m2zip on 23 September this made about 170 of 870.
+	bool IsPlayerBotGamblerByNature(DWORD pid, const TPlayerBotAIState& state)
+	{
+		if (IsPlayerBotDropper(state.bPersonality))
+			return false;
+		return playerbot_persona::GamblerByNature(PlayerBotNavHash(pid ^ PLAYERBOT_LPP_GAMBLER_SALT),
+				GetPlayerBotGambleChance(state.bPersonality));
+	}
+
+	// Who keeps the list's gear: a gambler by nature, and any bot while its
+	// session runs - the pieces it took out of the box for the anvil are its
+	// stock until the session ends, whatever its nature.
+	bool IsPlayerBotLppKeeper(DWORD pid, const TPlayerBotAIState& state, DWORD dwNow)
+	{
+		return IsPlayerBotGambling(state, dwNow) || IsPlayerBotGamblerByNature(pid, state);
+	}
+
+	// The most of one family a bot holds, the bag and the box together:
+	// PLAYERBOT_HELD_FAMILY_LIMIT, and its class's level-30 weapon
+	// PLAYERBOT_LEVEL30_KEEP_MAX.
+	int GetPlayerBotHeldFamilyLimit(LPCHARACTER ch, LPITEM item)
+	{
+		return IsPlayerBotClassLevel30Weapon(ch, item) ? PLAYERBOT_LEVEL30_KEEP_MAX
+				: PLAYERBOT_HELD_FAMILY_LIMIT;
+	}
 
 	// Iwakura's community patch 2, point 9: the list by name. The jewellery
 	// and boots are these twenty-four families (their +0 vnums, read off
@@ -258,6 +300,17 @@ namespace
 				worn->GetRefineLevel() >= (int)playerbot_persona::LPP_PERFECT_PLUS;
 	}
 
+	// A piece the list holds as stock no longer: at the gambler's first target
+	// (+7) or past it, or worked by a session (setGambleForSale). The rank that
+	// chooses which copies of a family stay puts the plus first, so without
+	// this the best a session made was the one copy the list kept, and it went
+	// back down to the storekeeper while the plain ones went on the counter.
+	bool IsPlayerBotLppFinished(const TPlayerBotPersona& p, LPITEM item)
+	{
+		return item && (item->GetRefineLevel() >= (int)playerbot_persona::GAMBLE_SAFE_PLUS ||
+				p.setGambleForSale.find(item->GetID()) != p.setGambleForSale.end());
+	}
+
 	bool IsPlayerBotLppHerb(LPITEM item)
 	{
 		return item && item->GetVnum() >= PLAYERBOT_HERB_VNUM_FIRST && item->GetVnum() <= PLAYERBOT_HERB_VNUM_LAST;
@@ -287,6 +340,14 @@ namespace
 			return playerbot_persona::LppKeepsStone(GetPlayerBotSoulStoneGrade(vnum),
 					GetPlayerBotSoulStoneTier(vnum, false), heldAhead);
 		}
+		// The list's gear is the gambler's stock and nobody else's.
+		if (!IsPlayerBotLppKeeper(ch->GetPlayerID(), st->second, get_dword_time()))
+			return false;
+		// And stock is what the anvil works, not what it made: a piece at the
+		// gambler's +7 or past it, or one a session worked on, is for sale
+		// (IsPlayerBotLppFinished).
+		if (IsPlayerBotLppFinished(p, item))
+			return false;
 		playerbot_persona::TLppPiece piece;
 		DWORD family = 0;
 		if (!ClassifyPlayerBotLppItem(ch, item, piece, family))
@@ -296,30 +357,70 @@ namespace
 				CountPlayerBotLppKeptAhead(ch, p, item, family));
 	}
 
-	// A piece on the list the list does not keep - past its limit, outgrown,
-	// or kept by a box with no room - is counter goods, never the merchant's:
-	// "wszystko ponad ten limit musi natychmiast trafic na sklep, aby inni
-	// Hazardzisci mogli je odkupic i ulepszac" (community patch 2, point 9).
+	// A gambler's piece of the list the list does not keep - past its limit,
+	// outgrown, or kept by a box with no room - is counter goods, never the
+	// merchant's: "wszystko ponad ten limit musi natychmiast trafic na sklep,
+	// aby inni Hazardzisci mogli je odkupic i ulepszac" (community patch 2,
+	// point 9). Another bot's is whatever the ordinary rules make of it.
 	bool IsPlayerBotLppSurplusGoods(LPCHARACTER ch, LPITEM item)
 	{
 		if (!ch || !item || item->IsEquipped() || !IsPlayerBotPersonaEnabled())
+			return false;
+		TPlayerBotAIStateMap::const_iterator st = s_mapPlayerBotAIStates.find(ch->GetPlayerID());
+		if (st == s_mapPlayerBotAIStates.end() ||
+				!IsPlayerBotLppKeeper(ch->GetPlayerID(), st->second, get_dword_time()))
 			return false;
 		playerbot_persona::TLppPiece piece;
 		DWORD family = 0;
 		return ClassifyPlayerBotLppItem(ch, item, piece, family) && !IsPlayerBotLppKeptItem(ch, item);
 	}
 
-	// A piece in the box the list no longer keeps: outgrown, or a plain copy
-	// of a family now worn at +9. A piece that is not on the list at all - the
-	// dead stock an older rule put down - is left where it is.
-	bool IsPlayerBotLppStoredSurplus(LPCHARACTER ch, LPITEM item)
+	// The pieces of gear in the box it lets go of, by item id: for a gambler
+	// the list's pieces it has outgrown, a plain copy of a family it now wears
+	// at +9, and every copy past a family's limit (the best stay); for any
+	// other bot every piece of the list. The gear the list does not name - the
+	// dead stock of the unsold-stands rule, a level-30 weapon - is held two of
+	// a family (GetPlayerBotHeldFamilyLimit) like everything else, the rule
+	// applying "zawsze", always.
+	void CollectPlayerBotLppBoxRelease(LPCHARACTER ch, CSafebox* box, std::set<DWORD>& ids)
 	{
-		playerbot_persona::TLppPiece piece;
-		DWORD family = 0;
-		if (!ClassifyPlayerBotLppItem(ch, item, piece, family))
-			return false;
-		return playerbot_persona::LppObsolete(piece, (int)ch->GetLevel()) ||
-				playerbot_persona::LppLimit(piece, IsPlayerBotLppFamilyPerfect(ch, item, family)) == 0;
+		ids.clear();
+		if (!ch || !box || !IsPlayerBotPersonaEnabled())
+			return;
+		TPlayerBotAIStateMap::const_iterator st = s_mapPlayerBotAIStates.find(ch->GetPlayerID());
+		if (st == s_mapPlayerBotAIStates.end() || !st->second.persona.bRestored)
+			return;
+		const bool keeper = IsPlayerBotLppKeeper(ch->GetPlayerID(), st->second, get_dword_time());
+		std::vector<playerbot_persona::TLppBoxPiece> pieces;
+		for (DWORD pos = 0; pos < SAFEBOX_MAX_NUM; ++pos)
+		{
+			if (!box->IsValidPosition(pos))
+				continue;
+			LPITEM item = box->Get(pos);
+			if (!item || GetPlayerBotLppWearCell(item) < 0)
+				continue;
+			playerbot_persona::TLppBoxPiece held;
+			held.id = item->GetID();
+			held.family = GetPlayerBotLppFamily(item);
+			held.rank = GetPlayerBotLppRank(item);
+			playerbot_persona::TLppPiece piece;
+			DWORD family = 0;
+			if (ClassifyPlayerBotLppItem(ch, item, piece, family))
+			{
+				held.limit = keeper && !IsPlayerBotLppFinished(st->second.persona, item)
+						? playerbot_persona::LppLimit(piece, IsPlayerBotLppFamilyPerfect(ch, item, family)) : 0;
+				held.obsolete = playerbot_persona::LppObsolete(piece, (int)ch->GetLevel());
+			}
+			else
+			{
+				held.limit = GetPlayerBotHeldFamilyLimit(ch, item);
+				held.obsolete = false;
+			}
+			pieces.push_back(held);
+		}
+		std::vector<uint32_t> release;
+		playerbot_persona::PlanLppBoxRelease(pieces, release);
+		ids.insert(release.begin(), release.end());
 	}
 
 	// What goes down on this visit: the kept pieces the bag has no use for
@@ -376,6 +477,7 @@ namespace
 		if (!ch || !box)
 			return;
 		p.mapLppStored.clear();
+		p.mapGearStored.clear();
 		int freeCells = 0;
 		for (DWORD pos = 0; pos < SAFEBOX_MAX_NUM; ++pos)
 		{
@@ -386,6 +488,12 @@ namespace
 			LPITEM item = box->Get(pos);
 			if (!item)
 				continue;
+			if (GetPlayerBotLppWearCell(item) >= 0)
+			{
+				BYTE& held = p.mapGearStored[GetPlayerBotLppFamily(item)];
+				if (held < 255)
+					++held;
+			}
 			if (item->GetType() == ITEM_METIN)
 			{
 				const int grade = GetPlayerBotSoulStoneGrade(item->GetVnum());
@@ -407,6 +515,12 @@ namespace
 		}
 		p.bLppStoredKnown = true;
 		++s_uPlayerBotLppVisits;
+		{
+			std::set<DWORD> release;
+			CollectPlayerBotLppBoxRelease(ch, box, release);
+			p.wLppReleasable = (WORD)std::min<size_t>(release.size(), 65535);
+			p.dwLppReleaseVisitAt = get_dword_time() + PLAYERBOT_LPP_RELEASE_VISIT_GAP_MS;
+		}
 		const bool wasFull = p.bLppBoxFull;
 		p.bLppBoxFull = freeCells < PLAYERBOT_LPP_BOX_MIN_FREE_CELLS;
 		if (p.bLppBoxFull)
@@ -438,9 +552,26 @@ namespace
 		s_dwReported = dwNow;
 		if (first || !IsPlayerBotPersonaEnabled())
 			return;
-		sys_log(0, "PLAYERBOT_LPP: census deposits=%u released=%u visits=%u boxes_full=%u",
+		// Who keeps the list, and what the boxes still hold for the release
+		// as the last visit to each found it.
+		unsigned int bots = 0, keepers = 0, releasing = 0, releasable = 0;
+		for (TPlayerBotAIStateMap::const_iterator it = s_mapPlayerBotAIStates.begin();
+				it != s_mapPlayerBotAIStates.end(); ++it)
+		{
+			if (!it->second.persona.bRestored)
+				continue;
+			++bots;
+			if (IsPlayerBotGamblerByNature(it->first, it->second))
+				++keepers;
+			if (it->second.persona.wLppReleasable > 0)
+			{
+				++releasing;
+				releasable += it->second.persona.wLppReleasable;
+			}
+		}
+		sys_log(0, "PLAYERBOT_LPP: census deposits=%u released=%u visits=%u boxes_full=%u keepers=%u/%u boxes_releasing=%u pieces_to_release=%u",
 				s_uPlayerBotLppDeposits, s_uPlayerBotLppReleased, s_uPlayerBotLppVisits,
-				s_uPlayerBotLppBoxesFull);
+				s_uPlayerBotLppBoxesFull, keepers, bots, releasing, releasable);
 		s_uPlayerBotLppDeposits = s_uPlayerBotLppReleased = 0;
 		s_uPlayerBotLppVisits = s_uPlayerBotLppBoxesFull = 0;
 	}

@@ -270,6 +270,17 @@ namespace
 		return n;
 	}
 
+	// The seventh floor's stone waits while a monster stands within
+	// PLAYERBOT_TOWER_STONE_THREAT_RANGE of this bot. The pack held the Metin
+	// of Murder to its end once it had it - a stone of that floor is broken
+	// ten times for the chest, and the regen never stops - and the demons that
+	// walked up took the bots apart one by one while they hit it.
+	bool IsPlayerBotTowerStoneWaiting(LPCHARACTER ch, const TPlayerBotTowerScan* scan, int level)
+	{
+		return ch && scan && level == 5 &&
+				CountPlayerBotTowerMonstersNear(scan, ch->GetX(), ch->GetY(), PLAYERBOT_TOWER_STONE_THREAT_RANGE) > 0;
+	}
+
 	// The floor's objective for this bot: the nearest thing that has to die
 	// on it. On the ground floor only the Metin of Toughness; inside, that
 	// stone never (breaking it there does nothing), the fourth and seventh
@@ -296,13 +307,17 @@ namespace
 		const bool fromPack = onFloor && scan && scan->packN >= 2;
 		long fromX = fromPack ? scan->packX : ch->GetX();
 		long fromY = fromPack ? scan->packY : ch->GetY();
+		// On the seventh floor a demon at the bot's side comes first: the
+		// stone waits, and the fight is ranked from the bot
+		// (PLAYERBOT_TOWER_STONE_THREAT_RANGE).
+		const bool threatened = IsPlayerBotTowerStoneWaiting(ch, scan, level);
 		// On a floor the stone turns (the seventh: the Metin of Murder drops
 		// the chest) the pack fights its way to the stone: the monsters are
 		// ranked from the stone, so the ground round it is what gets cleared,
 		// and the stone becomes a candidate the moment nothing stands there.
 		// Ranked from the pack alone it drifted after whatever was nearest and
 		// the stone stood untouched for nine minutes (17 September, 00:05).
-		if (fromPack && level == 5)
+		if (fromPack && level == 5 && !threatened)
 		{
 			for (size_t i = 0; i < scan->entities.size(); ++i)
 				if (scan->entities[i].stone && scan->entities[i].race != PLAYERBOT_DEVIL_TOWER_STONE_FIRST)
@@ -311,6 +326,11 @@ namespace
 					fromY = scan->entities[i].y;
 					break;
 				}
+		}
+		if (threatened)
+		{
+			fromX = ch->GetX();
+			fromY = ch->GetY();
 		}
 		// A stone cannot hit back: on a floor still full of monsters it waits,
 		// or the pack walks into two hundred demons to reach it (the fourth
@@ -335,6 +355,8 @@ namespace
 			// never come, while the ground round the stone does clear.
 			if (!parterStone && e.stone && !stonesNow &&
 					CountPlayerBotTowerMonstersNear(scan, e.x, e.y, PLAYERBOT_TOWER_STONE_CLEAR_RADIUS) > 0)
+				continue;
+			if (!parterStone && e.stone && threatened)
 				continue;
 			const int fromDistance = DISTANCE_APPROX(fromX - e.x, fromY - e.y);
 			const bool shared = parterStone || e.stone || e.boss;
@@ -1120,6 +1142,15 @@ namespace
 					(held->IsMonster() || held->IsStone()) &&
 					held->GetRaceNum() != PLAYERBOT_DEVIL_TOWER_STONE_FIRST)
 				foe = held;
+			// ... but not a seventh-floor stone with a demon at the bot's side.
+			if (foe && foe->IsStone() && IsPlayerBotTowerStoneWaiting(ch, scan, level))
+			{
+				PlayerBotLogThrottled("tower_stone_waits", dwNow,
+						"PLAYERBOT_TOWER: stone waits, monsters first pid=%u name=%s map=%ld floor=7 near=%d",
+						ch->GetPlayerID(), ch->GetName(), map,
+						CountPlayerBotTowerMonstersNear(scan, ch->GetX(), ch->GetY(), PLAYERBOT_TOWER_STONE_THREAT_RANGE));
+				foe = NULL;
+			}
 		}
 		if (!foe)
 			foe = PickPlayerBotTowerObjective(ch, scan, level, false, 0);

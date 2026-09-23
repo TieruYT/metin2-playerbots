@@ -333,6 +333,17 @@ namespace
 				item->GetValue(0) == PLAYERBOT_USE_AFFECT_TIMED_BUFF;
 	}
 
+	// Rada Pustelnika (AFFECT_SKILL_BOOK_BONUS) and the Exorcism Scroll
+	// (AFFECT_SKILL_NO_BOOK_DELAY): read by the book pass, never merchant scrap.
+	// Most of them carry ANTI_SELL; the item shop's copies (71201, 71294) do
+	// not, and the junk rule's default sold them.
+	bool IsPlayerBotBookAffectItem(LPITEM item)
+	{
+		return item && item->GetType() == ITEM_USE && item->GetSubType() == USE_AFFECT &&
+				((DWORD)item->GetValue(0) == AFFECT_SKILL_BOOK_BONUS ||
+				 (DWORD)item->GetValue(0) == AFFECT_SKILL_NO_BOOK_DELAY);
+	}
+
 	// The recovery affect an auto potion keeps up, or zero for anything else.
 	DWORD GetPlayerBotAutoPotionAffect(DWORD vnum)
 	{
