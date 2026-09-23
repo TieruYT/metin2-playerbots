@@ -458,7 +458,7 @@ services:
       # server it is actually looking at rather than "nieustawiona".
       # The default is bumped with every release, so a world nobody has
       # configured still reports the version it is actually running.
-      PLAYERBOTS_VERSION: "${M2_PLAYERBOTS_VERSION:-2.2.0}"
+      PLAYERBOTS_VERSION: "${M2_PLAYERBOTS_VERSION:-2.2.1}"
       TZ: "${M2_TZ:-UTC}"
     ports:
       # 7790 outside: 7789 is the browser bridge's port in this stack.

@@ -17,6 +17,80 @@ every version here.
 
 ---
 
+## 2.2.1 — 2026-09-23
+
+Serwer, panel WWW i launcher; klient zostaje 2.0.26. Zawiera wszystko z 2.2.0.
+
+### Po 1500 botów w każdym królestwie (zgłosił kavvaski)
+
+Shinsoo i Jinno miały po 500 postaci botów, a Chunjo 1500. Liczba botów
+ustawiona osobno dla królestwa była po cichu przycinana do tych 500 (729 dla
+Shinsoo dawało 500), a wspólna liczba z suwaka oddawała Chunjo wszystko,
+czego pozostałe dwa królestwa nie mogły wziąć — przy 2500 wychodziło
+500 / 1500 / 500.
+
+Aktualizacja dokłada każdemu światu po 1000 nowych postaci botów w Shinsoo i
+w Jinno, więc każde królestwo ma teraz 1500. Wspólna liczba dzieli się po
+równo: przy 2500 to około 833 boty w każdym królestwie, więc w Chunjo będzie
+ich mniej niż dotąd, a w Shinsoo i Jinno więcej.
+
+- Nowe postacie powstają przy pierwszym uruchomieniu po aktualizacji, na
+  1 poziomie, w pierwszych wioskach (Yongan, Pyongmoo), i dostają nicki z
+  listy jak pozostałe boty.
+- Istniejące boty, ich poziomy, przedmioty, sklepy i nicki zostają bez zmian.
+  Boty, które przy nowym podziale przestaną grać, niczego nie tracą — wrócą,
+  gdy zwiększysz liczbę botów.
+- Stali dropiacze medali zostają tymi samymi postaciami co dotąd.
+- W launcherze pola „Indywidualne wartości dla królestw” przyjmują do 1500
+  (tyle, ile królestwo ma postaci).
+
+Sprawdzone na naszym świecie testowym: aktualizacja utworzyła 2000 postaci,
+wszystkie dostały nicki, a serwer wczytuje po 1500 botów na królestwo.
+
+### Bonusy: jeden przedmiot naraz (Iwakura, QUICK FIX nr 3)
+
+Bot dawał po jednym kamieniu kolejnym przedmiotom — bonus do butów, potem do
+naszyjnika, potem do bransolety — i żadnego nie kończył. Teraz:
+
+- bot pracuje nad jednym przedmiotem naraz: dobija mu bonusy do 4 (piąty
+  Marmurem Błogosławieństwa, jeśli go ma), potem używa na nim zmianek, aż
+  przedmiot będzie gotowy — i dopiero wtedy bierze następny;
+- zmianki idą tylko na przedmioty z co najmniej 3 bonusami, a przedmiot z 3
+  bonusami najpierw dostaje czwarty, jeśli bot ma do niego kamień dodania;
+- nowy przedmiot, który czeka w torbie, aż jego bonusy przebiją noszony,
+  dostaje kamienie zamiast tego noszonego, który i tak zaraz zdejmie;
+- kamień, który nie pasuje do przedmiotu w pracy (na przykład bot ma same
+  zmianki, a przedmiot potrzebuje jeszcze bonusu), idzie na następny
+  przedmiot, zamiast leżeć w torbie.
+
+Sprawdzone na naszym świecie testowym. Przed zmianą 5 z 26 wizyt u kowala
+rozkładało kamienie na dwa przedmioty. W pierwszych dwunastu minutach po
+zmianie 81 botów zużyło 194 kamienie i każdy z nich użył ich na jednym
+przedmiocie. Żadna zmianka nie poszła na przedmiot z mniej niż 3 bonusami.
+Boty zużywają teraz zmianki, które dotąd leżały w torbach: 147 ze 161 zmianek
+trafiło na przedmioty z 3 bonusami, do których bot nie miał kamienia dodania.
+Wcześniej takie przedmioty czekały na czwarty bonus.
+
+### Okno GM „Podgląd Gracza”: Podgląd otwiera nasz panel WWW (zgłosił iceBeeg)
+
+Przycisk **Podgląd** w oknie GM (tym z Captcha, Ban i Kick) otwierał panel
+autora paczki (panel.mt2009.pl), który pokazywał „Sorry, you have been
+blocked”. Teraz otwiera kartę tej postaci w naszym panelu WWW
+(http://127.0.0.1:7788). Kick i Ban działają jak dotąd. Nowy adres gra
+podaje przy logowaniu, więc po aktualizacji wystarczy zalogować się postacią
+GM jeszcze raz.
+
+### Launcher: zajęty port logowania (zgłosił Kordix)
+
+Gdy port logowania (11000) albo port kanału (13000–13002) zajmował inny
+program, diagnostyka radziła „zamknij ten program albo zmień port w .env”.
+Zmiana tych portów nie pomaga — klient gry łączy się zawsze z 11000 i z
+kanałami od 13000 — więc launcher mówi teraz, żeby zamknąć ten program
+(Menedżer zadań → Szczegóły → Zakończ zadanie). Dla portów paneli, ItemShopu
+i bazy danych rada zostaje po staremu.
+
+---
+
 ## 2.2.0 — 2026-09-23
 
 Serwer i panel WWW; klient zostaje 2.0.26. Zawiera wszystko z 2.1.0.
