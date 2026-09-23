@@ -1,12 +1,12 @@
 {
   "schema": 1,
   "channel": "stable",
-  "publishedAt": "2026-09-23T16:47:40Z",
-  "statusMessage": "2.2.2 (serwer 2.2.2, klient bez zmian - 2.0.26): Grindery z drugiego tieru (19-25) poluja na M3, event yang nie podwaja cen botow na rynku. Zawiera wszystko z 2.2.1.",
+  "publishedAt": "2026-09-23T17:55:13Z",
+  "statusMessage": "2.2.3 (serwer 2.2.3, klient bez zmian - 2.0.26): boty z umiejetnosciami walcza pieszo i zsiadaja z konia po buffy; Wieza Demonow: szamani buffuja rajd, boty zbieraja lup, prog 40 poziomu, kowal na szostym pietrze. Zawiera wszystko z 2.2.2.",
   "server": {
-    "version": "2.2.2",
-    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.2/metin2-server-update-2.2.2.zip",
-    "sha256": "AC52581B4BE0722FDA11ECFB163F1A839EBD5E1056AC41CF5310B96117F0ED9A"
+    "version": "2.2.3",
+    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.3/metin2-server-update-2.2.3.zip",
+    "sha256": "ADA0907471E8DE8563D0AF97A5A3EF200B6128E0BBFAA68A6429BBC542B39EB1"
   },
   "support": {
     "contactUrl": "https://discord.gg/pt5tvnrN6",
