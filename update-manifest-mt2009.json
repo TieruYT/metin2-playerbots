@@ -1,20 +1,20 @@
 {
   "schema": 1,
   "channel": "stable",
-  "publishedAt": "2026-09-23T17:55:13Z",
-  "statusMessage": "2.2.3 (serwer 2.2.3, klient bez zmian - 2.0.26): boty z umiejetnosciami walcza pieszo i zsiadaja z konia po buffy; Wieza Demonow: szamani buffuja rajd, boty zbieraja lup, prog 40 poziomu, kowal na szostym pietrze. Zawiera wszystko z 2.2.2.",
+  "publishedAt": "2026-09-23T20:12:15Z",
+  "statusMessage": "2.2.4 (serwer 2.2.4, klient 2.0.27 - zaktualizuj oba): Lista Przydatnych Przedmiotow tylko dla Hazardzisty (magazyny bez zbroi), Hazardzista wystawia ulepszone przedmioty, bron na 30 poziom co najmniej do +6, Rada Pustelnika uzywana przy ksiegach, wyszukiwarka sklepow szuka jednego kliknietego przedmiotu, Auto Lowy biora najblizszego potwora, Wieza: na 7. pietrze najpierw moby, Rybak otwiera co piata malze, zmiana ceny wielu przedmiotow bez gubienia pozycji. Zawiera wszystko z 2.2.3.",
   "server": {
-    "version": "2.2.3",
-    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.3/metin2-server-update-2.2.3.zip",
-    "sha256": "ADA0907471E8DE8563D0AF97A5A3EF200B6128E0BBFAA68A6429BBC542B39EB1"
+    "version": "2.2.4",
+    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.4/metin2-server-update-2.2.4.zip",
+    "sha256": "23BA56301472A562BF2CAAE601C0028C7F8A46BAF79FAC128547D5C5546EC9A7"
   },
   "support": {
     "contactUrl": "https://discord.gg/pt5tvnrN6",
     "uploadUrl": ""
   },
   "client": {
-    "version": "2.0.26",
-    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.0.98/metin2-client-update-2.0.26.zip",
-    "sha256": "F9FDC41B5F91741A9EC43CA85D5D9092FD949A951C12B361EE95EDF805455359"
+    "version": "2.0.27",
+    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.4/metin2-client-update-2.0.27.zip",
+    "sha256": "A871B3513378F79680CEA3637C4EFA727B42DAD5C5E5331DBE93A2AC9633BFCE"
   }
 }
