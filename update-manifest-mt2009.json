@@ -1,12 +1,12 @@
 {
   "schema": 1,
   "channel": "stable",
-  "publishedAt": "2026-09-23T08:27:17Z",
-  "statusMessage": "2.0.99 (serwer 2.0.99, klient bez zmian - 2.0.26): launcher rozpoznaje zepsuty dysk Dockera i nie pobiera w kolko tej samej aktualizacji; paczka z logami bez hasla do panelu. Zawiera wszystko z 2.0.98: kowal w szesciu jezykach, czat z botami 1.1b.",
+  "publishedAt": "2026-09-23T09:27:33Z",
+  "statusMessage": "2.1.0 (serwer 2.1.0, klient bez zmian - 2.0.26): czas czekania na ksiegi umiejetnosci w poziomie trudnosci, osobno dla graczy i dla botow (sredni 7 h, trudny 21 h, latwy bez zmian); poziom trudnosci ustawisz tez w panelu WWW. Zawiera wszystko z 2.0.99.",
   "server": {
-    "version": "2.0.99",
-    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.0.99/metin2-server-update-2.0.99.zip",
-    "sha256": "2C287EDFDCA998FF0FCC5B3183E2A576B52E0182EF48A06AEA096242490C38BC"
+    "version": "2.1.0",
+    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.1.0/metin2-server-update-2.1.0.zip",
+    "sha256": "58BF1D3430CAEA6F5377F51270A1E3CA7CC9EA06B9AC5A17530140125B10B1A7"
   },
   "support": {
     "contactUrl": "https://discord.gg/pt5tvnrN6",
