@@ -110,12 +110,11 @@ namespace
 		if (!PlayerBotMapHasMetinStones(ch->GetMapIndex()) ||
 				(frontier != 0 && !PlayerBotMapHasMetinStones(frontier)))
 			return;
-		// A battle horse is what a player raises for the stones, so its rider
-		// goes out for them twice as often, whether or not its trained skills
-		// keep it out of the saddle for the fight itself.
+		// A battle horse used to double the chance, as the horse a player
+		// raises for the stones; it is not, and a stone is broken on foot
+		// ("do zbijania metinow nikt nie uzywa bojowca", prodnathin).
 		const int chance = PLAYERBOT_METIN_EXPEDITION_CHANCE_PERCENT *
-				GetPlayerBotWeight(PLAYERBOT_WEIGHT_METIN) / PLAYERBOT_WEIGHT_NEUTRAL *
-				(HasPlayerBotBattleHorse(ch) ? 2 : 1);
+				GetPlayerBotWeight(PLAYERBOT_WEIGHT_METIN) / PLAYERBOT_WEIGHT_NEUTRAL;
 		if (number(1, 100) > chance)
 			return;
 		state.dwMetinExpeditionUntil = dwNow + PLAYERBOT_METIN_EXPEDITION_DURATION;

@@ -238,7 +238,15 @@ namespace
 				// every drop in it.
 				m_bagFull(CountPlayerBotFreeInventoryCells(owner) == 0),
 				m_skippedNoRoom(0),
-				m_choosy(IsPlayerBotChoosyLooter(owner)),
+				// Inside the Demon Tower a bot picks up its own drop whatever it
+				// is worth (Tieru, 23 September: "niech tam drop swoj pilnuja,
+				// aby podnosili"). The floors were left strewn with potions and
+				// outgrown gear +2 under the names of bots of sixty and seventy -
+				// exactly what the choosy looter walks past - while the owners
+				// fought on ("osoba, ktorej dropnal przedmiot, powinna podejsc
+				// sobie po niego", prodnathin, with the screenshot of floor 3).
+				m_choosy(IsPlayerBotChoosyLooter(owner) &&
+						!IsPlayerBotDemonTowerInstance(owner->GetMapIndex())),
 				m_skippedCheap(0),
 				m_medalDropper(owner && GetPlayerBotPersonalityByPID(owner->GetPlayerID()) ==
 						BOT_PERSONALITY_MEDAL_DROPPER)

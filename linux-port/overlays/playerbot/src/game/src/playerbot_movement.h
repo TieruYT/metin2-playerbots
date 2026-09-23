@@ -882,8 +882,8 @@ namespace
 	// Defined with the builds (playerbot_skills.h), which come later.
 	bool PlayerBotSkillsBeatTheSaddle(LPCHARACTER ch);
 
-	// A battle horse (level 11+) and a weapon that can be swung from it: what a
-	// player raises for the stones, whatever the bot then does with it.
+	// A battle horse (level 11+) and a weapon that can be swung from it. Not
+	// what a player breaks the stones with - see CanPlayerBotFightOnHorse.
 	bool HasPlayerBotBattleHorse(LPCHARACTER ch)
 	{
 		if (!ch || ch->GetHorseLevel() < PLAYERBOT_BATTLE_HORSE_LEVEL)
@@ -916,10 +916,12 @@ namespace
 		if (!CanPlayerBotEverFightOnHorse(ch))
 			return false;
 
-		// Against Metins a battle horse is priority #1: the rider keeps hacking the
-		// stone from the saddle rather than climbing down for every spot.
+		// A Metin is broken on foot. The saddle was once the stone hunter's
+		// first choice here, and it is nobody's: "do zbijania metinow nikt nie
+		// uzywa bojowca" (prodnathin, 23 September). The target section climbs
+		// down for one (dismount_for_target), as it does for a transport horse.
 		if (target && target->IsStone())
-			return true;
+			return false;
 
 		// Warriors and Suras clear mob spots (multi-pull / valour cloak packs) from
 		// horseback; ranged and caster jobs still fight on foot.
@@ -972,13 +974,15 @@ namespace
 		// (sizowski). While a fight is pending the saddle is the combat pass's to
 		// give up, not this pass's to take; once the foe is gone the next leg
 		// mounts as before. Only for a real, live foe, so a stale VID cannot
-		// strand the bot on foot.
-		if (!fightOnHorse && !keepHorseAtDestination && !CanPlayerBotEverFightOnHorse(ch))
+		// strand the bot on foot. A battle horse is asked the same about its
+		// foe: its rider breaks a stone on foot too, and a Shaman or a Ninja
+		// fights on foot whatever it faces (CanPlayerBotFightOnHorse).
+		if (!fightOnHorse && !keepHorseAtDestination)
 		{
 			LPCHARACTER foe = ch->GetVictim();
 			if (!foe && state.dwTargetVID != 0)
 				foe = CHARACTER_MANAGER::instance().Find(state.dwTargetVID);
-			if (foe && !foe->IsDead())
+			if (foe && !foe->IsDead() && !CanPlayerBotFightOnHorse(ch, foe))
 				return;
 		}
 		// A rider keeps the saddle to the end of the leg, and on a leg that does

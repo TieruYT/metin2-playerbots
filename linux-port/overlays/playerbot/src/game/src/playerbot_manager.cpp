@@ -489,8 +489,9 @@ namespace
 	// the engine refuses every skill while it lasts (char_skill.cpp), so it is a
 	// trade, not an upgrade: worth taking against something that stands there
 	// long enough for the bonus to add up and cannot be killed faster by a
-	// rotation anyway. That is a boss, at the start of the fight - which is
-	// exactly where the players use them.
+	// rotation anyway. That is a boss, at the start of the fight - and of the
+	// bosses, the Reaper alone (PLAYERBOT_POLYMORPH_BOSS_VNUMS): the players
+	// keep their marbles for him and fight the Demon Kings with their skills.
 	//
 	// Every refusal the engine can raise is left to the engine (already
 	// transformed, in the saddle, a monster too high for the bot's level): none
@@ -504,6 +505,13 @@ namespace
 		LPCHARACTER victim = ch->GetVictim();
 		if (!victim || victim->IsDead() || !victim->IsMonster() ||
 				victim->GetMobRank() < MOB_RANK_BOSS)
+			return;
+		bool reaper = false;
+		for (size_t i = 0; i < sizeof(PLAYERBOT_POLYMORPH_BOSS_VNUMS) /
+				sizeof(PLAYERBOT_POLYMORPH_BOSS_VNUMS[0]); ++i)
+			if (PLAYERBOT_POLYMORPH_BOSS_VNUMS[i] == victim->GetRaceNum())
+				reaper = true;
+		if (!reaper)
 			return;
 		// Early in the fight, or the five minutes are spent on a boss that is
 		// nearly down and the bot has thrown a marble away for one hit.
@@ -4935,8 +4943,8 @@ void CPlayerBotManager::Update()
 		ProcessPlayerBotCatch(ch);
 		ManagePlayerBotHairDye(ch);
 		// A dropper that has reached its band stops earning experience, and a
-		// marble is spent on a boss. Both are cheap tests that end on the first
-		// line for everybody they do not concern.
+		// marble is spent on the Reaper. Both are cheap tests that end on the
+		// first lines for everybody they do not concern.
 		ManagePlayerBotExpLock(ch, state);
 		ManagePlayerBotPolymorph(ch, state, dwNow);
 		ManagePlayerBotGuild(ch, state, dwNow);
@@ -5561,9 +5569,9 @@ void CPlayerBotManager::Update()
 		LPITEM equippedWeapon = ch->GetWear(WEAR_WEAPON);
 		const bool isBow = (equippedWeapon && equippedWeapon->GetType() == ITEM_WEAPON && equippedWeapon->GetSubType() == WEAPON_BOW);
 		const int combatRange = isBow ? 800 : 280;
-		// A battle-horse rider closes on Metins (and, for warriors/suras, mob spots)
-		// without dismounting so the fight happens from the saddle. Everyone else
-		// keeps the previous on-foot approach.
+		// A warrior or a sura on a battle horse closes on a mob spot without
+		// dismounting, so the fight happens from the saddle. A stone, and
+		// everyone else's fight, is approached on foot.
 		const bool fightOnHorse = CanPlayerBotFightOnHorse(ch, target);
 
 		if (distance > combatRange)

@@ -2738,7 +2738,13 @@ not in `data/`) reworked these point by point. What each hangs on:
   one. `PrepareWeapon` asks `PlayerBotWeaponFitsNow`, or it would unequip the
   dagger as a profession mismatch on the next tick. The junk rule and the
   stall keep the chosen stone weapon; the weapon merchant sells a dagger of
-  the bot's level when the bag has none.
+  the bot's level when the bag has none. The Demon Tower (map 66 and its
+  instances) is the exception: there the bow stays in the hand for the stones
+  too and the dagger comes out only when the arrows are gone, for anything
+  then. Its stones stand among the floor's demons and a raid breaks them
+  together, and an Archer walking in to stab one was a bot in melee with a
+  pack ("ninja archerzy fajnie jakby stali z daleka i strzelali, a nie
+  podbiegali i bili z bliska", prodnathin, 23 September).
 - **A portal walk asked for once is a route somebody else finishes.**
   `MovePlayerBotToWorldPortal` plans the route and makes the map change only
   when the pass that called it calls it again within
@@ -7793,8 +7799,12 @@ not in `data/`) reworked these point by point. What each hangs on:
   transport horse. One that still fights mounted climbs down for a missing
   buff in a fight (`PLAYERBOT_HORSE: dismounted ... reason=buff`) and the
   flip hold keeps it on foot while the set goes up; the three support-buff
-  passes climb down from any saddle. The planner's twice-as-many Metin
-  expeditions stay with the horse (`HasPlayerBotBattleHorse`). On foot the
+  passes climb down from any saddle. And since 2.2.6 a stone is broken on
+  foot from any saddle (`CanPlayerBotFightOnHorse` answers no for one, the
+  tower's fight climbs down for one too): "do zbijania metinow nikt nie
+  uzywa bojowca" (prodnathin, 23 September). With that the planner's
+  twice-as-many Metin expeditions for a battle horse went too, since they
+  stood on the same belief. On foot the
   buffs were always cast: ten minutes of game1 before the change had aura
   601, berserk 567, strong body 390, enchanted blade 476 casts. No bot on
   m2zip owns a battle horse (the four GM characters do), so the saddle half
@@ -7809,7 +7819,11 @@ not in `data/`) reworked these point by point. What each hangs on:
   because a bot always holds a foe and a pack always stands about, and a
   floor jumps a few seconds after its last monster: between two foes a bot
   now goes for what it may within `PLAYERBOT_TOWER_LOOT_RANGE` while its
-  health holds (`towerDash` in `HandleLoot`). A bot under
+  health holds (`towerDash` in `HandleLoot`) - and since 2.2.6 whatever it is
+  worth: the choosy looter is off in an instance, because the floors were
+  strewn with potions and outgrown gear +2 under the names of bots of sixty
+  and seventy, which is exactly its fodder (prodnathin's screenshot of floor
+  3; Tieru: "niech tam drop swoj pilnuja, aby podnosili"). A bot under
   `PLAYERBOT_TOWER_MIN_LEVEL` inside an instance leaves it, and goes home from
   the ground floor, unless a person's party brought it - the tower's keeper
   tells a player forty too. And the sixth floor's smith is used: the quest's
@@ -7818,11 +7832,20 @@ not in `data/`) reworked these point by point. What each hangs on:
   anvil's odds, a burn on failure; 20074 takes a weapon, 20075 a body armour,
   shield or helmet, 20076 the rest (`CanReceiveItem`), and the refine sets he
   refuses are the elite 501 and 530 on mt2009 (`IsEliteRefine`) but everything
-  from 500 on r40250 (`DEVIL_TOWER_REFINE_HACK`). `UsePlayerBotTowerSmith`
-  gives him the piece the bot's own anvil rules would raise, keeps back a
-  weapon or body armour with nothing in the bag to replace it, and the bot of
-  seventy-five takes the run on only once everybody has had the turn or
-  `PLAYERBOT_TOWER_SMITH_REFINE_WAIT_MS` has passed. None of it has been
+  from 500 on r40250 (`DEVIL_TOWER_REFINE_HACK`). Since 2.2.6
+  `UsePlayerBotTowerSmith` gives him a bag piece and never a worn one (Tieru:
+  "nie swoj noszony, a jakis zarobkowy albo zapasowy, np. +6 i podejma probe
+  na +7, bo kowal w DT nie wymaga ulepszaczy"): a higher-tier spare under its
+  refine target, or goods from `PLAYERBOT_TOWER_SMITH_GOODS_MIN_PLUS`, the
+  highest grade first; it says the outcome in the ordinary chat
+  (`SendPlayerBotLocalChat`, a player's own TALKING packet) and no longer
+  shouts it; one bot's turn is `PLAYERBOT_TOWER_SMITH_TURN_MS` at most, and the
+  bot of seventy-five takes the run on once everybody has had the turn or
+  `PLAYERBOT_TOWER_SMITH_REFINE_WAIT_MS` (45 s, was 150) has passed, saying in
+  `smith turns over ... still_waiting=` how many it did not wait for
+  ("troche dlugo po ulepszeniu czeka sie na kolejne pietro", prodnathin).
+  The first version (2.2.3) gave him the worn piece the anvil rules would
+  raise, with a backup asked for a weapon or armour. None of it has been
   watched in a run: m2zip has no guild with four bots of forty. A read-only
   census from a deploy-only build asked the picker about m2zip's 212 bots of
   thirty and up: a piece for the weapon smith from 93, the armour smith 128,
@@ -7832,6 +7855,16 @@ not in `data/`) reworked these point by point. What each hangs on:
   the players' skill order puts the buffs first, so most bots of thirty to
   forty hold their attack skills at one and still ride into a fight - now
   climbing down for their buffs.
+- **A polymorph marble is for the Reaper.** `ManagePlayerBotPolymorph` used
+  one on any boss at nine tenths of its health (`MOB_RANK_BOSS` and up) - 108
+  in fifteen hours on the test world, 57 of them on the Bestial Captain - and
+  on the Demon Kings of the tower's third and sixth floors,
+  while the players keep theirs for the ninth floor's Umarly Rozpruwacz
+  (prodnathin: "niekoniecznie wydaje mi sie potrzebne zeby boty tracily na
+  nich marmurki"; Tieru: "zwykle uzywa sie na riperze"). Since 2.2.6
+  `PLAYERBOT_POLYMORPH_BOSS_VNUMS` names 1093 and 1095 (Niebieska Smierc, the
+  name Tieru gave from memory) and nothing else; a marble a bot does not
+  spend stays goods for its counter (`PLAYERBOT_SHOP_MARBLE_LINES`).
 - **The Useful Items List is the gambler's, and a limit counts the box.**
   Community Patch 2, point 9 sat under "Zarzadzanie ekwipunkiem Hazardzisty"
   and every bot kept the list, which names every body armour over 33 and

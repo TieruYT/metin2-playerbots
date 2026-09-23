@@ -139,6 +139,38 @@ namespace
 		}
 	}
 
+	// What a bot says aloud: the ordinary chat of the people round it, the
+	// packet a player's own line is (CInputMain::Chat), so every client puts
+	// it in the chat window and over the bot's head. Not the shout: a line that
+	// concerns the people standing there is theirs, not the kingdom's.
+	void SendPlayerBotLocalChat(LPCHARACTER ch, const char* szText)
+	{
+		if (!ch || !szText || !szText[0] || !ch->GetSectree())
+			return;
+		char chatbuf[256];
+		int len = snprintf(chatbuf, sizeof(chatbuf), "%s : %s", ch->GetName(), szText);
+		if (len <= 0)
+			return;
+		if (len >= (int)sizeof(chatbuf))
+			len = sizeof(chatbuf) - 1;
+		// The regular talking packet contains its trailing NUL.  Keeping the packet
+		// identical to a real player's chat is what makes every native/wasm client
+		// render it as a text tail above the bot without a client fork.
+		++len;
+
+		TPacketGCChat pack_chat;
+		pack_chat.header = HEADER_GC_CHAT;
+		pack_chat.size = sizeof(TPacketGCChat) + len;
+		pack_chat.type = CHAT_TYPE_TALKING;
+		pack_chat.id = ch->GetVID();
+		pack_chat.bEmpire = 0;
+
+		TEMP_BUFFER buf;
+		buf.write(&pack_chat, sizeof(TPacketGCChat));
+		buf.write(chatbuf, len);
+		ch->PacketAround(buf.read_peek(), buf.size());
+	}
+
 	// The line over a bot's head. On the 2.x line it is the server command
 	// "PlayerBotStatus <vid> <hex>", which the client root draws as a text tail
 	// and nothing else (playerbot_status_tail.py): the client puts every TALKING
@@ -190,28 +222,7 @@ namespace
 		return;
 #endif
 
-		char chatbuf[256];
-		int len = snprintf(chatbuf, sizeof(chatbuf), "%s : %s", ch->GetName(), szText);
-		if (len <= 0)
-			return;
-		if (len >= (int)sizeof(chatbuf))
-			len = sizeof(chatbuf) - 1;
-		// The regular talking packet contains its trailing NUL.  Keeping the packet
-		// identical to a real player's chat is what makes every native/wasm client
-		// render it as a text tail above the bot without a client fork.
-		++len;
-
-		TPacketGCChat pack_chat;
-		pack_chat.header = HEADER_GC_CHAT;
-		pack_chat.size = sizeof(TPacketGCChat) + len;
-		pack_chat.type = CHAT_TYPE_TALKING;
-		pack_chat.id = ch->GetVID();
-		pack_chat.bEmpire = 0;
-
-		TEMP_BUFFER buf;
-		buf.write(&pack_chat, sizeof(TPacketGCChat));
-		buf.write(chatbuf, len);
-		ch->PacketAround(buf.read_peek(), buf.size());
+		SendPlayerBotLocalChat(ch, szText);
 	}
 
 	const char* GetPlayerBotTownStatusLabel(const TPlayerBotAIState& state)

@@ -972,6 +972,9 @@ namespace
 		return PlayerBotHoldsBonusStoneFor(ch, candidate);
 	}
 
+	// Defined further down, with the arrows' purchase.
+	int CountPlayerBotArrows(LPCHARACTER ch);
+
 	bool ManagePlayerBotEquipment(LPCHARACTER ch, TPlayerBotAIState& state, DWORD dwNow)
 	{
 		if (!ch || !ch->IsItemLoaded())
@@ -991,8 +994,19 @@ namespace
 			// asked this bot to lure: IsPlayerBotArcher wants the bow in the hand,
 			// so a dagger drawn for one stone makes the whole course "ineligible"
 			// until the stone is gone - with nothing anywhere saying why.
-			const bool wantMelee = target && target->IsStone() && !target->IsDead() &&
-					state.dwLurePlayerPID == 0 && HasPlayerBotUsableStoneDagger(ch);
+			// The Demon Tower is the other exception, and there the bow stays
+			// in the hand for the stones too, unless the arrows are gone: its
+			// stones stand among the floor's demons, and an Archer that walked
+			// in to stab one was a bot in melee with a pack it cannot hold
+			// ("ninja archerzy fajnie jakby stali z daleka i strzelali, a nie
+			// podbiegali i bili z bliska", prodnathin, 23 September). A raid
+			// breaks those stones together, so the shot's rhythm is not what
+			// decides them.
+			const bool inTower = ch->GetMapIndex() == PLAYERBOT_MAP_DEMON_TOWER ||
+					IsPlayerBotDemonTowerInstance(ch->GetMapIndex());
+			const bool wantMelee = target && !target->IsDead() &&
+					state.dwLurePlayerPID == 0 && HasPlayerBotUsableStoneDagger(ch) &&
+					(inTower ? CountPlayerBotArrows(ch) == 0 : target->IsStone());
 			if (wantMelee != state.bMeleeForStone)
 			{
 				state.bMeleeForStone = wantMelee;

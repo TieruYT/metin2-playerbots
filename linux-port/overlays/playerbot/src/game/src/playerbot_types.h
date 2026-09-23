@@ -1375,14 +1375,27 @@ namespace
 	// once everybody has had the turn, or after SMITH_REFINE_WAIT_MS; it used
 	// to do so the moment he stood, and nobody ever used him ("nikt nie
 	// korzysta z mozliwosci ulepszania przedmiotow u kowala", prodnathin,
-	// 23 September).
-	const DWORD PLAYERBOT_TOWER_SMITH_REFINE_WAIT_MS = 150 * 1000;
+	// 23 September). A refine takes seconds, and two and a half minutes of
+	// waiting after them was what he saw next ("troche dlugo po ulepszeniu
+	// czeka sie na kolejne pietro"): the wait is forty-five seconds, and one
+	// bot's turn - the walk to him and the refine - is SMITH_TURN_MS at most,
+	// so a bot that cannot reach him no longer holds everybody to the cap.
+	const DWORD PLAYERBOT_TOWER_SMITH_REFINE_WAIT_MS = 45 * 1000;
+	const DWORD PLAYERBOT_TOWER_SMITH_TURN_MS = 20 * 1000;
+	// What a bot gives him is never a piece it wears (Tieru: "nie swoj noszony,
+	// a jakis zarobkowy albo zapasowy, np. +6 i podejma probe na +7, bo kowal
+	// w DT nie wymaga ulepszaczy"): a bag piece he takes, a spare the bot will
+	// wear from any grade under its target, anything else - counter goods -
+	// from this grade up, where a step is worth the fee.
+	const int PLAYERBOT_TOWER_SMITH_GOODS_MIN_PLUS = 4;
 	// The floors' drop. Inside, the fight never ends - a bot always holds a
 	// foe and a pack always stands round it - so the ordinary loot pass only
 	// ever took what lay at a bot's feet, and a floor jumps four to eight
 	// seconds after its last monster falls: "sporo dropu zostaje na ziemi"
 	// (prodnathin). Between two foes a bot takes what it may within
-	// LOOT_RANGE, while its health holds LOOT_MIN_HP_PERCENT.
+	// LOOT_RANGE, while its health holds LOOT_MIN_HP_PERCENT - its own potions
+	// and outgrown gear included, which the choosy looter leaves everywhere
+	// else (CCollectPlayerBotLoot).
 	const int PLAYERBOT_TOWER_LOOT_RANGE = 1500;
 	const int PLAYERBOT_TOWER_LOOT_MIN_HP_PERCENT = 50;
 	// A raid is a guild and not a party, so the party buffs never reached it:
@@ -3165,6 +3178,14 @@ namespace
 	// a trade: the marble's damage bonus against the whole rotation, and it is
 	// only worth it where the rotation is not what wins the fight anyway.
 	const int PLAYERBOT_POLYMORPH_BOSS_HP_PERCENT = 90;
+	// ...and it is spent on the Reaper and nowhere else. Every boss used to
+	// take one, the Demon Kings of the tower's third and sixth floors among
+	// them ("niekoniecznie wydaje mi sie potrzebne zeby boty tracily na nich
+	// marmurki", prodnathin, 23 September), and the players keep theirs for
+	// the ninth floor's Umarly Rozpruwacz (Tieru, the same evening: "zwykle
+	// uzywa sie na riperze"). 1095, Niebieska Smierc, is the name he gave it
+	// from memory; it is the Catacomb's boss and costs nothing to name here.
+	const DWORD PLAYERBOT_POLYMORPH_BOSS_VNUMS[] = { 1093, 1095 };
 	const DWORD PLAYERBOT_POLYMORPH_RETRY_MS = 60000;
 	// Since 2.0.27 a booster is recognised by what the engine does with it, not
 	// by its vnum: USE_AFFECT with value0 510 is the timed stat buff (attack
