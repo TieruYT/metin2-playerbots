@@ -17,6 +17,42 @@ every version here.
 
 ---
 
+## 2.2.2 — 2026-09-23
+
+Serwer; klient zostaje 2.0.26. Zawiera wszystko z 2.2.1.
+
+### Grindery z drugiego tieru idą na M3 (zgłosił Iwakura)
+
+W dokumencie osobowości Iwakury drugi tier Grindera (poziomy 19–25) to M3,
+czyli Ziemia Klanu z przeklętymi zwierzętami i bronią na 30 poziom. Na M3
+trafiały jednak tylko boty, które szukały broni 30 lv, a od Community Patch 2
+bot, który może tę broń kupić, przestał ją farmić. Na naszym świecie testowym
+na M3 było 10 z 426 botów na poziomach 15–25, a na młodym świecie nie było
+żadnego.
+
+Teraz na M3 idzie Grinder z drugiego tieru, który ma broń +6 i zbroję +5, z
+bronią 30 lv albo bez niej. Idzie też bot z ćwiartki, która pomija pierwszą
+wioskę, już od 13 poziomu. Grinder zostaje na M3, dopóki należy do tieru, i
+wychodzi tylko po zakupy albo ulepszenia. Limit tłoku się nie zmienia: około
+15% botów na trzy mapy M3.
+
+Sprawdzone na naszym świecie testowym: kwadrans po zmianie na M3 były 103 boty
+zamiast 27, a obciążenie serwera zostało takie samo.
+
+### Event yang nie podwaja cen na rynku (zgłosił Iwakura)
+
+Podczas eventu yang, na przykład +100%, boty liczyły ceny od stawki z eventem
+(200%) zamiast od stawki świata (100%). Wszystko, co wystawiły w tym czasie,
+kosztowało więc dwa razy więcej. Na początku i na końcu każdego eventu rynek
+zapominał też ceny, których się nauczył. Teraz ceny liczą się zawsze od
+stawki świata, a event yang zmienia tylko to, ile yang wypada z potworów.
+
+Sprawdzone na naszym świecie testowym 6-minutowym eventem yang +100%: stawka
+potworów zmieniła się z 200 na 400 i z powrotem, a ceny botów i pamięć rynku
+zostały bez zmian.
+
+---
+
 ## 2.2.1 — 2026-09-23
 
 Serwer, panel WWW i launcher; klient zostaje 2.0.26. Zawiera wszystko z 2.2.0.
