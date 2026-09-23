@@ -775,6 +775,14 @@ namespace {
                 o.nextService = now;
         }
         if (!Due(now, o.nextService)) return false;
+        // A purchase under way comes first. A service visit opens the board,
+        // and the buyer gives its pick up to anybody with the board open: four
+        // of the first 155 walks over from a second village lost the line they
+        // came for to their own keeper's visit starting on arrival (23
+        // September). Both waits are bounded by their own clocks.
+        if (!o.visiting && ((o.buyOwner && !Due(now, o.buyUntil)) ||
+                (state.bMarketTrip && !Due(now, state.dwMarketTripUntil))))
+            return false;
         if (!shop) {
             // Proceeds even after sell-out deleted the empty shop.
             auto box = manager.GetShopSafeboxByOwnerID(ch->GetPlayerID());

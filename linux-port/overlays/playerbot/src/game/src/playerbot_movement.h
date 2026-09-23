@@ -1105,6 +1105,52 @@ namespace
 				(unsigned int)room.bSpotCount);
 	}
 
+	// A goal on ground the bot's terrain does not join is not walked to at
+	// all: the planner answers "unreachable" three times, the service rescue
+	// relocates the bot on the sixth, and the misc merchant of Bokjung - whose
+	// approach point sits on a strip cut off from the square - cost 260 such
+	// rescues in a morning, six failed plans each. The nearest cell of the
+	// bot's own component inside the arrival radius is where the rescue would
+	// have put it; ask for it first. The ring's corners reach
+	// radius * 50 * sqrt(2), and the arrival test is against the goal asked
+	// for, not the moved one: a corner cell past the radius was walked to and
+	// never "arrived". True when the goal was moved; walkX/walkY are the goal
+	// itself otherwise. The town legs ask it, and so does the walk to the
+	// Rybak, whose approach point is drawn by pid round him and fell for some
+	// bots on ground the square does not join - every fishing session of
+	// theirs ended "route_failed" before a step (23 September).
+	bool FindPlayerBotReachableGoal(LPCHARACTER ch, long goalX, long goalY,
+			int arrivalDistance, long& walkX, long& walkY)
+	{
+		walkX = goalX;
+		walkY = goalY;
+		if (!ch)
+			return false;
+		CPlayerBotNavigation& navigation = CPlayerBotNavigation::instance(ch->GetMapIndex());
+		if (!navigation.Init(ch->GetMapIndex()) ||
+				navigation.CanReach(ch->GetX(), ch->GetY(), goalX, goalY))
+			return false;
+		const DWORD own = navigation.GetComponentAtWorld(ch->GetX(), ch->GetY());
+		if (own == 0)
+			return false;
+		const int radius = std::max(2, arrivalDistance / 71);
+		long bestDistance = -1;
+		for (int dy = -radius; dy <= radius; ++dy)
+			for (int dx = -radius; dx <= radius; ++dx)
+			{
+				const long cx = goalX + dx * 50, cy = goalY + dy * 50;
+				const long distance = dx * dx + dy * dy;
+				if (bestDistance >= 0 && distance >= bestDistance)
+					continue;
+				if (navigation.GetComponentAtWorld(cx, cy, 0) != own)
+					continue;
+				bestDistance = distance;
+				walkX = cx;
+				walkY = cy;
+			}
+		return bestDistance >= 0;
+	}
+
 	bool MovePlayerBot(LPCHARACTER ch, long destX, long destY, DWORD dwNow,
 			int targetSnapRadius = 4, bool flexibleTargetSnap = false,
 			bool allowHorse = false, bool fightOnHorse = false,

@@ -167,6 +167,13 @@ namespace
 	{
 		if (!ch)
 			return;
+		// On the 2.x line this is asked after every empty look at a first
+		// village's stands, hundreds of times a minute, and only one shout in
+		// PLAYERBOT_TRADE_SHOUT_INTERVAL goes out: the world-wide throttle is
+		// asked before the bag is, which is the costly half.
+		if (s_dwPlayerBotTradeShoutTime != 0 &&
+				get_dword_time() - s_dwPlayerBotTradeShoutTime < PLAYERBOT_TRADE_SHOUT_INTERVAL)
+			return;
 		std::set<DWORD> wanted;
 		CollectPlayerBotWantedMaterials(ch, wanted);
 		if (wanted.empty())

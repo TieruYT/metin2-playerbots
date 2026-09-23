@@ -79,6 +79,15 @@ struct State {
     uint32_t nextBrowse = 0, buyOwner = 0, buyItem = 0, buyUntil = 0;
     uint32_t observedShop = 0;
     uint32_t browseOwner = 0, browseItem = 0;
+    // The first village's stands, read from a second village before the
+    // walk over: a cursor of their own, so the look at the far market does
+    // not lose the place of the browse at the near one, and the line the
+    // walk is for, which becomes the buyer's pick on arrival.
+    uint32_t farBrowseOwner = 0, farBrowseItem = 0;
+    uint32_t farPickOwner = 0, farPickItem = 0;
+    // The buyer's pick is the one a walk over was made for, from the hand-over
+    // to the purchase or the moment it is given up, which says why.
+    bool farBuy = false;
     uint32_t repriceSteps = 0;
     // Which compiled price table this shop was last priced against.
     uint32_t priceGeneration = 0;

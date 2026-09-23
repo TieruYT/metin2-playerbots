@@ -7519,6 +7519,50 @@ not in `data/`) reworked these point by point. What each hangs on:
   monsters are named from `locale/<lang>/mob_names.txt`, which is why an
   English player sees "Kowal" and a "Blacksmith" nobody reads sits in the EN
   pack. Naming NPCs from it would be an exe change.
+- **On the 2.x line a market trip is a walk to one line, claimed.** The bots'
+  counters are ikashop offline shops, and the classic trip
+  (`FindPlayerBotStallPick`) looks for a keeper standing behind a counter -
+  there are none - so every trip ended `nothing_on_offer`: 4 406 in an hour on
+  one core of the test world, the offline buyer (`ManagePlayerBotOfflineShopping`,
+  which reads the stands in reach on its own clock) held off for as long as each
+  walk lasted, and 576 of them a crossing from the second village to Joan and
+  back, one in eleven with a purchase (23 September). On this engine the
+  shopping pass leaves the stands in reach to that buyer and makes only the walk
+  it cannot make: from a second village, and only for a line of the first
+  village's stands this bot would buy and can pay for, found before setting off
+  by the buyer's own rating (`RatePlayerBotOfflineLine`,
+  `FindPlayerBotFarOfflinePick` - its own cursor, started at a stand drawn by
+  pid) and handed to the buyer on arrival (`HandPlayerBotFarPickToBuyer`, which
+  claims that tick or the travel pass takes the bot straight back). The first
+  version bought on 47% of its walks and lost most of the rest to itself: 29 of
+  the 31 lines found sold on arrival were bought by another bot that had walked
+  over for the same line. A walk claims its line (`s_mapPlayerBotFarClaims`,
+  for the walk and the ride) and every other look, the browse in reach included,
+  passes over a line another bot has claimed; a keeper's service visit waits
+  for its own purchase under way, and a stand in edit mode is waited out at the
+  counter - both used to cost the pick. With that, 48 of 55 walks bought within
+  five minutes and none lost its line to another bot. What is left says why in
+  `PLAYERBOT_MARKET: far pick lost ... reason=`, and after a start it is
+  `cannot_pay`: the cap a counter line is judged by is a share of the median
+  wallet of the whole population, which falls while the cohort logs in (5.7
+  million at the first ledger, 2.6 ten minutes later), so a line picked early is
+  over the cap on arrival. The first village's own buyer still shouts for a
+  material it did not find (`AnnouncePlayerBotNeed`, which asks the world-wide
+  shout clock before it reads the bag - it is asked after every empty browse).
+- **A goal the ground does not join is walked to from the nearest ground that
+  does, at the Rybak too.** The town leg's rescue is `FindPlayerBotReachableGoal`
+  in `playerbot_movement.h` now, and the fishing tackle leg asks it: the Rybak's
+  approach point is drawn by pid round him and for some pids fell on a strip the
+  square does not join, so the plan was unreachable three times and the session
+  over in ten seconds, every session, for the same bots.
+- **Potions are poured together only when that frees a cell.** A bot drinks from
+  the first stack of a kind, so `CompactPlayerBotPotionStacks` topped the first
+  stack up from the last every time a few potions had gone - 29 000 passes an
+  hour on one core, nearly every one `freed_stacks=0`, each moved unit a save for
+  the db core - and measured a stack against two hundred where mt2009's limit is
+  the item's (`PlayerBotMaxStack`). A kind is poured only while its units would
+  fit in fewer stacks than it has from that cell on: 12.5 passes a minute
+  afterwards, none of them freeing nothing.
 
 
 ## Engine facts worth not re-deriving

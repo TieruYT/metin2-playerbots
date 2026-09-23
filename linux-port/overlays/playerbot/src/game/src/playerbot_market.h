@@ -38,6 +38,9 @@ namespace
 #if defined(PLAYERBOT_ENGINE_MT2009) && defined(ENABLE_IKASHOP_RENEWAL)
 	bool ManagePlayerBotOfflineShopping(LPCHARACTER, TPlayerBotAIState&, DWORD);
 	void AddPlayerBotOfflineLedger(DWORD&, DWORD&);
+	bool FindPlayerBotFarOfflinePick(LPCHARACTER, TPlayerBotAIState&, long);
+	bool HandPlayerBotFarPickToBuyer(LPCHARACTER, TPlayerBotAIState&, DWORD);
+	void ClaimPlayerBotFarLine(DWORD, DWORD, DWORD);
 #endif
 	// Defined with the chat trade, after this file: the bot that found the
 	// market empty of what it came for asks the world channel.
@@ -621,6 +624,14 @@ namespace
 		{
 			if (!IsPlayerBotM2Map(ch->GetMapIndex()))
 			{
+#if defined(PLAYERBOT_ENGINE_MT2009) && defined(ENABLE_IKASHOP_RENEWAL)
+				// Across. On this engine the walk was made for one line of one
+				// stand (StartPlayerBotFarMarketWalk), and the classic browse
+				// below has nothing to read here: a keeper's goods are a shop
+				// entity, not a counter it stands behind. The buyer takes it on.
+				EndPlayerBotMarketTrip(ch, state, "arrived");
+				return HandPlayerBotFarPickToBuyer(ch, state, dwNow);
+#endif
 				state.bMarketToJoan = false;
 				state.dwMarketTripUntil = dwNow + PLAYERBOT_MARKET_TRIP_TIMEOUT;
 				state.dwMarketBrowseTime = dwNow;
@@ -729,6 +740,57 @@ namespace
 		return true;
 	}
 
+#if defined(PLAYERBOT_ENGINE_MT2009) && defined(ENABLE_IKASHOP_RENEWAL)
+	// The one walk the offline buyer cannot make: from a second village over
+	// to its own first village's stands, and only for a line one of them holds
+	// that this bot would buy and can pay for - the same rule the buyer asks
+	// in reach, applied to the far market first (FindPlayerBotFarOfflinePick).
+	// The walk keeps "Joan first"'s own conditions: not for a bot on its way
+	// to the frontier or the Monkey Dungeon, nor one serving a person.
+	bool StartPlayerBotFarMarketWalk(LPCHARACTER ch, TPlayerBotAIState& state, DWORD dwNow,
+			long pitchX, long pitchY)
+	{
+		if (!IsPlayerBotM2Map(ch->GetMapIndex()) || dwNow < state.dwMarketM2AllowedUntil ||
+				state.lDepartureMap != 0 || GetPlayerBotFrontierMapForLevel(ch) != 0 ||
+				state.bLongTermGoal == BOT_GOAL_HORSE ||
+				(ch->GetParty() && IsPlayerBotHumanLedParty(ch->GetParty())) ||
+				IsPlayerBotHeldForCompany(ch) || !PlayerBotWantsAnythingFromMarket(ch))
+			return false;
+		const int owner = playerbot_empire_rules::GetMapOwnerEmpire(ch->GetMapIndex());
+		const long firstVillage = playerbot_empire_rules::GetHomeMap(owner,
+				playerbot_empire_rules::MAP_ROLE_M1);
+		if (!FindPlayerBotFarOfflinePick(ch, state, firstVillage))
+			return false;
+		// The stands are the first channel's (playerbot_channel_rules.h): a bot
+		// on the second asks to be moved, as the buyer does for a line in
+		// reach, and looks again once it is there.
+		if (CPlayerBotManager::instance().IsChannelTableMode() &&
+				g_bChannel != playerbot_channel_rules::SHOP_CHANNEL)
+		{
+			state.offlineShop.farPickOwner = state.offlineShop.farPickItem = 0;
+			if (playerbot_offline::Due(dwNow, state.dwNextBuyChannelRequestTime))
+			{
+				state.dwNextBuyChannelRequestTime = dwNow + PLAYERBOT_SHOP_CHANNEL_BUY_REQUEST_GAP_MS;
+				if (CPlayerBotManager::instance().RequestShopChannel(ch->GetPlayerID()))
+					PlayerBotLogThrottled("shop_channel_far_buy", dwNow,
+							"PLAYERBOT_CHANNEL: pid=%u name=%s asks for the shop channel to buy in its first village (here %u)",
+							ch->GetPlayerID(), ch->GetName(), (unsigned int)g_bChannel);
+			}
+			return false;
+		}
+		state.bMarketTrip = true;
+		state.bMarketToJoan = true;
+		state.dwMarketTripUntil = dwNow + PLAYERBOT_MARKET_JOAN_WALK_TIMEOUT;
+		state.dwMarketBrowseTime = 0;
+		state.dwMarketStallVID = 0;
+		ClaimPlayerBotFarLine(state.offlineShop.farPickItem, ch->GetPlayerID(), dwNow);
+		sys_log(0, "PLAYERBOT_MARKET: looking in Joan first pid=%u name=%s pos=(%ld,%ld) owner=%u item=%u",
+				ch->GetPlayerID(), ch->GetName(), ch->GetX(), ch->GetY(),
+				state.offlineShop.farPickOwner, state.offlineShop.farPickItem);
+		return ContinuePlayerBotMarketTrip(ch, state, dwNow, pitchX, pitchY);
+	}
+#endif
+
 	bool ManagePlayerBotShopping(LPCHARACTER ch, TPlayerBotAIState& state, DWORD dwNow)
 	{
 		if (!ch || !ch->IsItemLoaded() || ch->IsDead())
@@ -790,6 +852,19 @@ namespace
 		const bool haveStallInReach = FindPlayerBotStallPick(ch, pick);
 		if (state.bVisitingShop)
 			return haveStallInReach && BuyFromPlayerBotStall(ch, pick);
+#if defined(PLAYERBOT_ENGINE_MT2009) && defined(ENABLE_IKASHOP_RENEWAL)
+		// On this engine the bots' counters are offline shops, and the buyer
+		// at the top of this pass reads every one in reach on its own clock.
+		// The trip below looks only for a keeper standing behind a counter -
+		// there are none - so it ended "nothing_on_offer" every time: 4 406
+		// trips in an hour on one core of the test world, the buyer held off
+		// for as long as each walk lasted, and 576 of them a crossing from the
+		// second village to Joan and back, one in ten with a purchase on the
+		// way (23 September). What is left for this pass is the walk the buyer
+		// cannot make.
+		if (!haveStallInReach)
+			return StartPlayerBotFarMarketWalk(ch, state, dwNow, pitchX, pitchY);
+#endif
 
 		// Something in reach, or a reason to go and look: either way it is a trip,
 		// so the bot walks up to the counter instead of buying from twenty metres

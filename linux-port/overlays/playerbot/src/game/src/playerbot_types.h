@@ -1181,6 +1181,14 @@ namespace
 	const BYTE PLAYERBOT_SHOP_UNSOLD_SCRAP_MAX_REFINE = PLAYERBOT_MERCHANT_MAX_REFINE;
 	// The ride from Bokjung's square to the Joan gate is 38 km.
 	const DWORD PLAYERBOT_MARKET_JOAN_WALK_TIMEOUT = 300000;
+	// On the 2.x line the walk over is made for a line a first village's
+	// stand holds, found before setting off (StartPlayerBotFarMarketWalk):
+	// the lines read per look, on a cursor of their own - the browse of the
+	// stands in reach reads sixty-four too, and each line read builds a
+	// comparison item - and the time the buyer then has from the gate to the
+	// stand, which is the town's width on a horse with a margin.
+	const unsigned int PLAYERBOT_MARKET_FAR_LOOK_LINES = 64;
+	const DWORD PLAYERBOT_MARKET_FAR_PICK_WALK_MS = 120000;
 	// And how far away the stalls may be before it is not worth setting off:
 	// the whole of the town, so that a bot which has just finished its errands
 	// goes shopping while one that is out hunting stays where it is instead of

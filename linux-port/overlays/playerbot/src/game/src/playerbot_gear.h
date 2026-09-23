@@ -39,6 +39,10 @@ namespace
 	void GetPlayerBotNpcApproach(DWORD playerID, long npcX, long npcY, DWORD salt,
 			long& approachX, long& approachY);
 
+	// Defined with the bag rules (playerbot_economy.h): an item's own stack
+	// limit, which on mt2009 is the proto's and not always two hundred.
+	int PlayerBotMaxStack(LPITEM item);
+
 	// Defined with the chest pass (playerbot_consumables.h): a box the engine
 	// refused this bot, remembered by bot and vnum. The two passes here that
 	// open a starter-chain chest by themselves ask it before they try and tell
@@ -2868,21 +2872,43 @@ namespace
 			return false;
 		DWORD movedUnits = 0;
 		DWORD removedStacks = 0;
+		// Only a pass that frees a cell is worth its moves. A bot drinks from
+		// the first stack of a kind, so a pass that topped the first stack up
+		// from the last one ran again as soon as a few potions had gone: 29 000
+		// passes an hour on one core of the test world, "freed_stacks=0" on
+		// nearly every one, and every unit moved a save for the db core (23
+		// September). Filling from the front leaves the fewest stacks there
+		// can be, so a kind is poured only while its units would fit in fewer
+		// stacks than it has from this one on.
 		for (WORD destinationCell = 0; destinationCell < PLAYERBOT_BAG_CELLS; ++destinationCell)
 		{
 			LPITEM destination = ch->GetInventoryItem(destinationCell);
-			if (!destination || destination->GetCount() >= 200 ||
+			if (!destination ||
 					GetPlayerBotPotionSupply(destination->GetVnum()) == PLAYERBOT_POTION_SUPPLY_NONE)
 				continue;
+			const DWORD maxStack = (DWORD)std::max(1, PlayerBotMaxStack(destination));
+			if ((DWORD)destination->GetCount() >= maxStack)
+				continue;
+			DWORD units = (DWORD)destination->GetCount(), stacks = 1;
+			for (WORD cell = destinationCell + 1; cell < PLAYERBOT_BAG_CELLS; ++cell)
+			{
+				LPITEM other = ch->GetInventoryItem(cell);
+				if (!CanMergePlayerBotPotionStacks(destination, other))
+					continue;
+				units += (DWORD)other->GetCount();
+				++stacks;
+			}
+			if (stacks <= (units + maxStack - 1) / maxStack)
+				continue;
 			for (WORD sourceCell = destinationCell + 1;
-					sourceCell < PLAYERBOT_BAG_CELLS && destination->GetCount() < 200;
+					sourceCell < PLAYERBOT_BAG_CELLS && (DWORD)destination->GetCount() < maxStack;
 					++sourceCell)
 			{
 				LPITEM source = ch->GetInventoryItem(sourceCell);
 				if (!CanMergePlayerBotPotionStacks(destination, source))
 					continue;
 				const DWORD sourceCount = source->GetCount();
-				const DWORD transfer = std::min<DWORD>(200 - destination->GetCount(), sourceCount);
+				const DWORD transfer = std::min<DWORD>(maxStack - (DWORD)destination->GetCount(), sourceCount);
 				if (transfer == 0)
 					continue;
 				destination->SetCount(destination->GetCount() + transfer);

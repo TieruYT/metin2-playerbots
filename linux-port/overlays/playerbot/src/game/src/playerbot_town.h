@@ -3941,45 +3941,17 @@ namespace
 		// n * 50 * sqrt(2) at the corners, so a tenth of the arrival distance in
 		// cells keeps the snapped goal comfortably inside it.
 		const int snapCells = std::max(2, std::min(16, arrivalDistance / 100));
-		// A goal on ground the bot's terrain does not join is not walked to at
-		// all: the planner answers "unreachable" three times, the service
-		// rescue relocates the bot on the sixth, and the misc merchant of
-		// Bokjung - whose approach point sits on a strip cut off from the
-		// square - cost 260 such rescues in a morning, six failed plans each.
-		// The nearest cell of the bot's own component inside the arrival
-		// radius is where the rescue would have put it; ask for it first.
+		// A goal on ground the bot's terrain does not join is walked to the
+		// nearest cell of the bot's own component inside the arrival radius
+		// instead (FindPlayerBotReachableGoal, which the walk to the Rybak
+		// shares) - the misc merchant of Bokjung cost 260 service rescues in a
+		// morning before this.
 		long walkX = goalX, walkY = goalY;
-		{
-			CPlayerBotNavigation& navigation = CPlayerBotNavigation::instance(ch->GetMapIndex());
-			if (navigation.Init(ch->GetMapIndex()) &&
-					!navigation.CanReach(ch->GetX(), ch->GetY(), goalX, goalY))
-			{
-				const DWORD own = navigation.GetComponentAtWorld(ch->GetX(), ch->GetY());
-				// The ring's corners reach radius * 50 * sqrt(2), and the arrival
-				// test at the top is against the goal, not the moved one: a
-				// corner cell past the radius was walked to and never "arrived".
-				const int radius = std::max(2, arrivalDistance / 71);
-				long bestDistance = -1;
-				for (int dy = -radius; dy <= radius && own != 0; ++dy)
-					for (int dx = -radius; dx <= radius; ++dx)
-					{
-						const long cx = goalX + dx * 50, cy = goalY + dy * 50;
-						const long distance = dx * dx + dy * dy;
-						if (bestDistance >= 0 && distance >= bestDistance)
-							continue;
-						if (navigation.GetComponentAtWorld(cx, cy, 0) != own)
-							continue;
-						bestDistance = distance;
-						walkX = cx;
-						walkY = cy;
-					}
-				if (bestDistance >= 0)
-					PlayerBotLogThrottled("town_goal_reachable", dwNow,
-							"PLAYERBOT_TOWN: goal moved onto reachable ground pid=%u name=%s phase=%u goal=(%ld,%ld) walk=(%ld,%ld)",
-							ch->GetPlayerID(), ch->GetName(), (unsigned int)state.bTownVisitPhase,
-							goalX, goalY, walkX, walkY);
-			}
-		}
+		if (FindPlayerBotReachableGoal(ch, goalX, goalY, arrivalDistance, walkX, walkY))
+			PlayerBotLogThrottled("town_goal_reachable", dwNow,
+					"PLAYERBOT_TOWN: goal moved onto reachable ground pid=%u name=%s phase=%u goal=(%ld,%ld) walk=(%ld,%ld)",
+					ch->GetPlayerID(), ch->GetName(), (unsigned int)state.bTownVisitPhase,
+					goalX, goalY, walkX, walkY);
 		const bool moveAccepted = MovePlayerBot(ch, walkX, walkY, dwNow,
 				snapCells, true, true, false, true);
 		if (!moveAccepted && state.bStuckCounter >= 6)

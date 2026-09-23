@@ -1490,8 +1490,19 @@ namespace
 		const int snapCells = needsTackle ? PLAYERBOT_FISHING_TACKLE_SNAP_CELLS : 16;
 		if (DISTANCE_APPROX(ch->GetX() - destX, ch->GetY() - destY) > arrive)
 		{
+			// The Rybak's approach point is drawn by pid round him, and for
+			// some pids it falls on ground the square does not join: the plan
+			// was "unreachable" three times and the session over in ten
+			// seconds, every session, for the same bots (OptimusPrime001 four
+			// times on 23 September). The purchase asks no distance of him, so
+			// the nearest cell of the bot's own ground inside his radius does.
+			long walkX = destX, walkY = destY;
+			if (needsTackle && FindPlayerBotReachableGoal(ch, destX, destY, arrive, walkX, walkY))
+				PlayerBotLogThrottled("fishing_tackle_reachable", dwNow,
+						"PLAYERBOT_FISHING: tackle approach moved onto reachable ground pid=%u name=%s goal=(%ld,%ld) walk=(%ld,%ld)",
+						ch->GetPlayerID(), ch->GetName(), destX, destY, walkX, walkY);
 			// Riding there is fine; the line simply cannot go in from a saddle.
-			if (MovePlayerBot(ch, destX, destY, dwNow, snapCells, true, true) ||
+			if (MovePlayerBot(ch, walkX, walkY, dwNow, snapCells, true, true) ||
 					state.bStuckCounter < PLAYERBOT_FISHING_STUCK_LIMIT)
 				return true;
 
