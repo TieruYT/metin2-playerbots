@@ -1647,7 +1647,8 @@ namespace
 	{
 		if (base == 0)
 			return 0;
-		const long long rate = std::max(1, CHARACTER_MANAGER::instance().GetMobGoldAmountRate(NULL));
+		// The world's rate, not a yang event's boost of it (playerbot_events.h).
+		const long long rate = std::max(1, GetPlayerBotPriceYangRate());
 		const size_t count = sizeof(PLAYERBOT_PRICE_RATE_POINTS) / sizeof(PLAYERBOT_PRICE_RATE_POINTS[0]);
 		const TPlayerBotPriceRatePoint& first = PLAYERBOT_PRICE_RATE_POINTS[0];
 		const TPlayerBotPriceRatePoint& last = PLAYERBOT_PRICE_RATE_POINTS[count - 1];
@@ -1679,7 +1680,7 @@ namespace
 	// the version and the rate use.
 	DWORD GetPlayerBotPriceGeneration()
 	{
-		const int rate = std::max(1, CHARACTER_MANAGER::instance().GetMobGoldAmountRate(NULL));
+		const int rate = std::max(1, GetPlayerBotPriceYangRate());
 		return (PLAYERBOT_PRICE_TABLE_VERSION * 1000000UL + (DWORD)std::min(rate, 999999)) ^
 				((DWORD)(GetPlayerBotInflationPercent() / PLAYERBOT_INFLATION_STEP_PERCENT) << 24);
 	}

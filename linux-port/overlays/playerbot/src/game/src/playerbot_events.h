@@ -163,6 +163,29 @@ namespace {
 		return "";
 	}
 
+	// The yang rate the bots' prices are set by: the world's own, never an
+	// event's boost of it. While a yang event runs the live mob_gold is the
+	// base times (100 + value) percent and the base waits in its own flag, so
+	// pricing by the live flag made every counter stocked during the event ask
+	// double ("Raty eventowe maja wplyw na ceny na rynku", Iwakura, 23
+	// September) and made the market forget what it had learned twice - at the
+	// event's start and at its end (ForgetPlayerBotPricesOnRateChange). Asked
+	// for every price, so it is read once a second.
+	int GetPlayerBotPriceYangRate()
+	{
+		static DWORD s_dwReadAt = 0;
+		static int s_iRate = 0;
+		const DWORD now = get_dword_time();
+		if (s_iRate == 0 || now - s_dwReadAt >= 1000)
+		{
+			const int base = quest::CQuestManager::instance().GetEventFlag(
+					PlayerBotEventBaseFlag(playerbot_events::KIND_YANG, false));
+			s_iRate = base > 0 ? base : CHARACTER_MANAGER::instance().GetMobGoldAmountRate(NULL);
+			s_dwReadAt = now;
+		}
+		return s_iRate;
+	}
+
 	// Player-visible, so Polish and ASCII-only like every bot string.
 	const char* PlayerBotEventRateWord(int kind)
 	{

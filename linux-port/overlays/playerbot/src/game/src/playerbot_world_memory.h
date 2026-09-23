@@ -310,7 +310,8 @@ namespace
 
 	void ForgetPlayerBotPricesOnRateChange()
 	{
-		const int rate = CHARACTER_MANAGER::instance().GetMobGoldAmountRate(NULL);
+		// A yang event is not a new market: the base rate, not the boost.
+		const int rate = GetPlayerBotPriceYangRate();
 		if (rate == s_iPlayerBotPriceRate)
 			return;
 		if (s_iPlayerBotPriceRate != 0)

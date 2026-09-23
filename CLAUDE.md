@@ -7734,6 +7734,19 @@ not in `data/`) reworked these point by point. What each hangs on:
   two days, 60% two minutes after the law is met), and on a world whose bots
   average fourteen most have not reached their lock (13-19, drawn per bot).
   Neither is a regression; how sticky a tier should be is his call.
+- **An event's boost is not the world's yang rate.** A yang event raises the
+  live `mob_gold` to the base times (100 + value) percent and keeps the base in
+  `m2_event_yang_base` (playerbot_events.h); every price the bots set read the
+  live flag, so a counter stocked during a +100% event asked double, and
+  `ForgetPlayerBotPricesOnRateChange` wiped the market's memory at the event's
+  start and again at its end ("Raty eventowe maja wplyw na ceny na rynku",
+  Iwakura, confirmed by Uxie; m2zip's own log on 23 September: "yang rate
+  changed from 200 to 400, forgetting asks=73 sales=28" at 07:49, the second
+  the event began). `GetPlayerBotPriceYangRate` is the base while one runs and
+  the live rate otherwise, read once a second, and the curve, the price
+  generation and the memory all ask it. Measured with a six-minute +100% event
+  on m2zip: mob_gold 200 -> 400, the base flag 200, no "yang rate changed" line
+  and no repricing.
 
 
 ## Engine facts worth not re-deriving
