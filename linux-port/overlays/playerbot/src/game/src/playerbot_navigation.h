@@ -311,7 +311,8 @@ namespace
 						mapIndex != PLAYERBOT_MAP_HWANG &&
 						mapIndex != PLAYERBOT_MAP_FOREST &&
 						mapIndex != PLAYERBOT_MAP_RED_FOREST &&
-						mapIndex != PLAYERBOT_MAP_DEMON_TOWER)
+						mapIndex != PLAYERBOT_MAP_DEMON_TOWER &&
+						mapIndex != PLAYERBOT_MAP_FIRE_LAND)
 					return false;
 
 				if (m_initialized && m_mapIndex == mapIndex)

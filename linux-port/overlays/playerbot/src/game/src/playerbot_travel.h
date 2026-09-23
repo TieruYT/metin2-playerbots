@@ -491,6 +491,14 @@ namespace
 		// below it as the other half of the draw. Neither carries a stone.txt,
 		// so a Metin hunter by role keeps Sohan - the same rule the Spider
 		// Dungeon already lives under.
+		// Sixty-six to eighty: Doyyumhwaji takes a third of the draw, by a
+		// hash of its own so that nobody else's answer moves. Its 69 to 72 lie
+		// between the Forest's and the Red Forest's, on a map richer than both
+		// together, and it keeps its stones, so a Metin hunter may go too.
+		// Past eighty its monsters are too far under the bot to pay.
+		if (level >= PLAYERBOT_FIRE_LAND_MIN_LEVEL && level <= PLAYERBOT_FIRE_LAND_MAX_LEVEL &&
+				PlayerBotNavHash(ch->GetPlayerID() ^ 0x464c414dU) % 3U == 0)
+			return PLAYERBOT_MAP_FIRE_LAND;
 		if (level >= PLAYERBOT_RED_FOREST_MIN_LEVEL)
 		{
 			switch (draw % 3U)
@@ -565,6 +573,11 @@ namespace
 	// is allowed to mean - see IsPlayerBotGrindAllowedHere.
 	bool PlayerBotCoreHasAnyFrontier()
 	{
+		// Only the frontiers that take a bot from the second village's ceiling
+		// on. The forests and Doyyumhwaji are for sixty-two and up, so a core
+		// hosting nothing else - on the r40250 line the forests stand on
+		// Shinsoo's core and Doyyumhwaji on Jinno's - still has nowhere for a
+		// bot of thirty-six, and counting them here would wedge it there.
 		static const long candidates[] = {
 			PLAYERBOT_MAP_ORC_VALLEY, PLAYERBOT_MAP_DESERT, PLAYERBOT_MAP_SOHAN,
 			PLAYERBOT_MAP_SPIDER_V1, PLAYERBOT_MAP_SPIDER_V2, PLAYERBOT_MAP_HWANG

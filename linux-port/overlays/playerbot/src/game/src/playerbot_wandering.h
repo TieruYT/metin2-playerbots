@@ -914,6 +914,47 @@ namespace
 				{ 1092600,   15100, 73, 255, false, 0 },
 				{ 1092600,   42500, PLAYERBOT_RED_FOREST_MIN_LEVEL, 255, false, 0 }
 			};
+			// Doyyumhwaji (62). Its own regen and server_attr (23 September), the
+			// Forest's rule: the densest 6400-unit cells first, each hub on the
+			// real spawn point nearest the cell's centre that stands on the map's
+			// one walkable area with open ground round it and outside the safe
+			// zone, the band the cell's median monster level less three. The
+			// east third, where Jinno's gate opens, is sparser and was measured
+			// on its own, or every hub would be a half-map walk from it. The
+			// last row is the Flame King (2206, level 73, a boss of a hundred
+			// thousand), whom special_spawns.txt puts at one of three points
+			// every two hours or so with an escort: a party's raid, walked to
+			// wherever he stands.
+			const TPlayerBotHuntingHub fireLandHubs[] = {
+				{  631200,  719000, 67, 255, false, 0 },
+				{  610900,  681800, 68, 255, false, 0 },
+				{  656000,  732300, 67, 255, false, 0 },
+				{  603100,  688200, 68, 255, false, 0 },
+				{  630600,  660000, 67, 255, false, 0 },
+				{  605200,  720700, 67, 255, false, 0 },
+				{  681900,  752900, PLAYERBOT_FIRE_LAND_MIN_LEVEL, 255, false, 0 },
+				{  661700,  753400, PLAYERBOT_FIRE_LAND_MIN_LEVEL, 255, false, 0 },
+				{  597300,  702400, 68, 255, false, 0 },
+				{  611400,  701100, 68, 255, false, 0 },
+				{  603900,  662900, 67, 255, false, 0 },
+				{  637300,  681500, 67, 255, false, 0 },
+				{  669600,  726300, 67, 255, false, 0 },
+				{  676500,  630900, PLAYERBOT_FIRE_LAND_MIN_LEVEL, 255, false, 0 },
+				{  721400,  636900, 67, 255, false, 0 },
+				{  600100,  681900, 68, 255, false, 0 },
+				{  631500,  687200, 67, 255, false, 0 },
+				{  656000,  714100, 67, 255, false, 0 },
+				{  623100,  725200, 67, 255, false, 0 },
+				{  603600,  732600, 67, 255, false, 0 },
+				{  706300,  679700, PLAYERBOT_FIRE_LAND_MIN_LEVEL, 255, false, 0 },
+				{  687400,  701100, PLAYERBOT_FIRE_LAND_MIN_LEVEL, 255, false, 0 },
+				{  700100,  701100, PLAYERBOT_FIRE_LAND_MIN_LEVEL, 255, false, 0 },
+				{  727200,  643300, 67, 255, false, 0 },
+				{  718800,  668000, 67, 255, false, 0 },
+				{  714100,  714000, 67, 255, false, 0 },
+				{  719300,  683000, PLAYERBOT_FIRE_LAND_MIN_LEVEL, 255, false, 0 },
+				{  598000,  682200, PLAYERBOT_FIRE_LAND_MIN_LEVEL, 255, true, 2206 }
+			};
 			// The Demon Tower (66). Only two clusters carry 1001-1004 at all, and
 			// this is a map a bot visits for one specimen rather than lives on,
 			// so two hubs is the whole table.
@@ -1096,6 +1137,11 @@ namespace
 			{
 				hubs = hwangHubs;
 				hubCount = sizeof(hwangHubs) / sizeof(hwangHubs[0]);
+			}
+			else if (ch->GetMapIndex() == PLAYERBOT_MAP_FIRE_LAND)
+			{
+				hubs = fireLandHubs;
+				hubCount = sizeof(fireLandHubs) / sizeof(fireLandHubs[0]);
 			}
 			const DWORD pid = ch->GetPlayerID();
 			// A stone anybody has seen on this map comes before any hub while the

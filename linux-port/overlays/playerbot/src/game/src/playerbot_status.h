@@ -106,6 +106,10 @@ namespace
 			case PLAYERBOT_MAP_SPIDER_V1: return "do Lochu Pajakow";
 			case PLAYERBOT_MAP_SPIDER_V2: return "do Lochu Pajakow 2";
 			case PLAYERBOT_MAP_HWANG: return "do Swiatyni Hwang";
+			case PLAYERBOT_MAP_FOREST: return "do Lasu";
+			case PLAYERBOT_MAP_RED_FOREST: return "do Czerwonego Lasu";
+			case PLAYERBOT_MAP_DEMON_TOWER: return "do Wiezy Demonow";
+			case PLAYERBOT_MAP_FIRE_LAND: return "do Doyyumhwaji";
 			default: return "";
 		}
 	}

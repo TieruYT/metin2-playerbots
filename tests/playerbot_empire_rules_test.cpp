@@ -340,9 +340,22 @@ int main()
 				fp.x == 221900 && fp.y == 502700);
 		assert(GetFrontierGate(EMPIRE_CHUNJO, 64, fp) && fp.x == 269100 && fp.y == 740200);
 		assert(GetFrontierGate(EMPIRE_CHUNJO, 63, fp) && fp.x == 219700 && fp.y == 499900);
+		// Doyyumhwaji, base (588800,614400): Town.txt (106,1419), (90,78),
+		// (1419,754) and the warp NPCs 10008 (103,1444), 10010 (76,60) and
+		// 10012 (1458,751) of its npc.txt.
+		assert(GetTeleportArrival(EMPIRE_SHINSOO, TELEPORT_FIRE_LAND, fp) &&
+				fp.x == 599400 && fp.y == 756300);
+		assert(GetTeleportArrival(EMPIRE_CHUNJO, TELEPORT_FIRE_LAND, fp) &&
+				fp.x == 597800 && fp.y == 622200);
+		assert(GetTeleportArrival(EMPIRE_JINNO, TELEPORT_FIRE_LAND, fp) &&
+				fp.x == 730700 && fp.y == 689800);
+		assert(GetFrontierGate(EMPIRE_SHINSOO, 62, fp) && fp.x == 599100 && fp.y == 758800);
+		assert(GetFrontierGate(EMPIRE_CHUNJO, 62, fp) && fp.x == 596400 && fp.y == 620400);
+		assert(GetFrontierGate(EMPIRE_JINNO, 62, fp) && fp.x == 734600 && fp.y == 689500);
+		assert(GetTeleportDestinationMap(TELEPORT_FIRE_LAND, EMPIRE_SHINSOO) == 62);
 
-		const long frontiers[3] = { 64, 63, 61 };
-		for (int i = 0; i < 3; ++i)
+		const long frontiers[4] = { 64, 63, 61, 62 };
+		for (int i = 0; i < 4; ++i)
 		{
 			ETeleportDestination where;
 			assert(GetFrontierTeleportDestination(frontiers[i], where));

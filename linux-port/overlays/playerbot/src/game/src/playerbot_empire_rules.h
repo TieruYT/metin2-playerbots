@@ -507,6 +507,7 @@ namespace playerbot_empire_rules
 		TELEPORT_ORC_VALLEY,      // 64
 		TELEPORT_DESERT,          // 63
 		TELEPORT_SOHAN,           // 61
+		TELEPORT_FIRE_LAND,       // 62, Doyyumhwaji: the Teleporter's second page
 		TELEPORT_DESTINATIONS
 	};
 
@@ -526,11 +527,18 @@ namespace playerbot_empire_rules
 		// constant. Town.txt: guild_01 base (128000,0) + (74,55),
 		// guild_02 base (179200,0) + (427,92), guild_03 base (230400,0) +
 		// (405,127).
+		//
+		// Doyyumhwaji is metin2_map_n_flame_01's Town.txt the same way, base
+		// (588800,614400): Shinsoo (106,1419) in the north-west corner, Chunjo
+		// (90,78) in the south-west, Jinno (1419,754) on the east edge. All
+		// three stand on open ground of the map's one walkable area and none in
+		// its safe zone (server_attr, 23 September).
 		static const TPoint table[TELEPORT_DESTINATIONS][3] = {
 			{ { 135400, 5500 },   { 221900, 9200 },   { 270900, 12700 } },
 			{ { 402100, 673900 }, { 270400, 739900 }, { 321300, 808000 } },
 			{ { 217800, 627200 }, { 221900, 502700 }, { 344000, 502500 } },
 			{ { 434200, 290600 }, { 375200, 174900 }, { 491800, 173600 } },
+			{ { 599400, 756300 }, { 597800, 622200 }, { 730700, 689800 } },
 		};
 		if (empire < EMPIRE_SHINSOO || empire > EMPIRE_JINNO)
 			return false;
@@ -548,11 +556,12 @@ namespace playerbot_empire_rules
 			case TELEPORT_ORC_VALLEY: return 64;
 			case TELEPORT_DESERT: return 63;
 			case TELEPORT_SOHAN: return 61;
+			case TELEPORT_FIRE_LAND: return 62;
 			default: return 0;
 		}
 	}
 
-	// The same three maps from the other side: which destination a shared map
+	// The same four maps from the other side: which destination a shared map
 	// is, so a caller holding a map index can ask the table above for the
 	// arrival of the kingdom it is carrying. Everything else - the two Spider
 	// Dungeons and Hwang - has one entry point for all three kingdoms and is
@@ -564,6 +573,7 @@ namespace playerbot_empire_rules
 			case 64: out = TELEPORT_ORC_VALLEY; return true;
 			case 63: out = TELEPORT_DESERT; return true;
 			case 61: out = TELEPORT_SOHAN; return true;
+			case 62: out = TELEPORT_FIRE_LAND; return true;
 			default: return false;
 		}
 	}
@@ -571,8 +581,9 @@ namespace playerbot_empire_rules
 	// Where a kingdom leaves a shared map: its own warp NPC, a few steps from
 	// where that kingdom's characters are put down. npc.txt gives three per
 	// map and they pair with the three Town.txt entries above - the valley and
-	// Sohan number them 10007/10009/10011 for Shinsoo/Chunjo/Jinno and the
-	// desert 10008/10010/10012.
+	// Sohan number them 10007/10009/10011 for Shinsoo/Chunjo/Jinno, the desert
+	// and Doyyumhwaji 10008/10010/10012. Doyyumhwaji's three name the second
+	// villages (Jayang, Bokjung, Bakra), as the desert's do.
 	//
 	// This is the other half of the arrival table. Until it existed every bot
 	// of every kingdom walked to Chunjo's gate to go home, which on the far
@@ -588,11 +599,13 @@ namespace playerbot_empire_rules
 		static const TPoint valley[3] = { { 403200, 672900 }, { 269100, 740200 }, { 320000, 809200 } };
 		static const TPoint desert[3] = { { 215700, 629000 }, { 219700, 499900 }, { 344000, 500000 } };
 		static const TPoint sohan[3]  = { { 433600, 295100 }, { 374000, 181900 }, { 497600, 168800 } };
+		static const TPoint fireLand[3] = { { 599100, 758800 }, { 596400, 620400 }, { 734600, 689500 } };
 		switch (mapIndex)
 		{
 			case 64: out = valley[empire - 1]; return true;
 			case 63: out = desert[empire - 1]; return true;
 			case 61: out = sohan[empire - 1]; return true;
+			case 62: out = fireLand[empire - 1]; return true;
 			default: return false;
 		}
 	}

@@ -2420,6 +2420,19 @@ namespace
 	const long PLAYERBOT_MAP_DEMON_TOWER = 66;
 	const long PLAYERBOT_MAP_FOREST = 67;
 	const long PLAYERBOT_MAP_RED_FOREST = 68;
+	// Doyyumhwaji, the land of fire (metin2_map_n_flame_01), moved off game2
+	// for the same reason the three above were. Read out of its own files on
+	// the 2.x line (23 September): 783 regen lines carry about 3 400 monsters
+	// of 69 to 72 - Sluga Walczacego Tygrysa (2201) and Ognisty Duch (2202) of
+	// 69, Walczacy Tygrys (2203) of 70, Plomien (2204) of 71 and Ognisty
+	// Wojownik (2205) of 72, every one of the FIRE race - so it fills the band
+	// between the Forest (65-71) and the Red Forest (74-82) and is richer than
+	// both together. boss.txt puts two elites there every half hour with an
+	// escort, Piekielny Zarlacz Dusz (2281, 71) and Plomienny Egzekutor (2282,
+	// 72); stone.txt four Metins of Murder (8014, 70) and thirteen ore veins.
+	// Each kingdom has its own entrance and its own gate home
+	// (playerbot_empire_rules.h), like the valley, the desert and Sohan.
+	const long PLAYERBOT_MAP_FIRE_LAND = 62;
 	// The Spider Dungeon is entered from the desert, the way the game has it:
 	// NPC 10016 "Kuahlo Dong" in the desert's bottom-right corner (cell 1425,
 	// 1477 of metin2_map_n_desert_01) sends a character to (600, 4960) in V1,
@@ -2489,7 +2502,8 @@ namespace
 		{ 64, PLAYERBOT_RACE_ORC, 63 },     // Orc Valley: 35% of it is MILGYO
 		{ 65, PLAYERBOT_RACE_MILGYO, 68 },  // Hwang
 		// 63 Yongbi Desert (DESERT/INSECT), 104 and 71 the Spider Dungeons
-		// (INSECT): no row, because no line reaches those races.
+		// (INSECT), 62 Doyyumhwaji (every monster FIRE): no row, because no
+		// line reaches those races.
 	};
 
 	// The race a map pays for, and how much of the map it is. Zero percent means
@@ -2667,6 +2681,20 @@ namespace
 	const long PLAYERBOT_RED_FOREST_EXIT_Y = 72425;
 	// 74 to 82 (Czerw. Duch Drzewa through Czerwone Zle Drzewo).
 	const BYTE PLAYERBOT_RED_FOREST_MIN_LEVEL = 71;
+	// Doyyumhwaji for a caller with no character: Chunjo's entrance and
+	// Chunjo's gate. Every bot asks the kingdom table instead
+	// (GetPlayerBotFrontierArrivalFor), which puts each kingdom down where the
+	// Teleporter puts its players. Both stand on open ground of the map's one
+	// walkable area, measured on its server_attr.
+	const long PLAYERBOT_FIRE_LAND_ARRIVAL_X = 597800;
+	const long PLAYERBOT_FIRE_LAND_ARRIVAL_Y = 622200;
+	const long PLAYERBOT_FIRE_LAND_EXIT_X = 596400;
+	const long PLAYERBOT_FIRE_LAND_EXIT_Y = 620400;
+	// Its weakest monster is 69; three under it is where the trip stops being
+	// a waste, the rule the Forest's band was drawn by. Eight over its
+	// strongest is where the Red Forest pays better.
+	const BYTE PLAYERBOT_FIRE_LAND_MIN_LEVEL = 66;
+	const BYTE PLAYERBOT_FIRE_LAND_MAX_LEVEL = 80;
 	// The Demon Tower is not a frontier and has no hub table: a bot goes there
 	// for the Biologist's level-50 specimen and comes back. 1001-1004 stand in
 	// two clusters and this is the denser one.
@@ -2695,6 +2723,7 @@ namespace
 			case PLAYERBOT_MAP_FOREST: outX = PLAYERBOT_FOREST_ARRIVAL_X; outY = PLAYERBOT_FOREST_ARRIVAL_Y; return true;
 			case PLAYERBOT_MAP_RED_FOREST: outX = PLAYERBOT_RED_FOREST_ARRIVAL_X; outY = PLAYERBOT_RED_FOREST_ARRIVAL_Y; return true;
 			case PLAYERBOT_MAP_DEMON_TOWER: outX = PLAYERBOT_DEMON_TOWER_ARRIVAL_X; outY = PLAYERBOT_DEMON_TOWER_ARRIVAL_Y; return true;
+			case PLAYERBOT_MAP_FIRE_LAND: outX = PLAYERBOT_FIRE_LAND_ARRIVAL_X; outY = PLAYERBOT_FIRE_LAND_ARRIVAL_Y; return true;
 			default: return false;
 		}
 	}
@@ -2712,6 +2741,7 @@ namespace
 			case PLAYERBOT_MAP_RED_FOREST: outX = PLAYERBOT_RED_FOREST_EXIT_X; outY = PLAYERBOT_RED_FOREST_EXIT_Y; return true;
 			case PLAYERBOT_MAP_DEMON_TOWER: outX = PLAYERBOT_DEMON_TOWER_EXIT_X; outY = PLAYERBOT_DEMON_TOWER_EXIT_Y; return true;
 			case PLAYERBOT_MAP_HWANG: outX = PLAYERBOT_HWANG_EXIT_X; outY = PLAYERBOT_HWANG_EXIT_Y; return true;
+			case PLAYERBOT_MAP_FIRE_LAND: outX = PLAYERBOT_FIRE_LAND_EXIT_X; outY = PLAYERBOT_FIRE_LAND_EXIT_Y; return true;
 			default: return false;
 		}
 	}
@@ -2732,7 +2762,8 @@ namespace
 				mapIndex == PLAYERBOT_MAP_DEMON_TOWER ||
 				mapIndex == PLAYERBOT_MAP_SOHAN || mapIndex == PLAYERBOT_MAP_SPIDER_V1 ||
 				mapIndex == PLAYERBOT_MAP_SPIDER_V2 || mapIndex == PLAYERBOT_MAP_HWANG ||
-				mapIndex == PLAYERBOT_MAP_FOREST || mapIndex == PLAYERBOT_MAP_RED_FOREST;
+				mapIndex == PLAYERBOT_MAP_FOREST || mapIndex == PLAYERBOT_MAP_RED_FOREST ||
+				mapIndex == PLAYERBOT_MAP_FIRE_LAND;
 	}
 
 	// Both Spider Dungeons: the ones reached across the desert and entered
@@ -2755,6 +2786,7 @@ namespace
 			case PLAYERBOT_MAP_FOREST: return "forest";
 			case PLAYERBOT_MAP_RED_FOREST: return "red_forest";
 			case PLAYERBOT_MAP_DEMON_TOWER: return "demon_tower";
+			case PLAYERBOT_MAP_FIRE_LAND: return "fire_land";
 			default: return "frontier";
 		}
 	}

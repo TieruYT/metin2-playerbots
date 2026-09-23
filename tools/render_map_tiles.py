@@ -60,6 +60,8 @@ MAPS = [
     (66, "metin2_map_deviltower1", 128000, 793600, 76800, 76800),
     (67, "metin2_map_trent", 281600, 0, 51200, 51200),
     (68, "metin2_map_trent02", 1049600, 0, 76800, 76800),
+    # Doyyumhwaji, opened to the bots in 2.1.1 (the 2.x line's server_attr).
+    (62, "metin2_map_n_flame_01", 588800, 614400, 153600, 153600),
 ]
 
 # Sand and dark earth rather than the old dark green. Two reasons, both about

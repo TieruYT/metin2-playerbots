@@ -92,9 +92,10 @@ MAPS_first="1 3 4 5 6 107 81 110 111 112 113 181 182 183 200 250 302 304"
 # its own core does not host, and every bot in this world lives on game1. The
 # Demon Tower is what the Biologist's level-50 specimen and the military horse
 # are behind; the two forests are the 65-71 and 74-82 ground this world had
-# nowhere else.
-MAPS_game1="21 23 24 25 26 61 63 64 65 66 67 68 69 70 71 104 108 109 79 216 217 73"
-MAPS_game2="41 43 44 45 46 62 72 90 208 301 303 351"
+# nowhere else. 62, Doyyumhwaji, followed them: its 69-72 fill the band between
+# the two forests, and each kingdom enters it through a gate of its own.
+MAPS_game1="21 23 24 25 26 61 62 63 64 65 66 67 68 69 70 71 104 108 109 79 216 217 73"
+MAPS_game2="41 43 44 45 46 72 90 208 301 303 351"
 
 # One world on one core, when the operator asks for it.
 #
@@ -116,7 +117,7 @@ M2_PLAYERBOT_WORLD_LAYOUT="${M2_PLAYERBOT_WORLD_LAYOUT:-split}"
 if [ "$M2_PLAYERBOT_WORLD_LAYOUT" = "unified" ]; then
   MAPS_game1="$MAPS_game1 1 3 4 5 41 43 44 45"
   MAPS_first="6 107 81 110 111 112 113 181 182 183 200 250 302 304"
-  MAPS_game2="46 62 72 90 208 301 303 351"
+  MAPS_game2="46 72 90 208 301 303 351"
   log "world layout: unified (all three kingdoms + frontier on game1)"
 else
   log "world layout: split (per-kingdom cores; Shinsoo/Jinno cap ~36)"

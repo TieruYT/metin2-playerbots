@@ -7563,6 +7563,76 @@ not in `data/`) reworked these point by point. What each hangs on:
   the item's (`PlayerBotMaxStack`). A kind is poured only while its units would
   fit in fewer stacks than it has from that cell on: 12.5 passes a minute
   afterwards, none of them freeing nothing.
+- **Doyyumhwaji is a frontier with a gate per kingdom, like the valley.**
+  Map 62 (`metin2_map_n_flame_01`, base 588800,614400, 24x24 sectors) moved
+  from game2 to game1 in the mt2009 `m2-render-config`, in both layouts, and
+  apply.sh needed nothing: its allow-list is every hosted map. Its Town.txt is
+  a common line and then Shinsoo, Chunjo, Jinno - the order checked against
+  the desert's, whose rows the AI has walked for months - and npc.txt puts
+  10008/10010/10012 beside the three, named after the second villages, so
+  `TELEPORT_FIRE_LAND` and `GetFrontierGate(62)` give each kingdom its own
+  entrance and its own way home. What stands there, read out of its own files
+  (the wiki's is today's Gameforge game): 783 regen lines, about 3 400 monsters
+  of 69-72, all FIRE (no race line pays, so no row in the race table); two
+  AGGR elites in boss.txt every 28-42 minutes (2281, 2282); four Metins of
+  Murder (8014); thirteen ore veins; and the Flame King (2206, level 73, boss)
+  from `special_spawns.txt` group "Pieklo", every 110-140 minutes at one of
+  three points - a party's raid row, walked to wherever he stands, because a
+  boss hub is the boss and not its table point. The materials are the tiger
+  minion's Tiger Fang (30042), the Fighting Tiger's Flaming Mane (30019), the
+  Flame's Dragon Scales (30367) and the Flame Warrior's Warrior Symbol (30091);
+  the elites drop all four. The draw sends a third of 66-80 there by a hash of
+  its own, so no other bot's frontier moves. server_attr says one walkable
+  area holding every free cell - five bands of ground between lava, joined by
+  narrow crossings - with 770 of the 783 regen points on it; the 27 hubs are
+  the densest 6400-unit cells, and the east third, where Jinno enters, was
+  measured on its own or every hub would be a half-map walk from its gate
+  (`scratchpad/flame_points.py` of session 82d3ab90). Two things not done on
+  purpose: `PlayerBotCoreHasAnyFrontier` does not count 62 or the forests - on
+  the r40250 line they stand on Jinno's and Shinsoo's cores, and counting a
+  66+ map there would wedge those kingdoms at 36 again - and the Teleporter's
+  second page costs a player three fares for 62, 66, 67 and 68 while a bot pays
+  one for all of them, as it did for the forests. The panel's tile was rendered
+  with `tools/render_map_tiles.py` (Pillow is a `pip install` away in
+  `m2-eterpack:dev`). Watched on m2zip with a one-shot self-test in a
+  deploy-only build (`scratchpad/make_selftest_fire.py`; no bot there is past
+  39, and levels are not raised by hand): from each kingdom's entrance the
+  navigation grid reached its gate, all 27 hubs and the Flame King's three
+  points; two Chunjo and two Shinsoo bots put down at their own entrances were
+  out of band, walked to their own gates and came out in Bokjung and Jayang
+  within four seconds. No Jinno bot of thirty stood free in a village, so
+  Jinno's gate was proved by the grid alone. Bots of 66+ hunting there have
+  not been watched: the test world has none.
+- **In the person's own village a party bot runs its town visit.** 2.0.49
+  stopped every errand of a bot serving a person, because the errand and the
+  follow pass took turns walking it away and back - and so a party of bots
+  never refined, sold or restocked while the party lasted ("if you don't quit
+  the party, the other 7 players won't upgrade their equipment", _johnlennon,
+  23 September). `IsPlayerBotBesidePersonInVillage` - a village map with a
+  person of the party on it - lets the town visit start and run again, and
+  `ManagePlayerBotFollowHumanLeader` does not fetch a bot on a visit back from
+  the anvil; the moment the person leaves the map the follow pass takes the
+  bot along, the visit paused as before. The stable, the Biologist, the
+  herbalist and the world travel stay off: each can take the bot off the map.
+  Compiled on both engines, not watched: the test world has no person to
+  stand in a party.
+- **A script that updates itself must be read whole before it runs.**
+  `update.sh` unpacked the package - which carries it - with
+  `open(target, 'wb')` (and busybox's unzip does the same), so the running sh
+  went on reading the NEW file from the old one's offset after the update had
+  finished: "Unterminated quoted string", code 2 (Tyrion, 23 September, on a
+  mock server). Replayed for all twelve sizes the script has shipped at
+  (2.0.13 to 2.1.0) in `python:3-slim`, where sh is dash: every one ended in a
+  syntax error or a stray command, and 2.0.91, 2.0.95 and 2.1.0 ran
+  `docker compose up -d --build` a second time out of the new file's middle.
+  Every file is written beside its place and renamed onto it now (the old
+  mode kept; a file system that refuses the rename gets the old in-place
+  write), and the dispatch is one brace group ending in `exit`, which the shell
+  has read to its end before any of it runs. The first update onto this
+  version is still run by the old script and still ends with that noise, after
+  the work is done; `scratchpad/upd_selfoverwrite/` of session 82d3ab90 is the
+  harness (a mock tree, the network overridden, the running script kept at the
+  size a player's is).
 
 
 ## Engine facts worth not re-deriving
