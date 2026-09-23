@@ -31,6 +31,9 @@
 // the way a shopping bot does, and the market's own helpers for what a bot
 // wants.
 
+// The players' names for items (FMS, 12D, bodzio ...) - pure, playerbot_conv_aliases.h.
+#include "playerbot_conv_aliases.h"
+
 namespace
 {
 	// One trade shout on the world channel this often, whoever it is from,
@@ -220,6 +223,139 @@ namespace
 		return strstr(name, foldedQuery) != NULL;
 	}
 
+	// ------------------------------------------------------------ the stall
+	//
+	// What a bot has up for sale, whichever engine holds it: the classic stall
+	// (CHARACTER::GetMyShop, the lines in vecShopOffers) or, on mt2009 with
+	// ENABLE_IKASHOP_RENEWAL, the Ikarus offline shop the classic one is moved
+	// to the moment it opens (ManagePlayerBotShopLifetime, "migrate_offline").
+	// Asking only GetMyShop() on that engine says "no stall" for every keeper -
+	// which is what the conversation and the shout answers did.
+	struct TPlayerBotStallLine
+	{
+		std::string name;
+		DWORD vnum;
+		DWORD skill;
+		long long price;
+		unsigned int count;
+		TPlayerBotStallLine() : vnum(0), skill(0), price(0), count(1) {}
+	};
+
+	struct TPlayerBotStall
+	{
+		bool open;
+		bool offline;
+		long mapIndex;
+		long x;
+		long y;
+		int channel;
+		std::vector<TPlayerBotStallLine> lines;
+		TPlayerBotStall() : open(false), offline(false), mapIndex(0), x(0), y(0), channel(0) {}
+	};
+
+	std::string GetPlayerBotStallLineName(const TItemTable* proto, DWORD skill)
+	{
+		if (skill)
+		{
+			const char* skillName = GetPlayerBotSkillName(skill);
+			if (skillName && strcmp(skillName, "?") != 0)
+				return std::string("Instr. ") + skillName;
+		}
+		return proto ? std::string(proto->szLocaleName) : std::string();
+	}
+
+	// `keeper` may be NULL (the offline shop stands whether or not its owner
+	// is in the world).
+	bool GetPlayerBotStall(DWORD pid, LPCHARACTER keeper, TPlayerBotStall& out)
+	{
+		out = TPlayerBotStall();
+		if (keeper && keeper->GetMyShop())
+		{
+			out.open = true;
+			out.mapIndex = keeper->GetMapIndex();
+			out.x = keeper->GetX();
+			out.y = keeper->GetY();
+			out.channel = g_bChannel;
+			TPlayerBotAIStateMap::const_iterator it = s_mapPlayerBotAIStates.find(pid);
+			if (it != s_mapPlayerBotAIStates.end())
+			{
+				for (size_t i = 0; i < it->second.vecShopOffers.size(); ++i)
+				{
+					const TPlayerBotShopOffer& offer = it->second.vecShopOffers[i];
+					LPITEM item = FindPlayerBotOfferItem(keeper, offer);
+					if (!item || !item->GetProto())
+						continue;
+					TPlayerBotStallLine line;
+					line.vnum = item->GetVnum();
+					line.skill = GetPlayerBotSkillBookSkillVnum(item);
+					line.name = GetPlayerBotStallLineName(item->GetProto(), line.skill);
+					line.price = (long long)offer.dwPrice;
+					line.count = offer.wCount ? offer.wCount : 1;
+					out.lines.push_back(line);
+				}
+			}
+			return true;
+		}
+#if defined(PLAYERBOT_ENGINE_MT2009) && defined(ENABLE_IKASHOP_RENEWAL)
+		auto shop = ikashop::GetManager().GetShopByOwnerID(pid);
+		if (shop && shop->GetDuration() > 0)
+		{
+			out.open = true;
+			out.offline = true;
+			out.mapIndex = shop->GetSpawn().map;
+			out.x = shop->GetSpawn().x;
+			out.y = shop->GetSpawn().y;
+			out.channel = shop->GetSpawn().channel;
+			for (const auto& entry : shop->GetItems())
+			{
+				const auto& shopItem = entry.second;
+				if (!shopItem)
+					continue;
+				const TItemTable* proto = shopItem->GetTable();
+				if (!proto)
+					continue;
+				TPlayerBotStallLine line;
+				line.vnum = shopItem->GetInfo().vnum;
+				if (proto->bType == ITEM_SKILLBOOK)
+					line.skill = line.vnum == 50300 ? (DWORD)shopItem->GetInfo().alSockets[0] : (DWORD)proto->alValues[0];
+				line.name = GetPlayerBotStallLineName(proto, line.skill);
+				line.price = (long long)shopItem->GetPrice().yang;
+				line.count = (unsigned int)shopItem->GetInfo().count;
+				out.lines.push_back(line);
+			}
+			return true;
+		}
+#endif
+		return false;
+	}
+
+	// A folded query against a stall line: the skill of a book ("ku aura"), or
+	// the name with the players' aliases ("fms", "12d", "bodzio").
+	bool PlayerBotStallLineMatches(const TPlayerBotStallLine& line, const std::vector<std::string>& candidates,
+			bool book, DWORD skillVnum)
+	{
+		if (book)
+			return line.skill != 0 && line.skill == skillVnum;
+		return playerbot_conv::ItemNameMatchesAny(playerbot_conv::FoldName(line.name.c_str()), candidates);
+	}
+
+	// "ku aura miecza" / "ksiege aura miecza": the skill a book query names, or 0.
+	DWORD GetPlayerBotStallBookQuery(const std::string& folded, std::string& rest)
+	{
+		rest = folded;
+		static const char* const kBook[] = { "ku ", "ksiega ", "ksiege ", "ksiegi ", "instr " };
+		for (size_t i = 0; i < sizeof(kBook) / sizeof(kBook[0]); ++i)
+		{
+			const size_t n = strlen(kBook[i]);
+			if (folded.compare(0, n, kBook[i]) == 0)
+			{
+				rest = folded.substr(n);
+				return FindPlayerBotSkillByName(rest.c_str());
+			}
+		}
+		return 0;
+	}
+
 	enum EPlayerBotTradeVerb
 	{
 		PLAYERBOT_TRADE_NONE,
@@ -279,7 +415,10 @@ namespace
 		size_t n = strlen(outQuery);
 		while (n > 0 && IsPlayerBotChatSeparator(outQuery[n - 1]))
 			outQuery[--n] = 0;
-		return n >= PLAYERBOT_TRADE_QUERY_MIN ? verb : PLAYERBOT_TRADE_NONE;
+		// "Kupie KK", "Sprzedam KD": two letters are too few to search names
+		// with, but a word of the players' dictionary names the item exactly.
+		return n >= PLAYERBOT_TRADE_QUERY_MIN || (n > 0 && playerbot_conv::IsItemAliasWord(outQuery))
+				? verb : PLAYERBOT_TRADE_NONE;
 	}
 
 	// "Kupie X": the nearest open counter with X on it answers with where and
@@ -287,55 +426,48 @@ namespace
 	bool AnswerPlayerBotBuyShout(LPCHARACTER player, const char* query, bool book,
 			DWORD skillVnum)
 	{
+		std::vector<std::string> candidates;
+		playerbot_conv::ExpandItemQuery(query ? query : "", candidates);
 		LPCHARACTER bestKeeper = NULL;
-		const TPlayerBotShopOffer* bestOffer = NULL;
-		LPITEM bestItem = NULL;
+		TPlayerBotStallLine bestLine;
+		long bestMap = 0;
 		long long bestDistance = -1;
+		TPlayerBotStall stall;
 		for (TPlayerBotAIStateMap::const_iterator it = s_mapPlayerBotAIStates.begin();
 				it != s_mapPlayerBotAIStates.end(); ++it)
 		{
-			if (it->second.vecShopOffers.empty())
-				continue;
 			LPCHARACTER keeper = CHARACTER_MANAGER::instance().FindByPID(it->first);
-			if (!keeper || !keeper->GetMyShop())
+			if (!keeper || !GetPlayerBotStall(it->first, keeper, stall) || stall.channel != g_bChannel)
 				continue;
-			for (size_t k = 0; k < it->second.vecShopOffers.size(); ++k)
+			for (size_t k = 0; k < stall.lines.size(); ++k)
 			{
-				const TPlayerBotShopOffer& offer = it->second.vecShopOffers[k];
-				LPITEM item = FindPlayerBotOfferItem(keeper, offer);
-				if (!item)
+				const TPlayerBotStallLine& line = stall.lines[k];
+				if (!PlayerBotStallLineMatches(line, candidates, book, skillVnum))
 					continue;
-				const bool match = book
-						? (item->GetType() == ITEM_SKILLBOOK &&
-							GetPlayerBotSkillBookSkillVnum(item) == skillVnum)
-						: PlayerBotItemNameMatches(item, query);
-				if (!match)
-					continue;
-				const long long distance = keeper->GetMapIndex() == player->GetMapIndex()
-						? (long long)DISTANCE_APPROX(player->GetX() - keeper->GetX(),
-								player->GetY() - keeper->GetY())
-						: 1000000LL + (long long)keeper->GetMapIndex();
+				const long long distance = stall.mapIndex == player->GetMapIndex()
+						? (long long)DISTANCE_APPROX(player->GetX() - stall.x, player->GetY() - stall.y)
+						: 1000000LL + (long long)stall.mapIndex;
 				if (bestDistance < 0 || distance < bestDistance)
 				{
 					bestDistance = distance;
 					bestKeeper = keeper;
-					bestOffer = &offer;
-					bestItem = item;
+					bestLine = line;
+					bestMap = stall.mapIndex;
 				}
 				break;
 			}
 		}
-		if (!bestKeeper || !bestOffer || !bestItem)
+		if (!bestKeeper)
 			return false;
 		char reply[CHAT_MAX_LEN + 1];
-		if (bestOffer->wCount > 1)
-			snprintf(reply, sizeof(reply), "Mam %s x%u na straganie w %s, %u yang za calosc",
-					bestItem->GetProto()->szLocaleName, (unsigned int)bestOffer->wCount,
-					GetPlayerBotTownName(bestKeeper->GetMapIndex()), bestOffer->dwPrice);
+		if (bestLine.count > 1)
+			snprintf(reply, sizeof(reply), "Mam %s x%u na straganie w %s, %s yang za calosc",
+					bestLine.name.c_str(), bestLine.count, GetPlayerBotTownName(bestMap),
+					playerbot_conv::FormatYang(bestLine.price).c_str());
 		else
-			snprintf(reply, sizeof(reply), "Mam %s na straganie w %s, %u yang",
-					bestItem->GetProto()->szLocaleName,
-					GetPlayerBotTownName(bestKeeper->GetMapIndex()), bestOffer->dwPrice);
+			snprintf(reply, sizeof(reply), "Mam %s na straganie w %s, %s yang",
+					bestLine.name.c_str(), GetPlayerBotTownName(bestMap),
+					playerbot_conv::FormatYang(bestLine.price).c_str());
 		SendPlayerBotWhisper(bestKeeper, player, reply);
 		return true;
 	}
@@ -363,6 +495,9 @@ namespace
 		const char* pszName = NULL;
 		if (!book)
 		{
+			// "Sprzedam FMS" is the players' dictionary as much as "Kupie FMS".
+			std::vector<std::string> candidates;
+			playerbot_conv::ExpandItemQuery(query ? query : "", candidates);
 			// A refine material, or a level-30 weapon: the two things a bot
 			// reliably wants from anybody.
 			const std::set<DWORD>& materials = GetPlayerBotRefineMaterialVnums();
@@ -372,9 +507,7 @@ namespace
 				const TItemTable* proto = ITEM_MANAGER::instance().GetTable(*m);
 				if (!proto)
 					continue;
-				char name[64];
-				FoldPlayerBotChatText(proto->szLocaleName, name, sizeof(name));
-				if (strstr(name, query))
+				if (playerbot_conv::ItemNameMatchesAny(playerbot_conv::FoldName(proto->szLocaleName), candidates))
 				{
 					wantedVnum = *m;
 					pszName = proto->szLocaleName;
@@ -387,9 +520,7 @@ namespace
 				const TItemTable* proto = ITEM_MANAGER::instance().GetTable(vnum);
 				if (!proto)
 					continue;
-				char name[64];
-				FoldPlayerBotChatText(proto->szLocaleName, name, sizeof(name));
-				if (strstr(name, query))
+				if (playerbot_conv::ItemNameMatchesAny(playerbot_conv::FoldName(proto->szLocaleName), candidates))
 				{
 					wantedVnum = vnum;
 					pszName = proto->szLocaleName;
@@ -572,7 +703,14 @@ namespace
 			return;
 		const DWORD skillVnum = book ? FindPlayerBotSkillByName(query) : 0;
 		if (book && skillVnum == 0)
-			return;
+		{
+			// "Kupie ksiege misji" names an item whose name begins with the
+			// word, not a skill: it is searched as a name like any other.
+			char named[sizeof(query)];
+			snprintf(named, sizeof(named), "ksiega %s", query);
+			strlcpy(query, named, sizeof(query));
+			book = false;
+		}
 		const DWORD dwNow = get_dword_time();
 		if (!PlayerBotTradeReplyAllowed(player, dwNow))
 			return;
@@ -622,25 +760,25 @@ namespace
 		TPlayerBotAIStateMap::const_iterator it = s_mapPlayerBotAIStates.find(bot->GetPlayerID());
 		if (HandlePlayerBotConversation(player, bot, text))
 			return;
-		if (bot->GetMyShop() && it != s_mapPlayerBotAIStates.end() && !it->second.vecShopOffers.empty())
+		TPlayerBotStall stall;
+		if (GetPlayerBotStall(bot->GetPlayerID(), bot, stall) && !stall.lines.empty())
 		{
 			std::string goods;
-			int listed = 0;
-			for (size_t k = 0; k < it->second.vecShopOffers.size() && listed < 3; ++k)
+			for (size_t k = 0; k < stall.lines.size() && k < 3; ++k)
 			{
-				LPITEM item = FindPlayerBotOfferItem(bot, it->second.vecShopOffers[k]);
-				if (!item || !item->GetProto())
-					continue;
 				if (!goods.empty())
 					goods += ", ";
-				goods += item->GetProto()->szLocaleName;
-				++listed;
+				goods += stall.lines[k].name;
 			}
-			snprintf(reply, sizeof(reply), "Stoje ze straganem w %s, mam: %s",
-					GetPlayerBotTownName(bot->GetMapIndex()), goods.empty() ? "nic juz" : goods.c_str());
+			snprintf(reply, sizeof(reply), "Mam stragan w %s, na nim: %s",
+					GetPlayerBotTownName(stall.mapIndex), goods.c_str());
+			SendPlayerBotWhisper(bot, player, reply);
 		}
 		else if (it != s_mapPlayerBotAIStates.end() && it->second.bMarketTrip)
+		{
 			snprintf(reply, sizeof(reply), "Wlasnie ide na targ w %s", GetPlayerBotTownName(bot->GetMapIndex()));
+			SendPlayerBotWhisper(bot, player, reply);
+		}
 		else
 		{
 			snprintf(reply, sizeof(reply), "Nie rozumiem. Zapytaj mnie, co robie, gdzie expie albo co mam na straganie.");

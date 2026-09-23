@@ -218,30 +218,37 @@ namespace
 		return name;
 	}
 
-	// "tarcze" finds "Tarcza Bojowa": every word of the query, less its
-	// ending, somewhere in the folded name.
+	// "tarcze" finds "Tarcza Bojowa", "fms" finds "Miecz Pelni Ksiezyca":
+	// the players' aliases and Polish endings (playerbot_conv_aliases.h).
 	bool PlayerBotConvNameMatches(const char* protoName, const std::string& query)
 	{
-		if (!protoName || query.empty())
-			return false;
-		const std::string name = playerbot_conv::FoldName(protoName);
-		std::vector<std::string> words;
-		playerbot_conv::SplitWords(query, words);
-		if (words.empty())
-			return false;
-		for (size_t i = 0; i < words.size(); ++i)
-		{
-			const std::string& w = words[i];
-			if (w.size() < 3)
-				continue;
-			const size_t stemLen = w.size() > 5 ? w.size() - 2 : (w.size() > 3 ? w.size() - 1 : w.size());
-			if (name.find(w.substr(0, stemLen)) == std::string::npos)
-				return false;
-		}
-		return true;
+		return playerbot_conv::ItemNameMatches(protoName, query);
 	}
 
 	// --------------------------------------------------------------- world
+
+	// The cheapest single-piece price of a matching line, per piece for stacks.
+	void NotePlayerBotConvMarketLines(const TPlayerBotStall& stall, const std::vector<std::string>& candidates,
+			DWORD skill, std::string& outName, long long& outPrice, unsigned int& outSellers, DWORD& seenVnum)
+	{
+		for (size_t i = 0; i < stall.lines.size(); ++i)
+		{
+			const TPlayerBotStallLine& line = stall.lines[i];
+			if (!PlayerBotStallLineMatches(line, candidates, skill != 0, skill))
+				continue;
+			const long long unit = line.count > 1 ? line.price / line.count : line.price;
+			if (unit <= 0)
+				continue;
+			seenVnum = line.vnum;
+			++outSellers;
+			if (outPrice == 0 || unit < outPrice)
+			{
+				outPrice = unit;
+				outName = line.name;
+			}
+			return; // one line per stall is enough for "the cheapest"
+		}
+	}
 
 	class CPlayerBotConvWorld : public playerbot_conv::IConvWorld
 	{
@@ -277,74 +284,81 @@ namespace
 				return false;
 			}
 
-			// "sprzedasz mi X": the bot's own counter, the same match the trade layer uses.
-			std::string AnswerBuy(const std::string& query)
+			// "masz na straganie X?": the bot's own stall - classic or the Ikarus
+			// offline shop (GetPlayerBotStall, playerbot_chat_trade.h).
+			bool FindShopItem(const std::string& query, std::string& outName, long long& outPrice,
+					unsigned int& outCount)
 			{
 				if (!m_bot)
-					return std::string();
-				TPlayerBotAIStateMap::const_iterator it = s_mapPlayerBotAIStates.find(m_bot->GetPlayerID());
-				if (it == s_mapPlayerBotAIStates.end())
-					return std::string();
-				std::string q = query;
-				bool book = false;
-				DWORD skillVnum = 0;
-				if (q.compare(0, 3, "ku ") == 0)
+					return false;
+				TPlayerBotStall stall;
+				if (!GetPlayerBotStall(m_bot->GetPlayerID(), m_bot, stall))
+					return false;
+				std::string rest;
+				const DWORD skill = GetPlayerBotStallBookQuery(query, rest);
+				std::vector<std::string> candidates;
+				playerbot_conv::ExpandItemQuery(query, candidates);
+				for (size_t i = 0; i < stall.lines.size(); ++i)
 				{
-					book = true;
-					q = q.substr(3);
-					skillVnum = FindPlayerBotSkillByName(q.c_str());
-					if (!skillVnum)
-						return "Nie kojarze takiej ksiegi.";
+					if (!PlayerBotStallLineMatches(stall.lines[i], candidates, skill != 0, skill))
+						continue;
+					outName = stall.lines[i].name;
+					outPrice = stall.lines[i].price;
+					outCount = stall.lines[i].count;
+					return true;
+				}
+				return false;
+			}
+
+			// "ile chodzi X?": the cheapest line of X on this channel's stalls
+			// (the other bots' and, on mt2009, every offline shop), else the
+			// sale memory's median for it.
+			bool FindMarketPrice(const std::string& query, std::string& outName, long long& outPrice,
+					unsigned int& outSellers)
+			{
+				std::string rest;
+				const DWORD skill = GetPlayerBotStallBookQuery(query, rest);
+				std::vector<std::string> candidates;
+				playerbot_conv::ExpandItemQuery(query, candidates);
+				outPrice = 0;
+				outSellers = 0;
+				DWORD seenVnum = 0;
+				const DWORD self = m_bot ? m_bot->GetPlayerID() : 0;
+				TPlayerBotStall stall;
+				for (TPlayerBotAIStateMap::const_iterator it = s_mapPlayerBotAIStates.begin();
+						it != s_mapPlayerBotAIStates.end(); ++it)
+				{
+					if (it->first == self)
+						continue;
+					LPCHARACTER keeper = CHARACTER_MANAGER::instance().FindByPID(it->first);
+					if (!keeper || !keeper->GetMyShop() || !GetPlayerBotStall(it->first, keeper, stall))
+						continue;
+					NotePlayerBotConvMarketLines(stall, candidates, skill, outName, outPrice, outSellers, seenVnum);
 				}
 #if defined(PLAYERBOT_ENGINE_MT2009) && defined(ENABLE_IKASHOP_RENEWAL)
-				if (!m_bot->GetMyShop())
+				for (const auto& entry : ikashop::GetManager().GetPlayerBotOfflineShops())
 				{
-					auto shop = ikashop::GetManager().GetShopByOwnerID(m_bot->GetPlayerID());
-					if (!shop || shop->GetDuration() == 0)
-						return "Nie mam teraz sklepu. Jak cos wystawie, dam znac.";
-					for (const auto& [id, line] : shop->GetItems())
-					{
-						const TItemTable* proto = line ? line->GetTable() : NULL;
-						if (!proto)
-							continue;
-						// GetPlayerBotSkillBookSkillVnum's rule, on a line that
-						// is not an item: 50300 names its skill in socket 0,
-						// every other book in value 0.
-						const DWORD lineSkill = proto->bType != ITEM_SKILLBOOK ? 0
-							: (proto->dwVnum == 50300 ? (DWORD)line->GetInfo().alSockets[0] : (DWORD)proto->alValues[0]);
-						const bool match = book
-							? (lineSkill != 0 && lineSkill == skillVnum)
-							: PlayerBotConvNameMatches(proto->szLocaleName, q);
-						if (!match)
-							continue;
-						char reply[CHAT_MAX_LEN + 1];
-						snprintf(reply, sizeof(reply), "Mam %s w sklepie w %s, za %s yang. Zajrzyj.",
-								proto->szLocaleName, GetPlayerBotTownName(shop->GetSpawn().map),
-								playerbot_conv::FormatYang(line->GetPrice().GetTotalYangAmount()).c_str());
-						return reply;
-					}
-					return "Nie mam tego teraz w sklepie.";
+					if (entry.first == self || !entry.second || entry.second->GetDuration() == 0 ||
+							entry.second->GetSpawn().channel != g_bChannel)
+						continue;
+					if (!GetPlayerBotStall(entry.first, NULL, stall))
+						continue;
+					NotePlayerBotConvMarketLines(stall, candidates, skill, outName, outPrice, outSellers, seenVnum);
 				}
 #endif
-				if (!m_bot->GetMyShop())
-					return "Nie mam teraz otwartego straganu. Jak cos wystawie, dam znac.";
-				for (size_t i = 0; i < it->second.vecShopOffers.size(); ++i)
+				if (outPrice > 0)
+					return true;
+				if (seenVnum)
 				{
-					LPITEM item = FindPlayerBotOfferItem(m_bot, it->second.vecShopOffers[i]);
-					if (!item || !item->GetProto())
-						continue;
-					const bool match = book
-						? (item->GetType() == ITEM_SKILLBOOK && GetPlayerBotSkillBookSkillVnum(item) == skillVnum)
-						: PlayerBotConvNameMatches(item->GetProto()->szLocaleName, q);
-					if (!match)
-						continue;
-					char reply[CHAT_MAX_LEN + 1];
-					snprintf(reply, sizeof(reply), "Mam %s na straganie w %s, za %s yang. Podejdz, to pohandlujemy.",
-							item->GetProto()->szLocaleName, GetPlayerBotTownName(m_bot->GetMapIndex()),
-							playerbot_conv::FormatYang((long long)it->second.vecShopOffers[i].dwPrice).c_str());
-					return reply;
+					size_t samples = 0;
+					const DWORD unit = GetPlayerBotSaleUnitPrice(seenVnum, 0, get_dword_time(), &samples, skill);
+					if (unit > 0)
+					{
+						outPrice = unit;
+						return true;
+					}
 				}
-				return "Nie mam tego teraz na straganie.";
+				return false;
 			}
 
 			// "kupisz ode mnie X": whether the bot is short of that material.
@@ -477,10 +491,10 @@ namespace
 				if (bot->IsItemLoaded())
 				{
 					s.bagCells = PLAYERBOT_BAG_CELLS;
-					size_t listed = 0;
 					// Free is what the item grid says: a cell with no item
 					// pointer is also the bottom of every sword and armour.
 					s.freeCells = CountPlayerBotFreeInventoryCells(bot);
+					size_t listed = 0;
 					for (WORD cell = 0; cell < PLAYERBOT_BAG_CELLS; ++cell)
 					{
 						LPITEM item = bot->GetInventoryItem(cell);
@@ -540,53 +554,29 @@ namespace
 				s.luring = state.bCurrentAction == BOT_ACTION_LURE;
 				s.luringForAsker = state.dwLurePlayerPID == playerPID;
 
-				s.shopOpen = bot->GetMyShop() != NULL;
-				s.shopItems = (int)state.vecShopOffers.size();
-				if (s.shopOpen)
 				{
-					size_t listed = 0;
-					for (size_t i = 0; i < state.vecShopOffers.size() && listed < PLAYERBOT_CONV_SHOP_SUMMARY_ITEMS; ++i)
+					TPlayerBotStall stall;
+					s.shopStanding = bot->GetMyShop() != NULL;
+					if (GetPlayerBotStall(botPID, bot, stall))
 					{
-						LPITEM item = FindPlayerBotOfferItem(bot, state.vecShopOffers[i]);
-						if (!item || !item->GetProto())
-							continue;
-						if (!s.shopSummary.empty())
-							s.shopSummary += ", ";
-						s.shopSummary += item->GetProto()->szLocaleName;
-						s.shopSummary += " za ";
-						s.shopSummary += FormatYang((long long)state.vecShopOffers[i].dwPrice);
-						++listed;
-					}
-				}
-#if defined(PLAYERBOT_ENGINE_MT2009) && defined(ENABLE_IKASHOP_RENEWAL)
-				// On this line a bot's counter is an ikashop offline shop, an
-				// entity that stands without its keeper: GetMyShop() is empty
-				// and vecShopOffers holds a classic stall's lines only.
-				if (!s.shopOpen)
-				{
-					auto shop = ikashop::GetManager().GetShopByOwnerID(botPID);
-					if (shop && shop->GetDuration() > 0)
-					{
-						s.shopTown = GetPlayerBotTownName(shop->GetSpawn().map);
-						s.shopItems = (int)shop->GetItems().size();
-						size_t listed = 0;
-						for (const auto& [id, line] : shop->GetItems())
+						s.shopOpen = true;
+						s.shopMapIndex = stall.mapIndex >= PLAYERBOT_INSTANCE_MAP_INDEX_MIN ? stall.mapIndex / 10000 : stall.mapIndex;
+						s.shopOtherChannel = stall.channel != g_bChannel;
+						s.shopItems = (int)stall.lines.size();
+						for (size_t i = 0; i < stall.lines.size() && i < PLAYERBOT_CONV_SHOP_SUMMARY_ITEMS; ++i)
 						{
-							if (listed >= PLAYERBOT_CONV_SHOP_SUMMARY_ITEMS)
-								break;
-							const TItemTable* proto = line ? line->GetTable() : NULL;
-							if (!proto)
-								continue;
 							if (!s.shopSummary.empty())
 								s.shopSummary += ", ";
-							s.shopSummary += proto->szLocaleName;
+							s.shopSummary += stall.lines[i].name;
+							if (stall.lines[i].count > 1)
+								s.shopSummary += " x" + ToString((long long)stall.lines[i].count);
 							s.shopSummary += " za ";
-							s.shopSummary += FormatYang(line->GetPrice().GetTotalYangAmount());
-							++listed;
+							s.shopSummary += FormatYang(stall.lines[i].price);
 						}
 					}
 				}
-#endif
+				s.dragonCoins = state.iDragonCoins;
+				s.dragonKnown = state.bDragonBalanceKnown;
 				s.marketTrip = state.bMarketTrip;
 
 				if (bot->GetSectree())

@@ -17,7 +17,7 @@
 //   PHRASE - several words in a row, matched on word boundaries,
 //   SUFFIX - any word of 5+ letters ending with the stem ("bys" -> zrobilbys).
 
-#include "playerbot_conv_text.h"
+#include "playerbot_conv_aliases.h"
 
 namespace playerbot_conv
 {
@@ -50,6 +50,8 @@ namespace playerbot_conv
 		C_TEAMWORK, C_LONELY, C_RISK, C_MONEY, C_WORK, C_SCHOOL, C_LIFEG, C_SAD, C_HAPPY,
 		C_ANIMAL, C_SPORT, C_LOVE, C_BOOKS, C_NATURE, C_ADVENTURE, C_COLOR,
 		C_POSITIVE, C_NEGATIVE,
+		// items, prices, the shorthand of the game
+		C_ITEMWORD, C_PRICEQ, C_ITEMSHOP, C_KS, C_READY, C_GOODLUCK, C_BRB, C_MAPNAME, C_BONUS,
 		C_COUNT
 	};
 
@@ -448,6 +450,26 @@ namespace playerbot_conv
 			{ "przyrod", C_NATURE, M_PREFIX }, { "rzek", C_NATURE, M_PREFIX }, { "jezior", C_NATURE, M_PREFIX },
 			{ "przygod", C_ADVENTURE, M_PREFIX },
 			{ "kolor", C_COLOR, M_PREFIX },
+			// ---- prices, item shop, shorthand
+			{ "za ile", C_PRICEQ, M_PHRASE }, { "ile za", C_PRICEQ, M_PHRASE }, { "po ile", C_PRICEQ, M_PHRASE },
+			{ "ile kosztuje", C_PRICEQ, M_PHRASE }, { "kosztuje", C_PRICEQ, M_EXACT }, { "ile chcesz", C_PRICEQ, M_PHRASE },
+			{ "cena", C_PRICEQ, M_EXACT }, { "cene", C_PRICEQ, M_EXACT }, { "wycen", C_PRICEQ, M_PREFIX },
+			{ "ile stoi", C_PRICEQ, M_PHRASE }, { "ile chodzi", C_PRICEQ, M_PHRASE }, { "ile warte", C_PRICEQ, M_PHRASE },
+			{ "ile jest wart", C_PRICEQ, M_PHRASE },
+			{ "itemshop", C_ITEMSHOP, M_EXACT }, { "item shop", C_ITEMSHOP, M_PHRASE }, { "smocze monety", C_ITEMSHOP, M_PHRASE },
+			{ "smoczych monet", C_ITEMSHOP, M_PHRASE }, { "monet", C_ITEMSHOP, M_PREFIX }, { "smocz", C_ITEMSHOP, M_PREFIX },
+			{ "ksujesz", C_KS, M_EXACT }, { "kradniesz", C_KS, M_FUZZY }, { "ukradles", C_KS, M_FUZZY },
+			{ "moj mob", C_KS, M_PHRASE }, { "moje moby", C_KS, M_PHRASE }, { "mojego moba", C_KS, M_PHRASE },
+			{ "gotowy", C_READY, M_EXACT }, { "gotow", C_READY, M_EXACT },
+			{ "powodzenia", C_GOODLUCK, M_FUZZY }, { "udanego expa", C_GOODLUCK, M_PHRASE },
+			{ "zaraz wracam", C_BRB, M_PHRASE }, { "zaraz bede", C_BRB, M_PHRASE }, { "chwila przerwy", C_BRB, M_PHRASE },
+			{ "krytyk", C_BONUS, M_PREFIX }, { "przeszyw", C_BONUS, M_PREFIX }, { "obrazen", C_BONUS, M_PREFIX },
+			{ "obron", C_BONUS, M_PREFIX }, { "abs", C_BONUS, M_EXACT }, { "nno", C_BONUS, M_EXACT },
+			{ "ono", C_BONUS, M_EXACT }, { "nns", C_BONUS, M_EXACT }, { "bonus", C_BONUS, M_PREFIX },
+			{ "odpornos", C_BONUS, M_PREFIX }, { "staty", C_BONUS, M_EXACT }, { "statystyk", C_BONUS, M_PREFIX },
+			{ "respawn", C_MOB, M_EXACT }, { "magazyn", C_TOWN, M_PREFIX }, { "polimorfi", C_SKILL, M_PREFIX },
+			{ "rewanz", C_PVP, M_EXACT }, { "sprzedasz", C_BUYME, M_EXACT },
+			{ "wystawiony", C_SHOP, M_EXACT }, { "wystawiles", C_SHOP, M_EXACT }, { "wystawila", C_SHOP, M_EXACT },
 			// ---- sentiment of a statement
 			{ "super", C_POSITIVE, M_EXACT }, { "fajnie", C_POSITIVE, M_EXACT }, { "ekstra", C_POSITIVE, M_EXACT },
 			{ "wbilem", C_POSITIVE, M_EXACT }, { "dropnalem", C_POSITIVE, M_EXACT }, { "dropnelo", C_POSITIVE, M_EXACT },
@@ -524,19 +546,25 @@ namespace playerbot_conv
 		out.Clear();
 		size_t count = 0;
 		const TLexEntry* lex = GetLexicon(count);
+		const std::string padded = " " + tok.norm + " ";
+		std::string needle;
 		for (size_t e = 0; e < count; ++e)
 		{
 			const TLexEntry& entry = lex[e];
 			if (entry.mode == M_PHRASE)
 			{
-				for (size_t i = 0; i < tok.words.size(); ++i)
+				// Word boundaries on the normalized line: " co tam " in " no co tam robisz ".
+				needle.assign(" ");
+				needle += entry.text;
+				needle += ' ';
+				const size_t pos = padded.find(needle);
+				if (pos != std::string::npos)
 				{
-					size_t len = 0;
-					if (PhraseAt(tok.words, i, entry.text, len))
-					{
-						out.Set(entry.conceptId, (int)i);
-						break;
-					}
+					int word = 0;
+					for (size_t k = 1; k <= pos && k < padded.size(); ++k)
+						if (padded[k] == ' ')
+							++word;
+					out.Set(entry.conceptId, word);
 				}
 				continue;
 			}
@@ -548,6 +576,19 @@ namespace playerbot_conv
 					break;
 				}
 			}
+		}
+
+		// The players' names for items and places (playerbot_conv_aliases.h).
+		for (size_t i = 0; i < tok.words.size(); ++i)
+			if (IsItemAliasWord(tok.words[i]))
+			{
+				out.Set(C_ITEMWORD, (int)i);
+				break;
+			}
+		{
+			size_t at = 0;
+			if (FindMapAlias(tok.words, at) != 0)
+				out.Set(C_MAPNAME, (int)at);
 		}
 
 		// Collisions the prefix stems cannot avoid on their own.

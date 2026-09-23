@@ -429,7 +429,7 @@ namespace playerbot_conv
 		}
 		else if (s.action == A_RECOVER && s.hpPct < 40 && rng.Chance(50))
 			out = "Musialem sie wycofac, prawie mnie ubili.";
-		else if (s.askerNear && !s.inParty && !s.askerInParty && !s.shopOpen && rng.Chance(35))
+		else if (s.askerNear && !s.inParty && !s.askerInParty && !s.shopStanding && rng.Chance(35))
 		{
 			static const char* const k[] = { "$PLAYER, idziesz na exp?", "$PLAYER, moze razem pobijemy?" };
 			out = PBC_SAY(g, k);

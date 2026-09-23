@@ -32,7 +32,7 @@ namespace playerbot_conv
 		I_NONE = 0,
 		// social
 		I_GREETING, I_FAREWELL, I_THANKS, I_APOLOGY, I_HOW_ARE_YOU, I_HELP,
-		I_IS_BOT, I_INSULT, I_PRAISE, I_AGE, I_ORIGIN,
+		I_IS_BOT, I_INSULT, I_PRAISE, I_AGE, I_ORIGIN, I_KS, I_READY, I_GOODLUCK, I_BRB,
 		// identity
 		I_NAME, I_LEVEL, I_CLASS, I_EMPIRE, I_PERSONALITY, I_MOOD,
 		// state
@@ -42,7 +42,7 @@ namespace playerbot_conv
 		I_HERBALISM, I_BIOLOGIST, I_METIN, I_DEMON_TOWER, I_GUILD_WAR, I_MERCENARY,
 		I_PARTY_REQUEST, I_SHOP, I_MARKET, I_BUY, I_SELL, I_SKILLS, I_PVP, I_TRAVEL,
 		I_REST, I_REFINE, I_MISSIONS, I_DEATH, I_RELATIONSHIP, I_TIME_HERE,
-		I_MAP_OPINION, I_DROP_LUCK, I_PROGRESS_TODAY,
+		I_MAP_OPINION, I_DROP_LUCK, I_PROGRESS_TODAY, I_PRICE, I_ITEMSHOP,
 		// conversation mechanics
 		I_FOLLOW_UP, I_ACK, I_LAUGH, I_YES, I_NO, I_ANSWER_TO_BOT,
 		// everything that is not the game
@@ -114,21 +114,23 @@ namespace playerbot_conv
 		bool polarityNegative;// "malo?", "nie lubie"
 		u32 at;
 		u32 gapBefore;        // ms since the player's previous line (0 = first)
+		long long offerYang;  // "za 2kk" - a sum named in the line
+		long mentionMap;      // "v1", "m1", "dolina" - a place named (see FindMapAlias)
 
 		TAnalysis() : intent(I_NONE), rawIntent(I_NONE), subject(I_NONE), follow(F_NONE),
 			topic(T_NONE), qtype(Q_STATEMENT), score(0), question(false), greetingToo(false),
 			thanksToo(false), returnToTopic(false), topicChange(false), repeated(false),
-			polarityNegative(false), at(0), gapBefore(0) {}
+			polarityNegative(false), at(0), gapBefore(0), offerYang(0), mentionMap(0) {}
 	};
 
 	inline bool IsGameIntent(EIntent i)
 	{
-		return i >= I_NAME && i <= I_PROGRESS_TODAY;
+		return i >= I_NAME && i <= I_ITEMSHOP;
 	}
 
 	inline bool IsSocialIntent(EIntent i)
 	{
-		return i >= I_GREETING && i <= I_ORIGIN;
+		return i >= I_GREETING && i <= I_BRB;
 	}
 
 	inline bool IsReactionIntent(EIntent i)
@@ -151,6 +153,7 @@ namespace playerbot_conv
 				return 3;
 			case I_GOLD: case I_SHOP: case I_MARKET: case I_BUY: case I_SELL: case I_INVENTORY:
 			case I_INVENTORY_SPACE: case I_ITEM_OWN: case I_EQUIPMENT: case I_REFINE:
+			case I_PRICE: case I_ITEMSHOP:
 				return 4;
 			case I_FISHING: case I_MINING: case I_HERBALISM: case I_BIOLOGIST: case I_METIN:
 			case I_DEMON_TOWER: case I_MISSIONS: case I_DROP_LUCK:
@@ -164,7 +167,7 @@ namespace playerbot_conv
 	{
 		static const char* const kNames[] = {
 			"NONE", "GREETING", "FAREWELL", "THANKS", "APOLOGY", "HOW_ARE_YOU", "HELP",
-			"IS_BOT", "INSULT", "PRAISE", "AGE", "ORIGIN",
+			"IS_BOT", "INSULT", "PRAISE", "AGE", "ORIGIN", "KS", "READY", "GOOD_LUCK", "BRB",
 			"NAME", "LEVEL", "CLASS", "EMPIRE", "PERSONALITY", "MOOD",
 			"CURRENT_ACTIVITY", "ACTIVITY_LOCATION", "LOCATION", "TARGET", "MOB_COUNT",
 			"GOAL", "NEXT_PLAN", "HP", "GOLD", "HORSE", "EQUIPMENT", "INVENTORY",
@@ -172,10 +175,12 @@ namespace playerbot_conv
 			"HERBALISM", "BIOLOGIST", "METIN", "DEMON_TOWER", "GUILD_WAR", "MERCENARY",
 			"PARTY_REQUEST", "SHOP", "MARKET", "BUY", "SELL", "SKILLS", "PVP", "TRAVEL",
 			"REST", "REFINE", "MISSIONS", "DEATH", "RELATIONSHIP", "TIME_HERE",
-			"MAP_OPINION", "DROP_LUCK", "PROGRESS_TODAY",
+			"MAP_OPINION", "DROP_LUCK", "PROGRESS_TODAY", "PRICE", "ITEMSHOP",
 			"FOLLOW_UP", "ACK", "LAUGH", "YES", "NO", "ANSWER_TO_BOT",
 			"GENERAL_CONVERSATION", "UNKNOWN_QUESTION", "UNKNOWN_STATEMENT"
 		};
+		typedef char TIntentNamesFit[sizeof(kNames) / sizeof(kNames[0]) == I_COUNT ? 1 : -1];
+		(void)sizeof(TIntentNamesFit);
 		return (i >= 0 && i < I_COUNT) ? kNames[i] : "?";
 	}
 
@@ -364,6 +369,23 @@ namespace playerbot_conv
 			{ PBC_R(I_GENERAL, T_NONE, 44), { C_CANYOU }, { 0 }, { 0 }, { 0 } },
 			{ PBC_R(I_GENERAL, T_NONE, 40), { C_KNOW }, { 0 }, { 0 }, { 0 } },
 
+			// ---------------- the shorthand of the game
+			{ PBC_R(I_KS, 0, 76), { C_KS }, { 0 }, { 0 }, { 0 } },
+			{ PBC_R(I_READY, 0, 64), { C_READY }, { 0 }, { C_HYPO }, { C_YOU } },
+			{ PBC_R(I_GOODLUCK, 0, 62), { C_GOODLUCK }, { 0 }, { 0 }, { 0 } },
+			{ PBC_R(I_BRB, 0, 64), { C_BRB }, { 0 }, { 0 }, { 0 } },
+			{ PBC_R(I_ITEMSHOP, 0, 70), { C_ITEMSHOP }, { 0 }, { 0 }, { C_HAVE, C_HOWMUCH } },
+			{ PBC_R(I_PRICE, 0, 78), { C_PRICEQ }, { 0 }, { C_BUYME, C_SELLYOU }, { C_ITEMWORD } },
+			{ PBC_R(I_PRICE, 0, 72), { C_HOWMUCH, C_ITEMWORD }, { 0 }, { C_HAVE }, { 0 } },
+			{ PBC_R(I_ITEM_OWN, 0, 70), { C_HAVE, C_ITEMWORD }, { 0 }, { C_SHOP, C_PRICEQ, C_WHICH }, { 0 } },
+			{ PBC_R(I_ITEM_OWN, 0, 68), { C_HAVE, C_HERB }, { 0 }, { C_SHOP, C_PRICEQ }, { 0 } },
+			{ PBC_R(I_SHOP, 0, 74), { C_SHOP, C_ITEMWORD }, { 0 }, { C_BUYME, C_SELLYOU }, { 0 } },
+			{ PBC_R(I_LOCATION, 0, 74), { C_MAPNAME }, { C_BE, C_EXP, C_HIT, C_YOU, C_NOW },
+				{ C_TRAVEL, C_LIKE, C_THINK, C_HYPO, C_TRAVELG }, { 0 } },
+			{ PBC_R(I_TRAVEL, 0, 78), { C_MAPNAME, C_TRAVEL }, { 0 }, { C_HYPO }, { 0 } },
+			{ PBC_R(I_MAP_OPINION, 0, 80), { C_MAPNAME, C_LIKE }, { 0 }, { 0 }, { 0 } },
+			{ PBC_R(I_EQUIPMENT, 0, 62), { C_BONUS }, { 0 }, { C_BUYME, C_SELLYOU }, { C_HAVE, C_WHICH } },
+			{ PBC_R(I_MOB_COUNT, 0, 62), { C_MOB, C_HOW }, { 0 }, { C_HIT, C_LIKE }, { 0 } },
 			// "masz tarcze?" - is it in the bag (the engine looks), not "what do you wear"
 			{ PBC_R(I_ITEM_OWN, 0, 68), { C_HAVE, C_GEAR }, { 0 }, { C_WHICH, C_WHAT, C_FREE }, { 0 } },
 			// weak catch-alls
@@ -460,7 +482,14 @@ namespace playerbot_conv
 		static const char* const kSkip[] = {
 			"sprzedasz", "odsprzedasz", "sprzedam", "sprzedac", "kupie", "kupic", "kupisz", "szukam", "chce",
 			"chcialbym", "oddam", "mi", "ci", "od", "ode", "ciebie", "mnie", "na", "sprzedaz", "masz", "moze", "jakis",
-			"jakas", "jakies", "cos", "tobie"
+			"jakas", "jakies", "cos", "tobie", "za", "ile", "po", "kosztuje", "cena", "cene", "ceny", "chcesz",
+			"stragan", "straganie", "straganu", "straganem", "wystawiony", "wystawione", "wystawiles", "wystawila",
+			"sklep", "sklepie", "sklepu", "z", "ze", "sprzedaje", "sprzedajesz", "czy", "jest", "twoj", "twoim",
+			"twoja", "twojej", "twoich", "tym", "posiadasz", "co", "jakie", "jaki", "jaka", "cokolwiek",
+			"ciekawego", "w", "eq", "ekwipunku", "plecaku", "a", "no", "hej", "stoi", "chodzi", "warte", "wart",
+			"teraz", "jeszcze", "tam", "tu", "u", "dla", "mnie", "wycenisz", "wycen", "ty", "ziomek", "prosze",
+			"zobacz", "sprawdz", "moglbys", "mozesz", "sprzedalbys", "wiesz", "chodza", "sa", "jakiegos", "jakas",
+			"gdzie"
 		};
 		size_t i = (size_t)from;
 		for (; i < tok.words.size(); ++i)
@@ -475,9 +504,18 @@ namespace playerbot_conv
 		std::string out;
 		for (size_t n = 0; i < tok.words.size() && n < 4; ++i, ++n)
 		{
+			const std::string& w = tok.words[i];
+			// "fms za 2kk": the price is not part of the name.
+			if (w == "za" || w == "po" || w == "czy" || w == "bo" || w == "i")
+				break;
+			std::vector<std::string> one(1, w);
+			if (ParseYangAmount(one) > 0)
+				break;
+			if (w == "teraz" || w == "jeszcze" || w == "moze" || w == "tam" || w == "prosze")
+				continue;
 			if (!out.empty())
 				out += ' ';
-			out += tok.words[i];
+			out += w;
 		}
 		return out.size() > 40 ? std::string() : out;
 	}
@@ -603,6 +641,11 @@ namespace playerbot_conv
 		a.question = a.tokens.question;
 		ExtractConcepts(a.tokens, a.concepts);
 		const TConceptSet& c = a.concepts;
+		a.offerYang = ParseYangAmount(a.tokens.words);
+		{
+			size_t at = 0;
+			a.mentionMap = FindMapAlias(a.tokens.words, at);
+		}
 
 		size_t ruleCount = 0;
 		const TIntentRule* rules = GetIntentRules(ruleCount);
@@ -709,7 +752,9 @@ namespace playerbot_conv
 		}
 		a.polarityNegative = a.tokens.Has("malo") || a.tokens.Has("pusto") || a.concepts.Has(C_DISLIKE);
 		if (a.intent == I_ITEM_OWN)
-			a.object = ExtractObjectAfter(a.tokens, FindWordIndexOfConcept(c, C_HAVE));
+			a.object = ExtractTradeObject(a.tokens, FindWordIndexOfConcept(c, C_HAVE));
+		if (a.intent == I_SHOP || a.intent == I_PRICE)
+			a.object = ExtractTradeObject(a.tokens, 0);
 		if (a.intent == I_BUY)
 			a.object = ExtractTradeObject(a.tokens, FindWordIndexOfConcept(c, C_BUYME));
 		if (a.intent == I_SELL)

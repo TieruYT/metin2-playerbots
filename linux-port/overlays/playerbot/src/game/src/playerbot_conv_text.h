@@ -180,6 +180,28 @@ namespace playerbot_conv
 			{ "byku", "ziomek" }, { "mordo", "ziomek" }, { "mordko", "ziomek" }, { "brachu", "ziomek" },
 			{ "bracie", "ziomek" }, { "kolego", "ziomek" }, { "kolezko", "ziomek" }, { "koles", "ziomek" },
 			{ "szefie", "ziomek" }, { "wariacie", "ziomek" }, { "misiu", "ziomek" },
+			// chat shorthand
+			{ "gz", "gratki" }, { "gratz", "gratki" }, { "grats", "gratki" }, { "gg", "gratki" },
+			{ "gl", "powodzenia" }, { "glhf", "powodzenia" }, { "hf", "powodzenia" },
+			{ "brb", "zaraz wracam" }, { "relog", "zaraz wracam" }, { "zw", "zaraz wracam" },
+			{ "np", "spoko" }, { "nmzc", "spoko" }, { "nzc", "spoko" }, { "nop", "spoko" },
+			{ "nq", "nara" }, { "cya", "nara" }, { "cu", "nara" }, { "bb", "nara" },
+			{ "btw", "" }, { "imo", "" }, { "tbh", "" },
+			{ "omg", "wow" }, { "omfg", "wow" }, { "wtf", "wow" }, { "rofl", "haha" },
+			{ "rdy", "gotowy" }, { "ready", "gotowy" }, { "gotowa", "gotowy" },
+			{ "rew", "rewanz" }, { "tp", "teleport" }, { "tepa", "teleport" },
+			{ "metek", "metin" }, { "metka", "metin" }, { "metki", "metiny" }, { "moob", "mob" },
+			{ "mooby", "moby" }, { "mobki", "moby" },
+			{ "poli", "polimorfia" }, { "polimorf", "polimorfia" },
+			{ "militar", "kon" }, { "militara", "konia" }, { "mount", "kon" }, { "mounta", "konia" },
+			{ "pz", "hp" }, { "mp", "sp" }, { "pe", "sp" },
+			{ "kt", "kupie" }, { "sell", "sprzedam" }, { "wts", "sprzedam" }, { "wtb", "kupie" },
+			{ "is", "itemshop" }, { "itemshopa", "itemshop" }, { "sm", "smocze monety" },
+			{ "depo", "magazyn" }, { "dozo", "magazyn" }, { "dozorca", "magazyn" },
+			{ "pvm", "exp" }, { "pve", "exp" }, { "pvb", "boss" },
+			{ "ksujesz", "ksujesz" }, { "ksuj", "ksujesz" }, { "ksuje", "ksujesz" }, { "ks", "ksujesz" },
+			{ "kryt", "krytyk" }, { "kryty", "krytyk" }, { "dmg", "obrazenia" }, { "def", "obrona" },
+			{ "resp", "respawn" }, { "respi", "respawn" }, { "respa", "respawn" },
 		};
 		for (size_t i = 0; i < sizeof(kMap) / sizeof(kMap[0]); ++i)
 			if (w == kMap[i][0])
@@ -250,6 +272,20 @@ namespace playerbot_conv
 				folded += ' ';
 				continue;
 			}
+			// "1.5kk" and "+9" keep their punctuation: a sum and a refine level.
+			if ((c == '.' || c == ',') && i > 0 && i + 1 < n && p[i - 1] >= '0' && p[i - 1] <= '9' &&
+					p[i + 1] >= '0' && p[i + 1] <= '9')
+			{
+				folded += '.';
+				continue;
+			}
+			if (c == '+' && i + 1 < n && p[i + 1] >= '0' && p[i + 1] <= '9')
+			{
+				if (!folded.empty() && folded[folded.size() - 1] != ' ')
+					folded += ' ';
+				folded += '+';
+				continue;
+			}
 			c = FoldCp1250(c);
 			if ((c >= 'a' && c <= 'z') || (c >= '0' && c <= '9'))
 				folded += (char)c;
@@ -266,7 +302,8 @@ namespace playerbot_conv
 			while (j < folded.size() && folded[j] == folded[i])
 				++j;
 			const size_t run = j - i;
-			if (folded[i] != ' ' && run >= 3)
+			// Not 'k' or digits: "1kkk" is a billion and "150000" is not "150".
+			if (folded[i] != ' ' && folded[i] != 'k' && (folded[i] < '0' || folded[i] > '9') && run >= 3)
 				collapsed += folded[i];
 			else
 				collapsed.append(folded, i, run);
@@ -275,8 +312,39 @@ namespace playerbot_conv
 
 		std::vector<std::string> raw;
 		SplitWords(collapsed, raw);
+		// "2 kk" is one sum; a lone "k"/"kk" is "ok" only in a short line
+		// ("kk", "ok kk"), in a longer one it is money or Kawalek Klejnotu.
+		{
+			std::vector<std::string> merged;
+			for (size_t i = 0; i < raw.size(); ++i)
+			{
+				const std::string& w = raw[i];
+				const bool unit = w == "k" || w == "kk" || w == "kkk";
+				if (unit && !merged.empty())
+				{
+					const std::string& prev = merged.back();
+					bool number = !prev.empty();
+					for (size_t k = 0; k < prev.size() && number; ++k)
+						number = (prev[k] >= '0' && prev[k] <= '9') || prev[k] == '.';
+					if (number)
+					{
+						merged.back() += w;
+						continue;
+					}
+				}
+				merged.push_back(w);
+			}
+			raw.swap(merged);
+		}
+		const bool shortLine = raw.size() <= 2;
 		for (size_t i = 0; i < raw.size(); ++i)
 		{
+			if (!shortLine && (raw[i] == "k" || raw[i] == "kk" || raw[i] == "kkk"))
+			{
+				if (out.words.size() < CONV_MAX_WORDS)
+					out.words.push_back(raw[i]);
+				continue;
+			}
 			const char* rw = RewriteWord(raw[i]);
 			if (rw)
 				SplitWords(rw, out.words);

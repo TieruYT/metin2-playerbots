@@ -564,7 +564,7 @@ namespace playerbot_conv
 		}
 		if (a.topic == T_BORED && (a.qtype != Q_STATEMENT || a.concepts.Has(C_YOU)))
 		{
-			if (g.s.shopOpen)
+			if (g.s.shopStanding)
 				out = "Troche. Stanie przy straganie to nie jest najciekawsze zajecie.";
 			else if (g.s.fishing)
 				out = "Przy wedce? Troche, ale to taki przyjemny rodzaj nudy.";

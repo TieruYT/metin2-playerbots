@@ -122,14 +122,12 @@ namespace playerbot_conv
 		bool mercContract;
 		bool luring;
 		bool luringForAsker;
-		bool shopOpen;
+		bool shopOpen;          // a stall of any kind is up (classic or the offline shop)
+		bool shopStanding;      // the classic one: the bot itself stands behind it
+		long shopMapIndex;      // where the stall stands (the offline one stays while the bot hunts)
+		bool shopOtherChannel;
 		int shopItems;
 		std::string shopSummary;
-		// Where a counter that stands without its keeper is (the 2.x line's
-		// offline shop): empty when there is none. shopOpen stays false for
-		// one, because every line that reads shopOpen means "I am standing
-		// at my stall" and such a keeper is out hunting.
-		std::string shopTown;
 		std::string bagSummary;   // a few things from the bag, "Kosc x3, Miecz +5"
 		bool marketTrip;
 		int mobsNear;       // -1 unknown
@@ -150,6 +148,8 @@ namespace playerbot_conv
 		bool afk;
 		std::string huntMob;
 		int huntRemaining;
+		int dragonCoins;
+		bool dragonKnown;
 
 		TBotSnapshot() : level(1), job(0), empire(0), mapIndex(0), inTown(false), safeZone(false),
 			inDungeon(false), action(A_IDLE), goal(G_LEVEL), travelMap(0), riding(false),
@@ -158,11 +158,12 @@ namespace playerbot_conv
 			leaderIsMe(false), askerInParty(false), inGuild(false), guildMembers(0), freeCells(0),
 			bagCells(0), weaponPlus(0), armorPlus(0), fishing(false), mining(false),
 			herbUnlocked(false), metinHunter(false), demonTower(false), guildWar(false),
-			mercContract(false), luring(false), luringForAsker(false), shopOpen(false), shopItems(0),
+			mercContract(false), luring(false), luringForAsker(false), shopOpen(false), shopStanding(false), shopMapIndex(0),
+			shopOtherChannel(false), shopItems(0),
 			marketTrip(false), mobsNear(-1), playersNear(0), style(S_ADVENTURER), mood(MOOD_NEUTRAL),
 			unlucky(false), euphoria(false), affinity(0), onlineMinutes(0), goalMinutes(0),
 			actionMinutes(0), recentDeaths(0), minutesSinceDeath(0xFFFFFFFFu), askerLevel(0),
-			askerNear(false), hour(12), afk(false), huntRemaining(0) {}
+			askerNear(false), hour(12), afk(false), huntRemaining(0), dragonCoins(0), dragonKnown(false) {}
 	};
 
 	// Things only the engine can look up, asked for while a reply is written.
@@ -172,8 +173,15 @@ namespace playerbot_conv
 			virtual ~IConvWorld() {}
 			// "masz tarcze?" - an item in the bag matching the folded query.
 			virtual bool FindItem(const std::string& query, std::string& outName, unsigned int& outCount) = 0;
-			// "sprzedasz mi X" / "kupisz ode mnie X" - the trade layer's answer, or empty.
-			virtual std::string AnswerBuy(const std::string& query) = 0;
+			// "masz na straganie X?" - a line of the bot's own stall (classic or
+			// the offline shop) matching the folded query, aliases included.
+			virtual bool FindShopItem(const std::string& query, std::string& outName, long long& outPrice,
+					unsigned int& outCount) = 0;
+			// "ile chodzi X?" - the cheapest line of X on the market's stalls, or
+			// the sale memory's price. False when nobody knows.
+			virtual bool FindMarketPrice(const std::string& query, std::string& outName, long long& outPrice,
+					unsigned int& outSellers) = 0;
+			// "kupisz ode mnie X" - the trade layer's answer, or empty.
 			virtual std::string AnswerSell(const std::string& query) = 0;
 	};
 

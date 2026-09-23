@@ -112,7 +112,11 @@ namespace playerbot_conv
 		ReplaceAll(out, "$HUNT", s.huntMob);
 		ReplaceAll(out, "$HUNTN", ToString(s.huntRemaining));
 		ReplaceAll(out, "$MOBS", ToString(s.mobsNear < 0 ? 0 : s.mobsNear));
-		ReplaceAll(out, "$SHOPTOWN", s.shopTown);
+		{
+			const TMapWords& shopMap = GetMapWords(s.shopMapIndex);
+			ReplaceAll(out, "$SHOPAT", *shopMap.name ? std::string(shopMap.at) : std::string("w miescie"));
+		}
+		ReplaceAll(out, "$SM", ToString(s.dragonCoins));
 		ReplaceAll(out, "$SHOPN", ToString(s.shopItems));
 		ReplaceAll(out, "$SHOP", s.shopSummary);
 		ReplaceAll(out, "$ONLINE", ToString((long long)s.onlineMinutes));

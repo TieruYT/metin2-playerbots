@@ -240,6 +240,17 @@ namespace playerbot_conv
 			return;
 		}
 
+		// "a za 3kk?" after talking about an item: an offer for that item.
+		if (a.offerYang > 0 && a.object.empty() && prev && !prev->object.empty() &&
+				(base == I_BUY || base == I_SHOP || base == I_PRICE || base == I_ITEM_OWN) &&
+				a.intent != I_SELL && a.intent != I_GOLD && a.tokens.words.size() <= 5)
+		{
+			a.intent = I_BUY;
+			a.subject = I_BUY;
+			a.object = prev->object;
+			return;
+		}
+
 		if (a.intent == I_FOLLOW_UP)
 		{
 			a.subject = base;

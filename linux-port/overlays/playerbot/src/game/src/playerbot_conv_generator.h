@@ -321,9 +321,38 @@ namespace playerbot_conv
 		return out;
 	}
 
+	// "jestes w v1?", "expisz na sohan?", "idziesz do m1?" - the place a player
+	// named, resolved to this bot's kingdom. 0 when none was named.
+	inline long MentionedMap(const TGen& g)
+	{
+		if (!g.a || g.a->mentionMap == 0)
+			return 0;
+		const long m = ResolveMapAlias(g.a->mentionMap, g.s.empire);
+		return m == 0 ? MAP_ALIAS_UNLISTED : m;
+	}
+
+	inline std::string MapYesNo(TGen& g, long mentioned)
+	{
+		const TBotSnapshot& s = g.s;
+		g.saidMap = true;
+		if (mentioned == s.mapIndex && IsKnownMap(s.mapIndex))
+		{
+			static const char* const k[] = { "Tak, jestem $MAPIN.", "No, $MAPIN." };
+			std::string out = PBC_SAY(g, k);
+			CapitalizeFirst(out);
+			return out;
+		}
+		if (!IsKnownMap(s.mapIndex))
+			return "Nie, jestem gdzie indziej.";
+		static const char* const k[] = { "Nie, jestem $MAPIN.", "Nie, teraz $MAPIN." };
+		return PBC_SAY(g, k);
+	}
+
 	inline std::string GenLocation(TGen& g)
 	{
 		const TBotSnapshot& s = g.s;
+		if (const long mentioned = MentionedMap(g))
+			return MapYesNo(g, mentioned);
 		if (!IsKnownMap(s.mapIndex))
 		{
 			static const char* const k[] = { "Gdzies na uboczu, nawet nie wiem, jak to miejsce sie nazywa.", "W jakims dziwnym miejscu, nie znam nazwy." };
@@ -352,6 +381,8 @@ namespace playerbot_conv
 	inline std::string GenActivityLocation(TGen& g)
 	{
 		const TBotSnapshot& s = g.s;
+		if (const long mentioned = MentionedMap(g))
+			return MapYesNo(g, mentioned);
 		if (!IsKnownMap(s.mapIndex))
 			return GenLocation(g);
 		g.saidMap = true;
@@ -562,7 +593,7 @@ namespace playerbot_conv
 			static const char* const k[] = { "Jak skonczymy tutaj, pewnie wracam do miasta.", "Jeszcze troche tu pobijemy, a potem sie zobaczy." };
 			return PBC_SAY(g, k);
 		}
-		if (s.shopOpen)
+		if (s.shopStanding)
 			return "Postoje jeszcze troche ze straganem, a potem pewnie na exp.";
 		if (s.fishing)
 			return "Jeszcze troche polowie, potem zobaczymy.";
@@ -649,6 +680,8 @@ namespace playerbot_conv
 	inline std::string GenEquipment(TGen& g)
 	{
 		const TBotSnapshot& s = g.s;
+		if (g.a && g.a->concepts.Has(C_BONUS) && !s.weaponName.empty())
+			return Fill(g, "Bonusow nie licze co do punktu. Mam $WEAPON +$WPLUS i $ARMOR +$APLUS, jakos to idzie.");
 		if (s.weaponName.empty())
 			return "Na razie bez porzadnej broni.";
 		std::string out;
@@ -691,6 +724,9 @@ namespace playerbot_conv
 		return PBC_SAY(g, k);
 	}
 
+	inline std::string ShopWhere(const TGen& g);
+	inline std::string SayMoney(long long v);
+
 	inline std::string GenItemOwn(TGen& g)
 	{
 		const std::string obj = g.a ? g.a->object : std::string();
@@ -714,6 +750,9 @@ namespace playerbot_conv
 			out += ".";
 			return out;
 		}
+		long long price = 0;
+		if (g.world && g.world->FindShopItem(obj, name, price, count))
+			return "W EQ nie, ale mam " + name + " na straganie " + ShopWhere(g) + " za " + SayMoney(price) + ".";
 		static const char* const k[] = { "Nie, nie mam tego.", "Nie mam czegos takiego w EQ.", "Niestety nie." };
 		return PBC_SAY(g, k);
 	}
@@ -854,7 +893,7 @@ namespace playerbot_conv
 			return "Po prostu zapros mnie do grupy.";
 		if (s.inParty)
 			return "Jestem teraz w innym PT, moze pozniej.";
-		if (s.shopOpen)
+		if (s.shopStanding)
 			return "Teraz stoje ze straganem, moze pozniej.";
 		if (s.dead || g.LowHp())
 			return "Chwila, najpierw sie podlecze.";
@@ -879,20 +918,150 @@ namespace playerbot_conv
 		return out;
 	}
 
+	// ------------------------------------------------------------- trade
+
+	inline std::string SayMoney(long long v)
+	{
+		return FormatYang(v);
+	}
+
+	inline std::string ShopWhere(const TGen& g)
+	{
+		std::string out = Fill(g, "$SHOPAT");
+		if (g.s.shopOtherChannel)
+			out += " (inny kanal)";
+		return out;
+	}
+
+	// One line of the bot's own stall, and what to say about it - with a
+	// player's offer weighed against the asking price when one was named.
+	inline std::string ShopLineAnswer(TGen& g, const std::string& name, long long price, unsigned int count)
+	{
+		const long long offer = g.a ? g.a->offerYang : 0;
+		std::string out;
+		if (offer > 0 && price > 0)
+		{
+			if (offer > price + price / 20)
+			{
+				static const char* const k[] = {
+					"Stoi nawet taniej, za $PRICE. Kup normalnie na straganie $WHERE.",
+					"Nie musisz przeplacac, na straganie $WHERE stoi za $PRICE." };
+				out = PBC_PICK(g, k);
+			}
+			else if (offer >= price)
+			{
+				static const char* const k[] = {
+					"Za $OFFER moze byc. $ITEM stoi na moim straganie $WHERE, kup normalnie.",
+					"$OFFER? Pasuje. Masz to na straganie $WHERE za $PRICE." };
+				out = PBC_PICK(g, k);
+			}
+			else if (offer * 100 >= price * 80)
+			{
+				static const char* const k[] = {
+					"Troche malo. Stoi za $PRICE, taniej raczej nie zejde.",
+					"Blisko, ale stoi za $PRICE. Taniej nie oddam." };
+				out = PBC_PICK(g, k);
+			}
+			else
+			{
+				static const char* const k[] = { "Za $OFFER? Nie, stoi za $PRICE.", "Za malo. Chce $PRICE." };
+				out = PBC_PICK(g, k);
+			}
+		}
+		else if (count > 1)
+			out = "Tak, mam $ITEM x$COUNT na straganie $WHERE, $PRICE za calosc.";
+		else
+		{
+			static const char* const k[] = { "Tak, mam $ITEM na straganie $WHERE za $PRICE.", "Mam. $ITEM, $PRICE, stragan $WHERE." };
+			out = PBC_PICK(g, k);
+		}
+		ReplaceAll(out, "$OFFER", SayMoney(offer));
+		ReplaceAll(out, "$PRICE", SayMoney(price));
+		ReplaceAll(out, "$COUNT", ToString(count));
+		ReplaceAll(out, "$WHERE", ShopWhere(g));
+		ReplaceAll(out, "$ITEM", name);
+		CapitalizeFirst(out);
+		return out;
+	}
+
+	// "masz na straganie fms?", "sprzedasz mi 12d za 5kk?"
+	inline std::string ShopItemAnswer(TGen& g, const std::string& obj)
+	{
+		std::string name;
+		long long price = 0;
+		unsigned int count = 0;
+		if (g.world && g.world->FindShopItem(obj, name, price, count))
+			return ShopLineAnswer(g, name, price, count);
+		if (g.s.shopOpen)
+		{
+			std::string out = "Na straganie tego nie mam.";
+			if (!g.s.shopSummary.empty())
+				Append(out, "Mam za to: " + g.s.shopSummary + ".");
+			return out;
+		}
+		unsigned int bagCount = 0;
+		if (g.world && g.world->FindItem(obj, name, bagCount))
+			return "Straganu teraz nie mam, ale " + name + " mam w EQ.";
+		return "Nie mam tego, a straganu teraz tez nie.";
+	}
+
 	inline std::string GenShop(TGen& g)
 	{
 		const TBotSnapshot& s = g.s;
+		if (g.a && !g.a->object.empty())
+			return ShopItemAnswer(g, g.a->object);
 		if (s.shopOpen && !s.shopSummary.empty())
-			return Fill(g, "Mam stragan $MAPIN. Na nim m.in.: $SHOP.");
+		{
+			std::string out = "Mam stragan " + ShopWhere(g) + ". Na nim m.in.: " + s.shopSummary + ".";
+			if (s.shopItems > 3)
+				Append(out, "I jeszcze troche innych rzeczy.");
+			return out;
+		}
 		if (s.shopOpen)
 			return "Mam stragan, ale juz prawie wszystko zeszlo.";
-		if (!s.shopTown.empty() && !s.shopSummary.empty())
-			return Fill(g, "Moj sklep stoi w $SHOPTOWN. Na nim m.in.: $SHOP.");
-		if (!s.shopTown.empty())
-			return Fill(g, "Moj sklep stoi w $SHOPTOWN, ale juz prawie wszystko zeszlo.");
 		if (g.voice == V_MERCHANT)
 			return "Teraz nie mam straganu, ale niedlugo cos wystawie.";
 		return "Nie mam teraz straganu.";
+	}
+
+	inline std::string GenPrice(TGen& g)
+	{
+		const std::string obj = g.a ? g.a->object : std::string();
+		if (obj.empty())
+		{
+			if (g.s.shopOpen && !g.s.shopSummary.empty())
+				return "U mnie: " + g.s.shopSummary + ".";
+			return "Ale czego cena?";
+		}
+		std::string name;
+		long long price = 0;
+		unsigned int count = 0;
+		if (g.world && g.world->FindShopItem(obj, name, price, count))
+		{
+			if (g.a->offerYang > 0)
+				return ShopLineAnswer(g, name, price, count);
+			std::string out = "U mnie na straganie " + name + " stoi za " + SayMoney(price) + ".";
+			if (count > 1)
+				out = "U mnie " + name + " x" + ToString(count) + " za " + SayMoney(price) + " calosc.";
+			return out;
+		}
+		unsigned int sellers = 0;
+		if (g.world && g.world->FindMarketPrice(obj, name, price, sellers))
+		{
+			static const char* const k[] = {
+				"Na targu widzialem $ITEM po $PRICE.", "$ITEM chodzi teraz po jakies $PRICE.",
+				"Najtaniej widzialem $ITEM za $PRICE." };
+			std::string out = PBC_PICK(g, k);
+			ReplaceAll(out, "$ITEM", name);
+			ReplaceAll(out, "$PRICE", SayMoney(price));
+			CapitalizeFirst(out);
+			if (g.voice == V_MERCHANT && g.rng.Chance(50))
+				Append(out, "Ceny sie jednak zmieniaja.");
+			return out;
+		}
+		static const char* const k[] = {
+			"Nie wiem, dawno nie widzialem tego na targu.", "Ciezko powiedziec, nikt tego ostatnio nie wystawial." };
+		return PBC_SAY(g, k);
 	}
 
 	inline std::string GenMarket(TGen& g)
@@ -911,9 +1080,19 @@ namespace playerbot_conv
 	{
 		const std::string obj = g.a ? g.a->object : std::string();
 		if (obj.empty())
-			return "Co konkretnie chcesz kupic?";
-		std::string r = g.world ? g.world->AnswerBuy(obj) : std::string();
-		return r.empty() ? std::string("Nie mam tego teraz na sprzedaz.") : r;
+			return g.s.shopOpen && !g.s.shopSummary.empty()
+					? "Na straganie mam: " + g.s.shopSummary + ". Co cie interesuje?"
+					: std::string("Co konkretnie chcesz kupic?");
+		std::string name;
+		long long price = 0;
+		unsigned int count = 0;
+		if (g.world && g.world->FindShopItem(obj, name, price, count))
+			return ShopLineAnswer(g, name, price, count);
+		if (g.world && g.world->FindItem(obj, name, count))
+			return "Mam " + name + " w EQ, ale nie wystawilem tego na sprzedaz.";
+		if (g.s.shopOpen)
+			return "Tego nie mam na straganie.";
+		return "Nie mam tego teraz na sprzedaz.";
 	}
 
 	inline std::string GenSell(TGen& g)
@@ -946,6 +1125,20 @@ namespace playerbot_conv
 
 	inline std::string GenTravel(TGen& g)
 	{
+		if (const long mentioned = MentionedMap(g))
+		{
+			if (mentioned == g.s.mapIndex && IsKnownMap(g.s.mapIndex))
+			{
+				g.saidMap = true;
+				return Fill(g, "Juz jestem $MAPIN.");
+			}
+			if (g.s.action == A_TRAVEL && mentioned == g.s.travelMap)
+				return Fill(g, "Tak, ide $DEST.");
+			std::string out = "Nie. ";
+			out += ActivityClause(g, true);
+			g.saidMap = true;
+			return out;
+		}
 		if (g.s.action == A_TRAVEL && IsKnownMap(g.s.travelMap) && g.s.travelMap != g.s.mapIndex)
 		{
 			g.saidMap = true;
@@ -1025,6 +1218,18 @@ namespace playerbot_conv
 
 	inline std::string GenMapOpinion(TGen& g)
 	{
+		const long mentioned = MentionedMap(g);
+		if (mentioned && mentioned != g.s.mapIndex)
+		{
+			const TMapWords& w = GetMapWords(mentioned);
+			const int roll = OpinionRoll(g, *w.name ? w.name : "gdzies", 23);
+			std::string place = *w.name ? w.name : "Tam";
+			if (roll < 45)
+				return place + "? Lubie, dobre miejsce.";
+			if (roll < 80)
+				return place + "? Moze byc, zalezy na co.";
+			return place + "? Srednio, wole inne miejsca.";
+		}
 		if (g.s.inTown)
 			return "Miasto jak miasto. Lubie tu wrocic po expie.";
 		if (!IsKnownMap(g.s.mapIndex))
@@ -1215,6 +1420,47 @@ namespace playerbot_conv
 		if (!*EmpireName(g.s.empire))
 			return "Stad i stamtad.";
 		static const char* const k[] = { "Z $EMPIRE.", "Jestem z $EMPIRE. A ty?", "$EMPIRE, od urodzenia." };
+		return PBC_SAY(g, k);
+	}
+
+	inline std::string GenItemShop(TGen& g)
+	{
+		if (!g.s.dragonKnown)
+			return "Nie sprawdzalem ostatnio, ile mam SM.";
+		if (g.s.dragonCoins <= 0)
+			return g.voice == V_MERCHANT ? "Zero SM. Wole yang, IS to nie moja bajka." : "Zero SM, wszystko wydalem.";
+		static const char* const k[] = { "Mam $SM SM.", "Jakies $SM SM, nie wiecej." };
+		return PBC_SAY(g, k);
+	}
+
+	inline std::string GenKs(TGen& g)
+	{
+		if (g.tier == TIER_HOSTILE)
+			return "Nie widzialem tam twojego imienia.";
+		static const char* const k[] = {
+			"Sorki, nie zauwazylem, ze go bijesz.", "Oj, wybacz, nie widzialem ciebie.", "Sorry, nie chcialem ci ksowac." };
+		return PBC_SAY(g, k);
+	}
+
+	inline std::string GenReady(TGen& g)
+	{
+		if (g.s.dead)
+			return "Chwila, jeszcze leze.";
+		if (g.LowHp())
+			return "Chwila, najpierw sie podlecze.";
+		static const char* const k[] = { "Gotowy!", "Jasne, rdy.", "Moge isc." };
+		return PBC_SAY(g, k);
+	}
+
+	inline std::string GenGoodLuck(TGen& g)
+	{
+		static const char* const k[] = { "Dzieki, tobie tez!", "Nawzajem!", "Dzieki, przyda sie." };
+		return PBC_SAY(g, k);
+	}
+
+	inline std::string GenBrb(TGen& g)
+	{
+		static const char* const k[] = { "Jasne, czekam.", "Ok, bede tu.", "Spoko." };
 		return PBC_SAY(g, k);
 	}
 
@@ -1506,6 +1752,12 @@ namespace playerbot_conv
 			case I_PRAISE: out = GenPraise(g); break;
 			case I_AGE: out = GenAge(g); break;
 			case I_ORIGIN: out = GenOrigin(g); break;
+			case I_KS: out = GenKs(g); break;
+			case I_READY: out = GenReady(g); break;
+			case I_GOODLUCK: out = GenGoodLuck(g); break;
+			case I_BRB: out = GenBrb(g); break;
+			case I_PRICE: out = GenPrice(g); break;
+			case I_ITEMSHOP: out = GenItemShop(g); break;
 			case I_NAME: out = GenName(g); break;
 			case I_LEVEL: out = GenLevel(g); break;
 			case I_CLASS: out = GenClass(g); break;

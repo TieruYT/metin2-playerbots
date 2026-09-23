@@ -28,6 +28,8 @@ struct TSent
 class CMockWorld : public IConvWorld
 {
 	public:
+		const TBotSnapshot* snap;
+		CMockWorld() : snap(NULL) {}
 		bool FindItem(const std::string& q, std::string& name, unsigned int& count)
 		{
 			if (q.find("tarcz") != std::string::npos)
@@ -38,7 +40,24 @@ class CMockWorld : public IConvWorld
 			}
 			return false;
 		}
-		std::string AnswerBuy(const std::string& q) { return "Mam " + q + " na straganie, 50k."; }
+		bool FindShopItem(const std::string& q, std::string& name, long long& price, unsigned int& count)
+		{
+			if ((snap && !snap->shopOpen) || !ItemNameMatches("Miecz Pelni Ksiezyca+7", q))
+				return false;
+			name = "Miecz Pelni Ksiezyca+7";
+			price = 3000000;
+			count = 1;
+			return true;
+		}
+		bool FindMarketPrice(const std::string& q, std::string& name, long long& price, unsigned int& sellers)
+		{
+			if (!ItemNameMatches("Zwoj Blogoslawienstwa", q))
+				return false;
+			name = "Zwoj Blogoslawienstwa";
+			price = 250000;
+			sellers = 3;
+			return true;
+		}
 		std::string AnswerSell(const std::string& q) { return "Nie potrzebuje " + q + "."; }
 };
 
@@ -53,6 +72,7 @@ class CMockHost : public IConvHost
 		CMockWorld world;
 		CMockHost() : now(0), alive(true)
 		{
+			world.snap = &snap;
 			snap.name = "Punnane";
 			snap.askerName = "Lost3k";
 			snap.level = 42;
@@ -497,25 +517,6 @@ static void TestFactUnknown()
 	CHECK(Contains(s.Last(), "wiem") || Contains(s.Last(), "pojecia") || Contains(s.Last(), "znam"), "unknown fact honest: '%s'", s.Last().c_str());
 }
 
-// The 2.x line's counter stands without its keeper: the bot names the town it
-// stands in and what is on it, and never claims to be standing at it.
-static void TestOfflineShop()
-{
-	TScenario s(11);
-	s.host.snap.shopTown = "Joan";
-	s.host.snap.shopItems = 7;
-	s.host.snap.shopSummary = "Tarcza Bojowa za 120k";
-	s.Say("co masz w sklepie?");
-	s.Wait(2000);
-	CHECK(Contains(s.Last(), "Joan") && Contains(s.Last(), "Tarcza Bojowa"), "offline shop named: '%s'", s.Last().c_str());
-	CHECK(!Contains(s.Last(), "stoje"), "a keeper out hunting is not at its stall: '%s'", s.Last().c_str());
-
-	TScenario none(12);
-	none.Say("co masz na straganie?");
-	none.Wait(2000);
-	CHECK(!Contains(none.Last(), "Joan"), "no shop, no town: '%s'", none.Last().c_str());
-}
-
 static void TestAnswerToBot()
 {
 	// Force an ask-back by talking to a social bot until it asks.
@@ -597,6 +598,174 @@ static void TestMemoryBounds()
 	CHECK(e.PairCount() <= CONV_MAX_PAIRS, "pair cap (%u)", (unsigned)e.PairCount());
 }
 
+
+// ------------------------------------------------------------- v6.1: slang
+
+static void TestAliasesAndMoney()
+{
+	// items
+	CHECK(ItemNameMatches("Miecz Pelni Ksiezyca+9", "fms"), "fms");
+	CHECK(ItemNameMatches("Miecz Pe\xB3ni Ksi\xEA\xBFyca+9", "fmsa"), "fmsa cp1250");
+	CHECK(ItemNameMatches("Miecz Dwunastu Duchow+5", "12d"), "12d");
+	CHECK(ItemNameMatches("Miecz Dwunastu Duchow+5", "duszki"), "duszki");
+	CHECK(ItemNameMatches("Kozik Czarnego Liscia+3", "kozy"), "kozy");
+	CHECK(ItemNameMatches("Wachlarz Jesiennego Wiatru", "jesionek"), "jesionek");
+	CHECK(ItemNameMatches("Ostrze Zbawienia+8", "gitare"), "gitare");
+	CHECK(ItemNameMatches("Ostrze Zbawienia+8", "lopata"), "lopata");
+	CHECK(ItemNameMatches("Magnetyczne Ostrze", "magneto"), "magneto");
+	CHECK(ItemNameMatches("Halabarda+4", "halke"), "halke");
+	CHECK(ItemNameMatches("Boski Luk Moreli", "morela"), "morela");
+	CHECK(!ItemNameMatches("Boski Luk Moreli", "morelek"), "morelek is not morela");
+	CHECK(ItemNameMatches("Morelowy Dzwon", "morelek"), "morelek");
+	CHECK(ItemNameMatches("Zwoj Blogoslawienstwa", "bodzio"), "bodzio");
+	CHECK(ItemNameMatches("Zwoj Blogoslawienstwa", "bogdana"), "bogdana");
+	CHECK(ItemNameMatches("Opaska Zapomnienia", "oz"), "oz");
+	CHECK(ItemNameMatches("Pierscien Doswiadczenia", "pd"), "pd");
+	CHECK(ItemNameMatches("Pierscien Doswiadczenia", "exp ring"), "exp ring");
+	CHECK(ItemNameMatches("Ebonitowe Kolczyki", "ebo"), "ebo");
+	CHECK(ItemNameMatches("Instr. Aura Miecza", "ku aura"), "ku aura");
+	CHECK(ItemNameMatches("Czerwona Mikstura (M)", "potki"), "potki");
+	CHECK(ItemNameMatches("Miecz Pelni Ksiezyca+9", "fms +9"), "fms +9");
+	CHECK(!ItemNameMatches("Miecz Pelni Ksiezyca+8", "fms +9"), "fms +9 not +8");
+	CHECK(!ItemNameMatches("Miecz Dwunastu Duchow", "fms"), "fms is not 12d");
+	CHECK(ItemNameMatches("Tarcza Bojowa", "tarcze"), "plain words still work");
+	// An alias word typed as part of a real name: "szpon" is Miecz Szponu
+	// Ducha, but "szpon wilka" is still Szpon Wilka (seen on m2zip: "Kupie
+	// szpon wilka" went unanswered beside a counter selling it).
+	CHECK(ItemNameMatches("Szpon Wilka", "szpon wilka"), "szpon wilka is Szpon Wilka");
+	CHECK(ItemNameMatches("Szpon Tygrysa", "szpon tygrysa"), "szpon tygrysa");
+	CHECK(ItemNameMatches("Miecz Szponu Ducha+3", "szpon"), "szpon alone is still the sword");
+	CHECK(!ItemNameMatches("Szpon Wilka", "szpon tygrysa"), "szpon tygrysa is not Szpon Wilka");
+	CHECK(!ItemNameMatches("Boski Luk Moreli", "morelek +9"), "morelek +9 is not morela");
+
+	// money
+	TTokens t;
+	Normalize("za 2kk", t);          CHECK(ParseYangAmount(t.words) == 2000000LL, "2kk '%s'", t.norm.c_str());
+	Normalize("za 2 kk?", t);        CHECK(ParseYangAmount(t.words) == 2000000LL, "2 kk '%s'", t.norm.c_str());
+	Normalize("dam 1.5kk", t);       CHECK(ParseYangAmount(t.words) == 1500000LL, "1.5kk '%s'", t.norm.c_str());
+	Normalize("dam 1,5kk", t);       CHECK(ParseYangAmount(t.words) == 1500000LL, "1,5kk '%s'", t.norm.c_str());
+	Normalize("500k", t);            CHECK(ParseYangAmount(t.words) == 500000LL, "500k '%s'", t.norm.c_str());
+	Normalize("1kkk", t);            CHECK(ParseYangAmount(t.words) == 1000000000LL, "1kkk '%s'", t.norm.c_str());
+	Normalize("300 tys yang", t);    CHECK(ParseYangAmount(t.words) == 300000LL, "300 tys '%s'", t.norm.c_str());
+	Normalize("150000", t);          CHECK(ParseYangAmount(t.words) == 150000LL, "150000");
+	Normalize("mam 42 lvl", t);      CHECK(ParseYangAmount(t.words) == 0, "42 is no money");
+	Normalize("12d", t);             CHECK(ParseYangAmount(t.words) == 0, "12d is no money");
+	Normalize("dam 999999999999kkk", t); CHECK(ParseYangAmount(t.words) == 4000000000000000000LL, "a sum past any purse is capped, not overflowed");
+	Normalize("kk", t);              CHECK(t.norm == "ok", "lone kk is ok: '%s'", t.norm.c_str());
+	Normalize("masz kk na sprzedaz", t); CHECK(t.Has("kk"), "kk in a long line stays: '%s'", t.norm.c_str());
+
+	// places
+	std::vector<std::string> w;
+	size_t at = 0;
+	w.clear(); SplitWords("jestes w v1", w);   CHECK(FindMapAlias(w, at) == 104, "v1");
+	w.clear(); SplitWords("expisz na red las", w); CHECK(FindMapAlias(w, at) == 68, "red las");
+	w.clear(); SplitWords("idziesz do m1", w); CHECK(ResolveMapAlias(FindMapAlias(w, at), 2) == 21, "m1 chunjo");
+	CHECK(ResolveMapAlias(MAP_ALIAS_M2, 1) == 3 && ResolveMapAlias(MAP_ALIAS_M2, 3) == 43, "m2 per kingdom");
+}
+
+static void TestSlangIntents()
+{
+	static const TIntentCase kCases[] = {
+		{ "masz fms?", I_ITEM_OWN }, { "masz na straganie fms?", I_SHOP },
+		{ "czy masz wystawiony stragan z fmsem", I_SHOP }, { "co masz na straganie", I_SHOP },
+		{ "ile za fms", I_PRICE }, { "za ile 12d?", I_PRICE }, { "ile chcesz za bodzia", I_PRICE },
+		{ "ile kosztuje oz", I_PRICE }, { "po ile chodza ebo", I_PRICE },
+		{ "sprzedasz mi fms za 2kk?", I_BUY }, { "sprzedasz fms?", I_BUY }, { "kt fms", I_BUY }, { "sell kd", I_SELL },
+		{ "masz potki?", I_ITEM_OWN }, { "ile masz sm", I_ITEMSHOP }, { "kupujesz w is?", I_ITEMSHOP },
+		{ "ksujesz mi", I_KS }, { "nie ksuj", I_KS }, { "rdy?", I_READY }, { "gl", I_GOODLUCK }, { "brb", I_BRB },
+		{ "gz", I_PRAISE }, { "nq", I_FAREWELL }, { "cya", I_FAREWELL }, { "np", I_ACK }, { "nmzc", I_ACK },
+		{ "omg", I_FOLLOW_UP }, { "jestes w v1?", I_LOCATION }, { "expisz na sohan?", I_LOCATION },
+		{ "idziesz do m1?", I_TRAVEL }, { "jestes na dt", I_LOCATION }, { "lubisz v2?", I_MAP_OPINION },
+		{ "jak resp?", I_MOB_COUNT }, { "masz duzo krytyka?", I_EQUIPMENT }, { "masz militara?", I_HORSE },
+		{ "jaki masz pz", I_HP }, { "btw co robisz", I_ACTIVITY },
+	};
+	for (size_t i = 0; i < sizeof(kCases) / sizeof(kCases[0]); ++i)
+	{
+		const EIntent got = IntentOf(kCases[i].text);
+		CHECK(got == kCases[i].intent, "\"%s\" -> %s, expected %s", kCases[i].text, IntentName(got), IntentName(kCases[i].intent));
+	}
+	TAnalysis a;
+	AnalyzeLine("sprzedasz mi fms za 2kk?", a, 1);
+	CHECK(a.object == "fms" && a.offerYang == 2000000LL, "buy fms 2kk: '%s' %lld", a.object.c_str(), a.offerYang);
+	AnalyzeLine("czy masz wystawiony stragan z fmsem", a, 1);
+	CHECK(a.object == "fmsem", "shop object '%s'", a.object.c_str());
+	AnalyzeLine("co masz na straganie", a, 1);
+	CHECK(a.object.empty(), "no object '%s'", a.object.c_str());
+	AnalyzeLine("gdzie masz stragan?", a, 1);
+	CHECK(a.intent == I_SHOP && a.object.empty(), "where is the stall: %s '%s'", IntentName(a.intent), a.object.c_str());
+	AnalyzeLine("ile chcesz za fms +9?", a, 1);
+	CHECK(a.object == "fms +9", "price object '%s'", a.object.c_str());
+}
+
+static void TestShopAnswers()
+{
+	if (g_verbose) printf("\n  SKLEP OFFLINE (bot expi, stragan stoi w Joan)\n");
+	TScenario s(41);
+	s.host.snap.shopOpen = true;           // the Ikarus offline shop
+	s.host.snap.shopStanding = false;      // the bot itself is hunting
+	s.host.snap.shopMapIndex = 21;
+	s.host.snap.shopItems = 5;
+	s.host.snap.shopSummary = "Miecz Pelni Ksiezyca+7 za 3kk, Zwoj Blogoslawienstwa za 280k";
+	s.Say("masz na straganie fms?");
+	s.Wait(2000);
+	CHECK(Contains(s.Last(), "Miecz Pelni") && Contains(s.Last(), "3kk") && Contains(s.Last(), "Joan") &&
+			!Contains(s.Last(), "Nie mam teraz"), "offline shop item: '%s'", s.Last().c_str());
+	s.Say("masz jakis stragan?");
+	s.Wait(2000);
+	CHECK(Contains(s.Last(), "Joan") && Contains(s.Last(), "Zwoj"), "offline shop listed: '%s'", s.Last().c_str());
+	s.Say("sprzedasz mi fms za 2kk?");
+	s.Wait(2000);
+	CHECK(Contains(s.Last(), "3kk") && (Contains(s.Last(), "Nie") || Contains(s.Last(), "malo")), "haggle low: '%s'", s.Last().c_str());
+	s.Say("a za 3kk?");
+	s.Wait(2000);
+	CHECK(Contains(s.Last(), "3kk") && (Contains(s.Last(), "moze byc") || Contains(s.Last(), "Pasuje")), "haggle follow-up: '%s'", s.Last().c_str());
+	s.Say("sprzedasz fms za 3.5kk");
+	s.Wait(2000);
+	CHECK(Contains(s.Last(), "taniej") || Contains(s.Last(), "przeplacac"), "offer above price: '%s'", s.Last().c_str());
+	s.Say("ile za bodzia?");
+	s.Wait(2000);
+	CHECK(Contains(s.Last(), "250k"), "market price: '%s'", s.Last().c_str());
+	s.Say("masz fms?");
+	s.Wait(2000);
+	CHECK(Contains(s.Last(), "straganie") && Contains(s.Last(), "3kk"), "item own -> stall: '%s'", s.Last().c_str());
+	s.Say("masz 12d na straganie?");
+	s.Wait(2000);
+	CHECK(Contains(s.Last(), "nie mam"), "not on stall: '%s'", s.Last().c_str());
+	s.Say("chodz na exp");
+	s.Wait(2000);
+	CHECK(!Contains(s.Last(), "stoje ze straganem"), "offline shop does not block PT: '%s'", s.Last().c_str());
+
+	TScenario n(42);
+	n.Say("masz na straganie fms?");
+	n.Wait(2000);
+	CHECK(Contains(n.Last(), "straganu"), "no stall at all: '%s'", n.Last().c_str());
+}
+
+static void TestSlangScenarios()
+{
+	TScenario s(43);
+	s.Say("jestes w v1?");
+	s.Wait(2000);
+	CHECK(Contains(s.Last(), "Nie") && Contains(s.Last(), "Dolin"), "not in v1: '%s'", s.Last().c_str());
+	s.Say("expisz w dolinie?");
+	s.Wait(2000);
+	CHECK(Contains(s.Last(), "Tak") || Contains(s.Last(), "No,"), "yes in dolina: '%s'", s.Last().c_str());
+	s.Say("ksujesz mi");
+	s.Wait(2000);
+	CHECK(Contains(s.Last(), "or") || Contains(s.Last(), "wybacz"), "ks apology: '%s'", s.Last().c_str());
+	s.Say("gl");
+	s.Wait(2000);
+	CHECK(Contains(s.Last(), "zieki") || Contains(s.Last(), "zajem"), "gl: '%s'", s.Last().c_str());
+	s.Say("rdy?");
+	s.Wait(2000);
+	CHECK(Contains(s.Last(), "otowy") || Contains(s.Last(), "rdy") || Contains(s.Last(), "isc"), "rdy: '%s'", s.Last().c_str());
+	s.host.snap.dragonKnown = true;
+	s.host.snap.dragonCoins = 1200;
+	s.Say("ile masz sm?");
+	s.Wait(2000);
+	CHECK(Contains(s.Last(), "1200"), "sm: '%s'", s.Last().c_str());
+}
+
 static void DemoConversation()
 {
 	if (!g_verbose) return;
@@ -634,13 +803,16 @@ int main(int argc, char** argv)
 	TestConsistency();
 	TestPersonaOpenQuestion();
 	TestFactUnknown();
-	TestOfflineShop();
 	TestAnswerToBot();
 	TestReactions();
 	TestRepeatAndInsult();
 	TestBotGone();
 	TestInitiative();
 	TestMemoryBounds();
+	TestAliasesAndMoney();
+	TestSlangIntents();
+	TestShopAnswers();
+	TestSlangScenarios();
 	DemoConversation();
 	printf("\n%d checks, %d failures\n", g_checks, g_failures);
 	return g_failures ? 1 : 0;
