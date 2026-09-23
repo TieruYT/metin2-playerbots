@@ -123,6 +123,14 @@ sha256_of() {
 # linux-port/..., launcher/..., tools/...), with backslashes in some entry
 # names -- Windows made it. Python's zipfile takes both; unzip needs the
 # names normalised, so python is preferred.
+#
+# Every file is written beside its place and renamed onto it, never written
+# into it. The package carries this script, and sh reads a script as it runs
+# it: overwritten in place, the running copy went on reading the new one from
+# its old offset, a line cut in half, and ended "Unterminated quoted string"
+# (code 2) after an update that had worked (Tyrion, 23 September, on a mock
+# server). A rename leaves the running shell its own file. A file that was
+# there keeps its mode; a new .sh is made executable.
 unpack_over() {
     _zip=$1; _dst=$2
     if have python3; then
@@ -135,15 +143,43 @@ for info in z.infolist():
         continue
     target = os.path.join(dst, *name.split('/'))
     os.makedirs(os.path.dirname(target), exist_ok=True)
-    with z.open(info) as src, open(target, 'wb') as out:
-        out.write(src.read())
-    if name.endswith('.sh'):
-        os.chmod(target, 0o755)
+    temp = '%s.m2-update.%d' % (target, os.getpid())
+    try:
+        with z.open(info) as src, open(temp, 'wb') as out:
+            out.write(src.read())
+        try:
+            if os.path.exists(target):
+                os.chmod(temp, os.stat(target).st_mode & 0o7777)
+            if name.endswith('.sh'):
+                os.chmod(temp, 0o755)
+        except OSError:
+            pass
+        try:
+            os.replace(temp, target)
+        except OSError:
+            # A file system that will not rename onto an open file (a Windows
+            # folder shared into a container) gets it written in place, as
+            # before; the dispatch at the bottom still keeps this script safe.
+            with open(temp, 'rb') as src, open(target, 'wb') as out:
+                out.write(src.read())
+    finally:
+        if os.path.exists(temp):
+            os.remove(temp)
     n += 1
 print('unpacked %d files' % n)
 EOF
     elif have unzip; then
-        unzip -o -q "$_zip" -d "$_dst"
+        _stage="$_dst/.m2-update-unpack.$$"
+        rm -rf "$_stage"
+        mkdir -p "$_stage" && unzip -o -q "$_zip" -d "$_stage" || { rm -rf "$_stage"; return 1; }
+        ( cd "$_stage" && find . -type f ) | while IFS= read -r _f; do
+            _f=${_f#./}
+            [ -x "$_dst/$_f" ] && chmod +x "$_stage/$_f"
+            mkdir -p "$(dirname "$_dst/$_f")" && mv -f "$_stage/$_f" "$_dst/$_f" || exit 1
+        done
+        _rc=$?
+        rm -rf "$_stage"
+        return $_rc
     else
         die "neither python3 nor unzip is installed"
     fi
@@ -437,6 +473,10 @@ watch() {
     done
 }
 
+# One command, read to its closing brace before any of it runs, and it ends in
+# exit: whatever replaces this file while it runs - the unpack above, or
+# anybody copying a tree over it - the shell never reads another line of it.
+{
 case "${1:-run}" in
     run)   check_tree; run_update ;;
     check) check_tree; fetch_manifest > "$WORK.m" && printf 'installed %s, published %s\n' "$(installed_version)" "$(manifest_field "$WORK.m" version)"; rm -f "$WORK.m" ;;
@@ -444,3 +484,5 @@ case "${1:-run}" in
     stage) check_tree; stage_panel_context && say "the panel's build context is staged from files/" || die "staging the panel's build context failed" ;;
     *) printf 'usage: sh %s [run|check|watch|stage]\n' "$0"; exit 2 ;;
 esac
+exit $?
+}
