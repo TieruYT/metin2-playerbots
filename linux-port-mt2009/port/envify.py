@@ -61,6 +61,35 @@ M2_PLAYERBOT_START_HELD=0
 """
 
 
+# Text that is true of the r40250 stack and not of this one. The classic
+# panel on this line opens without a passphrase on any address while
+# M2_PANEL_LOCAL_ONLY is empty (local_open in admin_panel.py returns before it
+# ever looks at the bind address), so the original's "on any other address it
+# asks" told a VPS operator the one thing that is not so. Each pair must match
+# the rendered text exactly once: a reworded original stops the render rather
+# than carrying the old claim across.
+LINE_2X_TEXT = [
+    ("# Whether the panel asks for the passphrase at all. Empty (the default) lets\n"
+     "# the panel decide from the address it is published on: on 127.0.0.1 nobody\n"
+     "# but this machine can open it, so it asks nothing; on any other address it\n"
+     "# asks. A server behind a proxy binds to 127.0.0.1 and is still public - set\n"
+     "# 0 there. 1 forces the open panel.\n",
+     "# Whether the panel asks for the passphrase at all. On this line empty (the\n"
+     "# default) opens it without one on any address: the 2.x suite is a world for\n"
+     "# one player at their own machine. A server anybody else can reach - a VPS,\n"
+     "# a forwarded port, a proxy in front - sets 0 here and a M2_PANEL_PASSWORD,\n"
+     "# or keeps the panels on 127.0.0.1 (M2_PANEL_BIND_ADDRESS) and opens them\n"
+     "# through an SSH tunnel. The advanced panel (7790) has its own switch in its\n"
+     "# settings and starts without a passphrase too. 1 forces the open panel.\n"
+     "# PL: na linii 2.x panel domyslnie NIE pyta o haslo, na zadnym adresie (to\n"
+     "#      swiat dla jednego gracza). Na VPS albo przy przekierowanym porcie\n"
+     "#      ustaw tu 0 i haslo w M2_PANEL_PASSWORD - albo trzymaj panele na\n"
+     "#      127.0.0.1 (M2_PANEL_BIND_ADDRESS) i otwieraj je przez tunel SSH.\n"
+     "#      Panel zaawansowany (7790) tez startuje bez hasla; wlacza sie je w\n"
+     "#      jego ustawieniach. 1 = zawsze bez hasla.\n"),
+]
+
+
 def keys_of(text):
     """The keys a .env file sets, in the order they appear."""
     found = []
@@ -78,6 +107,9 @@ def main():
             '# linux-port/docker/.env.example, plus the keys only this stack reads,\n'
             '# which are edited here and kept by the render (see envify.py).\n')
     out = head + s.rstrip('\n') + '\n' + EXTRA
+    for old, new in LINE_2X_TEXT:
+        assert out.count(old) == 1, 'the r40250 example no longer reads as LINE_2X_TEXT expects:\n' + old
+        out = out.replace(old, new)
     # Nothing is written while the render would lose a key: this file is what
     # a new install's .env is written from and what Add-MissingDotEnvKeys tops
     # an older one up from, so a key dropped here is a setting that silently

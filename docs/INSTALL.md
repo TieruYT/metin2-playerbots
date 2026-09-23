@@ -4,6 +4,13 @@
 
 Przewodnik instalacji i konfiguracji lokalnego serwera Metin2 ze zintegrowanym systemem Playerbots.
 
+> [!IMPORTANT]
+> **Dwie linie, dwie drogi instalacji.** Obecna linia **2.x** (serwer mt2009) jest rozdawana
+> jako pełna paczka `Metin2-Singleplayer-<wersja>.zip` — klient i serwer z launcherem — i
+> instaluje się ją tak, jak opisuje rozdział „Linia 2.x (pełna paczka)” poniżej. Reszta tego
+> dokumentu — `installer/install.ps1`, `installer/install.sh`, katalog `/opt/metin2/stack`,
+> archiwa BYOF — dotyczy linii **1.x** (r40250). Instalator 1.x linii 2.x nie postawi.
+
 ---
 
 ## 📋 Wymagania sprzętowe
@@ -49,7 +56,59 @@ archiwów gry do Git — patrz [NOTICE.md](../NOTICE.md) i [ATTRIBUTION.md](ATTR
 
 ---
 
-## 🚀 Instalacja
+## 📦 Linia 2.x (pełna paczka)
+
+### Windows
+
+Rozpakuj paczkę w całości do jednego folderu, uruchom `Serwer\Metin2-Launcher-GUI.bat`,
+potem **ZAINSTALUJ / PRZYGOTUJ** i **GRAJ**. Pierwszy start buduje serwer (kilkanaście
+minut), kolejne trwają chwilę. Aktualizacje: przycisk **ZAINSTALUJ AKTUALIZACJE**.
+
+### Linux / VPS
+
+Potrzebny jest Docker z wtyczką compose oraz `python3` albo `curl` + `unzip` + `sha256sum`.
+
+1. Rozpakuj folder `Serwer` z pełnej paczki do nowego, pustego katalogu, np. `/opt/metin2/serwer`.
+2. Utwórz `.env` z przykładu:
+   ```sh
+   cd /opt/metin2/serwer
+   cp linux-port/docker/.env.example linux-port/docker/.env
+   ```
+   i ustaw w nim:
+   - `M2_DB_ROOT_PASSWORD` i `M2_DB_PASSWORD` — własne, losowe hasła (np. `openssl rand -hex 16`);
+     bez nich compose nie wystartuje,
+   - `M2_PUBLIC_ADDRESS` — publiczny adres IP albo domena serwera; bez tego klienci zawisną na
+     „łączeniu z serwerem”,
+   - `M2_PANEL_BIND_ADDRESS=127.0.0.1` — na linii 2.x oba panele domyślnie nie pytają o hasło,
+     więc nie wystawiaj ich na świat. Otwierasz je przez tunel SSH:
+     ```sh
+     ssh -L 7788:127.0.0.1:7788 -L 7790:127.0.0.1:7790 user@twoj-serwer
+     ```
+     i w przeglądarce `http://127.0.0.1:7788` (panel klasyczny) oraz `http://127.0.0.1:7790`
+     (panel zaawansowany).
+3. W tym samym folderze uruchom:
+   ```sh
+   sh linux-port/tools/update.sh
+   ```
+   Skrypt pobiera najnowszą wersję opublikowaną na GitHubie, sprawdza jej sumę SHA-256,
+   przygotowuje kontekst budowania panelu (`linux-port/docker/panel/app` i `panel/schema` z
+   folderu `files/`) i uruchamia `docker compose up -d --build`. Kolejne aktualizacje robisz tą
+   samą komendą; `sh linux-port/tools/update.sh check` tylko porównuje wersje.
+   Jeśli skrypt odpowie, że wersja jest już najnowsza, a budowa staje na `COPY schema/`,
+   przygotuj sam kontekst panelu i zbuduj:
+   ```sh
+   sh linux-port/tools/update.sh stage
+   cd linux-port/docker && docker compose up -d --build
+   ```
+4. W zaporze otwórz porty TCP `11000` (logowanie) i `13000-13002` (kanał 1; z drugim kanałem
+   `13000-13012`).
+
+Nie uruchamiaj na linii 2.x `installer/install.sh` ani `m2-updater` z repozytorium — to narzędzia
+linii 1.x i odmawiają pracy na folderze 2.x.
+
+---
+
+## 🚀 Instalacja linii 1.x (r40250, z repozytorium)
 
 ### 1. Windows 10 / 11 (Zalecane)
 
