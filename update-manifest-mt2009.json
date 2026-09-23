@@ -1,12 +1,12 @@
 {
   "schema": 1,
   "channel": "stable",
-  "publishedAt": "2026-09-23T07:01:38Z",
-  "statusMessage": "2.0.98 (serwer 2.0.98, klient 2.0.26 - zaktualizuj oba): kowal nie blokuje juz ekwipunku graczom grajacym po niemiecku, hiszpansku, wlosku, portugalsku, rumunsku i turecku; klient po hiszpansku znow sie uruchamia; launcher nie przycina sie przy zmianie rozmiaru okna; czat z botami 1.1b od l0st3k (bot wie, co ma w sklepie offline, rozumie skroty graczy).",
+  "publishedAt": "2026-09-23T08:27:17Z",
+  "statusMessage": "2.0.99 (serwer 2.0.99, klient bez zmian - 2.0.26): launcher rozpoznaje zepsuty dysk Dockera i nie pobiera w kolko tej samej aktualizacji; paczka z logami bez hasla do panelu. Zawiera wszystko z 2.0.98: kowal w szesciu jezykach, czat z botami 1.1b.",
   "server": {
-    "version": "2.0.98",
-    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.0.98/metin2-server-update-2.0.98.zip",
-    "sha256": "8EBA4B3599C2E1F5FE83E4E0326EDD465509C8BACBF833AAFF43A9D55CCAD4F1"
+    "version": "2.0.99",
+    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.0.99/metin2-server-update-2.0.99.zip",
+    "sha256": "2C287EDFDCA998FF0FCC5B3183E2A576B52E0182EF48A06AEA096242490C38BC"
   },
   "support": {
     "contactUrl": "https://discord.gg/pt5tvnrN6",
