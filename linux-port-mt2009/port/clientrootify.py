@@ -32,6 +32,10 @@ Writes into client-root/ (beside serverinfo.py, which is hand-written):
                     and is never called.
   * offlineshopmanage.py - a click on an empty slot of the shop's edit grid
                     removes nothing instead of raising KeyError.
+  * offlineshopsearch.py - a click on an icon of the item search's grid picks
+                    that one item and "Szukaj" finds only the shops holding it
+                    (Tyrion; the server half is playerbotify.py's
+                    apply_shop_search_picked_item).
   * uigameoption.py, uiscript/gameoptiondialog.py - the "Tytuly botow" row of
                     the game options: a bot's personality title or the classic
                     alignment title (playerbot_status_tail.py keeps the choice).
@@ -522,6 +526,177 @@ EDITS = {
          b'\t\t\t\t\t\t\t"tooltip_x": -30,\r\n'
          b'\t\t\t\t\t\t},\r\n'
          b'\t\t\t\t\t),\r\n'),
+    ],
+    # Tyrion's item search (22 September, tested on 2.0.94): a click on an
+    # icon of the search window's grid picks that one item - a second click
+    # drops it - and "Szukaj" then finds only the shops holding it. The
+    # item goes to the server in SendSearchItem's second field as
+    # vnum * 1000 + its socket0, 0 being the whole category as before, so the
+    # packet is unchanged (playerbotify.py, apply_shop_search_picked_item).
+    'offlineshopsearch.py': [
+        (b'def is_wearable_search(category):\r\n'
+         b'\treturn category in (ikashop.SHOP_SEARCH_CATEGORY_ARMOR, ikashop.SHOP_SEARCH_CATEGORY_WEAPON, ikashop.SHOP_SEARCH_CATEGORY_JEWELRY)\r\n'
+         b'\r\n'
+         b'def search_category(category, sub_category=-1, isSearchAttr=False):\r\n'
+         b'\tprint category, sub_category\r\n'
+         b'\tconstInfo.OFFLINESHOP_LAST_SEARCHED_CATEGORY = category\r\n'
+         b'\tconstInfo.OFFLINESHOP_LAST_SEARCHED_SUBCATEGORY = sub_category\r\n',
+         b'def is_wearable_search(category):\r\n'
+         b'\treturn category in (ikashop.SHOP_SEARCH_CATEGORY_ARMOR, ikashop.SHOP_SEARCH_CATEGORY_WEAPON, ikashop.SHOP_SEARCH_CATEGORY_JEWELRY)\r\n'
+         b'\r\n'
+         b'def search_category(category, sub_category=-1, isSearchAttr=False, selectedItem=None):\r\n'
+         b'\tprint category, sub_category\r\n'
+         b'\tconstInfo.OFFLINESHOP_LAST_SEARCHED_CATEGORY = category\r\n'
+         b'\tconstInfo.OFFLINESHOP_LAST_SEARCHED_SUBCATEGORY = sub_category\r\n'),
+        (b'\t\tsearch_data = search_data["sub"][sub_category]\r\n'
+         b'\t\tsearchIndex += sub_category\r\n'
+         b'\r\n'
+         b'\tfor data in search_data["itemList"]:\r\n'
+         b'\t\tconstInfo.OFFLINESHOP_LAST_SEARCHED_ITEMS.append(data)\r\n'
+         b'\r\n'
+         b'\tprint searchIndex\r\n'
+         b'\tikashop.SendSearchItem(searchIndex, 0)\r\n'
+         b'\r\n'
+         b'def get_item_list(category, sub_category=-1):\r\n'
+         b'\tdata = SHOP_SEARCH_FILTERS[category]\r\n',
+         b'\t\tsearch_data = search_data["sub"][sub_category]\r\n'
+         b'\t\tsearchIndex += sub_category\r\n'
+         b'\r\n'
+         b'\t# shop search: one item picked in the grid -> search only that item.\r\n'
+         b'\t# The server reads it from the second argument as vnum * 1000 + socket0\r\n'
+         b'\t# (0 = whole category).\r\n'
+         b'\tsearchItemCode = 0\r\n'
+         b'\tif selectedItem and selectedItem[1] >= 0 and selectedItem[1] < 1000:\r\n'
+         b'\t\tsearchItemCode = selectedItem[0] * 1000 + selectedItem[1]\r\n'
+         b'\t\tconstInfo.OFFLINESHOP_LAST_SEARCHED_ITEMS.append(selectedItem)\r\n'
+         b'\telse:\r\n'
+         b'\t\tfor data in search_data["itemList"]:\r\n'
+         b'\t\t\tconstInfo.OFFLINESHOP_LAST_SEARCHED_ITEMS.append(data)\r\n'
+         b'\r\n'
+         b'\tprint searchIndex, searchItemCode\r\n'
+         b'\tikashop.SendSearchItem(searchIndex, searchItemCode)\r\n'
+         b'\r\n'
+         b'def get_item_list(category, sub_category=-1):\r\n'
+         b'\tdata = SHOP_SEARCH_FILTERS[category]\r\n'),
+        (b'\t\tself.subCategory = -1\r\n'
+         b'\t\tself.itemToolTip = None\r\n'
+         b'\t\tself.isSearchAttr = False\r\n'
+         b'\r\n'
+         b'\t@ui.WindowDestroy\r\n'
+         b'\tdef Destroy(self):\r\n',
+         b'\t\tself.subCategory = -1\r\n'
+         b'\t\tself.itemToolTip = None\r\n'
+         b'\t\tself.isSearchAttr = False\r\n'
+         b'\t\tself.selectedItemIndex = -1\r\n'
+         b'\r\n'
+         b'\t@ui.WindowDestroy\r\n'
+         b'\tdef Destroy(self):\r\n'),
+        (b'\t\t\tself.itemSlot.SetSlotStyle(wndMgr.SLOT_STYLE_NONE)\r\n'
+         b'\t\t\tself.itemSlot.SetOverInItemEvent(ui.__mem_func__(self.__ShowToolTip))\r\n'
+         b'\t\t\tself.itemSlot.SetOverOutItemEvent(ui.__mem_func__(self.__HideToolTip))\r\n'
+         b'\r\n'
+         b'\t\t\tself.searchButton.SAFE_SetEvent(self.__OnSearch)\r\n'
+         b'\t\t\tself.clearButton.SAFE_SetEvent(self.__OnClear)\r\n',
+         b'\t\t\tself.itemSlot.SetSlotStyle(wndMgr.SLOT_STYLE_NONE)\r\n'
+         b'\t\t\tself.itemSlot.SetOverInItemEvent(ui.__mem_func__(self.__ShowToolTip))\r\n'
+         b'\t\t\tself.itemSlot.SetOverOutItemEvent(ui.__mem_func__(self.__HideToolTip))\r\n'
+         b'\t\t\tself.itemSlot.SetSelectItemSlotEvent(ui.__mem_func__(self.__OnSelectItem))\r\n'
+         b'\t\t\tself.itemSlot.SetUnselectItemSlotEvent(ui.__mem_func__(self.__OnSelectItem))\r\n'
+         b'\r\n'
+         b'\t\t\tself.searchButton.SAFE_SetEvent(self.__OnSearch)\r\n'
+         b'\t\t\tself.clearButton.SAFE_SetEvent(self.__OnClear)\r\n'),
+        (b'\t\t\t\tindex = y * self.itemSlot.x_width + x\r\n'
+         b'\t\t\t\tself.itemSlot.SetItemSlot(index, 0, 0)\r\n'
+         b'\t\t\t\tself.itemSlot.ClearSlot(index)\r\n'
+         b'\r\n'
+         b'\t\titemList = get_item_list(self.category, self.subCategory)\r\n'
+         b'\t\tidx = 0\r\n',
+         b'\t\t\t\tindex = y * self.itemSlot.x_width + x\r\n'
+         b'\t\t\t\tself.itemSlot.SetItemSlot(index, 0, 0)\r\n'
+         b'\t\t\t\tself.itemSlot.ClearSlot(index)\r\n'
+         b'\t\t\t\tself.itemSlot.DeactivateSlot(index)\r\n'
+         b'\r\n'
+         b'\t\titemList = get_item_list(self.category, self.subCategory)\r\n'
+         b'\t\tidx = 0\r\n'),
+        (b'\t\t\tself.itemSlot.SetItemSlot(idx, itemData[0], 0, socket=(itemData[1], 0, 0))\r\n'
+         b'\t\t\tidx += 1\r\n'
+         b'\r\n'
+         b'\tdef __CreateCategory(self, categoryIndex):\r\n'
+         b'\t\tif categoryIndex == "break":\r\n'
+         b'\t\t\tstep = ui.Window()\r\n',
+         b'\t\t\tself.itemSlot.SetItemSlot(idx, itemData[0], 0, socket=(itemData[1], 0, 0))\r\n'
+         b'\t\t\tidx += 1\r\n'
+         b'\r\n'
+         b'\t\tif self.selectedItemIndex >= len(itemList):\r\n'
+         b'\t\t\tself.selectedItemIndex = -1\r\n'
+         b'\t\tif self.selectedItemIndex >= 0:\r\n'
+         b'\t\t\tself.itemSlot.ActivateSlot(self.selectedItemIndex)\r\n'
+         b'\t\tself.itemSlot.RefreshSlot()\r\n'
+         b'\r\n'
+         b'\tdef __OnSelectItem(self, index):\r\n'
+         b'\t\t# click an item = search only that item, click it again = whole category\r\n'
+         b'\t\tif self.category < 0:\r\n'
+         b'\t\t\treturn\r\n'
+         b'\t\titemList = get_item_list(self.category, self.subCategory)\r\n'
+         b'\t\tif index < 0 or index >= len(itemList):\r\n'
+         b'\t\t\treturn\r\n'
+         b'\t\tif self.selectedItemIndex == index:\r\n'
+         b'\t\t\tself.selectedItemIndex = -1\r\n'
+         b'\t\telse:\r\n'
+         b'\t\t\tself.selectedItemIndex = index\r\n'
+         b'\t\tself.__RefreshCategoryItems()\r\n'
+         b'\r\n'
+         b'\tdef __GetSelectedItem(self):\r\n'
+         b'\t\tif self.selectedItemIndex < 0 or self.category < 0 or is_wearable_search(self.category):\r\n'
+         b'\t\t\treturn None\r\n'
+         b'\t\titemList = get_item_list(self.category, self.subCategory)\r\n'
+         b'\t\tif self.selectedItemIndex >= len(itemList):\r\n'
+         b'\t\t\treturn None\r\n'
+         b'\t\treturn itemList[self.selectedItemIndex]\r\n'
+         b'\r\n'
+         b'\tdef __CreateCategory(self, categoryIndex):\r\n'
+         b'\t\tif categoryIndex == "break":\r\n'
+         b'\t\t\tstep = ui.Window()\r\n'),
+        (b'\r\n'
+         b'\t\tself.category = category\r\n'
+         b'\t\tself.subCategory = -1\r\n'
+         b'\t\tself.__RefreshSubCategoryButtons()\r\n'
+         b'\t\tself.__RefreshCategory()\r\n'
+         b'\t\tif category >= 0:\r\n',
+         b'\r\n'
+         b'\t\tself.category = category\r\n'
+         b'\t\tself.subCategory = -1\r\n'
+         b'\t\tself.selectedItemIndex = -1\r\n'
+         b'\t\tself.__RefreshSubCategoryButtons()\r\n'
+         b'\t\tself.__RefreshCategory()\r\n'
+         b'\t\tif category >= 0:\r\n'),
+        (b'\r\n'
+         b'\tdef __OnClickSubCategory(self, index):\r\n'
+         b'\t\tself.subCategory = index\r\n'
+         b'\t\tself.__RefreshSubCategoryButtons()\r\n'
+         b'\t\tself.__RefreshCategory()\r\n'
+         b'\r\n',
+         b'\r\n'
+         b'\tdef __OnClickSubCategory(self, index):\r\n'
+         b'\t\tself.subCategory = index\r\n'
+         b'\t\tself.selectedItemIndex = -1\r\n'
+         b'\t\tself.__RefreshSubCategoryButtons()\r\n'
+         b'\t\tself.__RefreshCategory()\r\n'
+         b'\r\n'),
+        (b'\tdef __OnSearch(self):\r\n'
+         b'\t\tif self.category >= 0:\r\n'
+         b'\t\t\tself.__OnClear()\r\n'
+         b'\t\t\tsearch_category(self.category, self.subCategory, self.isSearchAttr)\r\n'
+         b'\r\n'
+         b'\tdef __OnClear(self):\r\n'
+         b'\t\tikashop.ClearFoundShopMap()\r\n',
+         b'\tdef __OnSearch(self):\r\n'
+         b'\t\tif self.category >= 0:\r\n'
+         b'\t\t\tself.__OnClear()\r\n'
+         b'\t\t\tsearch_category(self.category, self.subCategory, self.isSearchAttr, self.__GetSelectedItem())\r\n'
+         b'\r\n'
+         b'\tdef __OnClear(self):\r\n'
+         b'\t\tikashop.ClearFoundShopMap()\r\n'),
     ],
     # The offline shop's edit grid removes an item on a left click and never
     # asked whether the slot held one: a click on an empty slot was a KeyError

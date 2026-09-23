@@ -89,6 +89,11 @@ ARCHER_REACH = 2400
 STOP_SHORT_SHARE = 0.6
 ANCHOR_LEASH = 600
 STUCK_SECONDS = 8.0
+# While the hunter walks after a target beyond its reach, the server's pick
+# is taken only when it stands this much nearer: the nearest monster is hit
+# rather than one chased across the map, and two monsters at about the same
+# distance do not turn the hunter back and forth (Buby, 23 September).
+CHASE_SWITCH_MARGIN = 300
 STUCK_PAUSE = 2.0
 STUCK_SKIP_SECONDS = 60.0
 
@@ -433,7 +438,10 @@ class Hunter(object):
             if distance >= 0:
                 reach_limit = self.Reach() + 200 
                 if distance > reach_limit:
-                    return 
+                    # Chasing: a clearly nearer monster is hit instead.
+                    new_distance = player.GetCharacterDistance(new_vid)
+                    if new_distance < 0 or new_distance + CHASE_SWITCH_MARGIN > distance:
+                        return
 
         if new_vid != self.targetVid:
             self.ReleaseAttack()

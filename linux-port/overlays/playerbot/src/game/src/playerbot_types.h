@@ -5569,7 +5569,7 @@ namespace
 	const DWORD PLAYERBOT_RYBAK_EPISODE_MAX = 20 * 60 * 1000;
 	const DWORD PLAYERBOT_RYBAK_MAX_SESSION = 60 * 60 * 1000;
 	// "Bot otwiera co 5 Malz": shells are opened in fives.
-	const int PLAYERBOT_RYBAK_SHELL_BATCH = 5;
+	const int PLAYERBOT_RYBAK_SHELL_BATCH = 5;   // one shell opened in this many
 
 	// Iwakura's Gornik (playerbot_mining.h): a bot with a pickaxe digs a vein
 	// in sight, until the vein is gone ("Ruda znika z mapy"), and after a fight

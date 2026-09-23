@@ -601,8 +601,15 @@ namespace
 	bool PlayerBotNeedsRefineMaterial(LPCHARACTER ch, DWORD materialVnum);
 	int GetPlayerBotRefineMaterialReserve(LPCHARACTER ch, DWORD materialVnum);
 
-	// The Rybak's batch of shells being opened, by pid: five at a time.
-	std::map<DWORD, int> s_mapPlayerBotShellBatch;
+	// The Rybak's shells, by pid: how many it held at the last look and how
+	// many it has gained since, so one is opened for every
+	// PLAYERBOT_RYBAK_SHELL_BATCH it gets (ProcessPlayerBotCatch).
+	struct TPlayerBotShellTally
+	{
+		int held;
+		int gained;
+	};
+	std::map<DWORD, TPlayerBotShellTally> s_mapPlayerBotShellTally;
 
 	// What a thing is worth to sell: what the market has paid for it, else a
 	// fifth of the shop price, which is what the merchant pays.
@@ -868,19 +875,33 @@ namespace
 			// A shell is worth something whole, so the first few are never
 			// gambled with: they go to the anvil or onto the counter, and only
 			// the surplus is pried open.
-			// Iwakura's Rybak opens them in fives for the pearls ("bot otwiera
-			// co 5 Malz w celu zdobycia perly"), whatever the market says a
-			// shell is worth - but never the ones its own anvil keeps back.
+			// Iwakura's Rybak opens every fifth shell for a pearl ("bot otwiera
+			// co 5 Malz w celu zdobycia perly") - one for each five it gets,
+			// never the ones its own anvil keeps back, and the other four go to
+			// the counter and the anvils of the world. It used to read "in
+			// fives" and opened every shell over the reserve, five at a time,
+			// so a young world had pearls nobody under forty-eight can use and
+			// no shells on its counters, where twenty-six recipes want them
+			// ("boty otwieraja malze za szybko", LazyBastarden, 23 September).
+			bool rybakShell = false;
 			if (vnum == PLAYERBOT_SHELLFISH_VNUM && IsPlayerBotPersonaEnabled())
 			{
-				int& batch = s_mapPlayerBotShellBatch[ch->GetPlayerID()];
-				const int spare = (int)ch->CountSpecifyItem(PLAYERBOT_SHELLFISH_VNUM) -
-						GetPlayerBotRefineMaterialReserve(ch, PLAYERBOT_SHELLFISH_VNUM);
-				if (batch <= 0 && spare >= PLAYERBOT_RYBAK_SHELL_BATCH)
-					batch = PLAYERBOT_RYBAK_SHELL_BATCH;
-				if (batch <= 0 || spare <= 0)
+				const int held = (int)ch->CountSpecifyItem(PLAYERBOT_SHELLFISH_VNUM);
+				std::map<DWORD, TPlayerBotShellTally>::iterator tally =
+						s_mapPlayerBotShellTally.find(ch->GetPlayerID());
+				if (tally == s_mapPlayerBotShellTally.end())
+				{
+					// What the bag held before the tally began is not gained.
+					TPlayerBotShellTally fresh = { held, 0 };
+					tally = s_mapPlayerBotShellTally.insert(std::make_pair(ch->GetPlayerID(), fresh)).first;
+				}
+				if (held > tally->second.held)
+					tally->second.gained += held - tally->second.held;
+				tally->second.held = held;
+				const int spare = held - GetPlayerBotRefineMaterialReserve(ch, PLAYERBOT_SHELLFISH_VNUM);
+				if (tally->second.gained < PLAYERBOT_RYBAK_SHELL_BATCH || spare <= 0)
 					continue;
-				--batch;
+				rybakShell = true;
 			}
 			else if (vnum == PLAYERBOT_SHELLFISH_VNUM &&
 					(ch->CountSpecifyItem(PLAYERBOT_SHELLFISH_VNUM) <= PLAYERBOT_SHELLFISH_KEEP ||
@@ -895,6 +916,12 @@ namespace
 			const int boneBefore = ch->CountSpecifyItem(PLAYERBOT_FISH_BONE_VNUM);
 			if (!ch->UseItem(TItemPos(INVENTORY, cell)))
 				continue;
+			if (rybakShell)
+			{
+				TPlayerBotShellTally& tally = s_mapPlayerBotShellTally[ch->GetPlayerID()];
+				tally.gained -= PLAYERBOT_RYBAK_SHELL_BATCH;
+				tally.held = (int)ch->CountSpecifyItem(PLAYERBOT_SHELLFISH_VNUM);
+			}
 			// A shell or a bone out of a fish, a pearl out of a shell: the
 			// document's valuables, and an angler's cure for a SLABY mood
 			// ("nastroj natychmiast poprawia sie", playerbot_mood.h).

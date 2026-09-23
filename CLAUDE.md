@@ -7875,6 +7875,33 @@ not in `data/`) reworked these point by point. What each hangs on:
   then no candidate, a held one is let go (`PLAYERBOT_TOWER: stone waits`),
   and the fight is ranked from the bot rather than from the stone. Compiled
   and not watched: m2zip has no guild to take a raid that far.
+- **"Co 5 Malz" is every fifth shell, not every shell five at a time.**
+  Iwakura's Rybak "otwiera co 5 Malz w celu zdobycia perly"; the code read
+  it as batches of five and opened every shell over the anvil's reserve, so
+  a young world had pearls nobody under forty-eight refines with and no
+  shells on its counters, where twenty-six recipes consume one
+  ("boty otwieraja malze za szybko", LazyBastarden, 23 September).
+  `s_mapPlayerBotShellTally` counts what a bot gains (the bag at the first
+  look is not a gain) and one shell is opened per
+  `PLAYERBOT_RYBAK_SHELL_BATCH`. The reading is ours; ask Iwakura before
+  changing it back.
+- **A clock that takes one action per 200 ms refuses a bunched burst.**
+  The client's Ctrl + right-click sends a shop's price changes a quarter of
+  a second apart, and a stalled connection hands the server two at once:
+  `RecvShopEditItemClientPacket`'s `IncreaseClock(IkaShopTouchItem, 200 ms)`
+  answered one of every few with "Zaczekaj chwile", the client re-sent it
+  only after the shop list came back, and a player who left edit mode first
+  kept the old price (blasty, three times from 20 September).
+  `apply_shop_edit_burst` (playerbotify.py) takes ten to a second
+  (`IncreaseCount`); the per-minute weight above it (2 500, five an edit) is
+  still the flood guard. Server-side, so no client release was needed.
+- **The item search finds one clicked item (Tyrion).** His patch of 22
+  September carries the picked item in `SendSearchItem`'s second field as
+  vnum * 1000 + socket0, 0 being the whole category, so the packet is
+  unchanged and either side alone behaves as before. The server half is
+  `apply_shop_search_picked_item`, the client half a clientrootify entry for
+  `offlineshopsearch.py` generated from his diff and checked to equal
+  `patch(1)`'s result on client 2.0.26's root.
 - **Rada Pustelnika is one certain read, and the pass took it for an
   Exorcism Scroll.** `LearnSkillByBook` rolls a hundred instead of
   thirty-five for a class book while `AFFECT_SKILL_BOOK_BONUS` is on (on

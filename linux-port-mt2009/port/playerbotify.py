@@ -1445,6 +1445,8 @@ def main(root):
     apply_refine_abandoned_session(game)
     apply_book_wait(game)
     apply_gm_panel_url(game)
+    apply_shop_edit_burst(game)
+    apply_shop_search_picked_item(game)
     print('playerbotify: done')
 
 
@@ -1986,6 +1988,97 @@ def apply_mark_login_quiet(game):
          '\t\tdefault:\n'
          '\t\t\tsys_err("login phase does not handle this packet! header %d", bHeader);\n',
          marker='playerbotify.py, apply_mark_login_quiet)')
+
+
+def apply_shop_edit_burst(game):
+    """A price edit is taken ten to a second, not one to 200 ms.
+
+    RecvShopEditItemClientPacket refused an edit that came within 200 ms of
+    the last one on the IkaShopTouchItem clock, with the same "Zaczekaj
+    chwile, przed kolejna akcja" as the flood check beside it. The client's
+    Ctrl + right-click sends a shop's whole price change a quarter of a second
+    apart, and a network stall hands the server two of them at once: one of
+    every few was refused, the client sent it again only after it had waited
+    for the shop list, and a player who left the edit mode before that found
+    the old price still standing (blasty, 20, 21 and 23 September). A window
+    of a second that takes ten keeps the bunched ones; the per-minute weight
+    check above it (OFFLINESHOP_MAX_WEIGHT_PER_PLAYER, five an edit) is what
+    stops a flood, and it is untouched.
+    """
+    edit(os.path.join(game, 'ikarus_shop_manager.cpp'),
+         '\t\tif(!ch->IkarusShopFloodCheck(SHOP_ACTION_WEIGHT_EDIT_ITEM))\n'
+         '\t\t\treturn false;\n'
+         '\n'
+         '\t\tif (!PulseManager::Instance().IncreaseClock(ch->GetPlayerID(), ePulse::IkaShopTouchItem, std::chrono::milliseconds(200)))\n',
+         '\t\tif(!ch->IkarusShopFloodCheck(SHOP_ACTION_WEIGHT_EDIT_ITEM))\n'
+         '\t\t\treturn false;\n'
+         '\n'
+         '\t\t// Ten edits to a second rather than one to 200 ms (playerbotify.py,\n'
+         '\t\t// apply_shop_edit_burst): a bulk price change reaches the server bunched.\n'
+         '\t\tif (!PulseManager::Instance().IncreaseCount(ch->GetPlayerID(), ePulse::IkaShopTouchItem, std::chrono::milliseconds(1000), 10))\n',
+         marker='apply_shop_edit_burst): a bulk price change reaches the server bunched.')
+
+
+def apply_shop_search_picked_item(game):
+    """The shop search finds the one item clicked in its grid (Tyrion).
+
+    The item search window lists a subcategory's items as icons on the right,
+    and "Szukaj" found every shop holding anything of the whole subcategory:
+    the client sent the category alone (ikashop.SendSearchItem(index, 0)) and
+    the server's shop->HasItem(itemVnum, socket0) test was commented out, so a
+    player could not look for the Malz alone. Tyrion's patch of 22 September,
+    tested on 2.0.94: the client puts the clicked item in the packet's second
+    field as vnum * 1000 + its socket0 (a skill book's skill), 0 meaning the
+    whole category as before, so the packet does not change and an old client
+    with this server, or a new client with an old server, searches exactly as
+    it did. A vnum the item table does not know is refused; the ten-second
+    cooldown, the 7500 range, the 400 results and the flood check stand. The
+    bots' classic stalls are asked the same question (CPlayerBotStallView::
+    HasItem). The client half is clientrootify.py's offlineshopsearch.py.
+    """
+    path = os.path.join(game, 'ikarus_shop_manager.cpp')
+    edit(path,
+         '\tstatic void PlayerBotSearchStalls(LPCHARACTER ch, DWORD category, const FILTERS& filters,\n'
+         '\t\t\tstd::vector<TSubPacketGCShopSearchItemShop>& foundShops)\n',
+         '\tstatic void PlayerBotSearchStalls(LPCHARACTER ch, DWORD category, const FILTERS& filters,\n'
+         '\t\t\tstd::vector<TSubPacketGCShopSearchItemShop>& foundShops,\n'
+         '\t\t\tDWORD selectedVnum = 0, int selectedSocket0 = 0)\n')
+    edit(path,
+         '\t\t\tCPlayerBotStallView view(keeper);\n'
+         '\t\t\tif (!PlayerBotMatchShopCategory(category, &view, filters))\n'
+         '\t\t\t\tcontinue;\n',
+         '\t\t\tCPlayerBotStallView view(keeper);\n'
+         '\t\t\t// One item picked in the grid: that item only (apply_shop_search_picked_item).\n'
+         '\t\t\tif (selectedVnum != 0 ? !view.HasItem(selectedVnum, selectedSocket0)\n'
+         '\t\t\t\t\t: !PlayerBotMatchShopCategory(category, &view, filters))\n'
+         '\t\t\t\tcontinue;\n',
+         marker='// One item picked in the grid: that item only (apply_shop_search_picked_item).')
+    edit(path,
+         '\t\tif (itemVnum >= SHOP_SEARCH_CATEGORY_MAX * SHOP_CATEGORY_MAX_SUB)\n'
+         '\t\t\treturn false;\n',
+         '\t\tif (itemVnum >= SHOP_SEARCH_CATEGORY_MAX * SHOP_CATEGORY_MAX_SUB)\n'
+         '\t\t\treturn false;\n'
+         '\n'
+         '\t\t// The item picked in the grid, if any (apply_shop_search_picked_item):\n'
+         '\t\t// the category stays in itemVnum and socket0 carries vnum * 1000 + the\n'
+         '\t\t// item\'s socket0, 0 being the whole category.\n'
+         '\t\tDWORD selectedVnum = 0;\n'
+         '\t\tint selectedSocket0 = 0;\n'
+         '\t\tif (socket0 > 0)\n'
+         '\t\t{\n'
+         '\t\t\tselectedVnum = static_cast<DWORD>(socket0 / 1000);\n'
+         '\t\t\tselectedSocket0 = socket0 % 1000;\n'
+         '\t\t\tif (!ITEM_MANAGER::instance().GetTable(selectedVnum))\n'
+         '\t\t\t\treturn false;\n'
+         '\t\t}\n',
+         marker='// The item picked in the grid, if any (apply_shop_search_picked_item):')
+    edit(path,
+         '\t\t\t\tif (!SearchItemsByCategory(itemVnum, shop))\n',
+         '\t\t\t\tif (selectedVnum != 0 ? !shop->HasItem(selectedVnum, selectedSocket0)\n'
+         '\t\t\t\t\t\t: !SearchItemsByCategory(itemVnum, shop))\n')
+    edit(path,
+         'PlayerBotSearchStalls(ch, itemVnum, m_shopSearchFilters, foundShops);',
+         'PlayerBotSearchStalls(ch, itemVnum, m_shopSearchFilters, foundShops, selectedVnum, selectedSocket0);')
 
 
 def apply_gm_panel_url(game):

@@ -471,6 +471,21 @@ class HuntTest(unittest.TestCase):
 		self.hunter.OnServerTarget('56')
 		self.assertEqual(self.hunter.targetVid, 56)
 
+	def test_a_clearly_nearer_monster_ends_a_chase(self):
+		# "bila najblizszy target, a nie lapala focus na jednego moba i
+		# gonila go" (Buby, 23 September): chasing 55 at 900, the server's 56
+		# at 150 is taken, a 57 at 700 is not nearer by the margin.
+		STATE['where'][55] = (2000, 1000, 0)
+		STATE['distance'][55] = 900
+		self.hunter.OnServerTarget('55')
+		step(self.hunter)
+		STATE['distance'][57] = 700
+		self.hunter.OnServerTarget('57')
+		self.assertEqual(self.hunter.targetVid, 55)
+		STATE['distance'][56] = 150
+		self.hunter.OnServerTarget('56')
+		self.assertEqual(self.hunter.targetVid, 56)
+
 	def test_walks_to_loot_and_picks_it_up(self):
 		self.hunter.OnServerLoot('77', '600', '0')
 		step(self.hunter)
