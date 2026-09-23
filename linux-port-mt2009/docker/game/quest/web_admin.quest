@@ -566,6 +566,57 @@ quest web_admin begin
 				end
 			end
 
+			-- The world's difficulty, the same way (drip9660, 23 September):
+			-- the level and seven waits in seconds - the Biologist's, the
+			-- stable keeper's four (m2_difficulty.lua), and the skill books'
+			-- for players (the engine, playerbotify apply_book_wait) and for
+			-- bots (the AI). The panel has written the rows; this makes them
+			-- live without a restart.
+			-- arg1 = "level,bio,hbuy,hup,htr,htr2,book,botbook", digits only,
+			-- level 0..3, each wait at most a year.
+			local drows = wa_query("SELECT id, arg1 FROM player.web_admin_queue WHERE status='pending' AND cmd='DIFFICULTY' ORDER BY id ASC LIMIT 3")
+			if type(drows) == "table" then
+				local di
+				for di = 1, table.getn(drows) do
+					local dr = drows[di]
+					if type(dr) == "table" then
+						local dqid = tonumber(dr.id)
+						local dv = nil
+						if type(dr.arg1) == "string" then
+							local _, _, d1, d2, d3, d4, d5, d6, d7, d8 = string.find(dr.arg1, "^(%d+),(%d+),(%d+),(%d+),(%d+),(%d+),(%d+),(%d+)$")
+							if d8 ~= nil then
+								dv = { tonumber(d1), tonumber(d2), tonumber(d3), tonumber(d4), tonumber(d5), tonumber(d6), tonumber(d7), tonumber(d8) }
+							end
+						end
+						if dqid ~= nil then
+							local dres = "done"
+							local dok = dv ~= nil and dv[1] <= 3
+							if dok then
+								local dj
+								for dj = 2, 8 do
+									if dv[dj] > 31536000 then dok = false end
+								end
+							end
+							if not dok then
+								dres = "bad_args"
+							elseif game.set_event_flag == nil then
+								dres = "failed"
+							else
+								game.set_event_flag("m2_difficulty", dv[1])
+								game.set_event_flag("m2_biologist_wait", dv[2])
+								game.set_event_flag("m2_horse_buy_wait", dv[3])
+								game.set_event_flag("m2_horse_upgrade_wait", dv[4])
+								game.set_event_flag("m2_horse_train_wait", dv[5])
+								game.set_event_flag("m2_horse_train2_wait", dv[6])
+								game.set_event_flag("m2_book_wait", dv[7])
+								game.set_event_flag("m2_bot_book_wait", dv[8])
+							end
+							wa_query("UPDATE player.web_admin_queue SET status='" .. dres .. "' WHERE id=" .. dqid .. " AND status='pending' LIMIT 1")
+						end
+					end
+				end
+			end
+
 			-- The thirty seconds are safely longer than the seven the
 			-- panel waits, so this never races it: by the time a row is
 			-- old enough to be swept, the panel has long since either

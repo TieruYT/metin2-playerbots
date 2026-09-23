@@ -3068,6 +3068,35 @@ T = {
                       "en":"✅ Saved! The new counts are live in game and fill in at the next respawn."},
  "count_saved_restart": {"pl":"Zapisano. Nikt nie jest zalogowany, więc pomocnik w grze nie odpowiedział — nowa liczba potworów zadziała po restarcie serwera (albo zapisz jeszcze raz, gdy ktoś będzie w grze).",
                          "en":"Saved. Nobody is logged in, so the in-game helper did not answer — the new counts apply after a server restart (or save again while somebody is in game)."},
+ "diff_title":  {"pl":"Poziom trudności", "en":"Difficulty"},
+ "diff_help":   {"pl":"Ile gracz czeka u Biologa między oddaniami i u Stajennego (kucyk, Księgi Konia, treningi medalami), i ile gracze oraz boty czekają między dwiema księgami tej samej umiejętności — Zwój Egzorcyzmu pomija to czekanie. Zmiana działa od razu, gdy ktoś jest w grze, i zostaje po restarcie, dopóki nie zmienisz poziomu trudności w launcherze (przycisk POZIOM TRUDNOŚCI).",
+                 "en":"How long a player waits at the Biologist between hand-ins and at the stable keeper (the pony, the Horse Books, the medal trainings), and how long players and bots wait between two books of one skill - an Exorcism Scroll skips that wait. A change is live at once while somebody is in game, and it stays across a restart until the difficulty is changed in the launcher (the DIFFICULTY button)."},
+ "diff_now":    {"pl":"Teraz", "en":"Now"},
+ "diff_level":  {"pl":"Poziom", "en":"Level"},
+ "diff_level_easy":   {"pl":"Łatwy — bez czekania", "en":"Easy — no waiting"},
+ "diff_level_medium": {"pl":"Średni — Biolog 8 h, koń 4–7 h, księgi 7 h", "en":"Medium — Biologist 8 h, horse 4-7 h, books 7 h"},
+ "diff_level_hard":   {"pl":"Trudny — jak w oryginale: Biolog 24 h, koń 12–21 h, księgi 21 h", "en":"Hard — as the original: Biologist 24 h, horse 12-21 h, books 21 h"},
+ "diff_level_custom": {"pl":"Własny — godziny poniżej", "en":"Custom — the hours below"},
+ "diff_bio":    {"pl":"Biolog", "en":"Biologist"},
+ "diff_horse":  {"pl":"Stajenny (kucyk / Księga / treningi)", "en":"stable keeper (pony / book / trainings)"},
+ "diff_books":  {"pl":"księgi", "en":"books"},
+ "diff_players":{"pl":"gracze", "en":"players"},
+ "diff_bots":   {"pl":"boty", "en":"bots"},
+ "diff_custom_help": {"pl":"Godziny poniżej liczą się tylko przy poziomie „Własny” (ułamki dozwolone, 0 = bez czekania). Stajenny ma jedną liczbę na każde czekanie: kucyka, Księgę Konia i treningi.",
+                      "en":"The hours below count for the Custom level only (fractions allowed, 0 = no waiting). The stable keeper takes one number for every wait: the pony, the Horse Book and the trainings."},
+ "diff_bio_h":  {"pl":"Biolog — godzin między oddaniami:", "en":"Biologist — hours between hand-ins:"},
+ "diff_horse_h":{"pl":"Stajenny — godzin na kucyka, Księgę i trening:", "en":"Stable keeper — hours for the pony, the book and a training:"},
+ "diff_book_h": {"pl":"Księgi umiejętności — gracze, godzin:", "en":"Skill books — players, hours:"},
+ "diff_bot_book_h": {"pl":"Księgi umiejętności — boty, godzin:", "en":"Skill books — bots, hours:"},
+ "diff_save":   {"pl":"Zapisz poziom trudności", "en":"Save the difficulty"},
+ "diff_range":  {"pl":"Wybierz poziom i podaj godziny od 0 do 720. Nic nie zmieniono.",
+                 "en":"Pick a level and hours from 0 to 720. Nothing was changed."},
+ "diff_saved_live": {"pl":"✅ Zapisano! Nowy poziom trudności działa już w grze.",
+                     "en":"✅ Saved! The new difficulty is live in game."},
+ "diff_saved_restart": {"pl":"Zapisano. Nikt nie jest zalogowany, więc pomocnik w grze nie odpowiedział — nowe czasy zadziałają po restarcie serwera (albo zapisz jeszcze raz, gdy ktoś będzie w grze).",
+                        "en":"Saved. Nobody is logged in, so the in-game helper did not answer — the new waits apply after a server restart (or save again while somebody is in game)."},
+ "ai_books_moved": {"pl":"Na tym serwerze ustawia to poziom trudności (Mnożniki serwera → Poziom trudności): osobno czas dla graczy, osobno dla botów; 0 = od razu.",
+                    "en":"On this server the difficulty sets it (Server rates → Difficulty): one wait for the players, one for the bots; 0 = at once."},
  "ch2_title":   {"pl":"Drugi kanał (CH2)", "en":"Second channel (CH2)"},
  "ch2_help":    {"pl":"Drugi kanał gry. Część botów gra na CH2, więc serwer rozkłada je na dwa rdzenie procesora i udźwignie więcej botów naraz. Wszystkie sklepy (botów i graczy) stoją tylko na CH1: bot z CH2, który chce otworzyć albo obsłużyć swój sklep albo coś kupić, przechodzi na CH1, a wolny bot z CH1 przechodzi na jego miejsce na CH2. Ustawiony udział to najmniej tyle botów na CH2; gdy nikt nie czeka na przejście, CH2 może przejąć do 10 punktów więcej. Domyślnie wyłączony.",
                  "en":"A second game channel. Some of the bots play on CH2, so the server spreads them over two CPU cores and carries more bots at once. Every shop, bots' and players', stands on CH1: a bot on CH2 that wants to open or serve its shop or to buy something moves to CH1, and a free bot of CH1 moves to CH2 in its place. The share set here is the least CH2 carries; with nobody waiting to move, CH2 may take up to ten points more. Off by default."},
@@ -4197,6 +4226,62 @@ REGEN_MIN_PERCENT = 10
 # his own edit of regen.cpp was undone by every update.
 MT2009_REGEN_COUNT_FLAGS = {"count_boss": "m2_boss_count", "count_mob": "m2_mob_count"}
 REGEN_COUNT_CHOICES = (100, 150, 200, 250, 300, 400)
+# The world's difficulty: a level and seven waits in seconds, the flags the
+# migrator writes from .env at a start (apply.sh) - the Biologist's, the stable
+# keeper's four (quest/m2_difficulty.lua), and the skill books' for players
+# (the engine) and for bots (the AI). The migrator applies .env only when it
+# changed since the last start, so what this card writes survives a restart
+# until the launcher's difficulty is changed (drip9660, 23 September).
+MT2009_DIFFICULTY_FLAGS = ("m2_difficulty", "m2_biologist_wait", "m2_horse_buy_wait", "m2_horse_upgrade_wait",
+                           "m2_horse_train_wait", "m2_horse_train2_wait", "m2_book_wait", "m2_bot_book_wait")
+DIFFICULTY_LEVELS = ("easy", "medium", "hard", "custom")
+# The presets in seconds, flag by flag after m2_difficulty - the migrator's.
+DIFFICULTY_PRESETS = {
+    "easy":   (0, 0, 0, 0, 0, 0, 0),
+    "medium": (28800, 14400, 14400, 21600, 25200, 25200, 25200),
+    "hard":   (86400, 43200, 43200, 64800, 75600, 75600, 75600),
+}
+DIFFICULTY_MAX_HOURS = 720
+
+def read_difficulty_mt2009():
+    """The level and the waits as the card shows them (hours), from player.quest."""
+    raw = {flag: 0 for flag in MT2009_DIFFICULTY_FLAGS}
+    with db() as c, c.cursor() as cur:
+        cur.execute("SELECT szName, lValue FROM player.quest WHERE dwPID=0 AND szName IN (%s)"
+                    % ",".join(["%s"] * len(MT2009_DIFFICULTY_FLAGS)), MT2009_DIFFICULTY_FLAGS)
+        for row in cur.fetchall():
+            name = row["szName"] if isinstance(row, dict) else row[0]
+            value = row["lValue"] if isinstance(row, dict) else row[1]
+            if isinstance(name, bytes):
+                name = name.decode("ascii", "replace")
+            raw[name] = max(0, int(value or 0))
+    level = raw["m2_difficulty"]
+    def hours(seconds):
+        value = round(seconds / 3600.0, 1)
+        return int(value) if value == int(value) else value
+    return {
+        "level": DIFFICULTY_LEVELS[level] if 0 <= level < len(DIFFICULTY_LEVELS) else "easy",
+        "bio": hours(raw["m2_biologist_wait"]),
+        "horse_buy": hours(raw["m2_horse_buy_wait"]),
+        "horse_upgrade": hours(raw["m2_horse_upgrade_wait"]),
+        "horse_train": hours(raw["m2_horse_train_wait"]),
+        "horse_train2": hours(raw["m2_horse_train2_wait"]),
+        "book": hours(raw["m2_book_wait"]),
+        "bot_book": hours(raw["m2_bot_book_wait"]),
+    }
+
+def difficulty_seconds(level, bio_h=0.0, horse_h=0.0, book_h=0.0, bot_book_h=0.0):
+    """The eight flag values, m2_difficulty first, for a preset or custom hours."""
+    if level in DIFFICULTY_PRESETS:
+        return (DIFFICULTY_LEVELS.index(level),) + DIFFICULTY_PRESETS[level]
+    to_s = lambda h: int(round(float(h) * 3600))
+    horse = to_s(horse_h)
+    return (3, to_s(bio_h), horse, horse, horse, horse, to_s(book_h), to_s(bot_book_h))
+
+def persist_difficulty_mt2009(cur, values):
+    for flag, value in zip(MT2009_DIFFICULTY_FLAGS, values):
+        cur.execute("REPLACE INTO player.quest (dwPID, szName, szState, lValue) "
+                    "VALUES (0, %s, '', %s)", (flag, int(value)))
 
 def read_regen_mt2009():
     """The two flags as the page shows them (100 = normal), from player.quest."""
@@ -5501,6 +5586,27 @@ regenLabel("regen_boss");regenLabel("regen_mob");
 <button class="big" style="margin-top:18px">{{t('count_save')}}</button>
 </form></div>
 {% endif %}
+{% if difficulty %}
+<div class="card">
+<form method="post" action="{{url_for('rates_difficulty')}}">
+<input type="hidden" name="_csrf" value="{{csrf_token}}">
+<h3>⏳ {{t('diff_title')}}</h3>
+<p class="muted">{{t('diff_help')}}</p>
+<p>{{t('diff_now')}}: <b>{{t('diff_level_' + difficulty.level)}}</b> — {{t('diff_bio')}} {{difficulty.bio}} h,
+{{t('diff_horse')}} {{difficulty.horse_buy}} / {{difficulty.horse_upgrade}} / {{difficulty.horse_train}} / {{difficulty.horse_train2}} h,
+{{t('diff_books')}}: {{t('diff_players')}} {{difficulty.book}} h, {{t('diff_bots')}} {{difficulty.bot_book}} h</p>
+<h3 style="margin-top:12px">{{t('diff_level')}}</h3>
+<select name="level">
+{% for lv in difficulty_levels %}<option value="{{lv}}"{% if difficulty.level == lv %} selected{% endif %}>{{t('diff_level_' + lv)}}</option>{% endfor %}
+</select>
+<p class="muted" style="margin-top:10px">{{t('diff_custom_help')}}</p>
+<p><label>{{t('diff_bio_h')}} <input type="number" name="bio" min="0" max="{{difficulty_max}}" step="0.5" value="{{difficulty.bio}}" style="width:90px"></label></p>
+<p><label>{{t('diff_horse_h')}} <input type="number" name="horse" min="0" max="{{difficulty_max}}" step="0.5" value="{{difficulty.horse_buy}}" style="width:90px"></label></p>
+<p><label>{{t('diff_book_h')}} <input type="number" name="book" min="0" max="{{difficulty_max}}" step="0.5" value="{{difficulty.book}}" style="width:90px"></label></p>
+<p><label>{{t('diff_bot_book_h')}} <input type="number" name="bot_book" min="0" max="{{difficulty_max}}" step="0.5" value="{{difficulty.bot_book}}" style="width:90px"></label></p>
+<button class="big" style="margin-top:12px">{{t('diff_save')}}</button>
+</form></div>
+{% endif %}
 {% if channels %}
 <div class="card">
 <form method="post" action="{{url_for('rates_channels')}}">
@@ -5733,8 +5839,9 @@ TPL_AI = BASE.replace("__BODY__", """
 </div>
 <div style="margin-bottom:18px">
   <h3 style="margin:0 0 2px">📚 {{t('ai_books')}}</h3>
-  <p class="muted" style="margin:0 0 6px">{{t('ai_books_help')}}</p>
-  <label><input type="checkbox" name="BOOKS" value="1" {% if cur.get('BOOKS', 1) %}checked{% endif %}> {{t('ai_books_on')}}</label>
+  {% if not engine_mt2009 %}<p class="muted" style="margin:0 0 6px">{{t('ai_books_help')}}</p>{% endif %}
+  {% if engine_mt2009 %}<p class="muted" style="margin:0"><a href="{{url_for('rates')}}">{{t('ai_books_moved')}}</a></p><input type="hidden" name="BOOKS" value="1">
+  {% else %}<label><input type="checkbox" name="BOOKS" value="1" {% if cur.get('BOOKS', 1) %}checked{% endif %}> {{t('ai_books_on')}}</label>{% endif %}
 </div>
 <div style="margin-bottom:18px">
   <h3 style="margin:0 0 2px">🌙 {{t('ai_night')}}</h3>
@@ -13076,6 +13183,7 @@ def rates():
     st = rates_status().get("state", "")
     regen = None
     regen_count = None
+    difficulty = None
     if ENGINE_MT2009:
         try:
             regen = read_regen_mt2009()
@@ -13085,6 +13193,10 @@ def rates():
             regen_count = read_regen_count_mt2009()
         except Exception:
             regen_count = {name: 100 for name in MT2009_REGEN_COUNT_FLAGS}
+        try:
+            difficulty = read_difficulty_mt2009()
+        except Exception:
+            difficulty = None
     channels = None
     if ENGINE_MT2009:
         try:
@@ -13093,6 +13205,8 @@ def rates():
             channels = None
     return render_template_string(TPL_RATES, cur=cur_rates, presets=RATE_PRESETS, regen=regen,
                                   regen_count=regen_count, count_choices=REGEN_COUNT_CHOICES,
+                                  difficulty=difficulty, difficulty_levels=DIFFICULTY_LEVELS,
+                                  difficulty_max=DIFFICULTY_MAX_HOURS,
                                   channels=channels,
                                   intro_key="rates_intro_mt2009" if ENGINE_MT2009 else "rates_intro",
                                   state_msg=t("rates_st_" + st) if st in RATE_STATES else "")
@@ -13175,6 +13289,55 @@ def rates_regen_count():
             except Exception:
                 pass
         flash(t("count_saved_restart"))
+    return redirect(url_for("rates"))
+
+
+@app.post("/rates/difficulty")
+@login_required
+def rates_difficulty():
+    """The world's difficulty: the Biologist's and the stable keeper's waits
+    and the skill books' for players and bots. mt2009 only: the quests, the
+    engine and the AI read the event flags."""
+    if not ENGINE_MT2009:
+        return redirect(url_for("rates"))
+    level = (request.form.get("level", "") or "").strip()
+    if level not in DIFFICULTY_LEVELS:
+        flash(t("diff_range"), "error")
+        return redirect(url_for("rates"))
+    hours = {}
+    for name in ("bio", "horse", "book", "bot_book"):
+        raw = (request.form.get(name, "") or "0").strip().replace(",", ".")
+        try:
+            value = float(raw)
+        except ValueError:
+            value = -1.0
+        if level == "custom" and not 0 <= value <= DIFFICULTY_MAX_HOURS:
+            flash(t("diff_range"), "error")
+            return redirect(url_for("rates"))
+        hours[name] = max(0.0, min(float(DIFFICULTY_MAX_HOURS), value))
+    values = difficulty_seconds(level, hours["bio"], hours["horse"], hours["book"], hours["bot_book"])
+    try:
+        with db() as c, c.cursor() as cur:
+            persist_difficulty_mt2009(cur, values)
+    except Exception:
+        flash(t("db_down"), "error")
+        return redirect(url_for("rates"))
+    try:
+        status, qid = queue_and_wait("", "DIFFICULTY", ",".join(str(int(v)) for v in values), "",
+                                     wait=RATES_LIVE_WAIT)
+    except Exception:
+        status, qid = "failed", 0
+    if status == "done":
+        flash(t("diff_saved_live"))
+    else:
+        if status == "timeout":
+            try:
+                with db() as c, c.cursor() as cur:
+                    cur.execute("UPDATE player.web_admin_queue SET status='cancelled' "
+                                "WHERE id=%s AND status='pending'", (qid,))
+            except Exception:
+                pass
+        flash(t("diff_saved_restart"))
     return redirect(url_for("rates"))
 
 
@@ -13427,7 +13590,7 @@ def ai_weights():
         cur["CHEST_STONE"] = chest_stone
     return render_template_string(TPL_AI, cur=cur, chest_off=chest_off,
                                   keys=keys, wmin=AI_W_MIN, bots_held=read_bot_hold(),
-                                  wmax=AI_W_MAX, wneutral=AI_W_NEUTRAL)
+                                  wmax=AI_W_MAX, wneutral=AI_W_NEUTRAL, engine_mt2009=ENGINE_MT2009)
 
 
 @app.route("/ai/tower_now", methods=["POST"])

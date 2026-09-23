@@ -20,6 +20,9 @@ param(
     [string]$Difficulty = '',
     [string]$BiologistHours = '',
     [string]$HorseHours = '',
+    # And the waits between two skill books, players' and bots' (custom).
+    [string]$BookHours = '',
+    [string]$BotBookHours = '',
     # The rates a fresh world starts on, asked for when one is about to be
     # made (ResetWorld, and the first start of an install that has no database
     # yet). -1 leaves .env as it is, which is what every other caller wants.
@@ -920,10 +923,13 @@ function Set-BotCountAction {
 # hour counts - is turned into event flags by the migrate service at every
 # start and read by the quests (linux-port-mt2009/docker/game/quest/
 # m2_difficulty.lua), so a change needs a restart. The bots never waited.
+# The skill books' waits are the package's twenty-one hours on hard and a
+# third of them on medium, for the players and the bots alike; the migrator's
+# presets (apply.sh) carry the same numbers in seconds.
 $script:DifficultyPresets = @{
-    easy   = @{ Biologist = '0';  Horse = '0' }
-    medium = @{ Biologist = '8';  Horse = '4' }
-    hard   = @{ Biologist = '24'; Horse = '12' }
+    easy   = @{ Biologist = '0';  Horse = '0';  Book = '0';  BotBook = '0' }
+    medium = @{ Biologist = '8';  Horse = '4';  Book = '7';  BotBook = '7' }
+    hard   = @{ Biologist = '24'; Horse = '12'; Book = '21'; BotBook = '21' }
 }
 
 function Get-DotEnvValue {
@@ -970,25 +976,31 @@ function Set-DifficultyAction {
     $current = Get-DotEnvValue -Key 'M2_DIFFICULTY' -Default 'easy'
     $currentBio = Get-DotEnvValue -Key 'M2_BIOLOGIST_WAIT_HOURS' -Default '0'
     $currentHorse = Get-DotEnvValue -Key 'M2_HORSE_WAIT_HOURS' -Default '0'
-    Write-Host "Aktualny poziom trudności: $current (przy 'custom': Biolog $currentBio h, Stajenny $currentHorse h)." -ForegroundColor Gray
+    $currentBook = Get-DotEnvValue -Key 'M2_BOOK_WAIT_HOURS' -Default '0'
+    $currentBotBook = Get-DotEnvValue -Key 'M2_BOT_BOOK_WAIT_HOURS' -Default '0'
+    Write-Host "Aktualny poziom trudności: $current (przy 'custom': Biolog $currentBio h, Stajenny $currentHorse h, księgi: gracze $currentBook h, boty $currentBotBook h)." -ForegroundColor Gray
 
     # -Difficulty passed (from the GUI or scripting) is non-interactive, like
     # -BotCount: never Read-Host, restart only with -Yes.
     $level = "$Difficulty".Trim().ToLowerInvariant()
     $bio = "$BiologistHours"
     $horse = "$HorseHours"
+    $book = "$BookHours"
+    $botBook = "$BotBookHours"
     $interactive = (-not $level)
     if ($interactive) {
-        Write-Host ' 1. easy   - bez czekania u Biologa i Stajennego (tak jak dotąd)'
-        Write-Host ' 2. medium - Biolog 8 h; kucyk i Księgi Konia 4 h; treningi konia 6 h (1-10) i 7 h (11-19)'
-        Write-Host ' 3. hard   - jak w oryginale: Biolog 24 h; kucyk i Księgi 12 h; treningi 18 h i 21 h'
-        Write-Host ' 4. custom - własne godziny (Biolog i osobno każde czekanie u Stajennego)'
+        Write-Host ' 1. easy   - bez czekania u Biologa, u Stajennego i na kolejną księgę (tak jak dotąd)'
+        Write-Host ' 2. medium - Biolog 8 h; kucyk i Księgi Konia 4 h; treningi konia 6 h (1-10) i 7 h (11-19); księgi 7 h'
+        Write-Host ' 3. hard   - jak w oryginale: Biolog 24 h; kucyk i Księgi 12 h; treningi 18 h i 21 h; księgi 21 h'
+        Write-Host ' 4. custom - własne godziny (Biolog, każde czekanie u Stajennego, księgi graczy i księgi botów)'
         $answer = Read-Host 'Wybierz poziom (1-4)'
         $level = switch ($answer) { '1' { 'easy' } '2' { 'medium' } '3' { 'hard' } '4' { 'custom' } default { '' } }
         if (-not $level) { Write-Host 'Anulowano.' -ForegroundColor Yellow; return }
         if ($level -eq 'custom') {
             $bio = Read-Host 'Ile godzin czeka się u Biologa między oddaniami (0 = bez czekania, ułamki dozwolone)'
             $horse = Read-Host 'Ile godzin czeka się u Stajennego na kucyka, Księgę Konia i trening (0 = bez czekania)'
+            $book = Read-Host 'Ile godzin gracz czeka między dwiema księgami tej samej umiejętności (0 = od razu)'
+            $botBook = Read-Host 'Ile godzin czekają na kolejną księgę boty (0 = od razu)'
         }
     }
     if ($level -notin @('easy', 'medium', 'hard', 'custom')) {
@@ -997,15 +1009,26 @@ function Set-DifficultyAction {
     if ($level -ne 'custom') {
         $bio = $script:DifficultyPresets[$level].Biologist
         $horse = $script:DifficultyPresets[$level].Horse
+        $book = $script:DifficultyPresets[$level].Book
+        $botBook = $script:DifficultyPresets[$level].BotBook
     }
+    # An older GUI passes no book hours for custom: what .env already says.
+    if ("$book".Trim() -eq '') { $book = $currentBook }
+    if ("$botBook".Trim() -eq '') { $botBook = $currentBotBook }
     if (-not (Test-DifficultyHours $bio)) { throw "Godziny u Biologa: podaj liczbę od 0 do 720 (np. 12 albo 0.5), nie '$bio'." }
     if (-not (Test-DifficultyHours $horse)) { throw "Godziny u Stajennego: podaj liczbę od 0 do 720 (np. 12 albo 0.5), nie '$horse'." }
+    if (-not (Test-DifficultyHours $book)) { throw "Godziny między księgami graczy: podaj liczbę od 0 do 720 (np. 21 albo 0.5), nie '$book'." }
+    if (-not (Test-DifficultyHours $botBook)) { throw "Godziny między księgami botów: podaj liczbę od 0 do 720 (np. 21 albo 0.5), nie '$botBook'." }
     $bio = "$bio".Trim().Replace(',', '.')
     $horse = "$horse".Trim().Replace(',', '.')
+    $book = "$book".Trim().Replace(',', '.')
+    $botBook = "$botBook".Trim().Replace(',', '.')
     Set-DotEnvValue -Key 'M2_DIFFICULTY' -Value $level
     Set-DotEnvValue -Key 'M2_BIOLOGIST_WAIT_HOURS' -Value $bio
     Set-DotEnvValue -Key 'M2_HORSE_WAIT_HOURS' -Value $horse
-    Write-Host "Zapisano: poziom trudności $level (Biolog $bio h, Stajenny $horse h)." -ForegroundColor Green
+    Set-DotEnvValue -Key 'M2_BOOK_WAIT_HOURS' -Value $book
+    Set-DotEnvValue -Key 'M2_BOT_BOOK_WAIT_HOURS' -Value $botBook
+    Write-Host "Zapisano: poziom trudności $level (Biolog $bio h, Stajenny $horse h, księgi: gracze $book h, boty $botBook h)." -ForegroundColor Green
     if ($Yes) {
         Start-Server
         Write-Host "Serwer zrestartowany z poziomem trudności: $level." -ForegroundColor Green

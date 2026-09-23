@@ -739,10 +739,10 @@ function Get-KingdomPlanFromEnv {
 }
 
 function Get-DifficultyFromEnv {
-    # M2_DIFFICULTY and the two hour counts, as .env has them; easy/0/0 when the
-    # keys are not there yet (an older .env, which start-server.ps1 fills in).
+    # M2_DIFFICULTY and the hour counts, as .env has them; easy and zeros when
+    # the keys are not there yet (an older .env, which start-server.ps1 fills in).
     $envPath = Join-Path $root 'linux-port\docker\.env'
-    $level = 'easy'; $bio = '0'; $horse = '0'
+    $level = 'easy'; $bio = '0'; $horse = '0'; $book = '0'; $botBook = '0'
     if (Test-Path -LiteralPath $envPath -PathType Leaf) {
         $content = [IO.File]::ReadAllText($envPath)
         $m = [Regex]::Match($content, '(?m)^M2_DIFFICULTY=(\S+)\s*$')
@@ -751,39 +751,44 @@ function Get-DifficultyFromEnv {
         if ($m.Success) { $bio = $m.Groups[1].Value.Trim() }
         $m = [Regex]::Match($content, '(?m)^M2_HORSE_WAIT_HOURS=(\S+)\s*$')
         if ($m.Success) { $horse = $m.Groups[1].Value.Trim() }
+        $m = [Regex]::Match($content, '(?m)^M2_BOOK_WAIT_HOURS=(\S+)\s*$')
+        if ($m.Success) { $book = $m.Groups[1].Value.Trim() }
+        $m = [Regex]::Match($content, '(?m)^M2_BOT_BOOK_WAIT_HOURS=(\S+)\s*$')
+        if ($m.Success) { $botBook = $m.Groups[1].Value.Trim() }
     }
     if ($level -notin @('easy', 'medium', 'hard', 'custom')) { $level = 'easy' }
-    return @{ Level = $level; Biologist = $bio; Horse = $horse }
+    return @{ Level = $level; Biologist = $bio; Horse = $horse; Book = $book; BotBook = $botBook }
 }
 
 function Show-DifficultyDialog {
-    # Four presets as radio buttons and the two hour counts custom reads; the
-    # numbers are what the migrate service turns into the quests' event flags
-    # at the next start (quest/m2_difficulty.lua), so the dialog says a restart
-    # is needed. Returns @{ Level; Biologist; Horse } or $null.
+    # Four presets as radio buttons and the hour counts custom reads; the
+    # numbers are what the migrate service turns into the event flags at the
+    # next start (quest/m2_difficulty.lua, and the engine and the bots for the
+    # skill books), so the dialog says a restart is needed. Returns
+    # @{ Level; Biologist; Horse; Book; BotBook } or $null.
     param([hashtable]$Current)
     $dialog = [Windows.Forms.Form]::new()
     $dialog.Text = (T 'difficultyDialog')
-    $dialog.Size = [Drawing.Size]::new(560, 400)
+    $dialog.Size = [Drawing.Size]::new(560, 470)
     $dialog.StartPosition = 'CenterParent'
     $dialog.FormBorderStyle = 'FixedDialog'
     $dialog.MaximizeBox = $false
     $dialog.MinimizeBox = $false
 
     $info = [Windows.Forms.Label]::new()
-    $info.Text = "Ile gracz czeka u Biologa między oddaniami i u Stajennego (kucyk, Księgi Konia, treningi medalami)?`r`nBotów to nie dotyczy. Zmiana wymaga restartu serwera."
+    $info.Text = "Ile czeka się u Biologa, u Stajennego (kucyk, Księgi Konia, treningi medalami) i na kolejną księgę umiejętności? Biolog i Stajenny dotyczą graczy; księgi mają osobny czas dla graczy i dla botów.`r`nZmiana wymaga restartu serwera (panel WWW zmienia to samo od razu)."
     $info.Location = [Drawing.Point]::new(14, 12)
-    $info.Size = [Drawing.Size]::new(520, 44)
+    $info.Size = [Drawing.Size]::new(520, 58)
     $dialog.Controls.Add($info)
 
     $labels = @{
-        easy   = 'Łatwy - bez czekania u Biologa i Stajennego (tak jak dotąd)'
-        medium = 'Średni - Biolog 8 h; kucyk i Księgi Konia 4 h; treningi konia 6 h (1-10) i 7 h (11-19)'
-        hard   = 'Trudny - jak w oryginale: Biolog 24 h; kucyk i Księgi 12 h; treningi 18 h i 21 h'
-        custom = 'Własny - godziny poniżej (Biolog, i jedna liczba na każde czekanie u Stajennego)'
+        easy   = 'Łatwy - bez czekania u Biologa, Stajennego i na księgi (tak jak dotąd)'
+        medium = 'Średni - Biolog 8 h; kucyk i Księgi Konia 4 h; treningi 6/7 h; księgi 7 h'
+        hard   = 'Trudny - jak w oryginale: Biolog 24 h; kucyk i Księgi 12 h; treningi 18/21 h; księgi 21 h'
+        custom = 'Własny - godziny poniżej'
     }
     $radios = @{}
-    $y = 64
+    $y = 76
     foreach ($level in @('easy', 'medium', 'hard', 'custom')) {
         $radio = [Windows.Forms.RadioButton]::new()
         $radio.Name = "level_$level"
@@ -826,17 +831,52 @@ function Show-DifficultyDialog {
     $horseBox.Size = [Drawing.Size]::new(90, 24)
     $dialog.Controls.Add($horseBox)
 
+    $bookLabel = [Windows.Forms.Label]::new()
+    $bookLabel.Text = 'Księgi umiejętności - gracze: godzin'
+    $bookLabel.Location = [Drawing.Point]::new(40, $y + 68)
+    $bookLabel.Size = [Drawing.Size]::new(260, 22)
+    $dialog.Controls.Add($bookLabel)
+    $bookBox = [Windows.Forms.NumericUpDown]::new()
+    $bookBox.Name = 'bookHours'
+    $bookBox.DecimalPlaces = 1
+    $bookBox.Increment = 0.5
+    $bookBox.Minimum = 0
+    $bookBox.Maximum = 720
+    $bookBox.Location = [Drawing.Point]::new(310, $y + 65)
+    $bookBox.Size = [Drawing.Size]::new(90, 24)
+    $dialog.Controls.Add($bookBox)
+
+    $botBookLabel = [Windows.Forms.Label]::new()
+    $botBookLabel.Text = 'Księgi umiejętności - boty: godzin'
+    $botBookLabel.Location = [Drawing.Point]::new(40, $y + 98)
+    $botBookLabel.Size = [Drawing.Size]::new(260, 22)
+    $dialog.Controls.Add($botBookLabel)
+    $botBookBox = [Windows.Forms.NumericUpDown]::new()
+    $botBookBox.Name = 'botBookHours'
+    $botBookBox.DecimalPlaces = 1
+    $botBookBox.Increment = 0.5
+    $botBookBox.Minimum = 0
+    $botBookBox.Maximum = 720
+    $botBookBox.Location = [Drawing.Point]::new(310, $y + 95)
+    $botBookBox.Size = [Drawing.Size]::new(90, 24)
+    $dialog.Controls.Add($botBookBox)
+
     $toDecimal = {
         param([string]$Text)
         $n = 0.0
         if ([double]::TryParse("$Text".Trim().Replace(',', '.'), [Globalization.NumberStyles]::Float,
                 [Globalization.CultureInfo]::InvariantCulture, [ref]$n)) {
-            return [decimal][Math]::Max(0, [Math]::Min(720, $n))
+            # [double] on both sides: with an int beside it PowerShell picks
+            # Math.Min(int, int) and rounds 0.5 to 0, so a custom half hour
+            # showed as 0 and Apply wrote the 0 back.
+            return [decimal][Math]::Max([double]0, [Math]::Min([double]720, $n))
         }
         return [decimal]0
     }
     $bioBox.Value = & $toDecimal $Current.Biologist
     $horseBox.Value = & $toDecimal $Current.Horse
+    $bookBox.Value = & $toDecimal $Current.Book
+    $botBookBox.Value = & $toDecimal $Current.BotBook
 
     # The hour boxes belong to "custom"; the presets say their numbers themselves.
     $sync = {
@@ -845,21 +885,25 @@ function Show-DifficultyDialog {
         $custom = $form.Controls['level_custom'].Checked
         $form.Controls['bioHours'].Enabled = $custom
         $form.Controls['horseHours'].Enabled = $custom
+        $form.Controls['bookHours'].Enabled = $custom
+        $form.Controls['botBookHours'].Enabled = $custom
     }
     foreach ($radio in $radios.Values) { $radio.Add_CheckedChanged($sync) }
     $bioBox.Enabled = $radios['custom'].Checked
     $horseBox.Enabled = $radios['custom'].Checked
+    $bookBox.Enabled = $radios['custom'].Checked
+    $botBookBox.Enabled = $radios['custom'].Checked
 
     $okButton = [Windows.Forms.Button]::new()
     $okButton.Text = (T 'apply')
-    $okButton.Location = [Drawing.Point]::new(332, $y + 82)
+    $okButton.Location = [Drawing.Point]::new(332, $y + 142)
     $okButton.Size = [Drawing.Size]::new(100, 32)
     $okButton.DialogResult = [Windows.Forms.DialogResult]::OK
     $dialog.Controls.Add($okButton)
 
     $cancelButton = [Windows.Forms.Button]::new()
     $cancelButton.Text = (T 'cancel')
-    $cancelButton.Location = [Drawing.Point]::new(438, $y + 82)
+    $cancelButton.Location = [Drawing.Point]::new(438, $y + 142)
     $cancelButton.Size = [Drawing.Size]::new(96, 32)
     $cancelButton.DialogResult = [Windows.Forms.DialogResult]::Cancel
     $dialog.Controls.Add($cancelButton)
@@ -871,9 +915,11 @@ function Show-DifficultyDialog {
     foreach ($level in $radios.Keys) { if ($radios[$level].Checked) { $chosen = $level } }
     $bio = $bioBox.Value.ToString([Globalization.CultureInfo]::InvariantCulture)
     $horse = $horseBox.Value.ToString([Globalization.CultureInfo]::InvariantCulture)
+    $book = $bookBox.Value.ToString([Globalization.CultureInfo]::InvariantCulture)
+    $botBook = $botBookBox.Value.ToString([Globalization.CultureInfo]::InvariantCulture)
     $dialog.Dispose()
     if ($result -ne [Windows.Forms.DialogResult]::OK) { return $null }
-    return @{ Level = $chosen; Biologist = $bio; Horse = $horse }
+    return @{ Level = $chosen; Biologist = $bio; Horse = $horse; Book = $book; BotBook = $botBook }
 }
 
 function Show-FreshWorldDialog {
@@ -2697,15 +2743,16 @@ $difficultyButton.Add_Click({
     if ($null -eq $chosen) { return }
     $what = switch ($chosen.Level) {
         'easy' { 'łatwy (bez czekania)' }
-        'medium' { 'średni (Biolog 8 h, koń 4-7 h)' }
-        'hard' { 'trudny (Biolog 24 h, koń 12-21 h)' }
-        default { "własny (Biolog $($chosen.Biologist) h, Stajenny $($chosen.Horse) h)" }
+        'medium' { 'średni (Biolog 8 h, koń 4-7 h, księgi 7 h)' }
+        'hard' { 'trudny (Biolog 24 h, koń 12-21 h, księgi 21 h)' }
+        default { "własny (Biolog $($chosen.Biologist) h, Stajenny $($chosen.Horse) h, księgi: gracze $($chosen.Book) h, boty $($chosen.BotBook) h)" }
     }
     $answer = [Windows.Forms.MessageBox]::Show(
         "Ustawić poziom trudności: $what i zrestartować serwer teraz, aby zastosować? Baza i postęp botów pozostaną bez zmian.",
         'Poziom trudności', 'YesNoCancel', 'Question')
     if ($answer -eq [Windows.Forms.DialogResult]::Cancel) { return }
-    $extra = @('-Difficulty', $chosen.Level, '-BiologistHours', "$($chosen.Biologist)", '-HorseHours', "$($chosen.Horse)")
+    $extra = @('-Difficulty', $chosen.Level, '-BiologistHours', "$($chosen.Biologist)", '-HorseHours', "$($chosen.Horse)",
+        '-BookHours', "$($chosen.Book)", '-BotBookHours', "$($chosen.BotBook)")
     if ($answer -eq [Windows.Forms.DialogResult]::Yes) {
         Start-LauncherAction -Action 'SetDifficulty' -Yes -ExtraArgs $extra
     }
