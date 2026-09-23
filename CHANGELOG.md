@@ -17,6 +17,39 @@ every version here.
 
 ---
 
+## 2.0.99 — 2026-09-23
+
+Tylko serwer i launcher; klient zostaje 2.0.26. Zawiera wszystko z 2.0.98.
+
+### Launcher rozpoznaje zepsuty dysk Dockera
+
+Gdy Docker Desktop przy budowaniu serwera trafi na błąd zapisu, jego dysk
+(plik docker_data.vhdx) przełącza się w tryb tylko do odczytu. Od tej chwili
+każda próba kończyła się „kodem 1”, a Diagnostyka mówiła, że można uruchomić
+serwer. Zgłosił to gracz, który w ten sposób pięć razy pobrał i podmienił tę
+samą aktualizację.
+
+- **Launcher sprawdza, czy da się zapisać na dysku Dockera**: w Diagnostyce,
+  przed aktualizacją i przed każdym budowaniem. Gdy się nie da, mówi to wprost
+  i podaje kroki naprawy, a aktualizacji w ogóle nie pobiera.
+- **Diagnostyka ostrzega, gdy na dysku z Dockerem zostało mniej niż 15 GB
+  wolnego miejsca.** Brak miejsca to najczęstsza przyczyna takiego błędu.
+- **Ponowna aktualizacja tylko dokańcza budowanie.** Gdy pliki nowej wersji
+  są już na dysku, a budowanie się nie udało, launcher nie pobiera ich
+  drugi raz i nie robi kolejnej kopii plików.
+- **Launcher nie gubi zapisanej wersji klienta**, gdy budowanie serwera nie
+  doszło do końca. Wcześniej proponował potem aktualizację klienta, który
+  był już aktualny.
+
+### Paczka z logami
+
+- **Nie zawiera hasła do panelu WWW.** Launcher wypisuje je po polsku, a
+  filtr haseł rozpoznawał tylko angielskie wpisy. Panel działa domyślnie
+  tylko na Twoim komputerze, więc nikt z zewnątrz nie mógł go użyć, ale
+  hasło nie powinno trafiać do plików, które wysyła się innym.
+- **Zawiera informację o wolnym miejscu na dyskach** i rozmiarze dysku
+  Dockera, bo przy takich błędach to pierwsze pytanie.
+
 ## 2.0.98 — 2026-09-23
 
 Serwer 2.0.98 i klient 2.0.26. **Zaktualizuj też klienta** („AKTUALIZUJ
