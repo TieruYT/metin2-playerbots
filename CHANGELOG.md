@@ -19,8 +19,49 @@ every version here.
 
 ## 2.0.98 — 2026-09-23
 
-Serwer 2.0.98. Klient zostaje przy 2.0.25, więc aktualizacja klienta nie jest
-potrzebna. Zawiera wszystko z 2.0.97.
+Serwer 2.0.98 i klient 2.0.26. **Zaktualizuj też klienta** („AKTUALIZUJ
+wszystko” w launcherze). Kto gra po niemiecku, hiszpańsku, włosku,
+portugalsku, rumuńsku albo turecku, bez nowego klienta nie ulepszy przedmiotu
+u kowala. Zawiera wszystko z 2.0.97.
+
+### Kowal i zablokowany ekwipunek w innych językach niż polski
+
+Po oddaniu przedmiotu kowalowi nic się nie działo, a potem nie dało się ruszyć
+w ekwipunku niczego: przesunąć, wyrzucić, użyć. Pomagało dopiero ponowne
+zalogowanie. Zgłosili to gracze z kanału angielskiego („nothing happens when
+I put the item on him”). Dotyczyło to wszystkich grających po niemiecku,
+hiszpańsku, włosku, portugalsku, rumuńsku i turecku.
+
+Przyczyna: w tych językach tekst „koszt ulepszenia” w pakiecie tłumaczeń
+oczekiwał liczby, a gra podaje kwotę jako tekst („1.000 Yang”). Okno kowala
+wywracało się, zanim się pokazało. Serwer w tym czasie czekał już na
+odpowiedź z tego okna i blokował cały ekwipunek.
+
+- **Klient 2.0.26 ma poprawione teksty we wszystkich językach.** Sprawdziliśmy
+  cały pakiet tłumaczeń tak, jak czyta go gra, i poprawiliśmy 89 tekstów
+  w siedmiu językach, także angielskim. Każdy z nich mógł wywrócić jakieś
+  okno albo komunikat: podnoszenie yang, zrzut ekranu, przycisk kupna
+  w ItemShopie, cofanie punktów statystyk, odnawianie Ducha Smoka w gildii,
+  długość ryby, umiejętności drużyny, sprzedaż kilku sztuk u handlarza.
+- **Okno kowala nie zablokuje już ekwipunku.** Jeśli mimo wszystko się nie
+  otworzy, klient sam anuluje ulepszanie, więc serwer odblokowuje ekwipunek.
+  Koszt i szansa pokażą się wtedy jako zwykłe liczby.
+- **Po stronie serwera:** kto odejdzie od kowala dalej niż 20 metrów, odzyskuje
+  ekwipunek, nawet ze starym klientem. Dopóki ktoś nie zaktualizuje klienta,
+  wystarczy odejść od kowala, bez wylogowywania.
+- **Klient po hiszpańsku w ogóle się nie uruchamiał.** W hiszpańskim pliku
+  tłumaczeń brakowało znaku końca ostatniej linii. Gra obcinała przez to
+  ostatnią literę i przed ekranem logowania pokazywała błąd. Poprawione.
+- Po angielsku: szept do osoby, którą masz zablokowaną, pokazuje teraz
+  komunikat zamiast błędu w tle.
+
+### Launcher nie przycina się przy zmianie rozmiaru okna
+
+Przeciąganie krawędzi nowego okna launchera było bardzo powolne: przy każdym
+ruchu myszy okno przeliczało i od nowa rysowało tło oraz wszystkie przyciski.
+Tło jest teraz przygotowane raz dla danego rozmiaru, a układ przelicza się
+dopiero po puszczeniu krawędzi. W naszym pomiarze jeden krok przeciągania trwa
+teraz około 29 ms zamiast 378 ms. Wygląd okna jest taki sam jak wcześniej.
 
 ### Czat z botami 1.1b — ĹŌŞƬĒĶ (l0st3k)
 

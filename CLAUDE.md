@@ -7429,6 +7429,46 @@ not in `data/`) reworked these point by point. What each hangs on:
   the code does - on this line the classic panel opens without a passphrase
   on any address while `M2_PANEL_LOCAL_ONLY` is empty, and the advanced one
   starts with its own switch off, so a VPS keeps both on 127.0.0.1.
+- **A language pack is code the client runs: every text is a format, and the
+  loader cuts the last character of every line.** "Nothing happens when I put
+  the item on the blacksmith, and then the whole inventory is bugged" (JFK and
+  zhask9431, 23 September) was REFINE_COST "Kosten: %d Yang" in DE, ES, IT,
+  PT, RO and TR against `NumberToMoneyString`'s "1.000 Yang":
+  `RefineDialogNew.Open` raised before `Show()`, while the server had entered
+  refine mode (`SetRefineMode`) the moment it sent the dialog - and
+  `CanHandleItem` refuses every move, drop, use and gift under it until the
+  client answers with a refine or the cancel (255, 255), which a window that
+  never opened cannot send. Relog was the only way out. Three layers now:
+  `port/localeify.py` renders the fixed texts into `client-locale/locale/<lang>/`
+  and refuses to write while any text of any language fails to format with the
+  arguments its Polish counterpart takes (89 did, in seven languages - the
+  yang pickup, the screenshot line, the item shop's buy button, the stat minus
+  tooltips, the guild's dragon ghost, a fish's length, the party skills, and
+  "%,0f", which is no conversion at all); clientrootify's `uirefine.py` sends
+  the cancel when `Open` raises, so the next bad text costs a window and not a
+  bag; and `apply_refine_abandoned_session` (playerbotify) ends a session whose
+  refine NPC is gone, on another map or beyond the 2000 units
+  `CInputMain::Refine` allows, the first time `CanHandleItem` is asked - so a
+  player with an old client walks away from the blacksmith and has the bag
+  back. A scroll's session has no NPC and is untouched. Two more things the
+  same check found. `localeinfo.LoadLocaleFile` takes `line[:-1]`, and the
+  pack's `readline` hands the last line over without a newline when the file
+  does not end in one: es/locale_game.txt did not, its last type "SNA" came out
+  "SN", the loader raised and a Spanish client stopped with a message box
+  before the login. And `english_gui.GAME` went on with `globals().update`,
+  which put plain strings over typed lines (SNA/SA are functions the scripts
+  call), so `WHISPER_ERROR[mode](name)` was "'str' object is not callable" in
+  English; the overlay keeps a typed line a function now. The locale pack is
+  rendered from the last published one: extract it, run `localeify.py
+  --locale <dir>`, repack with `client-locale` as the overlay, and run
+  `tests/client_locale_loader_test.py <client-root> <extraction with
+  client-locale over it>` under Python 2.7 - it loads every language through
+  the client's own loader and formats the call sites the root formats.
+  NPC names over the heads are not the client's to translate: the server sends
+  an NPC's name (the Polish `mob_proto`) in the character packet, and only
+  monsters are named from `locale/<lang>/mob_names.txt`, which is why an
+  English player sees "Kowal" and a "Blacksmith" nobody reads sits in the EN
+  pack. Naming NPCs from it would be an exe change.
 
 
 ## Engine facts worth not re-deriving
