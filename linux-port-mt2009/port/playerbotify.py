@@ -1442,6 +1442,7 @@ def main(root):
     apply_shop_clock(game)
     apply_party_exp_of_blocked_members(game)
     apply_bot_shop_slots_unlocked(game)
+    apply_refine_abandoned_session(game)
     print('playerbotify: done')
 
 
@@ -4467,6 +4468,43 @@ def apply_bot_shop_slots_unlocked(game):
          '\treturn GetSpecialFlag(SHOP_SLOT_UNLOCK_PROGRESS_FLAG);\n'
          '}\n',
          marker='// playerbot: a bot\'s counter has no padlocks')
+
+
+def apply_refine_abandoned_session(game):
+    # The server enters refine mode when it sends the refine dialog, and from
+    # then on CanHandleItem refuses every move, drop, use and gift until the
+    # client answers with a refine or a cancel. A client whose window raised
+    # before it opened never answers: German, Spanish, Italian, Portuguese,
+    # Romanian and Turkish players had a REFINE_COST taking a number, and
+    # "nothing happens when I put the item on the blacksmith... the whole
+    # inventory gets bugged out" was their bag, locked until the next login
+    # (JFK and zhask9431, 23 September). The client is fixed twice over
+    # (localeify.py, clientrootify's uirefine.py); this is for the client that
+    # is not updated yet, and for whatever the next broken window will be.
+    # A session with a refine NPC is over once that NPC is gone, on another
+    # map or out of the reach CInputMain::Refine allows - the refine it waits
+    # for would be refused for that very reason - so walking away from the
+    # blacksmith gives the bag back. A scroll's session has no NPC and is
+    # left as it was, and so is the bots' own refine, which never sets one.
+    edit(os.path.join(game, 'char_item.cpp'),
+         '\tif (!bSkipCheckRefine)\n'
+         '\t\tif (m_bUnderRefine)\n'
+         '\t\t\treturn false;\n',
+         '\tif (!bSkipCheckRefine)\n'
+         '\t\tif (m_bUnderRefine)\n'
+         '\t\t{\n'
+         '\t\t\t// playerbot: a refine session whose NPC is gone or out of reach\n'
+         '\t\t\t// has ended (playerbotify apply_refine_abandoned_session).\n'
+         '\t\t\tconst LPCHARACTER refineNPC = m_dwRefineNPCVID ? CHARACTER_MANAGER::instance().Find(m_dwRefineNPCVID) : NULL;\n'
+         '\t\t\tif (!m_dwRefineNPCVID ||\n'
+         '\t\t\t\t(refineNPC && refineNPC->GetMapIndex() == GetMapIndex() &&\n'
+         '\t\t\t\t DISTANCE_APPROX(GetX() - refineNPC->GetX(), GetY() - refineNPC->GetY()) <= 2000))\n'
+         '\t\t\t\treturn false;\n'
+         '\n'
+         '\t\t\tsys_log(0, "REFINE: %s left a refine session with its NPC gone or out of reach", GetName());\n'
+         '\t\t\tClearRefineMode();\n'
+         '\t\t}\n',
+         marker='// playerbot: a refine session whose NPC is gone or out of reach')
 
 
 if __name__ == '__main__':
