@@ -692,9 +692,39 @@ namespace
 	// Iwakura's price curve lives with the town (playerbot_town.h), later.
 	DWORD ScalePlayerBotIwakuraPrice(DWORD base);
 
+	// Iwakura's second tier is M3's own ground (GRINDER_TIERS in
+	// playerbot_persona_rules.h: "M3, the cursed animals and the level-30
+	// weapons", 19 to 25), and Community Patch 1 sends the quarter that skips
+	// the first village there from thirteen. Nothing sent a Grinder there for
+	// its tier: the only road in was the level-30 weapon hunt - a third of the
+	// bots without the weapon - and since Community Patch 2 a bot that can buy
+	// the weapon does not farm it. M3 held ten of the 426 bots of fifteen to
+	// twenty-five on m2zip, and on a young world none ("boty nie chodza wcale
+	// na M3", Iwakura, 23 September). A Grinder of the tier - not a Conqueror,
+	// not one that gave grinding up, no dropper - that meets the document's
+	// entry (a weapon at +6 and an armour at +5, MeetsPlayerBotM3Survival)
+	// hunts there, weapon or none, inside the crowd share the hunt has.
+	bool IsPlayerBotM3TierGrinder(LPCHARACTER ch)
+	{
+		if (!ch || !IsPlayerBotPersonaEnabled())
+			return false;
+		TPlayerBotAIStateMap::const_iterator it = s_mapPlayerBotAIStates.find(ch->GetPlayerID());
+		if (it == s_mapPlayerBotAIStates.end())
+			return false;
+		const TPlayerBotPersona& p = it->second.persona;
+		if (!p.bRestored || p.bAdvanced || p.bQuitGrinding || IsPlayerBotDropper(it->second.bPersonality))
+			return false;
+		const uint8_t level = (uint8_t)std::min<int>(255, ch->GetLevel());
+		const uint8_t tier = playerbot_persona::GrinderTierFor(level);
+		const bool skipper = tier == 1 && level >= playerbot_persona::GRINDER_TIER1_SKIP_LEVEL &&
+				playerbot_persona::SkipsFirstVillage(ch->GetPlayerID());
+		return (tier == 2 || skipper) && MeetsPlayerBotM3Survival(ch);
+	}
+
 	bool ShouldPlayerBotVisitM3(LPCHARACTER ch)
 	{
-		if (!ch || !HasPlayerBotM3ReadyEquipment(ch))
+		const bool tierGrinder = IsPlayerBotM3TierGrinder(ch);
+		if (!ch || (!tierGrinder && !HasPlayerBotM3ReadyEquipment(ch)))
 			return false;
 		// The farm is for a drop, and a full bag has no cell for it.
 		if (IsPlayerBotBagFull(ch))
@@ -703,12 +733,14 @@ namespace
 		// changes nothing, and it stays as long as the map can still be hunted.
 		if (GetPlayerBotPersonalityByPID(ch->GetPlayerID()) == BOT_PERSONALITY_M3_DROPPER)
 			return IsPlayerBotM3DropperOnFarm(ch);
-		if (HasPlayerBotSpecialLevel30Weapon(ch, true))
+		// Everything from here to the crowd is the weapon hunt's, and the
+		// tier's Grinder is not there for the weapon.
+		if (!tierGrinder && HasPlayerBotSpecialLevel30Weapon(ch, true))
 			return false;
 		// One a counter holds and the purse reaches is bought, not farmed
 		// (community patch 2, point 1): the market trip is the next town
 		// visit's, and M3 is for the bots it would not serve.
-		if (PlayerBotMarketHasClassLevel30Weapon(ch) &&
+		if (!tierGrinder && PlayerBotMarketHasClassLevel30Weapon(ch) &&
 				GetPlayerBotLevel30PurchaseCap(ch) >=
 					(long long)ScalePlayerBotIwakuraPrice(PLAYERBOT_LEVEL30_BASE_PRICE))
 			return false;
@@ -740,6 +772,8 @@ namespace
 				? crowd > share * PLAYERBOT_M3_CROWD_STAY_PERCENT / 100
 				: crowd >= share)
 			return false;
+		if (tierGrinder)
+			return true;
 		// A stable third of the young population farms infected animals for
 		// class-specific level-30 weapons; the rest stay in M2 for Bestials.
 		// Past thirty-five nobody is left in M2 to share the work with, so the
@@ -1495,10 +1529,11 @@ namespace
 				(ch->GetWear(WEAR_WEAPON) == NULL || NeedsPlayerBotArrows(ch));
 		const bool m2LevelingCohort = IsPlayerBotM2LevelingCohort(ch);
 		// The door waits after a visit that ran out without the weapon
-		// (PLAYERBOT_M3_REVISIT_WAIT_MIN_MS); the M3 dropper lives there.
+		// (PLAYERBOT_M3_REVISIT_WAIT_MIN_MS); the M3 dropper and the second
+		// tier's Grinder live there.
 		const bool wantsM3 = ShouldPlayerBotVisitM3(ch) &&
-				(IsPlayerBotM3DropperOnFarm(ch) || (int)(dwNow - state.dwM3RevisitAfter) >= 0 ||
-				 state.dwM3RevisitAfter == 0);
+				(IsPlayerBotM3DropperOnFarm(ch) || IsPlayerBotM3TierGrinder(ch) ||
+				 (int)(dwNow - state.dwM3RevisitAfter) >= 0 || state.dwM3RevisitAfter == 0);
 		const bool needsCriticalTownServices = NeedsPlayerBotCriticalTownServices(ch);
 		const bool needsM1OnlyServices = NeedsPlayerBotM1OnlyServices(ch, state, dwNow);
 		// M2 has its own blacksmith. Only the remote M3 farm needs to schedule a
@@ -1569,7 +1604,10 @@ namespace
 		// ...unless it is there on purpose: the M3 dropper stays to 32, and
 		// graduating it at 25 sent it back to Bokjung, where the same rule sent
 		// it to M3 again - a hundred and fifty warps an hour per bot.
+		// The second tier ends at twenty-five, and whether this bot is its
+		// Grinder is not known until the persona flags have arrived.
 		if (IsPlayerBotM3Map(mapIndex) && ch->GetLevel() > 24 &&
+				(!IsPlayerBotPersonaEnabled() || state.persona.bRestored) &&
 				!ShouldPlayerBotVisitM3(ch))
 		{
 			// The walk does not own the goal - see the desert crossing below.
@@ -1852,7 +1890,8 @@ namespace
 					return false;
 				return MovePlayerBotToWorldPortal(ch, state, teleX, teleY,
 						playerbot_empire_rules::GetHomeMap(empire, playerbot_empire_rules::MAP_ROLE_M3),
-						arrival.x, arrival.y, dwNow, "level30_weapon_to_m3");
+						arrival.x, arrival.y, dwNow,
+						IsPlayerBotM3TierGrinder(ch) ? "tier2_grinder_to_m3" : "level30_weapon_to_m3");
 			}
 
 			// The river is in Joan, and every bot old enough to hold a rod has long
@@ -1919,7 +1958,12 @@ namespace
 		{
 			if (state.dwM3EnteredTime == 0)
 				state.dwM3EnteredTime = dwNow;
-			const bool visitExpired = dwNow - state.dwM3EnteredTime >= PLAYERBOT_M3_MAX_VISIT_TIME;
+			// The second tier's Grinder is home here and has no visit to run
+			// out: it leaves when it no longer belongs - past the tier, moved on
+			// as a Conqueror, over the crowd, a full bag.
+			const bool tierGrinder = IsPlayerBotM3TierGrinder(ch);
+			const bool visitExpired = tierGrinder ? !ShouldPlayerBotVisitM3(ch)
+					: dwNow - state.dwM3EnteredTime >= PLAYERBOT_M3_MAX_VISIT_TIME;
 			// An open town visit is reason enough to leave, critical or not.
 			//
 			// M3 is a guild map: no merchant, no blacksmith, no trainer. A bot
@@ -1931,7 +1975,7 @@ namespace
 			// out. Two of them were photographed doing exactly that.
 			// The weapon is what everybody else came for; the M3 dropper came
 			// for the ones it will sell (see IsPlayerBotM3DropperOnFarm).
-			const bool weaponFound = !IsPlayerBotM3DropperOnFarm(ch) &&
+			const bool weaponFound = !IsPlayerBotM3DropperOnFarm(ch) && !tierGrinder &&
 					HasPlayerBotSpecialLevel30Weapon(ch, true);
 			if (!visitExpired && !state.bVisitingShop &&
 					!needsCriticalTownServices && !needsM1OnlyServices &&
@@ -1953,7 +1997,7 @@ namespace
 			// A visit that ran out without the weapon closes the door for a
 			// while, so the M2 branch gives the valley, the horse and the river
 			// their turn instead of sending the bot straight back here.
-			if (visitExpired && !weaponFound && !IsPlayerBotM3DropperOnFarm(ch) &&
+			if (visitExpired && !weaponFound && !IsPlayerBotM3DropperOnFarm(ch) && !tierGrinder &&
 					(state.dwM3RevisitAfter == 0 || (int)(dwNow - state.dwM3RevisitAfter) >= 0))
 			{
 				state.dwM3RevisitAfter = dwNow + PLAYERBOT_M3_REVISIT_WAIT_MIN_MS +

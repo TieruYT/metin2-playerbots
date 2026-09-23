@@ -7710,6 +7710,30 @@ not in `data/`) reworked these point by point. What each hangs on:
   `Get-M2StackHostPorts` marks those `ClientFixed` and the message says to
   close the program instead; the panels, the ItemShop and the database are
   reached through the port .env publishes and keep the old advice.
+- **A tier is a map only if something sends the bot there.** The comment on
+  `GRINDER_TIERS` said "the map placement in the travel code is by level
+  already", and for M3 it never was: the level placement sends 19-25 to the
+  second village, and the one road to M3 was the level-30 weapon hunt (a third
+  of the bots without the weapon, by pid). Community Patch 2 then told a bot
+  that can buy the weapon not to farm it, so on m2zip M3 held 10 of the 426
+  bots of 15-25 and on Iwakura's young world none ("boty nie chodza wcale na
+  M3", 23 September). `IsPlayerBotM3TierGrinder` is the tier: a Grinder of
+  19-25 (or of Community Patch 1's quarter that skips the first village, from
+  13), not advanced, not quit, no dropper, meeting the document's entry
+  (`MeetsPlayerBotM3Survival`, weapon +6 and armour +5). `ShouldPlayerBotVisitM3`
+  lets it past the weapon's rules and keeps the crowd share, its M3 visit
+  never runs out (it leaves when it stops belonging), the revisit door does not
+  apply to it, it travels as `tier2_grinder_to_m3`, and the status reads
+  "Expie na M3 (Tier 2)" once it has the weapon. Fifteen minutes after the
+  deploy: 111 such trips and 103 bots on the three guild maps against 27, the
+  tick unchanged at 7.4 s of 60. In the same report Iwakura counted about 5%
+  of his bots exp-locked where he expected 80%; m2zip, measured the same hour,
+  held 81% of its bots of 13-18 and 66% of 19-25 at their locks. What releases
+  a young Grinder is the Law of Advancement met by ordinary gear (a level-15
+  weapon +7, a level-9 armour +6, Bojowa Tarcza +6 - 425 advances at 13-25 in
+  two days, 60% two minutes after the law is met), and on a world whose bots
+  average fourteen most have not reached their lock (13-19, drawn per bot).
+  Neither is a regression; how sticky a tier should be is his call.
 
 
 ## Engine facts worth not re-deriving

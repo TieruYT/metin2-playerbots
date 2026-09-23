@@ -255,8 +255,11 @@ namespace playerbot_persona
 	// holds wherever it is. The Monkey Dungeon is not a band of its own but a
 	// choice of ground inside the others.
 	//
-	// The map placement in the travel code is by level already, so a bot held
-	// at its tier's lock stays on that tier's map without being told to.
+	// The travel code places the villages and the frontier by level, so a bot
+	// held at those tiers' locks stays on their maps without being told to.
+	// M3 is not placed by level - the level sends 19 to 25 to the second
+	// village - so the second tier has a road of its own
+	// (IsPlayerBotM3TierGrinder in playerbot_travel.h).
 	// ---------------------------------------------------------------------
 	struct TGrinderTier
 	{

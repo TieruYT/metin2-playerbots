@@ -607,6 +607,9 @@ namespace
 				else if (IsPlayerBotM3Map(ch->GetMapIndex()) &&
 						(IsPlayerBotM3DropperOnFarm(ch) || !HasPlayerBotSpecialLevel30Weapon(ch, true)))
 					snprintf(status, statusSize, "%sSzukam broni na 30 poziom na M3", prefix);
+				// The second tier's Grinder, with the weapon already in hand.
+				else if (IsPlayerBotM3Map(ch->GetMapIndex()) && IsPlayerBotM3TierGrinder(ch))
+					snprintf(status, statusSize, "%sExpie na M3 (Tier 2)", prefix);
 				// Only a medal the bot can hand in. A horse at ten waits for
 				// level thirty-five, a medal dropper carries them for its
 				// counter, and both used to announce the stable keeper on every
