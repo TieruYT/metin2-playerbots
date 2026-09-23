@@ -1,20 +1,20 @@
 {
   "schema": 1,
   "channel": "stable",
-  "publishedAt": "2026-09-23T21:02:33Z",
-  "statusMessage": "2.2.5 (serwer; klient zostaje 2.0.27): tarcza i zbroja oceniane po obronie i bonusach, a nie po poziomie przedmiotu (bot nie nosi juz Pieciokatnej+4 z Bojowa+7 w plecaku), medale konne na straganach po 2 sztuki, przycisk ? przy kazdym ustawieniu w oknie liczby botow. Zawiera wszystko z 2.2.4.",
+  "publishedAt": "2026-09-23T22:02:21Z",
+  "statusMessage": "2.2.6 (serwer 2.2.6, klient 2.0.28 - zaktualizuj oba): Wieza Demonow - boty podnosza swoj drop, marmury tylko na Rozpruwaczu, kowal ulepsza przedmiot z plecaka i podaje wynik na czacie, krotsze czekanie po kowalu, lucznicy strzelaja z dystansu; Metiny bez konia bojowego; statusy botow po angielsku w kliencie ustawionym na inny jezyk; launcher proponuje angielski w kliencie; panele pokazuja aktualny poziom botow. Zawiera wszystko z 2.2.5.",
   "server": {
-    "version": "2.2.5",
-    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.5/metin2-server-update-2.2.5.zip",
-    "sha256": "0EF50ADB826F4B7277B23C7858B9B64121A0A9D6F4B4B5DCFD3EE477DF6FBCAE"
+    "version": "2.2.6",
+    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.6/metin2-server-update-2.2.6.zip",
+    "sha256": "AA9CF4CBA197288AA8412D161C71A0BC6ECF283D14EC5964B571D1646A68D9C6"
   },
   "support": {
     "contactUrl": "https://discord.gg/pt5tvnrN6",
     "uploadUrl": ""
   },
   "client": {
-    "version": "2.0.27",
-    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.4/metin2-client-update-2.0.27.zip",
-    "sha256": "A871B3513378F79680CEA3637C4EFA727B42DAD5C5E5331DBE93A2AC9633BFCE"
+    "version": "2.0.28",
+    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.6/metin2-client-update-2.0.28.zip",
+    "sha256": "2B5BB806AD2C2F905CC34B3BB4517AFEF172E2D1F18875B24C2361715EE53DFA"
   }
 }
