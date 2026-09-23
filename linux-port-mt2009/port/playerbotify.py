@@ -1038,7 +1038,11 @@ def main(root):
          '\t\t\t\tch->GetDesc()->Packet(&effect, sizeof(effect));\n'
          '\t\t\t}\n'
          '\t\t}\n'
-         '\t}\n')
+         '\t}\n',
+         # apply_shop_search_picked_item rewrites the search's signature and
+         # its test inside this block, so the whole text is gone after it and
+         # would be inserted again on every run: a line nothing rewrites.
+         marker='\tclass CPlayerBotStallView\n')
 
     edit(p,
          '\n'
@@ -1055,7 +1059,9 @@ def main(root):
          '\t\t\t\t\t\t(int)(foundShops.size() - offlineShops));\n'
          '\t\t}\n'
          '\n'
-         '\t\tch->ChatPacket(CHAT_TYPE_INFO, LC_TEXT("Searching ended. Found %d shops."), foundShops.size());\n')
+         '\t\tch->ChatPacket(CHAT_TYPE_INFO, LC_TEXT("Searching ended. Found %d shops."), foundShops.size());\n',
+         # The call inside is given two more arguments later; this line is not.
+         marker='Stragany botow z tym towarem: %d - kazdy oznaczony fajerwerkiem.')
 
     # ======================================================================
     # 2.0.12 no wait between two books of one skill. The package puts 21 hours
