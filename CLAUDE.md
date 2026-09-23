@@ -3964,8 +3964,21 @@ not in `data/`) reworked these point by point. What each hangs on:
   twenty levels outgrown scored the same single point and the bonus lines
   alone decided: the same sura wore a level-1 plate +6 with a level-34 one +4
   in its bag, then put the level-34 one on its counter. Each level past the
-  threshold now keeps ninety-five percent of the level before, so a higher
-  tier keeps more of its defence at any level.
+  threshold kept ninety-five percent of the level before, so a higher
+  tier kept more of its defence at any level. **And then the penalty went
+  altogether (23 September)**: it docked the defence itself, which is what
+  the piece gives, so a bot of thirty-five wore a Pieciokatna Tarcza +4 (34
+  defence, -6% speed, level 21) over the Bojowa Tarcza +7 in its bag (45, -2%,
+  level 0) - 35 bots on m2zip with a clearly better shield in the bag
+  ("pomimo ze bojowa+7 daje lepsze staty on woli nosic pieciokatna", Tieru;
+  "wbudowane bonusy to tez bonusy", Iwakura). The score is the piece's own
+  numbers now and the required level only breaks a tie
+  (`PLAYERBOT_ARMOR_LEVEL_TIE_BREAK`). The tiers are climbed without it: the
+  merchant sells the next tier by level whatever the bot wears
+  (`BuyPlayerBotBestMerchantSlotGear` asks the level, not the score), and the
+  higher-tier piece in the bag is kept and refined (`IsPlayerBotHigherTierSpare`)
+  until its numbers win - the Pieciokatna from +6. `HasPlayerBotSellableSpare`
+  skips such a piece, because the collector never lists it.
 - **A bot in a player's party makes no plan of its own that changes map.**
   `ManagePlayerBotFollowHumanLeader` leaves the bot to the rest of the tick once
   it stands near the player, and the rest of the tick sent it away: in
@@ -7035,7 +7048,13 @@ not in `data/`) reworked these point by point. What each hangs on:
   `GetPlayerBotStallBaseKeep` leaves that much in the base stack so the cut
   lines agree - the medal dropper keeps one, being the medal shop. Any rule of
   the shape "may spend" beside one of the shape "may sell" wants reading
-  together: the pair can refuse both ways at once.
+  together: the pair can refuse both ways at once. And a line is two medals
+  (`PLAYERBOT_SHOP_HORSE_MEDAL_LINE_UNITS`): the medal is an ITEM_USE, a single
+  by `GetPlayerBotStallLineUnits`, and `BotOfflinePrepareLine` cut nothing of
+  its kind, so a stack went up whole - 139 of 164 medal lines on m2zip held
+  three to twenty, and nobody bought them ("wystawiaja nawet po 10 sztuk",
+  Tieru, 23 September). The medal is cut the scroll's way now, keep counted
+  over every stack, and a longer line comes home (`medal_pack`).
 - **Exempt from the junk rule is not the same as listed anywhere.** The change
   stone, the add stone and the blessing marble have been kept out of
   `IsPlayerBotJunkItem` since the marble went in - no bot may vendor one - and

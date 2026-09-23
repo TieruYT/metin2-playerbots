@@ -674,6 +674,13 @@ namespace
 	// service visit (BotOfflineUnwantedLine) and goes up again in fives.
 	const int PLAYERBOT_SHOP_SCROLL_LINE_UNITS = 5;
 	const int PLAYERBOT_SHOP_SCROLL_LINES = 3;
+	// Horse medals (PLAYERBOT_HORSE_MEDAL_VNUM) on a counter line: at most two.
+	// The medal is an ITEM_USE, a single by the rule below, and the offline
+	// stand cut none of its kind, so a stack went up whole - ten and twenty on
+	// a line that nobody bought ("wystawiaja nawet po 10 sztuk i nikt tego nie
+	// kupuje", Tieru, 23 September). A longer line already standing comes home
+	// at the next service visit to be cut (BotOfflineUnwantedLine).
+	const int PLAYERBOT_SHOP_HORSE_MEDAL_LINE_UNITS = 2;
 	// Single lines of one kind kept by count - the books of one skill, the
 	// soul stone - one offline counter carries at a time. A line is one unit
 	// (GetPlayerBotStallLineUnits), because a bot buys a line only when all of
@@ -3041,23 +3048,16 @@ namespace
 	// lines. A giftbox wants three free cells in one column of one page.
 	const int PLAYERBOT_BAG_PAGE_COLUMNS = 5;
 	const int PLAYERBOT_BAG_PAGE_ROWS = 9;
+	// What an armour piece's required level adds to its score, per level: the
+	// tie-break between two pieces whose numbers are the same, Iwakura's "as
+	// close to the character's level as it can be". A point of defence is
+	// worth a thousand, so a level-105 piece gains a tenth of one - the level
+	// never outweighs what the piece gives (GetPlayerBotEquipmentScore).
+	const long long PLAYERBOT_ARMOR_LEVEL_TIE_BREAK = 1;
 	// The Forgetting Scroll (ITEM_SKILLFORGET): one level off a skill and the
 	// point back. A skill that reached seventeen without turning Master is
 	// left there rather than pushed on - every further point is a point the
 	// bot never gets back - and a scroll from a counter buys another roll.
-	// An armour piece more than this many levels below the bot is outgrown and
-	// loses this much score per level past that, so a tier-appropriate piece
-	// at a low refine displaces the starter piece at +6 and gets refined.
-	const int PLAYERBOT_ARMOR_OUTGROWN_LEVELS = 20;
-	// ...as a share of its defence figure per level past that, compounded:
-	// each level keeps this much less of what the level before kept, so no
-	// piece drops to nothing and a higher tier keeps more. It was a flat
-	// fifteen hundred a level, which took the bonus lines with it: a level-18
-	// plate rolled with fifteen hundred health lost at fifty to a dragon armour
-	// with seven more defence and nothing else. Then it was this much a level
-	// up to all of it, and a bot of seventy-four found every armour of level
-	// thirty-four and below worth the same single point.
-	const long long PLAYERBOT_ARMOR_OUTGROWN_PERCENT_PER_LEVEL = 5;
 	const DWORD PLAYERBOT_SKILL_FORGET_SCROLL_VNUM = 70037;
 	// Moving a point from a skill the priority list ranks lower to the one it
 	// wants next: one Forgetting Book per point, at this price and this pace

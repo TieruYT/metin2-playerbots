@@ -527,6 +527,9 @@ namespace
 			return 0;
 		if (IsPlayerBotSafeRefineScroll(item->GetVnum()))
 			return PLAYERBOT_SHOP_SCROLL_LINE_UNITS;
+		// Asked before the ITEM_USE singles below, which the medal is one of.
+		if (item->GetVnum() == PLAYERBOT_HORSE_MEDAL_VNUM)
+			return PLAYERBOT_SHOP_HORSE_MEDAL_LINE_UNITS;
 		if (item->GetType() == ITEM_SKILLBOOK || item->GetVnum() == PLAYERBOT_GRAND_MASTER_STONE_VNUM)
 			return 1;
 		// A bean is bought a handful at a time (PLAYERBOT_ZEN_BEAN_LINE_UNITS).

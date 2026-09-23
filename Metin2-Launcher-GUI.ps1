@@ -1257,6 +1257,43 @@ function Update-BotDialogValueLabel {
     else { $label.Text = "Boty: $([int]$Form.Controls['botBar'].Value)" }
 }
 
+function Add-BotDialogHelp {
+    # A "?" beside a setting of the bot dialog: a hover shows what the setting
+    # does, a click opens the same text in a box that stays until it is read
+    # ("tego nie za bardzo rozumiem, mozesz tam dodac jakies opisy albo znaki
+    # zapytania co znaczy kazda regula", Tieru, 23 September). The text goes on
+    # the setting's own label and box too, so a hover anywhere on the row
+    # explains it. The tooltip does not wrap, so the texts carry their breaks.
+    param(
+        [Parameter(Mandatory = $true)][Windows.Forms.Form]$Dialog,
+        [Parameter(Mandatory = $true)][Windows.Forms.ToolTip]$Tip,
+        [Parameter(Mandatory = $true)][string]$Title,
+        [Parameter(Mandatory = $true)][string]$Text,
+        [Parameter(Mandatory = $true)][int]$X,
+        [Parameter(Mandatory = $true)][int]$Y,
+        [object[]]$Also = @()
+    )
+    $help = [Windows.Forms.Button]::new()
+    $help.Text = '?'
+    $help.Font = [Drawing.Font]::new('Segoe UI', 9, [Drawing.FontStyle]::Bold)
+    $help.FlatStyle = 'Flat'
+    $help.Size = [Drawing.Size]::new(24, 24)
+    $help.Location = [Drawing.Point]::new($X, $Y)
+    $help.Cursor = [Windows.Forms.Cursors]::Hand
+    $help.TabStop = $false
+    $help.Tag = @{ Title = $Title; Text = $Text }
+    $help.Add_Click({
+            $info = $this.Tag
+            [void][Windows.Forms.MessageBox]::Show($this.FindForm(), [string]$info.Text, [string]$info.Title,
+                [Windows.Forms.MessageBoxButtons]::OK, [Windows.Forms.MessageBoxIcon]::Information)
+        })
+    $Dialog.Controls.Add($help)
+    $Tip.SetToolTip($help, $Text)
+    foreach ($control in @($Also)) {
+        if ($control -is [Windows.Forms.Control]) { $Tip.SetToolTip($control, $Text) }
+    }
+}
+
 function Show-BotCountDialog {
     # Slider instead of a typed number: the range is a property of the world, and
     # dragging is far friendlier than guessing a value. The maximum is the
@@ -1282,6 +1319,22 @@ function Show-BotCountDialog {
     $dialog.MaximizeBox = $false
     $dialog.MinimizeBox = $false
 
+    # What each "?" says (Add-BotDialogHelp). Written for a player, with an
+    # example each: the numbers are the core's own rules (SplitPopulation,
+    # SetSpawnWindow, ScheduleLateJoiners, the second channel's share).
+    $tip = [Windows.Forms.ToolTip]::new()
+    $tip.AutoPopDelay = 30000
+    $tip.InitialDelay = 250
+    $tip.ReshowDelay = 100
+    $tip.ShowAlways = $true
+    $helpCount = "Ile botów gra na serwerze jednocześnie.`r`n`r`nLiczba dzieli się po równo między trzy królestwa:`r`nnp. 900 to po 300 botów w Shinsoo, Chunjo i Jinno.`r`nKażde królestwo ma 1500 postaci botów, więcej się nie da.`r`n`r`nWięcej botów to więcej pracy dla komputera.`r`nZmiana działa po restarcie serwera."
+    $helpMinutes = "W ile minut od startu serwera wchodzą do gry`r`nboty z suwaka.`r`n`r`n1 = prawie wszystkie naraz: szybko, ale przez pierwszą`r`nminutę serwer mocno pracuje.`r`n15 = boty schodzą się przez kwadrans, jak gracze`r`npo otwarciu serwera, a start jest lżejszy dla komputera."
+    $helpLate = "Ilu botów dołączy PÓŹNIEJ, ponad liczbę z suwaka.`r`nWchodzą pojedynczo, równo rozłożone na liczbę godzin`r`nz pola poniżej.`r`n`r`n0 = żadnych, grają tylko boty z suwaka.`r`nNp. suwak 1000 i tu 500: po starcie wchodzi 1000 botów,`r`na przez kolejne godziny dochodzi jeszcze 500, po jednym.`r`n`r`nKrólestwo nie da więcej botów, niż ma postaci (1500)."
+    $helpHours = "W ciągu ilu godzin dochodzą dodatkowe boty z pola`r`nwyżej. Rozkładają się równo na ten czas.`r`n`r`nNp. 500 botów w ciągu 24 h to mniej więcej jeden bot`r`nco 3 minuty. Liczy się od startu serwera, więc restart`r`nzaczyna ten plan od nowa.`r`n`r`nNie ma znaczenia, gdy dodatkowych botów jest 0."
+    $helpKingdoms = "Zamiast jednej liczby z suwaka ustawiasz osobno, ile`r`nbotów gra w każdym królestwie (0-1500). Suwak jest wtedy`r`nwyłączony, a u góry widać sumę.`r`n`r`nNp. Chunjo 1000, Shinsoo 0, Jinno 0 = boty grają tylko`r`nw żółtym królestwie. Królestwo z 0 nie ma żadnego bota."
+    $helpChannel = "Uruchamia drugi kanał gry (CH2). Część botów gra na nim,`r`na przy logowaniu wybierasz CH1 albo CH2.`r`n`r`nSerwer rozkłada wtedy boty na dwa rdzenie procesora,`r`nwięc przy dużej liczbie botów działa płynniej.`r`nSklepy (botów i graczy) stoją tylko na CH1: bot z CH2,`r`nktóry chce handlować, na chwilę przechodzi na CH1.`r`n`r`nWłączenie otwiera też porty 13010-13012.`r`nZmiana działa po restarcie serwera."
+    $helpShare = "Jaka część wszystkich botów gra na CH2.`r`nNp. 40 = mniej więcej 4 boty na 10 grają na CH2,`r`nreszta na CH1.`r`n`r`nDziała tylko przy włączonym drugim kanale."
+
     $info = [Windows.Forms.Label]::new()
     $info.Text = "Ilu botów ma grać jednocześnie?`r`nKażde królestwo ma 1500 postaci botów. Liczba z suwaka dzieli się po równo`r`nmiędzy królestwa, najwyżej 2500 naraz. Zmiana wymaga restartu serwera."
     $info.Location = [Drawing.Point]::new(14, 12)
@@ -1292,7 +1345,7 @@ function Show-BotCountDialog {
     $valueLabel.Name = 'valueLabel'
     $valueLabel.Font = [Drawing.Font]::new('Segoe UI Semibold', 15)
     $valueLabel.Location = [Drawing.Point]::new(14, 70)
-    $valueLabel.Size = [Drawing.Size]::new(440, 32)
+    $valueLabel.Size = [Drawing.Size]::new(400, 32)
     $dialog.Controls.Add($valueLabel)
 
     $bar = [Windows.Forms.TrackBar]::new()
@@ -1306,6 +1359,7 @@ function Show-BotCountDialog {
     $bar.Size = [Drawing.Size]::new(442, 45)
     $bar.Value = [Math]::Max(0, [Math]::Min(2500, $Current))
     $dialog.Controls.Add($bar)
+    Add-BotDialogHelp -Dialog $dialog -Tip $tip -Title 'Liczba botów' -Text $helpCount -X 420 -Y 74 -Also @($valueLabel, $bar)
     $valueLabel.Text = "Boty: $($bar.Value)"
     # $this/FindForm keeps the handler independent of captured locals.
     $bar.Add_ValueChanged({
@@ -1317,15 +1371,15 @@ function Show-BotCountDialog {
         })
 
     $planInfo = [Windows.Forms.Label]::new()
-    $planInfo.Text = "Wejście stopniowe: tylu botów wchodzi w ciągu podanych minut od startu,`r`na dodatkowe dołączają pojedynczo w ciągu podanych godzin (0 = bez dodatkowych)."
+    $planInfo.Text = "Jak boty wchodzą do gry po starcie serwera. Przy każdym polu jest przycisk ?`r`n- najedź na niego myszką albo kliknij, żeby zobaczyć, co to pole robi."
     $planInfo.Location = [Drawing.Point]::new(14, 150)
     $planInfo.Size = [Drawing.Size]::new(440, 34)
     $dialog.Controls.Add($planInfo)
 
     $rows = @(
-        @{ Name = 'minutesBox'; Text = 'Wejście w ciągu (min, 1-180):'; Min = 1; Max = 180; Value = [int]$Plan.Minutes; Y = 188 },
-        @{ Name = 'lateBox';    Text = 'Dodatkowych botów później (0-2500):'; Min = 0; Max = 2500; Value = [int]$Plan.Late; Y = 218 },
-        @{ Name = 'hoursBox';   Text = 'dołączających w ciągu (h, 1-168):'; Min = 1; Max = 168; Value = [int]$Plan.Hours; Y = 248 }
+        @{ Name = 'minutesBox'; Text = 'Boty z suwaka wchodzą w ciągu (min, 1-180):'; Min = 1; Max = 180; Value = [int]$Plan.Minutes; Y = 188; Title = 'Wejście botów po starcie'; Help = $helpMinutes },
+        @{ Name = 'lateBox';    Text = 'Dodatkowe boty później (0-2500):'; Min = 0; Max = 2500; Value = [int]$Plan.Late; Y = 218; Title = 'Dodatkowe boty później'; Help = $helpLate },
+        @{ Name = 'hoursBox';   Text = 'Dodatkowe boty dochodzą przez (h, 1-168):'; Min = 1; Max = 168; Value = [int]$Plan.Hours; Y = 248; Title = 'Czas dochodzenia dodatkowych botów'; Help = $helpHours }
     )
     foreach ($row in $rows) {
         $label = [Windows.Forms.Label]::new()
@@ -1341,6 +1395,7 @@ function Show-BotCountDialog {
         $box.Location = [Drawing.Point]::new(300, $row.Y)
         $box.Size = [Drawing.Size]::new(90, 24)
         $dialog.Controls.Add($box)
+        Add-BotDialogHelp -Dialog $dialog -Tip $tip -Title $row.Title -Text $row.Help -X 400 -Y $row.Y -Also @($label, $box)
     }
 
     # Each kingdom its own number instead of a share of the one above. The
@@ -1351,9 +1406,10 @@ function Show-BotCountDialog {
     $kingdomCheck.Name = 'kingdomCheck'
     $kingdomCheck.Text = 'Indywidualne wartości dla królestw'
     $kingdomCheck.Location = [Drawing.Point]::new(14, 282)
-    $kingdomCheck.Size = [Drawing.Size]::new(440, 24)
+    $kingdomCheck.Size = [Drawing.Size]::new(380, 24)
     $kingdomCheck.Checked = [bool]$Kingdoms.PerKingdom
     $dialog.Controls.Add($kingdomCheck)
+    Add-BotDialogHelp -Dialog $dialog -Tip $tip -Title 'Osobno dla królestw' -Text $helpKingdoms -X 400 -Y 282 -Also @($kingdomCheck)
     $kingdomRows = @(
         @{ Name = 'shinsooBox'; Text = 'Shinsoo (czerwone, 0-1500):'; Color = [Drawing.Color]::FromArgb(220, 40, 40); Value = [int]$Kingdoms.Shinsoo; Y = 310 },
         @{ Name = 'chunjoBox';  Text = 'Chunjo (żółte, 0-1500):';     Color = [Drawing.Color]::FromArgb(235, 200, 30); Value = [int]$Kingdoms.Chunjo; Y = 340 },
@@ -1379,6 +1435,8 @@ function Show-BotCountDialog {
         $box.Size = [Drawing.Size]::new(90, 24)
         $box.Enabled = $kingdomCheck.Checked
         $dialog.Controls.Add($box)
+        $tip.SetToolTip($label, $helpKingdoms)
+        $tip.SetToolTip($box, $helpKingdoms)
     }
     $kingdomCheck.Add_CheckedChanged({
             $form = $this.FindForm()
@@ -1398,9 +1456,10 @@ function Show-BotCountDialog {
     $channelCheck.Name = 'channelCheck'
     $channelCheck.Text = 'Drugi kanał (CH2) dla botów i graczy'
     $channelCheck.Location = [Drawing.Point]::new(14, 406)
-    $channelCheck.Size = [Drawing.Size]::new(440, 24)
+    $channelCheck.Size = [Drawing.Size]::new(380, 24)
     $channelCheck.Checked = [bool]$Kingdoms.Channel2
     $dialog.Controls.Add($channelCheck)
+    Add-BotDialogHelp -Dialog $dialog -Tip $tip -Title 'Drugi kanał (CH2)' -Text $helpChannel -X 400 -Y 406 -Also @($channelCheck)
     $shareLabel = [Windows.Forms.Label]::new()
     $shareLabel.Text = 'Ile procent botów gra na CH2 (10-90):'
     $shareLabel.Location = [Drawing.Point]::new(34, 437)
@@ -1415,6 +1474,7 @@ function Show-BotCountDialog {
     $shareBox.Size = [Drawing.Size]::new(90, 24)
     $shareBox.Enabled = $channelCheck.Checked
     $dialog.Controls.Add($shareBox)
+    Add-BotDialogHelp -Dialog $dialog -Tip $tip -Title 'Boty na CH2' -Text $helpShare -X 400 -Y 434 -Also @($shareLabel, $shareBox)
     $channelCheck.Add_CheckedChanged({
             $form = $this.FindForm()
             if ($form) { $form.Controls['channelShareBox'].Enabled = $this.Checked }
@@ -1454,6 +1514,7 @@ function Show-BotCountDialog {
         Channel2      = [bool]$dialog.Controls['channelCheck'].Checked
         Channel2Share = [int]$dialog.Controls['channelShareBox'].Value
     }
+    $tip.Dispose()
     $dialog.Dispose()
     if ($result -ne [Windows.Forms.DialogResult]::OK) { return $null }
     return $chosen

@@ -663,33 +663,21 @@ namespace
 				 item->GetSubType() == ARMOR_FOOTS || item->GetSubType() == ARMOR_SHIELD))
 		{
 			score += (long long)(item->GetValue(1) + 2 * item->GetValue(5)) * 1000;
-			// A piece the bot has outgrown by twenty levels or more loses ground
-			// for every level past that. By the defence figure alone a Battle
-			// Shield +6 (3 + 2*18) beats a level-41 shield at +3 (5 + 2*16), and
-			// 61 of the bots past forty wore exactly that: the level-1 shield
-			// bought at level 1, refined once and never put down, while the
-			// level-41 shield sat in the bag. Each refine on the higher tier is
-			// worth more than one on the lower, so the bot switches tiers and
-			// refines that - a level-41 shield at +4 beats a level-21 one at +6.
-			// The penalty is a share of the defence figure alone: the bonus lines
-			// are added below and are worth what they are worth at any level.
-			//
-			// Compounded, not subtracted to nothing. At five percent a level up
-			// to all of it, every armour twenty levels outgrown scored the same
-			// single point, and at level 74 that is every body armour a merchant
-			// sells: a sura wore a level-1 plate +6 with the level-34 one +4 in
-			// its bag, then put the level-34 one on its counter (NaCoPaczysz,
-			// 14 September). Each level past the threshold keeps ninety-five
-			// percent of what the level before kept - at 74 a level-34 +4 keeps
-			// 36%, a level-26 +6 24%, a level-1 +6 6% - so the higher tier wins.
-			if (ch && (int)ch->GetLevel() - item->GetLevelLimit() > PLAYERBOT_ARMOR_OUTGROWN_LEVELS)
-			{
-				int outgrown = (int)ch->GetLevel() - item->GetLevelLimit() - PLAYERBOT_ARMOR_OUTGROWN_LEVELS;
-				long long defence = score - 1;
-				for (; outgrown > 0 && defence > 0; --outgrown)
-					defence = defence * (100 - PLAYERBOT_ARMOR_OUTGROWN_PERCENT_PER_LEVEL) / 100;
-				score = 1 + defence;
-			}
+			// A piece is worth what it gives, whatever level it asks for. An
+			// outgrown piece used to lose five percent of its defence for every
+			// level past twenty, to move a bot up the tiers, and so a bot of
+			// forty or so wore a Pieciokatna Tarcza +4 (34 defence, -6% speed,
+			// level 21) over a Bojowa Tarcza +7 in its bag (45, -2%, level 0)
+			// - "pomimo ze bojowa+7 daje lepsze staty on woli nosic
+			// pieciokatna" (Tieru), "wbudowane bonusy to tez bonusy" (Iwakura,
+			// 23 September): the shield's own defence and speed are its lines
+			// as much as anything rolled on it. The tiers are climbed another
+			// way: the merchant sells the next tier by level whatever the bot
+			// wears (BuyPlayerBotBestMerchantSlotGear), and the higher-tier
+			// piece in the bag is kept and refined (IsPlayerBotHigherTierSpare)
+			// until its own numbers win - the Pieciokatna at +6 does. The level
+			// only breaks a tie (PLAYERBOT_ARMOR_LEVEL_TIE_BREAK).
+			score += (long long)item->GetLevelLimit() * PLAYERBOT_ARMOR_LEVEL_TIE_BREAK;
 		}
 
 		// A weapon's two damage-percent lines were folded into its attack

@@ -411,6 +411,15 @@ namespace {
                 M2_DELETE(preview);
                 continue;
             }
+            // A line of more than PLAYERBOT_SHOP_HORSE_MEDAL_LINE_UNITS horse
+            // medals went up as the stack it was; it comes home to be cut.
+            if (preview->GetVnum() == PLAYERBOT_HORSE_MEDAL_VNUM &&
+                    (int)preview->GetCount() > PLAYERBOT_SHOP_HORSE_MEDAL_LINE_UNITS &&
+                    GetPlayerBotItemPolicy(preview) != PLAYERBOT_ITEM_POLICY_STALL) {
+                if (!unwanted) { unwanted = id; reason = "medal_pack"; }
+                M2_DELETE(preview);
+                continue;
+            }
             // A herb line under a heap and a material line over a hoard's
             // pack went up before 2.0.68 - the stand put up whatever stack a
             // cell held: 1171 single roots and 1084 material lines of more
@@ -634,13 +643,14 @@ namespace {
                 ch->GetPlayerID(), ch->GetName(), item->GetVnum(), take, (unsigned int)item->GetCount(), keep);
             return to;
         }
-        if (IsPlayerBotSafeRefineScroll(item->GetVnum())) {
+        if (IsPlayerBotSafeRefineScroll(item->GetVnum()) || item->GetVnum() == PLAYERBOT_HORSE_MEDAL_VNUM) {
             // A scroll line is what the bot holds over its own keep
             // (GetPlayerBotStallBaseKeep), up to the line: a stack of five
             // with a keep of three is a line of two, never the whole stack.
             // The keep is counted over every stack of the kind, so a line
             // already cut off (BotOfflinePrepareVisitLine) goes up whole while
-            // the rest of the scrolls stay in the stack it came from.
+            // the rest of the scrolls stay in the stack it came from. Horse
+            // medals the same way, two to a line over the two a bot keeps.
             const int keep = GetPlayerBotStallBaseKeep(ch, item);
             const int spare = (int)ch->CountSpecifyItem(item->GetVnum()) - keep;
             const int take = std::min(units, std::min((int)item->GetCount(), spare));

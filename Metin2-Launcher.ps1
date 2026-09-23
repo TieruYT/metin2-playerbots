@@ -870,6 +870,9 @@ function Set-BotCountAction {
     if ($answer -notmatch '^\d+$') { Write-Host 'Anulowano: to nie jest liczba.' -ForegroundColor Yellow; return }
     $applied = Set-PlayerbotCount -Count ([int]$answer)
     Write-Host "Zapisano: $applied grających botów." -ForegroundColor Green
+    # The same words as the "?" of the window's bot dialog, shorter.
+    Write-Host 'Wejście: w ile minut od startu serwera wchodzą boty podane wyżej (1 = prawie od razu, 15 = stopniowo przez kwadrans).' -ForegroundColor Gray
+    Write-Host 'Dodatkowe boty: dołączają później pojedynczo, ponad liczbę wyżej, równo rozłożone na podane godziny (0 = bez dodatkowych).' -ForegroundColor Gray
     $m = Read-Host "W ciągu ilu minut od startu mają wejść (1-180, Enter = $($plan.Minutes))"
     $l = Read-Host "Ilu dodatkowych botów ma dołączać stopniowo później (0-2500, Enter = $($plan.Late))"
     $h = Read-Host "W ciągu ilu godzin mają dołączać (1-168, Enter = $($plan.Hours))"

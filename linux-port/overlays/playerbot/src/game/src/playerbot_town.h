@@ -1430,6 +1430,11 @@ namespace
 			// Nor the level-30 weapon it is grinding: no counter takes that.
 			if (IsPlayerBotLevel30Project(ch, item))
 				continue;
+			// Nor the higher tier the blacksmith is raising past the worn piece:
+			// the collector never lists it, and since the armour score stopped
+			// docking a worn low-level piece more of them wait in the bags.
+			if (IsPlayerBotHigherTierSpare(ch, item))
+				continue;
 			const int wearCell = item->FindEquipCell(ch);
 			if (wearCell < 0 || ch->GetWear((BYTE)wearCell) == NULL)
 				continue;
