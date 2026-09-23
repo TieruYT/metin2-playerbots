@@ -223,6 +223,12 @@ EDITS = {
     # Both edits take in the line after the insertion, so a second run on our
     # own output finds neither anchor and changes nothing.
     'game.py': [
+        # Server 2.2.6 sends the English line as a third word and client
+        # 2.0.28 hands it on: the migration of our own earlier insertion,
+        # before the edit below, which then finds its new text and skips.
+        (b'\t\tplayerbot_status_tail.show(vid, encodedText)\r\n',
+         b'\t\tplayerbot_status_tail.show(vid, encodedText, *rest)\r\n',
+         True),
         (b'\t\t\t"PlayerbotOverhead"\t\t\t\t: self.__PlayerbotAdmin_Overhead,\r\n'
          b'\t\t\t"Top1Badge"\t\t\t\t\t\t\t: self.__OnTop1Badge,\r\n',
          b'\t\t\t"PlayerbotOverhead"\t\t\t\t: self.__PlayerbotAdmin_Overhead,\r\n'

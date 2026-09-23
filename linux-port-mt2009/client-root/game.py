@@ -3390,7 +3390,7 @@ class GameWindow(ui.ScriptWindow):
 		# A bot's status as a text tail and nothing in the chat history
 		# (playerbot_status_tail.py; SendPlayerBotOverheadChat on the server).
 		import playerbot_status_tail
-		playerbot_status_tail.show(vid, encodedText)
+		playerbot_status_tail.show(vid, encodedText, *rest)
 
 	# Same transport as PlayerbotOverhead above (SendPlayerBotOverheadTail),
 	# but not GM-gated - the "Top1" badge over the server's current highest
