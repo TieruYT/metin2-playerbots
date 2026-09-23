@@ -66,11 +66,17 @@ OUT_SQL = os.path.join(OVERLAY, 'sql', 'playerbot_names.sql')
 MIRROR_SQL = os.path.join(REPO, 'linux-port', 'docker', 'mariadb', 'playerbot',
                           'playerbot_names.sql')
 
-# Names per kingdom: room for Chunjo's 1500 seeded identities and for an
-# operator who grows a cohort. The three kingdoms of playerbot_empire_rules.h,
-# in the order the seed numbers them (Chunjo's PIDs come first).
+# Names per kingdom: room for the 1500 seeded identities every kingdom holds
+# since 2.2.1, and then some. The margin is not for growth: a world named from
+# an earlier list wears names that land in every share of this one - the list
+# is shuffled by its own content, so a changed list deals a different hand -
+# and a name somebody wears is never free (see the plan below). A world named
+# in 2.0.10 wears some 650 names of each share of this list, which left 1150
+# free for a thousand new Shinsoo or Jinno bots at 1800; 3000 leaves 2350.
+# The three kingdoms of playerbot_empire_rules.h, in the order the seed
+# numbers them (Chunjo's PIDs come first).
 KINGDOMS = (2, 1, 3)
-PER_KINGDOM = 1800
+PER_KINGDOM = 3000
 # common/length.h: CHARACTER_NAME_MAX_LEN is 24 on both engines.
 MAX_LEN = 24
 # A name that gets a v2/v3 behind it must still fit.

@@ -28,7 +28,7 @@
 -- not have yet, in the order above; a class somebody already plays there
 -- is skipped, and an account with four characters gets nothing. Whatever
 -- is already on the account is left exactly as it is. PIDs 9001-9004: the
--- playerbot seed uses 4..2503 with explicit ids, and player.player's
+-- playerbot seed uses 4..4503 with explicit ids, and player.player's
 -- AUTO_INCREMENT would have handed a fresh world 1..4 and collided with
 -- the seed's pid 4.
 --

@@ -224,6 +224,23 @@ int main()
 		registered[EMPIRE_JINNO] = 0;
 		TakeKingdomCounts(asked, registered, want);
 		assert(want[EMPIRE_JINNO] == 0 && want[EMPIRE_SHINSOO] == 60);
+
+		// kavvaski's world (23 September): 729/250/773 asked for, and the
+		// 500 Shinsoo and Jinno identities of 2.0.8 cut it to 500/250/500.
+		// With the 1500 a kingdom of 2.2.1 every number is taken whole, and
+		// the one number 2500 is an equal world instead of 500/1500/500.
+		int kavvaski[EMPIRE_COUNT] = { 0, 729, 250, 773 };
+		registered[EMPIRE_SHINSOO] = registered[EMPIRE_JINNO] = 500;
+		registered[EMPIRE_CHUNJO] = 1500;
+		TakeKingdomCounts(kavvaski, registered, want);
+		assert(want[EMPIRE_SHINSOO] == 500 && want[EMPIRE_CHUNJO] == 250 && want[EMPIRE_JINNO] == 500);
+		SplitPopulation(2500, registered, want);
+		assert(want[EMPIRE_SHINSOO] == 500 && want[EMPIRE_CHUNJO] == 1500 && want[EMPIRE_JINNO] == 500);
+		registered[EMPIRE_SHINSOO] = registered[EMPIRE_CHUNJO] = registered[EMPIRE_JINNO] = 1500;
+		TakeKingdomCounts(kavvaski, registered, want);
+		assert(want[EMPIRE_SHINSOO] == 729 && want[EMPIRE_CHUNJO] == 250 && want[EMPIRE_JINNO] == 773);
+		SplitPopulation(2500, registered, want);
+		assert(want[EMPIRE_SHINSOO] == 834 && want[EMPIRE_CHUNJO] == 833 && want[EMPIRE_JINNO] == 833);
 	}
 
 	// -----------------------------------------------------------------

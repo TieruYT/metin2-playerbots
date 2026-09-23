@@ -3573,6 +3573,16 @@ namespace
 	// (sizowski, 15 September). The same two levels the operator's medal
 	// cohort allows (CPlayerBotManager::SpawnMedalDropperCohort).
 	const BYTE PLAYERBOT_DROPPER_OUTGROWN_LEVELS = 2;
+	// The last PID of the cohort as the seed first laid it out: Chunjo 4..1503,
+	// Shinsoo 1504..2003, Jinno 2004..2503 (generate_seed.py). 2.2.1 appended a
+	// thousand Shinsoo and a thousand Jinno identities after it, and the
+	// operator's medal droppers are taken from the far end of a kingdom's
+	// registry - which the appended ones now are. Searched from the whole
+	// registry, every Shinsoo and Jinno dropper already standing at its lock
+	// would have become an ordinary bot at the first start and its place gone
+	// to a character of level one, hours from the dungeon. The first layout's
+	// far end is searched first (CPlayerBotManager::SpawnMedalDropperCohort).
+	const DWORD PLAYERBOT_SEED_FIRST_LAYOUT_LAST_PID = 2503;
 	// A dropper serves its offline shop once in this long instead of every ten
 	// to fifteen minutes. The service is a walk to the village the shop stands
 	// in, and it took the medal droppers off the road to the Monkey Dungeon 68

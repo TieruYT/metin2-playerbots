@@ -2948,6 +2948,29 @@ not in `data/`) reworked these point by point. What each hangs on:
   the second run changes nothing at all.
   The spawn grids were picked by walking `server_attr`: 500/500 points stand
   on open ground in both new villages (of Chunjo's 1500, 153 do not).
+- **A kingdom holds what the seed gave it, and a number past that is cut in
+  silence.** `TakeKingdomCounts` (the launcher's per-kingdom numbers) caps each
+  kingdom at its identities and hands nothing on, and `SplitPopulation` gives
+  Chunjo whatever the other two cannot take - so with 500 Shinsoo and 500 Jinno
+  identities, 729/250/773 asked for came out as 500/250/500 and the one number
+  2500 as 500/1500/500 (kavvaski, 23 September; his log said it,
+  `per kingdom asked=729/250/773 registered=229/764/273` on one channel). 2.2.1
+  appends a thousand to each (Shinsoo 2504..3503, Jinno 3504..4503, both grids
+  measured clean on both engines' server_attr), so every kingdom holds 1500 and
+  2500 splits 834/833/833; the launcher's kingdom boxes stop at 1500. Three
+  things had to move with it: the name pool is 3000 a kingdom (a world named
+  from an older list wears ~650 names of each share of this one, and a worn
+  name is never free), the medal droppers are drawn from the first layout's far
+  end first (`PLAYERBOT_SEED_FIRST_LAYOUT_LAST_PID`) or every Shinsoo and Jinno
+  dropper would have become an ordinary bot and its place gone to a level-one
+  character, and nothing else keyed a range: apply.sh reads the range out of
+  the seed. On a 2.x world the new PIDs are free - the GM characters' explicit
+  9001-9004 pushed `player.player`'s AUTO_INCREMENT past them before 2.0.8
+  seeded 1504..2503, so people's characters stand at 9005 and up - and a PID
+  somebody's character does hold is skipped by the seed's own rules, as ever.
+  Worth knowing: `m_setRegisteredBots` is a `std::set`, so the spawn takes
+  identities in PID order and the three tiers `LoadRegisteredBots` orders its
+  query by (played this week, newcomers, veterans) are lost on the way in.
 - **apply.sh moves a stranded bot to its OWN kingdom.** Its allow-list is what
   decides where a bot may be parked at start, and it named only Chunjo's maps -
   every Shinsoo and Jinno bot would have been teleported to Bokjung on every

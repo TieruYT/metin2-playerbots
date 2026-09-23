@@ -1259,13 +1259,13 @@ function Update-BotDialogValueLabel {
 
 function Show-BotCountDialog {
     # Slider instead of a typed number: the range is a property of the world, and
-    # dragging is far friendlier than guessing a value. The maximum matches the
-    # canonical cohort the seed creates - 1500 for Chunjo alone (PID 4..1503) and
-    # 2500 once the other two kingdoms are switched on (M2_PLAYERBOT_KINGDOMS=1,
-    # PID 4..2503). It stopped at 1500 while the world already held 2500, so a
-    # thousand seeded bots could not be asked for from here at all. Asking for
-    # more than a world holds is safe and always was: the core spawns what its
-    # registry has and logs requested/registered/started.
+    # dragging is far friendlier than guessing a value. The maximum is the
+    # core's own ceiling (2500, input_db.cpp). The seed holds 1500 identities a
+    # kingdom since 2.2.1 (PID 4..4503; 1500 with Chunjo alone), and the one
+    # number is split equally between the kingdoms, so 2500 is 834/833/833.
+    # A kingdom's own number (the boxes below) goes to 1500, what it holds.
+    # Asking for more than a world holds is safe and always was: the core
+    # spawns what its registry has and logs requested/registered/started.
     # Under the slider, the spawn plan: the window the cohort arrives over and
     # the second cohort with its hours - "1000 w 15 minut, a dodatkowe 500 w
     # ciagu 24 godzin". Below that, the operator's own number per kingdom
@@ -1283,7 +1283,7 @@ function Show-BotCountDialog {
     $dialog.MinimizeBox = $false
 
     $info = [Windows.Forms.Label]::new()
-    $info.Text = "Ilu botów ma grać jednocześnie?`r`nEfektywny limit to liczba botów w Twoim świecie: 1500 dla samego Chunjo,`r`n2500 przy włączonych trzech królestwach. Zmiana wymaga restartu serwera."
+    $info.Text = "Ilu botów ma grać jednocześnie?`r`nKażde królestwo ma 1500 postaci botów. Liczba z suwaka dzieli się po równo`r`nmiędzy królestwa, najwyżej 2500 naraz. Zmiana wymaga restartu serwera."
     $info.Location = [Drawing.Point]::new(14, 12)
     $info.Size = [Drawing.Size]::new(440, 54)
     $dialog.Controls.Add($info)
@@ -1344,7 +1344,9 @@ function Show-BotCountDialog {
     }
 
     # Each kingdom its own number instead of a share of the one above. The
-    # core cuts each to the identities that kingdom has.
+    # core cuts each to the identities that kingdom has - 1500 since 2.2.1,
+    # so a box goes no further (it said 2500 while Shinsoo and Jinno held 500,
+    # and 729 asked for came out as 500 with no word why, kavvaski).
     $kingdomCheck = [Windows.Forms.CheckBox]::new()
     $kingdomCheck.Name = 'kingdomCheck'
     $kingdomCheck.Text = 'Indywidualne wartości dla królestw'
@@ -1353,9 +1355,9 @@ function Show-BotCountDialog {
     $kingdomCheck.Checked = [bool]$Kingdoms.PerKingdom
     $dialog.Controls.Add($kingdomCheck)
     $kingdomRows = @(
-        @{ Name = 'shinsooBox'; Text = 'Shinsoo (czerwone):'; Color = [Drawing.Color]::FromArgb(220, 40, 40); Value = [int]$Kingdoms.Shinsoo; Y = 310 },
-        @{ Name = 'chunjoBox';  Text = 'Chunjo (żółte):';     Color = [Drawing.Color]::FromArgb(235, 200, 30); Value = [int]$Kingdoms.Chunjo; Y = 340 },
-        @{ Name = 'jinnoBox';   Text = 'Jinno (niebieskie):'; Color = [Drawing.Color]::FromArgb(40, 110, 220); Value = [int]$Kingdoms.Jinno; Y = 370 }
+        @{ Name = 'shinsooBox'; Text = 'Shinsoo (czerwone, 0-1500):'; Color = [Drawing.Color]::FromArgb(220, 40, 40); Value = [int]$Kingdoms.Shinsoo; Y = 310 },
+        @{ Name = 'chunjoBox';  Text = 'Chunjo (żółte, 0-1500):';     Color = [Drawing.Color]::FromArgb(235, 200, 30); Value = [int]$Kingdoms.Chunjo; Y = 340 },
+        @{ Name = 'jinnoBox';   Text = 'Jinno (niebieskie, 0-1500):'; Color = [Drawing.Color]::FromArgb(40, 110, 220); Value = [int]$Kingdoms.Jinno; Y = 370 }
     )
     foreach ($row in $kingdomRows) {
         $swatch = [Windows.Forms.Panel]::new()
@@ -1371,8 +1373,8 @@ function Show-BotCountDialog {
         $box = [Windows.Forms.NumericUpDown]::new()
         $box.Name = $row.Name
         $box.Minimum = 0
-        $box.Maximum = 2500
-        $box.Value = [Math]::Max(0, [Math]::Min(2500, $row.Value))
+        $box.Maximum = 1500
+        $box.Value = [Math]::Max(0, [Math]::Min(1500, $row.Value))
         $box.Location = [Drawing.Point]::new(300, $row.Y)
         $box.Size = [Drawing.Size]::new(90, 24)
         $box.Enabled = $kingdomCheck.Checked

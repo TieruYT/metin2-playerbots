@@ -14,17 +14,29 @@ from pathlib import Path
 #
 # Chunjo's 1500 are the original cohort and keep their PIDs, names, logins,
 # jobs and positions to the byte - a second run of this generator must not
-# move a single existing character. The two new blocks are appended after
-# them, so every login and social id the registry derives from a PID keeps
-# working unchanged.
+# move a single existing character. Every later block is appended after the
+# ones before it, so every login and social id the registry derives from a
+# PID keeps working unchanged.
 #
-# The two anchors were chosen by walking server_attr: all 500 points of each
-# grid stand on open ground (tools/dump_world_catalog.py reads the same files;
-# for comparison 153 of Chunjo's 1500 do not, and are rescued at spawn).
+# 2.0.8 gave Shinsoo and Jinno 500 each, and that was a ceiling nobody could
+# see: the launcher's own number for a kingdom (TakeKingdomCounts) is cut to
+# the identities the kingdom has, so 729 Shinsoo and 773 Jinno asked for came
+# out as 500 and 500, and the one number split between the kingdoms gave
+# Chunjo everything the other two could not take (kavvaski, 23 September).
+# 2.2.1 appends a thousand more to each, so every kingdom holds 1500 and an
+# equal split is an equal world.
+#
+# The anchors were chosen by walking server_attr, r40250's and mt2009's
+# alike: every point of each grid stands on open ground, and the 2.2.1 grids
+# of a thousand stand in the village (Shinsoo's wholly inside the safe zone,
+# Jinno's but for 23 points). tools/dump_world_catalog.py reads the same
+# files; for comparison 153 of Chunjo's 1500 do not, and are rescued at spawn.
 KINGDOM_COHORTS = (
     (2, 1500, 21, 51000, 165000),
     (1, 500, 1, 476000, 954000),
     (3, 500, 41, 962500, 265500),
+    (1, 1000, 1, 473800, 952400),
+    (3, 1000, 41, 958900, 266700),
 )
 BOT_COUNT = sum(block[1] for block in KINGDOM_COHORTS)
 FIRST_PID = 4

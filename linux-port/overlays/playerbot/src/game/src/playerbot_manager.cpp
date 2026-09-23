@@ -3040,7 +3040,9 @@ size_t CPlayerBotManager::SpawnRegistered(size_t count, BYTE bEmpire)
 // are chosen after every restart. One saved more than two levels over the lock
 // is passed over: two is the margin for a level taken on the tick before the
 // lock landed. Scheduled before the ordinary cohort, which steps over them, and
-// restored by TopUpMissingBots like the rest.
+// restored by TopUpMissingBots like the rest. The far end is the seed's first
+// layout's (PLAYERBOT_SEED_FIRST_LAYOUT_LAST_PID) before the identities 2.2.1
+// appended, so the droppers a world already has stay the droppers.
 size_t CPlayerBotManager::SpawnMedalDropperCohort(size_t count, BYTE bEmpire, BYTE bExpLockLevel)
 {
 	// The operator's number is per kingdom for the world: the first channel
@@ -3051,19 +3053,25 @@ size_t CPlayerBotManager::SpawnMedalDropperCohort(size_t count, BYTE bEmpire, BY
 		return 0;
 	m_bMedalDropperCohortLevel = bExpLockLevel;
 	size_t selected = 0;
-	for (TRegisteredPlayerBotSet::const_reverse_iterator it = m_setRegisteredBots.rbegin();
-			it != m_setRegisteredBots.rend() && selected < count; ++it)
+	for (int pass = 0; pass < 2 && selected < count; ++pass)
 	{
-		TPlayerBotAccountMap::const_iterator account = m_mapBotAccounts.find(*it);
-		if (account == m_mapBotAccounts.end() || account->second.bEmpire != bEmpire ||
-				(int)account->second.bLevel > (int)bExpLockLevel + 2)
-			continue;
-		if (m_setScheduledBots.find(*it) != m_setScheduledBots.end())
-			continue;
-		m_setMedalDropperCohort.insert(*it);
-		m_dequePendingSpawns.push_back(*it);
-		m_setScheduledBots.insert(*it);
-		++selected;
+		const bool firstLayout = pass == 0;
+		for (TRegisteredPlayerBotSet::const_reverse_iterator it = m_setRegisteredBots.rbegin();
+				it != m_setRegisteredBots.rend() && selected < count; ++it)
+		{
+			if ((*it <= PLAYERBOT_SEED_FIRST_LAYOUT_LAST_PID) != firstLayout)
+				continue;
+			TPlayerBotAccountMap::const_iterator account = m_mapBotAccounts.find(*it);
+			if (account == m_mapBotAccounts.end() || account->second.bEmpire != bEmpire ||
+					(int)account->second.bLevel > (int)bExpLockLevel + 2)
+				continue;
+			if (m_setScheduledBots.find(*it) != m_setScheduledBots.end())
+				continue;
+			m_setMedalDropperCohort.insert(*it);
+			m_dequePendingSpawns.push_back(*it);
+			m_setScheduledBots.insert(*it);
+			++selected;
+		}
 	}
 
 	const size_t batches = std::max<size_t>(1, m_dwSpawnWindowMs / PLAYERBOT_SPAWN_BATCH_INTERVAL);

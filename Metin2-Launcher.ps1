@@ -637,10 +637,11 @@ function Set-PlayerbotCount {
     #   PLAYERBOT_AUTH: loaded <n> registered bot identities
     #   PLAYERBOT: autospawn requested=<x> registered_started=<n>
     #
-    # The ceiling is the seed's canonical cohort: 1500 for Chunjo alone and 2500
-    # once the other two kingdoms are switched on. This clamp is the one that
-    # decides - the slider in the GUI only proposes a number, and raising that
-    # alone would have written 1500 into .env while showing the player 2500.
+    # The ceiling is the core's own (2500, input_db.cpp); the seed's canonical
+    # cohort holds 1500 a kingdom since 2.2.1, so the number is split equally
+    # and never runs short of identities. This clamp is the one that decides -
+    # the slider in the GUI only proposes a number, and raising that alone
+    # would have written 1500 into .env while showing the player 2500.
     param([Parameter(Mandatory = $true)][int]$Count)
     if ($Count -lt 0) { $Count = 0 }
     if ($Count -gt 2500) { $Count = 2500 }
@@ -723,9 +724,11 @@ function Get-KingdomCountsFromEnv {
 function Set-KingdomCounts {
     # The operator's own number per kingdom (Greess): with it on, each kingdom
     # starts its own count instead of a share of PLAYERBOT_AUTOSPAWN_COUNT, cut
-    # by the core to the identities the kingdom has. Read at the next start.
+    # by the core to the identities the kingdom has - 1500 since 2.2.1, so a
+    # number is clamped there rather than written and quietly cut (kavvaski's
+    # 729 Shinsoo came out as the 500 the kingdom held). Read at the next start.
     param([bool]$Enabled, [int]$Shinsoo = 0, [int]$Chunjo = 0, [int]$Jinno = 0)
-    $clamp = { param($n) if ($n -lt 0) { 0 } elseif ($n -gt 2500) { 2500 } else { $n } }
+    $clamp = { param($n) if ($n -lt 0) { 0 } elseif ($n -gt 1500) { 1500 } else { $n } }
     $Shinsoo = & $clamp $Shinsoo
     $Chunjo = & $clamp $Chunjo
     $Jinno = & $clamp $Jinno
@@ -883,9 +886,9 @@ function Set-BotCountAction {
     $k = Get-KingdomCountsFromEnv
     $kAnswer = Read-Host "Osobna liczba botów dla każdego królestwa? (t/n, Enter = $(if ($k.Enabled) { 't' } else { 'n' }))"
     if ("$kAnswer".Trim() -match '^[tTyY]') {
-        $sAnswer = Read-Host "Shinsoo, czerwone (0-2500, Enter = $($k.Shinsoo))"
-        $cAnswer = Read-Host "Chunjo, żółte (0-2500, Enter = $($k.Chunjo))"
-        $jAnswer = Read-Host "Jinno, niebieskie (0-2500, Enter = $($k.Jinno))"
+        $sAnswer = Read-Host "Shinsoo, czerwone (0-1500, Enter = $($k.Shinsoo))"
+        $cAnswer = Read-Host "Chunjo, żółte (0-1500, Enter = $($k.Chunjo))"
+        $jAnswer = Read-Host "Jinno, niebieskie (0-1500, Enter = $($k.Jinno))"
         $s = if ("$sAnswer".Trim() -match '^\d+$') { [int]$sAnswer } else { $k.Shinsoo }
         $c = if ("$cAnswer".Trim() -match '^\d+$') { [int]$cAnswer } else { $k.Chunjo }
         $j = if ("$jAnswer".Trim() -match '^\d+$') { [int]$jAnswer } else { $k.Jinno }
