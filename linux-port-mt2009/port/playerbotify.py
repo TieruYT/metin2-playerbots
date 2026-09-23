@@ -1444,6 +1444,7 @@ def main(root):
     apply_bot_shop_slots_unlocked(game)
     apply_refine_abandoned_session(game)
     apply_book_wait(game)
+    apply_gm_panel_url(game)
     print('playerbotify: done')
 
 
@@ -1985,6 +1986,31 @@ def apply_mark_login_quiet(game):
          '\t\tdefault:\n'
          '\t\t\tsys_err("login phase does not handle this packet! header %d", bHeader);\n',
          marker='playerbotify.py, apply_mark_login_quiet)')
+
+
+def apply_gm_panel_url(game):
+    """The GM window's "Podglad" opens this world's panel, not mt2009's.
+
+    A GM's client is told at login where the admin panel is ("GameMaster
+    <url>"), and the player window a GM opens on anybody - "GM: Podglad
+    Gracza", with Captcha, Ban and Kick beside it - opens <url>players/<pid>
+    in the browser. The package named its author's own panel,
+    https://panel.mt2009.pl/, which answers every one of our players "Sorry,
+    you have been blocked" (iceBeeg, 23 September). The URL is the game
+    service's M2_GM_PANEL_URL now, which compose builds from the classic
+    panel's published port, and that panel takes /players/<pid> to the
+    character's card. Kick and Ban were always commands to this server and
+    are unchanged. The client keeps the URL until the GM logs in again.
+    """
+    edit(os.path.join(game, 'input_login.cpp'),
+         '\t\tch->ChatPacket(CHAT_TYPE_COMMAND, "GameMaster %s", "https://panel.mt2009.pl/");\n',
+         '\t\t// This world\'s own panel, not the package author\'s (playerbotify.py,\n'
+         '\t\t// apply_gm_panel_url): the GM window\'s "Podglad" opens <url>players/<pid>.\n'
+         '\t\tconst char* gmPanelUrl = getenv("M2_GM_PANEL_URL");\n'
+         '\t\tif (!gmPanelUrl || !*gmPanelUrl || strchr(gmPanelUrl, \' \'))\n'
+         '\t\t\tgmPanelUrl = "http://127.0.0.1:7788/";\n'
+         '\t\tch->ChatPacket(CHAT_TYPE_COMMAND, "GameMaster %s", gmPanelUrl);\n',
+         marker='apply_gm_panel_url): the GM window')
 
 
 def apply_costume_block(game):

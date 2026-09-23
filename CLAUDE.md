@@ -7664,6 +7664,18 @@ not in `data/`) reworked these point by point. What each hangs on:
   September). `BuyPlayerBotEmergencyWeapon` wears a bag weapon first and buys
   nothing while one of the bot's sort and level lies there, even one the
   engine refuses for the second and a half after a blow.
+- **The GM window's "Podglad" opened mt2009's own panel.** A GM's client is
+  told at login where the admin panel is (`GameMaster <url>`, input_login.cpp)
+  and "GM: Podglad Gracza" - Podglad, Captcha, Ban, Kick - opens
+  `<url>players/<pid>` in the browser; the package named
+  https://panel.mt2009.pl/, which answers our players "Sorry, you have been
+  blocked" (iceBeeg, 23 September). The URL is the game service's
+  `M2_GM_PANEL_URL` now (compose builds it from the classic panel's published
+  port, `apply_gm_panel_url` reads it) and the classic panel takes
+  `/players/<pid>` to the character's card. Kick (`/dc`) and Ban
+  (`/block_player`, `/block_pool`) were always commands to this server. The
+  client's only other mt2009 address, the gatekeeper POST in intrologin.py,
+  sits behind `constInfo.GATEKEEPER_CHECK = True` and never runs.
 
 
 ## Engine facts worth not re-deriving

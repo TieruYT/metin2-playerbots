@@ -14936,6 +14936,14 @@ def player(pid):
                                   gm_ranks=gm_ranks_i18n(), gm_rank=gm_rank_of(p["name"]),
                                   gm_rank_label=gm_rank_label)
 
+# The game client's GM window ("GM: Podglad Gracza") opens <panel>players/<pid>
+# on "Podglad"; the package's own admin panel spelled it that way, and the
+# server now names this panel instead (M2_GM_PANEL_URL).
+@app.route("/players/<int:pid>")
+@login_required
+def player_from_game(pid):
+    return redirect(url_for("player", pid=pid))
+
 def gm_rank_of(name):
     """The rank this character holds in common.gmlist, or None for a normal
     player. Also None when the table cannot be read: the card then just offers
