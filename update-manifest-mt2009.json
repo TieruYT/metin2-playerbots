@@ -1,20 +1,20 @@
 {
   "schema": 1,
   "channel": "stable",
-  "publishedAt": "2026-09-22T23:05:00Z",
-  "statusMessage": "2.0.97 (serwer 2.0.97, klient bez zmian - 2.0.25): boty odpisuja na priv - system rozmow od l0st3k (odpowiada tym, co bot naprawde robi, pamieta rozmowe, wie o swoim sklepie offline). Bot po smierci nie biegnie w sciane komnaty. Zawiera wszystko z 2.0.96: Auto Lowy 2.0, nowy launcher z tlem.",
+  "publishedAt": "2026-09-23T07:01:38Z",
+  "statusMessage": "2.0.98 (serwer 2.0.98, klient 2.0.26 - zaktualizuj oba): kowal nie blokuje juz ekwipunku graczom grajacym po niemiecku, hiszpansku, wlosku, portugalsku, rumunsku i turecku; klient po hiszpansku znow sie uruchamia; launcher nie przycina sie przy zmianie rozmiaru okna; czat z botami 1.1b od l0st3k (bot wie, co ma w sklepie offline, rozumie skroty graczy).",
   "server": {
-    "version": "2.0.97",
-    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.0.97/metin2-server-update-2.0.97.zip",
-    "sha256": "F353A026D1F38518EBF948AB5A9815C74C338909D24E412BDF423408AADB3610"
+    "version": "2.0.98",
+    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.0.98/metin2-server-update-2.0.98.zip",
+    "sha256": "8EBA4B3599C2E1F5FE83E4E0326EDD465509C8BACBF833AAFF43A9D55CCAD4F1"
   },
   "support": {
     "contactUrl": "https://discord.gg/pt5tvnrN6",
     "uploadUrl": ""
   },
   "client": {
-    "version": "2.0.25",
-    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.0.96/metin2-client-update-2.0.25.zip",
-    "sha256": "685C0C3B12364DD6661FDB5B1ADC803CF229D028784E46B9E9C45D840F825FBF"
+    "version": "2.0.26",
+    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.0.98/metin2-client-update-2.0.26.zip",
+    "sha256": "F9FDC41B5F91741A9EC43CA85D5D9092FD949A951C12B361EE95EDF805455359"
   }
 }
