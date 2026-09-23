@@ -17,6 +17,55 @@ every version here.
 
 ---
 
+## 2.2.3 — 2026-09-23
+
+Serwer; klient zostaje 2.0.26. Zawiera wszystko z 2.2.2.
+
+### Boty walczą umiejętnościami, a nie samym atakiem z konia (zgłosił prodnathin)
+
+Z konia nie da się użyć żadnej umiejętności klasy. Gra na to nie pozwala,
+także na koniu bojowym. Wojownik i sura z koniem bojowym walczyli jednak
+z siodła ze wszystkim, więc od 35 poziomu bili samym atakiem: bez
+umiejętności, bez Aury Miecza, Berserka i innych buffów.
+
+Teraz bot, który ma choć jedną umiejętność ataku na poziomie Mistrza,
+zsiada do walki i jej używa. Koń dalej wiezie go między walkami. Bot, który
+nadal walczy z konia, zsiada na chwilę, żeby rzucić brakującego buffa. Tak
+samo szaman zsiada, żeby zbuffować drużynę.
+
+Przejrzałem też buffy: mental rzuca Silne Ciało, body Aurę Miecza i
+Berserka, a szamani swoje buffy. Na naszym świecie testowym w 10 minut
+było to 390 Silnych Ciał, 601 Aur i 567 Berserków.
+
+### Wieża Demonów: buffy, łup, próg 40 i kowal (zgłosił prodnathin)
+
+- **Szamani buffują rajd.** Rajd gildii nie jest drużyną, więc szaman w
+  Wieży buffował tylko siebie. Teraz buffuje każdego ze swojego królestwa,
+  kto jest z nim w Wieży, najpierw graczy.
+- **Łup nie zostaje na ziemi.** Bot w Wieży ciągle ma przeciwnika, więc
+  podnosił tylko to, co leżało mu pod nogami, a piętro przeskakuje kilka
+  sekund po ostatnim potworze. Teraz między dwoma przeciwnikami bot
+  podnosi, co może, w promieniu 15 metrów, jeśli ma co najmniej połowę HP.
+- **Wieża jest od 40 poziomu**, tak jak mówi strażnik przy wejściu. Bot
+  poniżej 40, który trafił do środka razem z innymi, wychodzi i wraca do
+  domu. Nie dotyczy to bota w drużynie gracza.
+- **Boty korzystają z kowala na szóstym piętrze.** Każdy bot raz ulepsza u
+  niego przedmiot pasujący do kowala: broń, zbroję, tarczę albo hełm, albo
+  biżuterię i buty. Płaci tylko yang, bez materiałów. Szansa jest taka sama
+  jak u zwykłego kowala, a nieudane ulepszenie niszczy przedmiot, więc bot
+  stosuje te same zasady ostrożności co w mieście. Nie ryzykuje broni ani
+  zbroi, której nie ma czym zastąpić. Bot z 75 poziomem prowadzi dalej,
+  dopiero gdy wszyscy skorzystają z kowala, najpóźniej po 2,5 minuty.
+
+Sprawdzone na naszym świecie testowym: serwer działa, a obciążenie zostało
+takie samo. Test tylko do odczytu na 212 botach od 30 poziomu pokazał, że
+kowal od broni znalazłby przedmiot dla 93 z nich, od zbroi dla 128, a od
+biżuterii dla 35. Samego przejścia Wieży ani walki z konia bojowego nie
+widzieliśmy, bo na naszym świecie nie ma jeszcze gildii z czterema botami
+na 40 poziomie ani botów z koniem bojowym.
+
+---
+
 ## 2.2.2 — 2026-09-23
 
 Serwer; klient zostaje 2.0.26. Zawiera wszystko z 2.2.1.
