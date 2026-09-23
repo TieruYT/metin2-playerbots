@@ -83,6 +83,10 @@ services:
       M2_DIFFICULTY: "${M2_DIFFICULTY:-easy}"
       M2_BIOLOGIST_WAIT_HOURS: "${M2_BIOLOGIST_WAIT_HOURS:-0}"
       M2_HORSE_WAIT_HOURS: "${M2_HORSE_WAIT_HOURS:-0}"
+      # The waits between two skill books, players' and bots' (custom only;
+      # the presets carry their own).
+      M2_BOOK_WAIT_HOURS: "${M2_BOOK_WAIT_HOURS:-0}"
+      M2_BOT_BOOK_WAIT_HOURS: "${M2_BOT_BOOK_WAIT_HOURS:-0}"
       # The rates a fresh world starts on, as event flags written before
       # the cores come up (apply.sh). A world that has been set from the
       # panel keeps what the panel said; these reach only a world whose

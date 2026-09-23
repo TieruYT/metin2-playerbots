@@ -165,27 +165,47 @@ WORLD_DIFFICULTY = (
     '# (the pony, each Horse Book, the medal trainings of 1-10 and of 11-19). The\n'
     "# presets scale the package's own numbers - hard is what it shipped with,\n"
     '# medium a third of it, easy none (what 2.0.55 and 2.0.56 gave everybody) -\n'
-    "# and custom takes the two hour counts from .env, the horse's for every wait.\n"
+    "# and custom takes the hour counts from .env, the horse's for every wait.\n"
+    "# The wait between two skill books is the engine's (m2_book_wait, playerbotify\n"
+    "# apply_book_wait) and the bots' own (m2_bot_book_wait), the package's 21 hours\n"
+    '# on hard (drip9660, 23 September).\n'
     '# Written before the seed, which may leave early on a foreign cohort.\n'
+    '#\n'
+    "# The classic panel's difficulty card sets the same flags live, so .env is\n"
+    '# applied only when it changed since the last start (m2_difficulty_env holds\n'
+    '# what it said): a change made in the panel survives a restart until the\n'
+    "# launcher's difficulty is changed, and the one changed last is the one kept.\n"
     'difficulty=$(printf \'%s\' "${M2_DIFFICULTY:-easy}" | tr \'A-Z\' \'a-z\' | tr -d \' \\r\')\n'
+    'hours_to_seconds() {\n'
+    '    printf \'%s\\n\' "$1" | tr -d \' \\r\' | awk \'{ h = $1 + 0; if (h < 0) h = 0; if (h > 8760) h = 8760; printf "%d", h * 3600 }\'\n'
+    '}\n'
     'case "$difficulty" in\n'
-    '    medium) dlevel=1; bio=28800; hbuy=14400; hup=14400; htr=21600; htr2=25200 ;;\n'
-    '    hard)   dlevel=2; bio=86400; hbuy=43200; hup=43200; htr=64800; htr2=75600 ;;\n'
+    '    medium) dlevel=1; bio=28800; hbuy=14400; hup=14400; htr=21600; htr2=25200; book=25200; botbook=25200 ;;\n'
+    '    hard)   dlevel=2; bio=86400; hbuy=43200; hup=43200; htr=64800; htr2=75600; book=75600; botbook=75600 ;;\n'
     '    custom)\n'
     '        dlevel=3\n'
-    '        bio=$(printf \'%s\\n\' "${M2_BIOLOGIST_WAIT_HOURS:-0}" | tr -d \' \\r\' | awk \'{ h = $1 + 0; if (h < 0) h = 0; printf "%d", h * 3600 }\')\n'
-    '        hbuy=$(printf \'%s\\n\' "${M2_HORSE_WAIT_HOURS:-0}" | tr -d \' \\r\' | awk \'{ h = $1 + 0; if (h < 0) h = 0; printf "%d", h * 3600 }\')\n'
-    '        hup=$hbuy; htr=$hbuy; htr2=$hbuy ;;\n'
-    '    *)      difficulty=easy; dlevel=0; bio=0; hbuy=0; hup=0; htr=0; htr2=0 ;;\n'
+    '        bio=$(hours_to_seconds "${M2_BIOLOGIST_WAIT_HOURS:-0}")\n'
+    '        hbuy=$(hours_to_seconds "${M2_HORSE_WAIT_HOURS:-0}")\n'
+    '        hup=$hbuy; htr=$hbuy; htr2=$hbuy\n'
+    '        book=$(hours_to_seconds "${M2_BOOK_WAIT_HOURS:-0}")\n'
+    '        botbook=$(hours_to_seconds "${M2_BOT_BOOK_WAIT_HOURS:-0}") ;;\n'
+    '    *)      difficulty=easy; dlevel=0; bio=0; hbuy=0; hup=0; htr=0; htr2=0; book=0; botbook=0 ;;\n'
     'esac\n'
-    'if db -e "REPLACE INTO player.quest (dwPID, szName, szState, lValue) VALUES\n'
+    'dsig=$(printf \'%s|%s|%s|%s|%s|%s|%s|%s|%s\' "$difficulty" "$bio" "$hbuy" "$hup" "$htr" "$htr2" "$book" "$botbook" 1 | cksum | awk \'{ print $1 % 2000000000 }\')\n'
+    'dprev=$(db -N -e "SELECT lValue FROM player.quest WHERE dwPID = 0 AND szName = \'m2_difficulty_env\' LIMIT 1" 2>/dev/null | tr -d \' \\r\')\n'
+    'if [ -n "$dprev" ] && [ "$dprev" = "$dsig" ]; then\n'
+    '    echo "[playerbot-migrate] difficulty: .env unchanged since the last start - the flags stay as the panel or the last start left them"\n'
+    'elif db -e "REPLACE INTO player.quest (dwPID, szName, szState, lValue) VALUES\n'
     "        (0, 'm2_difficulty', '', $dlevel),\n"
     "        (0, 'm2_biologist_wait', '', $bio),\n"
     "        (0, 'm2_horse_buy_wait', '', $hbuy),\n"
     "        (0, 'm2_horse_upgrade_wait', '', $hup),\n"
     "        (0, 'm2_horse_train_wait', '', $htr),\n"
-    '        (0, \'m2_horse_train2_wait\', \'\', $htr2);"; then\n'
-    '    echo "[playerbot-migrate] difficulty: $difficulty (Biologist wait ${bio}s, horse: buy ${hbuy}s upgrade ${hup}s train ${htr}s/${htr2}s)"\n'
+    "        (0, 'm2_horse_train2_wait', '', $htr2),\n"
+    "        (0, 'm2_book_wait', '', $book),\n"
+    "        (0, 'm2_bot_book_wait', '', $botbook),\n"
+    '        (0, \'m2_difficulty_env\', \'\', $dsig);"; then\n'
+    '    echo "[playerbot-migrate] difficulty: $difficulty (Biologist wait ${bio}s, horse: buy ${hbuy}s upgrade ${hup}s train ${htr}s/${htr2}s, books: players ${book}s bots ${botbook}s)"\n'
     'else\n'
     '    echo "[playerbot-migrate] WARNING: could not write the difficulty flags; the quests keep the last ones" >&2\n'
     'fi\n'

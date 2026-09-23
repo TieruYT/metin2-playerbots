@@ -5117,6 +5117,29 @@ not in `data/`) reworked these point by point. What each hangs on:
   error; no player dialog was driven. The bots' Biologist and stable keeper
   are the AI's own code and never waited (Drip's "z harda na easy nieeee",
   Tieru, 16 September).
+- **The skill books' wait joined the difficulty, one number for the players
+  and one for the bots.** The package waited twenty-one hours between two
+  books of one skill; 2.0.12 made that none (`SKILLBOOK_LEARN_DELAY = 0`),
+  which left the Exorcism Scroll with nothing to do (drip9660, 23
+  September). `m2_book_wait` (seconds) is the players': the engine asks it
+  at every read (`M2SkillBookLearnDelay`, playerbotify `apply_book_wait`,
+  the riding guide included) and a read waits at most that long from now
+  (`M2SkillBookReadAt`), so a lowered wait applies to the next book, not the
+  next day. `m2_bot_book_wait` is the bots' and replaces the BOOKS switch on
+  this line (`GetPlayerBotBookWaitSeconds`; `IsPlayerBotFastBooksEnabled` is
+  "it is zero"): the engine writes the players' number at a bot's read and
+  the AI writes the bots' over it at once (`NotePlayerBotBookRead`), clamps
+  it when the number is lowered (`ClampPlayerBotBookWait`), and spends a
+  bot's Exorcism affect itself when only the bots' wait stood in the way -
+  the engine spends one only against its own wait, and a scroll left on a
+  bot would wave every wait after it. The presets carry 7 h (medium) and
+  21 h (hard) for both. The classic panel's difficulty card (/rates) writes
+  all eight flags and makes them live through web_admin's `DIFFICULTY`, and
+  the migrator applies .env only when it changed since the last start
+  (`m2_difficulty_env` holds a checksum of what it said), so whichever was
+  changed last - the launcher or the panel - is what the world keeps.
+  Measured on m2zip: a panel save answered `done` from the game within the
+  twelve seconds and the flags stood in `player.quest`.
 - **A timed event is a file the panel writes and one core acts on.**
   `playerbot_event_rules.h` (pure, unit-tested) reads
   `/opt/m2spool/playerbot_events.tsv` - weekly windows by kind (chest, exp,

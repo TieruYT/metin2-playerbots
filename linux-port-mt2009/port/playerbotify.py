@@ -1443,6 +1443,7 @@ def main(root):
     apply_party_exp_of_blocked_members(game)
     apply_bot_shop_slots_unlocked(game)
     apply_refine_abandoned_session(game)
+    apply_book_wait(game)
     print('playerbotify: done')
 
 
@@ -4505,6 +4506,79 @@ def apply_refine_abandoned_session(game):
          '\t\t\tClearRefineMode();\n'
          '\t\t}\n',
          marker='// playerbot: a refine session whose NPC is gone or out of reach')
+
+
+def apply_book_wait(game):
+    # The wait between two books of one skill was the package's twenty-one
+    # hours, and 2.0.12 made it none (SKILLBOOK_LEARN_DELAY = 0, above), which
+    # left the Exorcism Scroll with nothing to do. It is the world's
+    # difficulty now: the event flag m2_book_wait, in seconds, which the
+    # migrator writes from M2_DIFFICULTY and the classic panel's difficulty
+    # card sets live (drip9660's proposal, 23 September). A read waits at most
+    # that long from now, so a wait the operator lowers applies to the next
+    # book rather than to the next day, and the riding guide keeps the wait it
+    # shared with the books in the package. The bots take their own number
+    # (m2_bot_book_wait) in ManagePlayerBotSkillBooks; they read through here.
+    skill = os.path.join(game, 'char_skill.cpp')
+    edit(skill,
+         'void CHARACTER::SetSkillNextReadTime(DWORD dwVnum, time_t time, bool bSuccess)\n',
+         '// playerbot: the wait between two books of one skill, in seconds - the\n'
+         '// world\'s difficulty (event flag m2_book_wait; playerbotify apply_book_wait).\n'
+         'int M2SkillBookLearnDelay()\n'
+         '{\n'
+         '\tconst int wait = quest::CQuestManager::instance().GetEventFlag("m2_book_wait");\n'
+         '\treturn wait > 0 ? wait : SKILLBOOK_LEARN_DELAY;\n'
+         '}\n'
+         '\n'
+         '// When the next book of a skill may be read: never later than the world\'s\n'
+         '// wait from now, so a wait lowered in the panel applies at once.\n'
+         'time_t M2SkillBookReadAt(const CHARACTER* ch, DWORD dwVnum)\n'
+         '{\n'
+         '\tconst time_t stored = ch->GetSkillNextReadTime(dwVnum);\n'
+         '\tconst time_t cap = get_global_time() + M2SkillBookLearnDelay();\n'
+         '\treturn stored < cap ? stored : cap;\n'
+         '}\n'
+         '\n'
+         'void CHARACTER::SetSkillNextReadTime(DWORD dwVnum, time_t time, bool bSuccess)\n',
+         marker='int M2SkillBookLearnDelay()\n')
+    edit(skill,
+         '\tif (get_global_time() < GetSkillNextReadTime(dwSkillVnum))\n',
+         '\tif (get_global_time() < M2SkillBookReadAt(this, dwSkillVnum))\n')
+    edit(skill,
+         '\t\t\tSkillLearnWaitMoreTimeMessage(GetSkillNextReadTime(dwSkillVnum) - get_global_time());\n',
+         '\t\t\tSkillLearnWaitMoreTimeMessage(M2SkillBookReadAt(this, dwSkillVnum) - get_global_time());\n')
+    edit(skill,
+         '\t\tSetSkillNextReadTime(dwSkillVnum, get_global_time() + SKILLBOOK_LEARN_DELAY, isSuccess);\n'
+         '\t}\n'
+         '\telse // WSZYSTKIE KLASOWE SKILLE\n',
+         '\t\tSetSkillNextReadTime(dwSkillVnum, get_global_time() + M2SkillBookLearnDelay(), isSuccess);\n'
+         '\t}\n'
+         '\telse // WSZYSTKIE KLASOWE SKILLE\n')
+    edit(skill,
+         '\t\t\tbool isSuccess = number(1, 100) <= percent;\n'
+         '\t\t\tSetSkillNextReadTime(dwSkillVnum, get_global_time() + SKILLBOOK_LEARN_DELAY, isSuccess);\n',
+         '\t\t\tbool isSuccess = number(1, 100) <= percent;\n'
+         '\t\t\tSetSkillNextReadTime(dwSkillVnum, get_global_time() + M2SkillBookLearnDelay(), isSuccess);\n')
+    # The riding guide in char_item.cpp, which never included anything that
+    # declares the two; an extern beside the includes rather than an edit of
+    # char.h, which every file of the core includes.
+    item = os.path.join(game, 'char_item.cpp')
+    edit(item,
+         '#include "questmanager.h"\n',
+         '#include "questmanager.h"\n'
+         '// playerbot: defined in char_skill.cpp (playerbotify apply_book_wait).\n'
+         'extern int M2SkillBookLearnDelay();\n'
+         'extern time_t M2SkillBookReadAt(const CHARACTER* ch, DWORD dwVnum);\n',
+         marker='extern int M2SkillBookLearnDelay();\n')
+    edit(item,
+         'if (get_global_time() < GetSkillNextReadTime(dwSkillVnum))',
+         'if (get_global_time() < M2SkillBookReadAt(this, dwSkillVnum))')
+    edit(item,
+         'SkillLearnWaitMoreTimeMessage(GetSkillNextReadTime(dwSkillVnum) - get_global_time());',
+         'SkillLearnWaitMoreTimeMessage(M2SkillBookReadAt(this, dwSkillVnum) - get_global_time());')
+    edit(item,
+         'SetSkillNextReadTime(dwSkillVnum, get_global_time() + SKILLBOOK_LEARN_DELAY, true);',
+         'SetSkillNextReadTime(dwSkillVnum, get_global_time() + M2SkillBookLearnDelay(), true);')
 
 
 if __name__ == '__main__':

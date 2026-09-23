@@ -1068,11 +1068,32 @@ namespace
 		return s_bPlayerBotItemShop;
 	}
 
+#if defined(PLAYERBOT_ENGINE_MT2009)
+	// The bots' wait between two books of one skill, in seconds: the world's
+	// difficulty, the event flag m2_bot_book_wait that the migrator writes
+	// from M2_DIFFICULTY and the classic panel's difficulty card sets live.
+	// The players' wait is the engine's own (m2_book_wait, playerbotify
+	// apply_book_wait); the two are separate because a world may want its
+	// people to wait and its bots not, or the other way round (drip9660,
+	// 23 September). Zero, the easy world's number, is the next book at once.
+	int GetPlayerBotBookWaitSeconds()
+	{
+		const int wait = quest::CQuestManager::instance().GetEventFlag("m2_bot_book_wait");
+		return wait > 0 ? wait : 0;
+	}
+#endif
+
 	bool IsPlayerBotFastBooksEnabled()
 	{
+#if defined(PLAYERBOT_ENGINE_MT2009)
+		// The difficulty decides on this line; the BOOKS switch of the weights
+		// file is still read, so an old file writes no warning, and ignored.
+		return GetPlayerBotBookWaitSeconds() <= 0;
+#else
 		if (!s_bPlayerBotWeightsInitialised)
 			ResetPlayerBotWeights();
 		return s_bPlayerBotFastBooks;
+#endif
 	}
 
 	bool IsPlayerBotNightHour(int hour)

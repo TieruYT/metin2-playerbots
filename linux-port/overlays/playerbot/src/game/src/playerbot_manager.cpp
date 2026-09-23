@@ -1713,6 +1713,35 @@ namespace
 				bestSocket, after, bestScore);
 	}
 
+#if defined(PLAYERBOT_ENGINE_MT2009)
+	// The bots' own wait (GetPlayerBotBookWaitSeconds) is kept in the engine's
+	// next-read time: never later than that wait from now, so a wait lowered
+	// in the panel applies at the next look, and after every read the time the
+	// bots' number gives, whatever the players' number made the engine write.
+	void ClampPlayerBotBookWait(LPCHARACTER ch, DWORD skill)
+	{
+		const int wait = GetPlayerBotBookWaitSeconds();
+		if (wait <= 0)
+			return;
+		const time_t cap = get_global_time() + wait;
+		if (ch->GetSkillNextReadTime(skill) > cap)
+			ch->SetSkillNextReadTime(skill, cap, true);
+	}
+
+	void NotePlayerBotBookRead(LPCHARACTER ch, DWORD skill, bool exorcised)
+	{
+		const int wait = GetPlayerBotBookWaitSeconds();
+		if (wait <= 0)
+			return;
+		ch->SetSkillNextReadTime(skill, get_global_time() + wait, true);
+		// The engine spends an Exorcism Scroll only against its own wait. A
+		// scroll the bot read against the bots' wait alone - the players'
+		// shorter - would otherwise stay and wave every wait after it.
+		if (exorcised && ch->FindAffect(AFFECT_SKILL_NO_BOOK_DELAY))
+			ch->RemoveAffect(AFFECT_SKILL_NO_BOOK_DELAY);
+	}
+#endif
+
 	// Sztuka Combo and the Leadership books, read the way the engine's own use
 	// path reads them (char_item.cpp, 50301-50306): Combo from level 30 and
 	// again from 50, Leadership twenty levels a book. The day the engine puts
@@ -1734,6 +1763,9 @@ namespace
 					!CanPlayerBotReadGeneralSkillBookNow(ch, item->GetVnum()))
 				continue;
 			const DWORD skill = GetPlayerBotGeneralSkillBookSkill(item->GetVnum());
+#if defined(PLAYERBOT_ENGINE_MT2009)
+			ClampPlayerBotBookWait(ch, skill);
+#endif
 			if (IsPlayerBotFastBooksEnabled() && get_global_time() < ch->GetSkillNextReadTime(skill))
 #if defined(PLAYERBOT_ENGINE_MT2009)
 				ch->SetSkillNextReadTime(skill, get_global_time(), true);
@@ -1745,8 +1777,14 @@ namespace
 				return false;
 			const BYTE oldLevel = ch->GetSkillLevel(skill);
 			const DWORD vnum = item->GetVnum();
+#if defined(PLAYERBOT_ENGINE_MT2009)
+			const bool exorcised = get_global_time() < ch->GetSkillNextReadTime(skill);
+#endif
 			if (!ch->UseItem(TItemPos(INVENTORY, cell)))
 				return false;
+#if defined(PLAYERBOT_ENGINE_MT2009)
+			NotePlayerBotBookRead(ch, skill, exorcised);
+#endif
 			SetPlayerBotAction(state, BOT_ACTION_READ_BOOK, dwNow);
 			sys_log(0, "PLAYERBOT_AI: read general book pid=%u name=%s vnum=%u skill=%u old_level=%u new_level=%u success=%d",
 					ch->GetPlayerID(), ch->GetName(), vnum, skill, oldLevel, ch->GetSkillLevel(skill),
@@ -1804,6 +1842,9 @@ namespace
 			const BYTE masterType = ch->GetSkillMasterType(skillVnum);
 			if (masterType == SKILL_MASTER && skillLevel >= 20 && skillLevel < 30)
 			{
+#if defined(PLAYERBOT_ENGINE_MT2009)
+				ClampPlayerBotBookWait(ch, skillVnum);
+#endif
 				const bool ready = IsPlayerBotFastBooksEnabled() ||
 					get_global_time() >= ch->GetSkillNextReadTime(skillVnum) ||
 					ch->FindAffect(AFFECT_SKILL_NO_BOOK_DELAY);
@@ -1851,6 +1892,12 @@ namespace
 		// engine's and are not touched here: how many successful reads take it
 		// to G, and the roll on each read. A bot with a bagful still fails a
 		// third of them and still needs ten that land.
+		//
+		// On the 2.x line the switch is the world's difficulty instead: the
+		// bots' own number of hours (GetPlayerBotBookWaitSeconds), zero being
+		// the wait waved as above and anything else kept by
+		// ClampPlayerBotBookWait and NotePlayerBotBookRead - which is also what
+		// gives the Exorcism Scrolls in a bot's bag something to do again.
 		if (IsPlayerBotFastBooksEnabled() &&
 				get_global_time() < ch->GetSkillNextReadTime(bestSkillVnum))
 #if defined(PLAYERBOT_ENGINE_MT2009)
@@ -1872,8 +1919,14 @@ namespace
 		// down every eight seconds and mostly read nothing: 5 121 climb-downs in
 		// 36 minutes on the test world, one rider down 268 times for 15 books.
 		const BYTE oldLevel = ch->GetSkillLevel(bestSkillVnum);
+#if defined(PLAYERBOT_ENGINE_MT2009)
+		const bool exorcised = get_global_time() < ch->GetSkillNextReadTime(bestSkillVnum);
+#endif
 		if (ch->UseItem(TItemPos(INVENTORY, bestCell)))
 		{
+#if defined(PLAYERBOT_ENGINE_MT2009)
+			NotePlayerBotBookRead(ch, bestSkillVnum, exorcised);
+#endif
 			SetPlayerBotAction(state, BOT_ACTION_READ_BOOK, dwNow);
 			sys_log(0, "PLAYERBOT_AI: read skill book pid=%u name=%s skill=%u old_level=%u new_level=%u success=%d",
 					ch->GetPlayerID(), ch->GetName(), bestSkillVnum, oldLevel,

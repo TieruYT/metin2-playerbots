@@ -565,27 +565,47 @@ fi
 # (the pony, each Horse Book, the medal trainings of 1-10 and of 11-19). The
 # presets scale the package's own numbers - hard is what it shipped with,
 # medium a third of it, easy none (what 2.0.55 and 2.0.56 gave everybody) -
-# and custom takes the two hour counts from .env, the horse's for every wait.
+# and custom takes the hour counts from .env, the horse's for every wait.
+# The wait between two skill books is the engine's (m2_book_wait, playerbotify
+# apply_book_wait) and the bots' own (m2_bot_book_wait), the package's 21 hours
+# on hard (drip9660, 23 September).
 # Written before the seed, which may leave early on a foreign cohort.
+#
+# The classic panel's difficulty card sets the same flags live, so .env is
+# applied only when it changed since the last start (m2_difficulty_env holds
+# what it said): a change made in the panel survives a restart until the
+# launcher's difficulty is changed, and the one changed last is the one kept.
 difficulty=$(printf '%s' "${M2_DIFFICULTY:-easy}" | tr 'A-Z' 'a-z' | tr -d ' \r')
+hours_to_seconds() {
+    printf '%s\n' "$1" | tr -d ' \r' | awk '{ h = $1 + 0; if (h < 0) h = 0; if (h > 8760) h = 8760; printf "%d", h * 3600 }'
+}
 case "$difficulty" in
-    medium) dlevel=1; bio=28800; hbuy=14400; hup=14400; htr=21600; htr2=25200 ;;
-    hard)   dlevel=2; bio=86400; hbuy=43200; hup=43200; htr=64800; htr2=75600 ;;
+    medium) dlevel=1; bio=28800; hbuy=14400; hup=14400; htr=21600; htr2=25200; book=25200; botbook=25200 ;;
+    hard)   dlevel=2; bio=86400; hbuy=43200; hup=43200; htr=64800; htr2=75600; book=75600; botbook=75600 ;;
     custom)
         dlevel=3
-        bio=$(printf '%s\n' "${M2_BIOLOGIST_WAIT_HOURS:-0}" | tr -d ' \r' | awk '{ h = $1 + 0; if (h < 0) h = 0; printf "%d", h * 3600 }')
-        hbuy=$(printf '%s\n' "${M2_HORSE_WAIT_HOURS:-0}" | tr -d ' \r' | awk '{ h = $1 + 0; if (h < 0) h = 0; printf "%d", h * 3600 }')
-        hup=$hbuy; htr=$hbuy; htr2=$hbuy ;;
-    *)      difficulty=easy; dlevel=0; bio=0; hbuy=0; hup=0; htr=0; htr2=0 ;;
+        bio=$(hours_to_seconds "${M2_BIOLOGIST_WAIT_HOURS:-0}")
+        hbuy=$(hours_to_seconds "${M2_HORSE_WAIT_HOURS:-0}")
+        hup=$hbuy; htr=$hbuy; htr2=$hbuy
+        book=$(hours_to_seconds "${M2_BOOK_WAIT_HOURS:-0}")
+        botbook=$(hours_to_seconds "${M2_BOT_BOOK_WAIT_HOURS:-0}") ;;
+    *)      difficulty=easy; dlevel=0; bio=0; hbuy=0; hup=0; htr=0; htr2=0; book=0; botbook=0 ;;
 esac
-if db -e "REPLACE INTO player.quest (dwPID, szName, szState, lValue) VALUES
+dsig=$(printf '%s|%s|%s|%s|%s|%s|%s|%s|%s' "$difficulty" "$bio" "$hbuy" "$hup" "$htr" "$htr2" "$book" "$botbook" 1 | cksum | awk '{ print $1 % 2000000000 }')
+dprev=$(db -N -e "SELECT lValue FROM player.quest WHERE dwPID = 0 AND szName = 'm2_difficulty_env' LIMIT 1" 2>/dev/null | tr -d ' \r')
+if [ -n "$dprev" ] && [ "$dprev" = "$dsig" ]; then
+    echo "[playerbot-migrate] difficulty: .env unchanged since the last start - the flags stay as the panel or the last start left them"
+elif db -e "REPLACE INTO player.quest (dwPID, szName, szState, lValue) VALUES
         (0, 'm2_difficulty', '', $dlevel),
         (0, 'm2_biologist_wait', '', $bio),
         (0, 'm2_horse_buy_wait', '', $hbuy),
         (0, 'm2_horse_upgrade_wait', '', $hup),
         (0, 'm2_horse_train_wait', '', $htr),
-        (0, 'm2_horse_train2_wait', '', $htr2);"; then
-    echo "[playerbot-migrate] difficulty: $difficulty (Biologist wait ${bio}s, horse: buy ${hbuy}s upgrade ${hup}s train ${htr}s/${htr2}s)"
+        (0, 'm2_horse_train2_wait', '', $htr2),
+        (0, 'm2_book_wait', '', $book),
+        (0, 'm2_bot_book_wait', '', $botbook),
+        (0, 'm2_difficulty_env', '', $dsig);"; then
+    echo "[playerbot-migrate] difficulty: $difficulty (Biologist wait ${bio}s, horse: buy ${hbuy}s upgrade ${hup}s train ${htr}s/${htr2}s, books: players ${book}s bots ${botbook}s)"
 else
     echo "[playerbot-migrate] WARNING: could not write the difficulty flags; the quests keep the last ones" >&2
 fi
