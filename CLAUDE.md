@@ -106,7 +106,7 @@ dependency order at the top of `playerbot_manager.cpp`:
 | `playerbot_itemshop.h` | The 2.x line's in-game ItemShop: the Kupon SM vouchers cashed, the account's Dragon Coins and Marks, and the few things a bot buys with them. Empty on r40250. |
 | `playerbot_market.h` | Buying from another bot's counter: what is worth having, the walk to the stall, and the purchase. |
 | `playerbot_chat_trade.h` | Trading over the chat: what a bot shouts about its counter and its wants, and the whisper it answers a player's "Kupie"/"Sprzedam" with. Fed by patch 0007. Anything else whispered falls through to the conversation. |
-| `playerbot_conv_*.h` | ĹŌŞƬĒĶ's conversation layer as pure code (text, lexicon, intents, memory, state, say, general, generator, engine): what a whisper means, what the bot remembers of the person, and the reply. No engine types, unit-tested (`tests/playerbot_conversation_test.cpp`). Included by the next row only. |
+| `playerbot_conv_*.h` | ĹŌŞƬĒĶ's conversation layer as pure code (text, aliases, lexicon, intents, memory, state, say, general, generator, engine): what a whisper means, what the bot remembers of the person, and the reply. `playerbot_conv_aliases.h` is the players' own words (FMS, KK, KD, bodzio; M1, V1, DT; 2kk) and is also included by `playerbot_chat_trade.h`. No engine types, unit-tested (`tests/playerbot_conversation_test.cpp`). Included by the next row only. |
 | `playerbot_chat_conversation.h` | The conversation's engine side: the snapshot of the bot it answers from, the whisper packet, the short timer while replies wait. After status.h. |
 | `playerbot_loot.h` | Picking things up, in and out of a fight, without sweeping the floor. |
 | `playerbot_lure_order_rules.h` | What a person's whisper to a bot means: "luruj" and "przestan lurowac". No engine types, unit-tested. Included first, with the other rules headers. |
@@ -7359,7 +7359,7 @@ not in `data/`) reworked these point by point. What each hangs on:
   pure (no engine types) and bounded - 4096 pairs of person and bot, six
   queued lines a pair, four remembered turns, 256 bytes of input, a pair
   forgotten three hours after its last line - and `tests/playerbot_conversation_test.cpp`
-  runs it (400 checks). `playerbot_chat_conversation.h` is the only file that
+  runs it (505 checks since 1.1b). `playerbot_chat_conversation.h` is the only file that
   knows the engine: it looks the bot and the person up by pid every time it
   answers and never holds a character across ticks, sends the raw whisper
   packet, and runs its own event only while a reply is waiting (it returns 0
@@ -7367,13 +7367,33 @@ not in `data/`) reworked these point by point. What each hangs on:
   "Kupie"/"Sprzedam" line as a shout, as before, and hands everything else -
   and a trade line inside the eight-second trade clock, which used to vanish -
   to `HandlePlayerBotConversation`. The layer reads the AI and writes nothing
-  to it. Two things we changed: **on the 2.x line a bot's counter is an
-  offline shop, so `GetMyShop()` answered "no stall" for every bot** - the
-  snapshot reads the ikashop shop into `shopTown`/`shopSummary` and
-  `AnswerBuy` searches its lines; `shopOpen` stays false for one, because
-  every line that reads it means "I am standing at my stall" and such a
-  keeper is out hunting - and the bag's free cells are the item grid's, not
-  the empty pointers. Runtime switches are files in the core's working
+  to it. **On the 2.x line a bot's counter is an offline shop, so
+  `GetMyShop()` answered "no stall" for every bot**; 1.1b (the same day) has
+  one reader for both kinds, `GetPlayerBotStall` in `playerbot_chat_trade.h`
+  (the classic stall's `vecShopOffers`, or `ikashop::GetShopByOwnerID` - its
+  lines, prices and spawn), which the shout answer, the whisper fallback, the
+  snapshot and the price question all ask. In the snapshot `shopOpen` means a
+  stall of either kind and `shopStanding` the classic one the bot stands
+  behind - a line that says "I am standing here" must ask the second. Item
+  names go through `playerbot_conv::ExpandItemQuery` everywhere, so an alias
+  means the same thing in a whisper and on the shout channel. What we added
+  to 1.1b: the free cells are the item grid's, not the empty pointers (their
+  build still counts pointers - put it back at every merge); a two-letter
+  shout query is refused unless it is a dictionary word ("Kupie KK"); the
+  "Sprzedam" path asks the dictionary too; a named sum is capped before it can
+  overflow; and three things the live test found. **An alias word inside a
+  real name**: 1.1b dropped the query as typed whenever one of its words was
+  an alias (so "morelek" would not stem into "Moreli"), and "szpon" is an
+  alias, so "Kupie szpon wilka" went unanswered beside a counter selling
+  Szpon Wilka - the query as typed is kept now with its alias words marked
+  '=', which `ItemWordsMatch` wants whole (`HasWholeWord`). **"Kupie ksiega
+  X"** where X is no skill is searched as a name ("ksiega misji"), where it
+  was dropped without a log line. And "gdzie" is a skip word of
+  `ExtractTradeObject`, or "gdzie masz stragan?" searched the stall for an
+  item called "gdzie masz stragan". Left to the author, measured with the
+  self-test: "ksiega misji", "marmur polimorfii", "kamien duchowy" and
+  "ku strach" land in the skills, Metin and fear topics, and "dam 500k za X"
+  has no rule. Runtime switches are files in the core's working
   directory, read every thirty seconds: `playerbot_conv_debug` (the
   `PLAYERBOT_CONV`, `_QUEUE`, `_REPLY`, `_INITIATIVE` lines) and
   `playerbot_conv_noinit` (no bot starts a conversation). `PLAYERBOT_CONV_STATS`

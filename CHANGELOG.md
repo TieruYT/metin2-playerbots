@@ -17,6 +17,62 @@ every version here.
 
 ---
 
+## 2.0.98 — 2026-09-23
+
+Serwer 2.0.98. Klient zostaje przy 2.0.25, więc aktualizacja klienta nie jest
+potrzebna. Zawiera wszystko z 2.0.97.
+
+### Czat z botami 1.1b — ĹŌŞƬĒĶ (l0st3k)
+
+Druga wersja systemu rozmów od **ĹŌŞƬĒĶ (l0st3k)**, wydana dzień po pierwszej.
+
+- **Bot wie, co ma na straganie.** Zapytany o przedmiot, który ma wystawiony
+  (na przykład „masz ku aura miecza?”), odpowiada, że go ma, w którym mieście
+  stoi sklep i za ile. Dotyczy to też sklepu offline, a na tej linii serwera
+  każdy stragan bota jest sklepem offline. Wersja 1.1a przeszukiwała tylko
+  zwykłe stragany i na takie pytanie odpowiadała, że nic nie ma.
+- **Słownik metinowca.** Bot rozumie skróty, którymi piszą gracze: KK (Kawałek
+  Klejnotu), KD (Kamień Duszy albo Kamień Duchowy), KU (księga umiejętności),
+  FMS, RIB, 12D, bodzio, ebo, PD i inne. Rozumie też nazwy map (M1, M2, M3,
+  V1, V2, DT, Sohan, Czerwony Las) i kwoty (500k, 2kk, 1,5kk, 300 tys).
+- **Ceny i targowanie.** Na „ile chodzi FMS?” bot podaje najniższą cenę
+  z wystawionych straganów, a gdy nikt tego nie wystawia, cenę, za którą
+  ostatnio się sprzedawało. Na „sprzedasz mi FMS za 2kk?” porównuje ofertę
+  ze swoją ceną: zgodzi się, powie, że to za mało, albo że na straganie stoi
+  taniej.
+- **Wołaj.** Gdy na Wołaj napiszesz „Kupię …”, na priv odpisze bot, który ma
+  to na straganie. Teraz dotyczy to także sklepów offline i skrótów ze słownika
+  („Kupię FMS”, „Kupię KK”). Na „Sprzedam …” odzywa się bot, który tego
+  potrzebuje, i on również rozumie skróty.
+- Krótkie zwroty z gry: gz, gl, brb, gotowy, „ksujesz”.
+
+Nasze poprawki do wersji autora, znalezione w teście na żywo:
+
+- Nazwa przedmiotu, w której jest słowo ze słownika, znów działa. „Szpon”
+  to w słowniku Miecz Szponu Ducha i przez to „Kupię szpon wilka” zostawało
+  bez odpowiedzi, choć bot miał Szpon Wilka na straganie.
+- „Kupię księgę misji” na Wołaj jest szukane jak zwykły przedmiot. Wcześniej
+  „księga” oznaczała wyłącznie księgę umiejętności, a taka linia przepadała
+  bez śladu.
+- Na „gdzie masz stragan?” bot mówi, gdzie ma stragan, zamiast szukać na nim
+  przedmiotu o nazwie „gdzie”.
+- Dwuliterowe skróty („Kupię KK”) przechodzą przez Wołaj, a „Sprzedam …”
+  korzysta ze słownika.
+- Wolne miejsca w plecaku są liczone tak jak w grze, a absurdalnie duża kwota
+  w targowaniu nie psuje rachunku.
+
+Sprawdzone na naszym serwerze testowym przy około 850 botach. W dwóch
+przebiegach boty zadały sobie ponad 900 pytań, także o przedmioty, które
+naprawdę stoją na ich straganach. Po poprawkach wszystkie 35 wołań „Kupię …”
+dostało odpowiedź od bota, który ma dany przedmiot. Odpowiedź na wołanie
+zajmuje serwerowi około 2 ms, a żaden rdzeń nie padł.
+
+Czego bot jeszcze nie rozumie: pytanie „masz księgę misji?”, „masz marmur
+polimorfii?” albo „masz kamień duchowy?” bierze za rozmowę o umiejętnościach
+albo o Metinach. Działa skrót („masz km?”, „masz kd?”) i wołanie „Kupię …”.
+
+---
+
 ## 2.0.97 — 2026-09-23
 
 Serwer 2.0.97. Klient zostaje przy 2.0.25, więc aktualizacja klienta nie jest
