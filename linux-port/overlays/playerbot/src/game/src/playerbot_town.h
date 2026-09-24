@@ -828,16 +828,6 @@ namespace
 		}
 
 		state.bVisitingShop = true;
-		// "Nastepnie wybiera kolejna osobowosc lecz nie moze to byc
-		// Hazardzista": the gambler may not follow a Perfectionist inside one
-		// visit. A Perfectionist that ended before this visit began does not
-		// count - every market trip is one (DecidePlayerBotPersona), so thirty
-		// minutes after the last of them was nearly always now, and the gambler
-		// census on m2zip read after_perfect=356 of some five hundred visits
-		// and started=0 (24 September; "hazardzista dziala tak jakby nie mogl",
-		// Iwakura).
-		if (state.persona.bPersona != playerbot_persona::PERSONA_PERFEKCJONISTA)
-			state.persona.dwPerfectEndedAt = 0;
 		// The purse the Perfectionist's share is measured against
 		// (ManagePlayerBotRefining).
 		state.persona.llVisitGoldStart = (long long)ch->GetGold();

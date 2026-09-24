@@ -1988,10 +1988,12 @@ namespace
 	// on the scroll-only line (the operator's), and the weapon in the hand or
 	// the armour on the back with nothing to fall back on (the backup rule -
 	// "nigdy nie ryzykuje ... jesli nie posiada w ekwipunku broni
-	// zastepczej", Iwakura's own).
+	// zastepczej", Iwakura's own). Nor for a level-30 weapon, which has its
+	// own answer from him half an hour later: +7 at the plain anvil, +8 and +9
+	// under scrolls (the anvil table, PLAYERBOT_LEVEL30_ANVIL_PLUS_*).
 	bool PlayerBotRisksPlainAnvil(LPCHARACTER ch, LPITEM item)
 	{
-		if (!ch || !item || PLAYERBOT_SCROLL_SKIP_PERCENT <= 0)
+		if (!ch || !item || PLAYERBOT_SCROLL_SKIP_PERCENT <= 0 || IsPlayerBotSpecialLevel30Weapon(item))
 			return false;
 		const DWORD bucket = (DWORD)(get_global_time() / PLAYERBOT_SCROLL_SKIP_BUCKET_SECONDS);
 		const DWORD seed = (item->GetID() * 2654435761U) ^ ((DWORD)item->GetRefineLevel() * 0x9e3779b9U) ^
@@ -2545,18 +2547,15 @@ namespace
 					anvilCeiling = std::max<int>(anvilCeiling, PLAYERBOT_LEVEL30_MIN_PLUS);
 				const bool aboveCeiling = (int)plusLevel >= anvilCeiling;
 				// A common roll is worth a gamble even above its ceiling: the
-				// weapon is everywhere and the scroll is not.
+				// weapon is everywhere and the scroll is not. Iwakura's coin
+				// never comes up for a level-30 weapon (PlayerBotRisksPlainAnvil):
+				// its +8 and +9 are a scroll's.
 				const bool cheapGamble = aboveCeiling &&
 						average <= PLAYERBOT_LEVEL30_ANVIL_AVG_CHEAP &&
 						number(1, 100) <= PLAYERBOT_LEVEL30_CHEAP_ANVIL_PERCENT;
-				// And Iwakura's coin takes any roll to the anvil above its
-				// ceiling half the time ("ulepszanie bardziej agresywne").
-				if (aboveCeiling && !cheapGamble && coinAnvil)
-					coinWhy = "level30";
-				const bool anvilAnyway = cheapGamble || coinAnvil;
-				if (aboveCeiling && !anvilAnyway && scrollStepAllowed)
+				if (aboveCeiling && !cheapGamble && scrollStepAllowed)
 					scrollCell = FindPlayerBotRefineScrollCell(ch, plusLevel, stepProb);
-				if (aboveCeiling && !anvilAnyway && scrollCell < 0)
+				if (aboveCeiling && !cheapGamble && scrollCell < 0)
 				{
 					// Waiting for a scroll is the point of the ceiling: the
 					// anvil here is how a good roll is lost.

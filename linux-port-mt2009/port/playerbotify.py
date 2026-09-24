@@ -2147,9 +2147,11 @@ def apply_shop_search_picked_item(game):
 
 
 def apply_blessing_scroll_from_stones(game):
-    """A Blessing Scroll (25040) from a Metin stone of level fifteen to ninety.
+    """A Blessing Scroll (25040) from a Metin stone of level fifteen to 99.
 
-    "Zwoj blogoslawienstwa z metinow 15-90 do handlu" (Iwakura, 24 September).
+    "Zwoj blogoslawienstwa z metinow 15-90 do handlu", and half an hour later
+    to Uriel, "zwoje wypadaja z Metinow na poziomach 15-99 testowo 1%"
+    (Iwakura, 24 September; 2.2.11 shipped the first at five percent).
     Under level seventy nothing in this world dropped one - the common table
     has it for a killer of fifty and up at 0.04 percent, the rest comes from
     monsters and stones of about seventy, the boss caskets and the Moonlight
@@ -2160,14 +2162,21 @@ def apply_blessing_scroll_from_stones(game):
     the Dragon Coin voucher's roll; zero is off. Not from a stone the killer
     has outgrown by more than the book's fifteen levels, so a character of
     ninety does not farm the level-fifteen stones for them.
+
+    A tree 2.2.11 patched carries 90 and its comments: the edit after each
+    insertion brings those up to date, and the roll's marker is a line of
+    code, not a comment, so rewording a comment cannot insert it twice.
     """
     p = os.path.join(game, 'config.cpp')
     edit(p,
          'int\t\t\tg_iDragonCoinBossPermille = 0;\n',
          'int\t\t\tg_iDragonCoinBossPermille = 0;\n'
-         '// A Blessing Scroll from a Metin stone of level 15 to 90, in thousandths.\n'
+         '// A Blessing Scroll from a Metin stone of level 15 to 99, in thousandths.\n'
          'int\t\t\tg_iBlessingScrollStonePermille = 0;\n',
          marker='g_iBlessingScrollStonePermille = 0;')
+    edit(p,
+         '// A Blessing Scroll from a Metin stone of level 15 to 90, in thousandths.\n',
+         '// A Blessing Scroll from a Metin stone of level 15 to 99, in thousandths.\n')
     edit(p,
          '\t\tTOKEN("dragon_coin_stone_permille")\n',
          '\t\tTOKEN("blessing_scroll_stone_permille")\n'
@@ -2189,16 +2198,19 @@ def apply_blessing_scroll_from_stones(game):
          'static const int PLAYERBOT_METIN_BOOK_LEVEL_DELTA = 15;\n'
          '// The stones a Blessing Scroll may come from (Iwakura, 24 September).\n'
          'static const int PLAYERBOT_BLESSING_SCROLL_STONE_MIN_LEVEL = 15;\n'
-         'static const int PLAYERBOT_BLESSING_SCROLL_STONE_MAX_LEVEL = 90;\n',
+         'static const int PLAYERBOT_BLESSING_SCROLL_STONE_MAX_LEVEL = 99;\n',
          marker='PLAYERBOT_BLESSING_SCROLL_STONE_MIN_LEVEL = 15;')
+    edit(p,
+         'static const int PLAYERBOT_BLESSING_SCROLL_STONE_MAX_LEVEL = 90;\n',
+         'static const int PLAYERBOT_BLESSING_SCROLL_STONE_MAX_LEVEL = 99;\n')
     edit(p,
          '\tif (pkKiller->IsHorseRiding() &&\n'
          '\t\t\tGetDropPerKillPct(1000, 1000000, iDeltaPercent, "horse_skill_book_drop") >= number(1, iRandRange))\n',
-         '\t// A Blessing Scroll (25040) from a Metin stone of level 15 to 90, for the\n'
-         '\t// anvil and the counters ("zwoj blogoslawienstwa z metinow 15-90 do\n'
-         '\t// handlu", Iwakura): under level seventy nothing else drops one. The\n'
-         '\t// permille is CONFIG, and a killer more than the book\'s fifteen levels\n'
-         '\t// over the stone gets none.\n'
+         '\t// A Blessing Scroll (25040) from a Metin stone of level 15 to 99, for the\n'
+         '\t// anvil and the counters ("zwoje wypadaja z Metinow na poziomach 15-99\n'
+         '\t// testowo 1%", Iwakura): under level seventy nothing else drops one.\n'
+         '\t// The permille is CONFIG, and a killer more than the book\'s fifteen\n'
+         '\t// levels over the stone gets none.\n'
          '\tif (pkChr->IsStone() && pkKiller && g_iBlessingScrollStonePermille > 0 &&\n'
          '\t\t\tpkChr->GetLevel() >= PLAYERBOT_BLESSING_SCROLL_STONE_MIN_LEVEL &&\n'
          '\t\t\tpkChr->GetLevel() <= PLAYERBOT_BLESSING_SCROLL_STONE_MAX_LEVEL &&\n'
@@ -2211,7 +2223,18 @@ def apply_blessing_scroll_from_stones(game):
          '\n'
          '\tif (pkKiller->IsHorseRiding() &&\n'
          '\t\t\tGetDropPerKillPct(1000, 1000000, iDeltaPercent, "horse_skill_book_drop") >= number(1, iRandRange))\n',
-         marker='A Blessing Scroll (25040) from a Metin stone of level 15 to 90, for the')
+         marker='number(1, 1000) <= g_iBlessingScrollStonePermille)')
+    edit(p,
+         '\t// A Blessing Scroll (25040) from a Metin stone of level 15 to 90, for the\n'
+         '\t// anvil and the counters ("zwoj blogoslawienstwa z metinow 15-90 do\n'
+         '\t// handlu", Iwakura): under level seventy nothing else drops one. The\n'
+         '\t// permille is CONFIG, and a killer more than the book\'s fifteen levels\n'
+         '\t// over the stone gets none.\n',
+         '\t// A Blessing Scroll (25040) from a Metin stone of level 15 to 99, for the\n'
+         '\t// anvil and the counters ("zwoje wypadaja z Metinow na poziomach 15-99\n'
+         '\t// testowo 1%", Iwakura): under level seventy nothing else drops one.\n'
+         '\t// The permille is CONFIG, and a killer more than the book\'s fifteen\n'
+         '\t// levels over the stone gets none.\n')
 
 
 def apply_gm_panel_url(game):

@@ -535,6 +535,12 @@ namespace
 	//   avg 30..36%     anvil to +4
 	//   avg >= 37%      scrolls from +0 (PLAYERBOT_WEAPON_SCROLL_ONLY_AVERAGE)
 	//
+	// Iwakura's answer of 24 September moved the two lower rows up to +7 as a
+	// test: "bron zrobmy do +7 u kowala a na +8 i +9 zwojami, raz sie zyje
+	// (testowo)". Every level-30 weapon under the scroll-only line now goes to
+	// +7 at the plain anvil, and +8 and +9 are a scroll's; the rows stay
+	// apart so the operator's own numbers are one edit away.
+	//
 	// Measured on this world's own refine_proto, because the table's last line
 	// says "unless the anvil is certain": the level-30 family runs
 	// 90/85/75/65/55/45/35/25/20 percent from +0 to +9 (world.refine_proto,
@@ -547,8 +553,8 @@ namespace
 	const long PLAYERBOT_LEVEL30_ANVIL_AVG_HIGH = 36;
 	const int PLAYERBOT_LEVEL30_ANVIL_PLUS_CHEAP = 7;
 	const int PLAYERBOT_LEVEL30_ANVIL_PLUS_GOOD = 7;
-	const int PLAYERBOT_LEVEL30_ANVIL_PLUS_BETTER = 6;
-	const int PLAYERBOT_LEVEL30_ANVIL_PLUS_HIGH = 4;
+	const int PLAYERBOT_LEVEL30_ANVIL_PLUS_BETTER = 7;
+	const int PLAYERBOT_LEVEL30_ANVIL_PLUS_HIGH = 7;
 	// Above its ceiling a cheap roll is still worth a gamble now and then: the
 	// weapon is common and the scroll is not ("ewentualnie szansa na to ze bot
 	// pojdzie do kowala ulepszyc (40% zamiast bodziem)").
@@ -5699,9 +5705,6 @@ namespace
 	// The document ends a session on its budget or its +9 and nothing else;
 	// this is only the net under a session something else stranded.
 	const DWORD PLAYERBOT_GAMBLE_MAX_MS = 20 * 60 * 1000;
-	// "Nastepnie wybiera kolejna osobowosc lecz nie moze to byc Hazardzista":
-	// not within this long of a Perfectionist's spell.
-	const DWORD PLAYERBOT_GAMBLE_AFTER_PERFECT_MS = 30 * 60 * 1000;
 	// One attempt at the anvil every 1.5 to 3 seconds - a player's click.
 	const DWORD PLAYERBOT_GAMBLE_STEP_MIN_MS = 1500;
 	const DWORD PLAYERBOT_GAMBLE_STEP_MAX_MS = 3000;
@@ -6000,11 +6003,8 @@ namespace
 		// PLAYER_FLAG on mt2009) as last read, so a death can be told apart.
 		long long llPlayerDeaths;
 		// The Perfectionist's purse: what the bot held when its town visit
-		// began, of which the anvil takes at most PERFECT_BUDGET_PERCENT; and
-		// when its last Perfectionist spell ended, since the document says the
-		// next personality after one may not be the gambler.
+		// began, of which the anvil takes at most PERFECT_BUDGET_PERCENT.
 		long long llVisitGoldStart;
-		DWORD dwPerfectEndedAt;
 		// The gambler (playerbot_gambler.h): the session, its purse and what it
 		// has spent of the GAMBLE_BUDGET_PERCENT, when it must end at the latest,
 		// when the next may start, the next step's clock, what it has done, and
@@ -6124,7 +6124,7 @@ namespace
 			dwReadyGearWaitUntil(0), dwReadyGearCheckedAt(0), bQuitGrinding(false), bQuitRolledTier(0),
 			bMedalGoalDone(false), dwNextMedalGoalCheck(0),
 			bAdvanced(false), bLockLevel(0), dwNextAdvanceRoll(0), llPlayerDeaths(-1),
-			llVisitGoldStart(0), dwPerfectEndedAt(0), bGambling(false), llGambleGoldStart(0),
+			llVisitGoldStart(0), bGambling(false), llGambleGoldStart(0),
 			llGambleSpent(0), dwGambleUntil(0), dwNextGambleAt(0), dwNextGambleStep(0),
 			bGambleNines(0), bGambleBurned(0), bGambleFinished(0), bGambleDowngraded(0),
 			wGambleAttempts(0), bGambleSafeboxChecked(false), bGambleSafeboxTaken(0),

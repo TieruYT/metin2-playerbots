@@ -671,6 +671,29 @@ function Assert-WorldLayoutDefault {
     return (Set-DotEnvValue -Content $Content -Name 'M2_PLAYERBOT_WORLD_LAYOUT_DEFAULTED' -Value '1')
 }
 
+function Assert-BlessingScrollDefault {
+    # 2.2.11 dropped a Blessing Scroll from one Metin stone in twenty, and
+    # Iwakura's answer the same evening was one in a hundred for the test
+    # ("zwoje wypadaja z Metinow na poziomach 15-99 testowo 1%"). This script
+    # had already written 2.2.11's 50 into every .env it started, where a new
+    # default never reaches, so that 50 becomes 10 here, once; any other value
+    # is somebody's choice and stays.
+    param(
+        [Parameter(Mandatory = $true)][AllowEmptyString()][string]$Content,
+        [Parameter(Mandatory = $true)][string]$EnvPath
+    )
+    $marker = Join-Path (Split-Path -Parent $EnvPath) 'ENGINE'
+    if (-not (Test-Path -LiteralPath $marker -PathType Leaf)) { return $Content }
+    if ((Get-Content -LiteralPath $marker -Raw).Trim() -eq 'r40250') { return $Content }
+    if ([Regex]::IsMatch($Content, '(?m)^M2_BLESSING_SCROLL_STONE_PERMILLE_DEFAULTED=')) { return $Content }
+    $current = [Regex]::Match($Content, '(?m)^M2_BLESSING_SCROLL_STONE_PERMILLE=(.*)$')
+    if ($current.Success -and $current.Groups[1].Value.Trim() -eq '50') {
+        Write-Host 'Zwoje Blogoslawienstwa z Metinow: szansa zmieniona z 5% na 1% (M2_BLESSING_SCROLL_STONE_PERMILLE=10).' -ForegroundColor Cyan
+        $Content = Set-DotEnvValue -Content $Content -Name 'M2_BLESSING_SCROLL_STONE_PERMILLE' -Value '10'
+    }
+    return (Set-DotEnvValue -Content $Content -Name 'M2_BLESSING_SCROLL_STONE_PERMILLE_DEFAULTED' -Value '1')
+}
+
 function Get-M2HostTimeZoneName {
     # The tz database name of this Windows' own zone, for the containers' TZ.
     # Windows keeps ids of its own ("Central European Standard Time") and the
@@ -843,6 +866,9 @@ function Initialize-InstallationIdentity {
     # And, the same shape again, the world those three kingdoms live on: one
     # core unless this world is too big for one.
     $content = Assert-WorldLayoutDefault -Content $content -EnvPath $envPath
+    # And for the Blessing Scroll's chance: 2.2.11's five percent becomes the
+    # one percent asked for, once.
+    $content = Assert-BlessingScrollDefault -Content $content -EnvPath $envPath
     # The same shape for the clock's zone: the example's UTC becomes this
     # machine's own, once.
     $content = Assert-TimezoneDefault -Content $content

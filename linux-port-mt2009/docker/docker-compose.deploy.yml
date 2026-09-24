@@ -195,8 +195,8 @@ services:
       M2_MOONLIGHT_CHEST_STONE_PERMILLE: "${M2_MOONLIGHT_CHEST_STONE_PERMILLE:-300}"
       M2_DRAGON_COIN_STONE_PERMILLE: "${M2_DRAGON_COIN_STONE_PERMILLE:-3}"
       M2_DRAGON_COIN_BOSS_PERMILLE: "${M2_DRAGON_COIN_BOSS_PERMILLE:-50}"
-      # A Blessing Scroll from a Metin stone of level 15-90, in thousandths.
-      M2_BLESSING_SCROLL_STONE_PERMILLE: "${M2_BLESSING_SCROLL_STONE_PERMILLE:-50}"
+      # A Blessing Scroll from a Metin stone of level 15-99, in thousandths.
+      M2_BLESSING_SCROLL_STONE_PERMILLE: "${M2_BLESSING_SCROLL_STONE_PERMILLE:-10}"
       # 0 keeps Shinsoo and Jinno from being started even when the seed once
       # registered them (the migrate service reads the same switch for the
       # seed itself).

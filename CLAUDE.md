@@ -5920,7 +5920,15 @@ not in `data/`) reworked these point by point. What each hangs on:
     `log.log` GET of 50300), so 5% is some fifteen scrolls an hour for the
     world. The drop rate of the panel does not touch it, as it does not
     touch the chest's roll. The Demon Tower's 8015-8019 are inside the
-    band, so a raid's stones give scrolls too.
+    band, so a raid's stones give scrolls too. That was 2.2.11; half an
+    hour after the chat its release was built from, his answer to Uriel's
+    questions came in: "zwoje wypadaja z Metinow na poziomach 15-99
+    testowo 1%". So the band is 15-99 and the default 10 after it, three
+    scrolls an hour for the world, and the 50 that 2.2.11's start wrote
+    into every `.env` becomes 10 once (`Assert-BlessingScrollDefault`,
+    `migrate_blessing_scroll`, marker `..._DEFAULTED`). Read the DM
+    channel before a release built on a conversation about the same
+    questions.
   - **"Tylko w 50% uzywaja bodzi"** is `PlayerBotRisksPlainAnvil`: half the
     steps a scroll would take, or wait for, go to the plain anvil. The coin
     is the piece's id (a refine makes a new item), its plus and a
@@ -5935,17 +5943,24 @@ not in `data/`) reworked these point by point. What each hangs on:
     weapon and the body armour with no spare - his own document says the
     main weapon is never risked without a replacement. The gambler keeps
     his scroll-only +8/+9. `PLAYERBOT_AI: refine at the plain anvil, the
-    coin said so ... why=level30|prize|scroll_kept` is the measurement.
+    coin said so ... why=prize|scroll_kept` is the measurement. His answer
+    to Uriel took the level-30 weapon out of the coin: "bron zrobmy do +7
+    u kowala a na +8 i +9 zwojami, raz sie zyje (testowo)", so every row
+    of the operator's anvil table under the scroll-only line reads +7
+    (`PLAYERBOT_LEVEL30_ANVIL_PLUS_*`, the Demon Tower's smith asks the
+    same table) and `PlayerBotRisksPlainAnvil` is false for a level-30
+    weapon. The cheapest rolls (14% and under) keep the operator's gamble
+    above the ceiling.
   - The armour's protection had a hole the weapon's did not: a blacksmith
     session keeps the piece in the bag from its first step to its last,
     and `IsPlayerBotWornArmourAtRisk` asked the slot, so only the first step
     was protected. `GetPlayerBotBodyArmour` is the weapon's
     `GetPlayerBotHandWeapon` for the body: worn, or with the slot empty the
     best body armour in the bag, and the backup is the best other one.
-  The +8/+9 share of the big three and the gambler after a Perfectionist
-  were asked in the same message and not answered; both stand as they were.
-- **The gambler may not follow a Perfectionist inside one visit, not for
-  half an hour.** "Nastepnie wybiera kolejna osobowosc lecz nie moze to byc
+  The big three's +8/+9 was answered "tak ma iść" with no share and no
+  way (plain anvil or scrolls), and Uriel asked again; it stands as it was.
+- **The gambler may follow a Perfectionist, and not being allowed to was
+  why it never ran.** "Nastepnie wybiera kolejna osobowosc lecz nie moze to byc
   Hazardzista" was a thirty-minute window after any Perfectionist, and every
   market trip is one (`s.perfecting` in `DecidePlayerBotPersona`), so the
   window was nearly always open: the census read after_perfect=356-415 of
@@ -5962,8 +5977,10 @@ not in `data/`) reworked these point by point. What each hangs on:
   base his Patch 3 floor admits). The `own_gear` gate already keeps the
   gambler off while the bot has work for its own gear, so letting the gambler
   follow a Perfectionist that ran out of work is the obvious change - but it
-  is his rule, and he was asked (Uriel's DM of 24 September) together with
-  the scroll supply, +8/+9 for the big three and the level-30 weapon past +6.
+  was his rule, so he was asked (Uriel's DM of 24 September), and his answer
+  was "Tak, moze po perfekcjoniscie isc w Hazard". The gate is gone, with
+  `dwPerfectEndedAt` and `after_perfect=` in the census; `own_gear` is what
+  keeps the gambler behind the bot's own work now.
 - **Respawn speed was already an event flag; it only lacked a world-wide
   name.** `regen_event` scales the next spawn by `fastBossSpawn<map>` /
   `fastMobSpawn<map>` (a percent of the line's delay, 0 = untouched), which is

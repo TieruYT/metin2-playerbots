@@ -501,10 +501,6 @@ namespace
 		const BYTE before = p.bPersona;
 		p.bPersona = persona;
 		p.dwPersonaSince = dwNow;
-		// The gambler may not follow a Perfectionist (MaybeStartPlayerBotGamble
-		// reads this).
-		if (before == playerbot_persona::PERSONA_PERFEKCJONISTA)
-			p.dwPerfectEndedAt = dwNow;
 		// A stone fight, a market trip or a party flips a bot's personality
 		// many times an hour, and at a thousand bots a line for every one would
 		// be ten thousand lines an hour: the changes that tell a bot's story

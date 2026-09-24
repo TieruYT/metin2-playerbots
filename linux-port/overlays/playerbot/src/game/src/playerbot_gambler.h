@@ -48,9 +48,9 @@ namespace
 	{
 		unsigned int started, ended, attempts, finished, burned, nines;
 		long long spent;
-		unsigned int restNotOver, notHere, afterPerfect, purse, ownGear, noBases, rollLost;
+		unsigned int restNotOver, notHere, purse, ownGear, noBases, rollLost;
 		TPlayerBotGambleCensus() : started(0), ended(0), attempts(0), finished(0), burned(0), nines(0),
-			spent(0), restNotOver(0), notHere(0), afterPerfect(0), purse(0), ownGear(0), noBases(0),
+			spent(0), restNotOver(0), notHere(0), purse(0), ownGear(0), noBases(0),
 			rollLost(0) {}
 	};
 	TPlayerBotGambleCensus s_PlayerBotGambleCensus;
@@ -388,13 +388,12 @@ namespace
 			++s_PlayerBotGambleCensus.notHere;
 			return false;
 		}
-		// Not straight after the Perfectionist, whose visit this may be.
-		if (!addict && (p.bPersona == playerbot_persona::PERSONA_PERFEKCJONISTA ||
-				(p.dwPerfectEndedAt != 0 && dwNow - p.dwPerfectEndedAt < PLAYERBOT_GAMBLE_AFTER_PERFECT_MS)))
-		{
-			++s_PlayerBotGambleCensus.afterPerfect;
-			return false;
-		}
+		// The document said the personality after a Perfectionist may not be
+		// the gambler, and every visit with an anvil is the Perfectionist's, so
+		// hardly a session ever began. Iwakura's answer of 24 September: "Tak,
+		// moze po perfekcjoniscie isc w Hazard" - in the same visit, once the
+		// bot has nothing of its own left to refine, which the own-gear rule
+		// below still asks.
 		const long long gold = (long long)ch->GetGold();
 		if (!addict && gold < (long long)ScalePlayerBotIwakuraPrice(PLAYERBOT_GAMBLE_MIN_PURSE_BASE))
 		{
@@ -763,9 +762,9 @@ namespace
 		if (!first && IsPlayerBotPersonaEnabled())
 		{
 			const TPlayerBotGambleCensus& c = s_PlayerBotGambleCensus;
-			sys_log(0, "PLAYERBOT_PERSONA: gambler census started=%u ended=%u attempts=%u finished=%u burned=%u nines=%u spent=%lld not_started: resting=%u not_here=%u after_perfect=%u purse=%u own_gear=%u no_bases=%u roll=%u",
+			sys_log(0, "PLAYERBOT_PERSONA: gambler census started=%u ended=%u attempts=%u finished=%u burned=%u nines=%u spent=%lld not_started: resting=%u not_here=%u purse=%u own_gear=%u no_bases=%u roll=%u",
 					c.started, c.ended, c.attempts, c.finished, c.burned, c.nines, c.spent,
-					c.restNotOver, c.notHere, c.afterPerfect, c.purse, c.ownGear, c.noBases, c.rollLost);
+					c.restNotOver, c.notHere, c.purse, c.ownGear, c.noBases, c.rollLost);
 		}
 		s_PlayerBotGambleCensus = TPlayerBotGambleCensus();
 	}

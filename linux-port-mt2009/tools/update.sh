@@ -320,6 +320,23 @@ migrate_world_layout() {
     printf 'M2_PLAYERBOT_WORLD_LAYOUT_DEFAULTED=1\n' >> "$_env"
 }
 
+# 2.2.11 dropped a Blessing Scroll from one Metin stone in twenty, and
+# Iwakura's answer the same evening was one in a hundred for the test. The
+# 2.2.11 value is in every .env add_missing_env_keys gave the key to, where a
+# new default never reaches, so 50 becomes 10 here, once; any other value is
+# somebody's choice and stays.
+migrate_blessing_scroll() {
+    _env="$COMPOSE_DIR/.env"
+    [ -f "$_env" ] || return 0
+    grep -q '^M2_BLESSING_SCROLL_STONE_PERMILLE_DEFAULTED=' "$_env" && return 0
+    [ -n "$(tail -c 1 "$_env")" ] && printf '\n' >> "$_env"
+    if [ "$(kv "$_env" M2_BLESSING_SCROLL_STONE_PERMILLE | tr -d ' \r')" = 50 ]; then
+        sed -i 's|^M2_BLESSING_SCROLL_STONE_PERMILLE=.*|M2_BLESSING_SCROLL_STONE_PERMILLE=10|' "$_env"
+        note "   Blessing Scrolls from Metins: M2_BLESSING_SCROLL_STONE_PERMILLE=10 (1%; 2.2.11 had 5%)"
+    fi
+    printf 'M2_BLESSING_SCROLL_STONE_PERMILLE_DEFAULTED=1\n' >> "$_env"
+}
+
 # Channel N listens on 13000+10*(N-1)..+2 inside the container, and compose
 # publishes M2_GAME_PORT_RANGE onto M2_GAME_CONTAINER_PORT_RANGE - so with the
 # second channel on and the range left at 13000-13002 the cores are up, the
@@ -485,6 +502,8 @@ run_update() {
     # After the keys, so a world that had no layout line at all gets the
     # example's and then this.
     migrate_world_layout
+    # After the keys too: a world that never had the line gets the example's.
+    migrate_blessing_scroll
     # Before compose, because a published port range only changes at a recreate.
     sync_channel_ports
     restore_empty_context_dirs
