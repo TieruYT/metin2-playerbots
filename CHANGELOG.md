@@ -17,6 +17,38 @@ every version here.
 
 ---
 
+## 2.2.12 — 2026-09-24
+
+Serwer 2.2.12. Klient bez zmian (2.0.32). Zawiera wszystko z 2.2.11.
+
+### Odpowiedzi Iwakury (poprawki do 2.2.11)
+
+2.2.11 powstało z rozmowy Iwakury z Tieru. Pół godziny później Iwakura
+odpisał dokładniej na nasze pytania i ta wersja robi to, co tam napisał:
+
+- Zwój Błogosławieństwa wypada z Metinów od 15 do 99 poziomu (było: do 90),
+  domyślnie z szansą 1% (było: 5%). Jeśli w `.env` stoi wpisane przez 2.2.11
+  `M2_BLESSING_SCROLL_STONE_PERMILLE=50`, launcher i `update.sh` jednorazowo
+  zmieniają je na 10. Inną wartość, ustawioną ręcznie, zostawiają.
+- Broń na 30 poziom idzie u zwykłego kowala do +7, niezależnie od średniej
+  (poza bronią od 37% średniej albo od 15% obrażeń umiejętności, która
+  dalej idzie tylko pod zwojem). Kroki na +8 i +9 idą pod zwojami. Losowanie
+  „pół na pół” z 2.2.11 tej broni już nie dotyczy.
+- Hazardzista może ruszyć w tej samej wizycie w mieście po Perfekcjoniście,
+  jeśli bot nie ma już nic do ulepszenia dla siebie. Dotąd reguła „po
+  Perfekcjoniście nie może być Hazardzista” prawie nie dawała mu ruszyć.
+
+### Serwer w OneDrive (zgłosił Avalach)
+
+- Diagnostyka launchera ostrzega, gdy folder serwera leży w OneDrive. OneDrive
+  potrafi sam przenieść do siebie Pulpit, a Docker nie widzi części plików
+  z takich folderów: budowa serwera staje wtedy na pliku, który jest na
+  dysku („No such file or directory”), a diagnostyka mówiła dotąd, że można
+  uruchomić serwer.
+- Gdy budowa zgubi plik w folderze z OneDrive, okno błędu mówi, co zrobić:
+  przenieść cały folder gry poza OneDrive, np. do `C:\Metin2 Singleplayer`,
+  i uruchomić launcher z nowego miejsca. Świat, postacie i boty zostają.
+
 ## 2.2.11 — 2026-09-24
 
 Serwer 2.2.11 i klient 2.0.32. Zaktualizuj oba („AKTUALIZUJ wszystko”
