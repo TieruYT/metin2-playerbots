@@ -8492,8 +8492,28 @@ change to that FAQ as well (Uriel's messages, edited through the API).
   the handshake bytes). Not bound to the VPN address alone on purpose: a
   container published on an adapter that is not up yet does not start, and
   the VPN comes up after Docker Desktop at boot. Tested on stubs and on this
-  machine's own adapters, which hold no VPN; no world has been hosted through
-  a real one yet.
+  machine's own adapters, which hold no VPN. The first real one was Radmin VPN
+  on 24 September (Meskele and Sudak), and it worked once chosen by hand.
+- **"Powinno działać" over seven refusals: a router that answers and maps
+  nothing.** Sudak's FRITZ!Box 7530 AX (24 September) answered the SSDP search,
+  gave no WAN address and refused every AddPortMapping with no UPnP error code
+  ("kod -1"). The check still said "Publiczny adres IPv4 i UPnP w routerze -
+  hostowanie powinno działać", because an empty WAN fell through to `public`,
+  and CoopHost printed "Hostowanie włączone" in green, so the friend got a code
+  for a world that was offline. Meanwhile both were connected over Radmin VPN.
+  `auto` kept the Internet for a `public` verdict, and only choosing Radmin in
+  the list gave a working code - "najpierw wykrywa default opcje a potem
+  dopiero przy kolejnym radmina". Now an empty (or 0.0.0.0) WAN is the
+  `no-wan` verdict, a refusal says what it was (`Get-M2CoopUpnpRefusal`: 606,
+  the HTTP status, or no answer). An `auto` hosting whose router opened nothing
+  goes through the VPN on the machine (`Resolve-M2CoopRouterFallback`, after
+  the mapping, since a router that reports nothing may still map). Otherwise
+  CoopHost says in red that no port is open and gives the router's own steps
+  (`Get-M2CoopRouterHelp`: a FRITZ!Box wants "Selbstständige Portfreigaben
+  für dieses Gerät erlauben", and the Online-Monitor shows whether the line
+  has IPv4 at all). The window reads the VPNs when it opens, so a VPN
+  connected after that is missing from its list; the hosting action reads
+  them again, which is what the fallback uses.
 - **`@($list)` of a `List[object]` is an error in Windows PowerShell 5.1.**
   "Argument types do not match" ("Niezgodne typy argumentów"), empty or not,
   at the `return @($found)` that wrote it; `List[int]` is fine, which is why

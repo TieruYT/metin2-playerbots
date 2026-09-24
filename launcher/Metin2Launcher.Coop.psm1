@@ -253,13 +253,15 @@ function Invoke-M2CoopUpnp {
     try {
         $response = Invoke-WebRequest -Uri $Gateway.ControlUrl -Method Post -Body $body -ContentType 'text/xml; charset="utf-8"' `
             -Headers $headers -UseBasicParsing -TimeoutSec 8 -ErrorAction Stop
-        return [pscustomobject]@{ Ok = $true; Code = 0; Body = [string]$response.Content }
+        return [pscustomobject]@{ Ok = $true; Code = 0; HttpStatus = 200; Body = [string]$response.Content }
     }
     catch {
         $text = ''
+        $status = 0
         $webResponse = $null
         try { $webResponse = $_.Exception.Response } catch { }
         if ($webResponse) {
+            try { $status = [int]$webResponse.StatusCode } catch { }
             try {
                 $reader = New-Object IO.StreamReader ($webResponse.GetResponseStream())
                 $text = $reader.ReadToEnd()
@@ -268,8 +270,24 @@ function Invoke-M2CoopUpnp {
         }
         $code = -1
         if ($text -match '<errorCode>(\d+)</errorCode>') { $code = [int]$Matches[1] }
-        return [pscustomobject]@{ Ok = $false; Code = $code; Body = $text; Error = $_.Exception.Message }
+        return [pscustomobject]@{ Ok = $false; Code = $code; HttpStatus = $status; Body = $text; Error = $_.Exception.Message }
     }
+}
+
+function Get-M2CoopUpnpRefusal {
+    # A refused AddPortMapping in words. "kod -1" said only that no UPnP error
+    # code came back, and a FRITZ!Box that let this machine do nothing looked
+    # the same as one that had not answered at all (Sudak, 24 September).
+    param([int]$Code = -1, [int]$HttpStatus = 0)
+    switch ($Code) {
+        606 { return 'router nie pozwala temu komputerowi na przekierowania (kod 606)' }
+        718 { return 'router ma juz ten port dla innego przekierowania (kod 718)' }
+        728 { return 'router nie ma miejsca na kolejne przekierowania (kod 728)' }
+        729 { return 'router odmowil - konflikt z inna usluga routera (kod 729)' }
+    }
+    if ($Code -ge 0) { return ('router odmowil (kod {0})' -f $Code) }
+    if ($HttpStatus -gt 0) { return ('router odmowil (HTTP {0})' -f $HttpStatus) }
+    return 'router nie odpowiedzial'
 }
 
 function Get-M2CoopExternalAddress {
@@ -302,6 +320,7 @@ function Add-M2CoopPortMapping {
         return [pscustomobject]@{ Port = $Port; Ok = $false; Lease = 0; Reason = ('port zajety przez inne przekierowanie ({0} -> {1})' -f $existing.Description, $existing.InternalClient) }
     }
     $lastCode = -1
+    $lastStatus = 0
     foreach ($lease in @($LeaseSeconds, 0)) {
         $soapArgs = '<NewRemoteHost></NewRemoteHost><NewExternalPort>' + $Port + '</NewExternalPort><NewProtocol>TCP</NewProtocol>' +
             '<NewInternalPort>' + $Port + '</NewInternalPort><NewInternalClient>' + $LanAddress + '</NewInternalClient>' +
@@ -314,8 +333,9 @@ function Add-M2CoopPortMapping {
         # refusal of a lease is tried once more without one. A mapping with no
         # expiry is removed by "Zakoncz hostowanie" - or stays until then.
         $lastCode = $r.Code
+        $lastStatus = $r.HttpStatus
     }
-    return [pscustomobject]@{ Port = $Port; Ok = $false; Lease = 0; Reason = ('router odmowil (kod {0})' -f $lastCode) }
+    return [pscustomobject]@{ Port = $Port; Ok = $false; Lease = 0; Reason = (Get-M2CoopUpnpRefusal -Code $lastCode -HttpStatus $lastStatus) }
 }
 
 function Remove-M2CoopPortMapping {
@@ -341,6 +361,15 @@ function Get-M2CoopNetworkReport {
     elseif (-not $public) { $verdict = 'offline'; $text = 'Nie udało się odczytać adresu publicznego (brak internetu?).' }
     elseif (Test-M2CoopCgnatAddress $public) { $verdict = 'cgnat'; $text = 'Operator daje adres CGNAT - znajomi nie połączą się bezpośrednio.' }
     elseif (-not $gateway) { $verdict = 'no-upnp'; $text = 'Router nie odpowiada na UPnP - porty trzeba przekierować ręcznie w routerze.' }
+    # A router that answers the search and then tells nothing - no address of
+    # its own - is either one that lets this machine do nothing (a FRITZ!Box
+    # before "Selbstständige Portfreigaben" is allowed for it) or a line with
+    # no IPv4 of its own (DS-Lite). Both are the Sudak case of 24 September,
+    # where "powinno działać" was said and not one port was opened.
+    elseif (-not $wan -or $wan -eq '0.0.0.0') {
+        $verdict = 'no-wan'
+        $text = 'Router odpowiada na UPnP, ale nie podał swojego adresu w internecie - może nie pozwalać temu komputerowi na przekierowania albo łącze nie ma własnego IPv4 (DS-Lite).'
+    }
     elseif (Test-M2CoopCgnatAddress $wan) { $verdict = 'cgnat'; $text = "Router ma adres CGNAT ($wan) - znajomi nie połączą się bezpośrednio." }
     elseif (Test-M2CoopPrivateAddress $wan) { $verdict = 'double-nat'; $text = "Router ma adres prywatny ($wan): przed nim jest drugi router (podwójny NAT)." }
     elseif ($wan -and $wan -ne $public) { $verdict = 'mismatch'; $text = "Router widzi $wan, a internet $public - możliwy CGNAT albo drugi router." }
@@ -470,6 +499,43 @@ function Resolve-M2CoopHostingVia {
     if (-not $unreachable) { return [pscustomobject]@{ Mode = 'internet'; Vpn = $null } }
     if ($vpns.Count -gt 0) { return [pscustomobject]@{ Mode = 'vpn'; Vpn = $vpns[0] } }
     return [pscustomobject]@{ Mode = 'blocked'; Vpn = $null }
+}
+
+function Resolve-M2CoopRouterFallback {
+    # After the router has been asked. A way left to the launcher ('auto')
+    # that went to the Internet and got not one port opened goes through a VPN
+    # on this machine instead: with no port open nobody from the Internet
+    # reaches the world, and an invite carrying the Internet address is a
+    # world the friend's client shows offline. Meskele and Sudak, 24
+    # September: Radmin VPN connected, a FRITZ!Box that refused all seven
+    # ports, and a code with the Internet address - only choosing Radmin by
+    # hand made it work. A way the player chose is kept as it is.
+    param([Parameter(Mandatory = $true)]$Via, [AllowEmptyString()][string]$Requested = 'auto',
+        [object[]]$Vpns = @(), [int]$Mapped = 0, [int]$Ports = 0)
+    $want = $(if ($Requested) { $Requested.ToLowerInvariant() } else { 'auto' })
+    if ([string]$Via.Mode -ne 'internet' -or $want -ne 'auto' -or $Ports -le 0 -or $Mapped -gt 0) { return $Via }
+    $vpns = @($Vpns)
+    if ($vpns.Count -eq 0) { return $Via }
+    return [pscustomobject]@{ Mode = 'vpn'; Vpn = $vpns[0] }
+}
+
+function Get-M2CoopRouterHelp {
+    # What to do when the router opened nothing, in the router's own words
+    # where it is one people have: a FRITZ!Box answers the search and refuses
+    # every mapping until the device is allowed to share ports by itself.
+    param([AllowEmptyString()][string]$Router = '', [AllowEmptyString()][string]$LanAddress = '', [int[]]$Ports = @())
+    $lines = New-Object System.Collections.Generic.List[string]
+    $portText = (@($Ports) -join ', ')
+    if ($Router -match 'FRITZ|AVM') {
+        $lines.Add(('FRITZ!Box: wejdź na http://fritz.box > Internet > Freigaben > Portfreigaben > Gerät für Freigaben hinzufügen > ten komputer ({0}) > zaznacz Selbstständige Portfreigaben für dieses Gerät erlauben > OK, potem HOSTUJ ŚWIAT jeszcze raz.' -f $LanAddress))
+        $lines.Add(('Albo tam samo Neue Freigabe > Portfreigabe: TCP {0} na ten komputer.' -f $portText))
+        $lines.Add('W FRITZ!Boxie: Internet > Online-Monitor - jeśli nie ma adresu IPv4 (tylko IPv6 albo DS-Lite), żadne przekierowanie nie zadziała.')
+    }
+    else {
+        $lines.Add(('W ustawieniach routera zezwól temu komputerowi na UPnP (przekierowania portów) albo przekieruj ręcznie TCP {0} na {1}, potem HOSTUJ ŚWIAT jeszcze raz.' -f $portText, $LanAddress))
+    }
+    $lines.Add('Gdy łącze nie ma własnego adresu IPv4 (DS-Lite, CGNAT), zainstalujcie Radmin VPN, połączcie się w jednej sieci i hostuj przez niego - launcher wybierze go sam.')
+    return @($lines.ToArray())
 }
 
 function Test-M2CoopHostAnswers {
@@ -837,4 +903,5 @@ Export-ModuleMember -Function Get-M2CoopStatePath, Read-M2CoopState, Save-M2Coop
     Get-M2CoopFirewallBlocks, Get-M2CoopGameBindings, Set-M2CoopEnvValue, Protect-M2CoopAccounts, Set-M2CoopFriendBlocked,
     Get-M2CoopWorldName, Get-M2CoopFriendInvite, Get-M2CoopAccessDigest, Test-M2CoopAccess, Grant-M2CoopAccess,
     Get-M2CoopVpnProduct, Select-M2CoopVpnAdapters, Get-M2CoopVpnAdapters, Get-M2CoopVpnKindForAddress, Resolve-M2CoopHostingVia,
-    Test-M2CoopHostAnswers, Get-M2CoopInviteTarget, Get-M2CoopJoinAdvice
+    Test-M2CoopHostAnswers, Get-M2CoopInviteTarget, Get-M2CoopJoinAdvice,
+    Get-M2CoopUpnpRefusal, Resolve-M2CoopRouterFallback, Get-M2CoopRouterHelp

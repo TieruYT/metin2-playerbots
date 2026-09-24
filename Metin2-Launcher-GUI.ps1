@@ -2399,7 +2399,9 @@ function Show-CoopDialog {
     $viaBox.Size = [Drawing.Size]::new(346, 24)
     $hostTab.Controls.Add($viaBox)
     $viaValues = New-Object System.Collections.Generic.List[string]
-    [void]$viaBox.Items.Add('Automatycznie (internet, przy CGNAT przez VPN)')
+    # Auto takes the VPN also when the router opens no port at all
+    # (Resolve-M2CoopRouterFallback), which the label has to say.
+    [void]$viaBox.Items.Add('Automatycznie (internet, a gdy router nie da rady - VPN)')
     $viaValues.Add('auto')
     [void]$viaBox.Items.Add('Internet (porty w routerze, UPnP)')
     $viaValues.Add('internet')

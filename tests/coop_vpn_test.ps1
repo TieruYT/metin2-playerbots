@@ -80,6 +80,42 @@ $threw = ''
 try { [void](Resolve-M2CoopHostingVia -Report (Report 'public') -Requested 'radmin') } catch { $threw = $_.Exception.Message }
 Check 'a VPN asked for and not here is refused by name' ($threw -match 'Radmin VPN') $threw
 
+# ---- after the router has been asked: nothing opened sends 'auto' to a VPN
+$internetWay = [pscustomobject]@{ Mode = 'internet'; Vpn = $null }
+$radminWay = [pscustomobject]@{ Mode = 'vpn'; Vpn = $radmin }
+function After {
+    param($Via, $Requested, [object[]]$Vpns, [int]$Mapped, [int]$Ports)
+    $way = Resolve-M2CoopRouterFallback -Via $Via -Requested $Requested -Vpns $Vpns -Mapped $Mapped -Ports $Ports
+    if ($way.Vpn) { return ($way.Mode + ':' + $way.Vpn.Kind) }
+    return $way.Mode
+}
+$afters = @(
+    @($internetWay, 'auto', @($radmin), 0, 7, 'vpn:radmin'),
+    @($internetWay, '', @($tailscale, $radmin), 0, 7, 'vpn:tailscale'),
+    @($internetWay, 'auto', @(), 0, 7, 'internet'),
+    @($internetWay, 'auto', @($radmin), 3, 7, 'internet'),
+    @($internetWay, 'auto', @($radmin), 7, 7, 'internet'),
+    @($internetWay, 'internet', @($radmin), 0, 7, 'internet'),
+    @($internetWay, 'auto', @($radmin), 0, 0, 'internet'),
+    @($radminWay, 'auto', @($radmin), 0, 7, 'vpn:radmin')
+)
+foreach ($a in $afters) {
+    $got = After $a[0] $a[1] $a[2] $a[3] $a[4]
+    Check ("router fallback {0}, asked '{1}', {2} VPN(s), {3}/{4} open" -f $a[0].Mode, $a[1], @($a[2]).Count, $a[3], $a[4]) ($got -eq $a[5]) $got
+}
+
+# ---- a refusal in words, and what to do about a router
+Check 'refusal 606' ((Get-M2CoopUpnpRefusal -Code 606 -HttpStatus 500) -match 'nie pozwala.*606')
+Check 'refusal with a code' ((Get-M2CoopUpnpRefusal -Code 402 -HttpStatus 500) -eq 'router odmowil (kod 402)')
+Check 'refusal with an HTTP status only' ((Get-M2CoopUpnpRefusal -Code -1 -HttpStatus 500) -eq 'router odmowil (HTTP 500)')
+Check 'no answer at all' ((Get-M2CoopUpnpRefusal -Code -1 -HttpStatus 0) -eq 'router nie odpowiedzial')
+$fritz = @(Get-M2CoopRouterHelp -Router 'FRITZ! GmbH FRITZ!Box 7530 AX' -LanAddress '192.168.178.54' -Ports @(11000, 13000))
+Check 'a FRITZ!Box is told where to allow port sharing' ($fritz[0] -match 'Selbstst' -and $fritz[0] -match '192\.168\.178\.54') ($fritz -join ' | ')
+Check 'a FRITZ!Box gets the ports for a manual share' ($fritz[1] -match '11000, 13000')
+Check 'any router ends with the VPN' ($fritz[-1] -match 'Radmin VPN')
+$other = @(Get-M2CoopRouterHelp -Router 'TP-Link Archer' -LanAddress '192.168.0.10' -Ports @(11000))
+Check 'another router is told UPnP or a manual forward' ($other.Count -eq 2 -and $other[0] -match 'UPnP' -and $other[0] -match '11000 na 192\.168\.0\.10') ($other -join ' | ')
+
 # ---- the invite code
 $ports = @(11000, 13000, 13001, 13002)
 function Decode { param($Code) $b = $Code.Substring(8).Replace('-', '+').Replace('_', '/'); switch ($b.Length % 4) { 2 { $b += '==' } 3 { $b += '=' } }; [Text.Encoding]::UTF8.GetString([Convert]::FromBase64String($b)) }
