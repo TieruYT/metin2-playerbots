@@ -17,6 +17,107 @@ every version here.
 
 ---
 
+## 2.2.10 — 2026-09-24
+
+Serwer 2.2.10 i klient 2.0.31. Zaktualizuj oba („AKTUALIZUJ wszystko”
+w launcherze). Nowy klient pokazuje nad botami tytuły rzadkich osobowości
+(na czerwono). Poprzedni klient działa z nowym serwerem, tylko tych tytułów
+nie pokaże. Zawiera wszystko z 2.2.9.
+
+### Wojna gildii graczy z gildią botów (Tieru, pomysł Remigiusza)
+
+- Mistrz gildii graczy może wypowiedzieć wojnę gildii botów ze swojego
+  królestwa zwykłą komendą `/war nazwa_gildii`. Po kilku sekundach boty
+  odpowiadają na czacie gildii: przyjmują wyzwanie albo odmawiają i mówią
+  dlaczego, np. walczą już gdzie indziej albo są w Wieży Demonów, na mapie
+  gildyjnej trwa inna wojna, w grze jest za mało ich botów (potrzeba 8),
+  odpoczywają po ostatniej wojnie albo wasza gildia walczyła z botami
+  niedawno.
+- Walka toczy się na mapie gildyjnej waszego królestwa, na kanale 1. Boty
+  z waszej gildii walczą po waszej stronie.
+- Gildia botów przyjmuje wojnę najwcześniej godzinę po swojej ostatniej
+  wojnie, a gildia graczy może wypowiedzieć botom następną wojnę godzinę po
+  poprzedniej.
+
+### Wojny gildii: obozy i zbiórka przed walką (Tieru, prośba prodnathina)
+
+- Każda strona ma swój obóz po swojej stronie pola bitwy. Wojna zaczyna się
+  20-sekundową zbiórką w obozach: boty się buffują i walczą tylko z tymi,
+  którzy podejdą pod obóz. Potem ruszają na środek.
+- Bot, który zginie, wstaje w swoim obozie, a nie w środku bitwy. Dopóki
+  się tam buffuje, nikt go nie atakuje.
+- W czasie zbiórki nad botami widać „Zbiórka przed wojną gildii z …”.
+
+### Receptury zielarskie (Tieru, zgłosił Iwakura)
+
+- Boty czytają receptury Baek-Go zaraz po zdobyciu. Dotąd czytał je tylko
+  bot, który przeszedł wprowadzenie u Baek-Go, a robił to wyłącznie
+  Zdobywca od 45 poziomu, więc receptury leżały w torbach.
+- Bot od 15 poziomu z recepturą przechodzi wprowadzenie na tych samych
+  warunkach co gracz (10 Kwiatów Brzoskwini w torbie, których quest nie
+  zabiera) i dostaje to samo co gracz: pierwszą recepturę i 5 butelek.
+- Jedno czytanie zużywa jedną recepturę, jak u gracza. Dotąd znikał cały
+  stos.
+
+### Wojownik i sura na koniu: aura, Silne Ciało, Czarowane Ostrze (Tieru, zgłosił Drip)
+
+- Boty nie tracą już many na próby użycia umiejętności, która jeszcze się
+  odnawia. Serwer pobiera manę przed sprawdzeniem odnowienia, więc każda
+  taka próba była stratą. Bot pamięta teraz odnowienie każdej swojej
+  umiejętności i nie próbuje wcześniej. Boty mają więcej many i piją kilka
+  razy mniej niebieskich mikstur.
+- Bot na koniu schodzi z niego po buff tylko wtedy, gdy może go rzucić
+  (buff się odnowił i starczy many). Dotąd wojownik schodził z konia po aurę
+  albo Silne Ciało, nie miał many i wsiadał z powrotem bez buffa. Dotyczy to
+  każdej klasy.
+
+### Patch 3 od Iwakury
+
+- **Historia ekwipunku** w karcie bota ma zakładki: Handel (sprzedane
+  i kupione, także zakupy w sklepach offline), Bonusy, Ulepszanie, Inne
+  i Wszystko.
+- **Hazardzista** ulepsza tylko przedmioty od 30 poziomu (zbroje od 18,
+  kolczyki od 22). To, co doprowadził do +7, +8 i +9, wystawia na rynek.
+- **Zapas Hazardzisty**: bot trzyma dla Hazardzisty najwyżej 18 sztuk
+  ekwipunku łącznie w torbie i magazynie, najcenniejsze. Resztę sprzedaje
+  jak zwykle.
+- **Zbroje na rynku**: na straganach botów stoi razem najwyżej 20 sztuk
+  jednej zbroi na +0 do +4. Nadmiar wraca do torby. Bot, który chce
+  wystawić kolejną, najpierw ulepsza ją u kowala na +5, jeśli go na to
+  stać. Inaczej sprzedaje ją handlarzowi.
+- **Mikstury zielone i fioletowe** są wystawiane tylko w paczkach po 20,
+  50, 100 albo 200 sztuk. Mniejsze linie wracają do torby i łączą się
+  w większe.
+- **Porządek w sklepach botów**: bronie, zbroje, biżuteria, księgi,
+  ulepszacze, kamienie dusz, kamienie bonusów, mikstury, reszta. Nowy sklep
+  jest od razu tak ułożony, a w stojącym sklepie każda nowa linia trafia do
+  swojej grupy.
+- **Rzadkie osobowości.** Co 10 minut każdy bot, który spełnia warunki, ma
+  niewielką szansę, że na jakiś czas zmieni się w jedną z nich. Nad takim
+  botem tytuł jest czerwony (od klienta 2.0.31). Restart serwera kończy
+  trwające rzadkie osobowości.
+  - **Metinolog** (koń od 11 poziomu i broń +7): przez 2 do ponad 4 godzin
+    jeździ po mapie i rozbija Metiny. Najwyżej jeden na 300 botów, które
+    spełniają warunki.
+  - **Nałogowiec**: przez 3 godziny wydaje na ulepszanie do 85% yang, które
+    miał na początku. Przy każdej wizycie w wiosce idzie z przedmiotami do
+    kowala, a gdy ich nie ma, kupuje na ladach przedmioty do +6 i ulepszacze.
+    Ulepszone przedmioty lepsze od swoich zakłada, resztę wystawia. Najwyżej
+    jeden naraz, nie częściej niż co 4 godziny.
+  - **Szalony Naukowiec**: idzie na rynek i wydaje do 70% yang na księgi
+    swoich umiejętności na poziomie M. Najwyżej jeden naraz, nie częściej niż
+    co 8 godzin.
+  - **Egzekutor** (od 39 poziomu, broń +6 albo co najmniej 10% silny
+    przeciwko ludziom): przez 2 godziny atakuje na mapach wspólnych postacie
+    innych królestw, najwyżej 10 poziomów od swojego. Także graczy, ale nigdy
+    GM-ów. Gdy napadnie bota albo gracza w drużynie, do 6 botów z królestwa
+    ofiary, które są w pobliżu, przychodzi jej bronić. Gdy Egzekutor zginie
+    z ręki bota, przenosi się w inne miejsce. Najwyżej jeden naraz, nie
+    częściej niż co 3 godziny.
+  - **Szalony Wędkarz** (od 30 poziomu, z wędką, łowił już wcześniej): przez
+    6 godzin łowi prawie bez przerwy, z minutą lub dwiema przerwy między
+    sesjami. Najwyżej jeden naraz, nie częściej niż co 12 godzin.
+
 ## 2.2.9 — 2026-09-24
 
 Serwer 2.2.9 i klient 2.0.30. Zaktualizuj oba („AKTUALIZUJ wszystko”
