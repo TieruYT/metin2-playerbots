@@ -271,6 +271,59 @@ namespace
 		return s_iPlayerBotJunkWeaponsOnCounters >= PLAYERBOT_JUNK_WEAPON_MARKET_CAP;
 	}
 
+	// Iwakura's Patch 3, point 4: body armours at +0..+4 on the bots'
+	// counters, by family, counted the way the junk weapons are above.
+	std::map<DWORD, int> s_mapPlayerBotLowArmourOnCounters;
+
+	DWORD GetPlayerBotLowArmourFamily(DWORD vnum)
+	{
+		const TItemTable* proto = ITEM_MANAGER::instance().GetTable(vnum);
+		if (!proto || proto->bType != ITEM_ARMOR || proto->bSubType != ARMOR_BODY ||
+				(int)(vnum % 10) > PLAYERBOT_LOW_ARMOUR_MAX_PLUS)
+			return 0;
+		return vnum - vnum % 10;
+	}
+
+	void NotePlayerBotLowArmourOnCounter(DWORD vnum, int units)
+	{
+		const DWORD family = GetPlayerBotLowArmourFamily(vnum);
+		if (family == 0)
+			return;
+		int& n = s_mapPlayerBotLowArmourOnCounters[family];
+		n = std::max(0, n + units);
+	}
+
+	int CountPlayerBotLowArmourOnCounters(DWORD vnum)
+	{
+		const DWORD family = GetPlayerBotLowArmourFamily(vnum);
+		if (family == 0)
+			return 0;
+		std::map<DWORD, int>::const_iterator it = s_mapPlayerBotLowArmourOnCounters.find(family);
+		return it == s_mapPlayerBotLowArmourOnCounters.end() ? 0 : it->second;
+	}
+
+	bool IsPlayerBotLowArmourMarketFull(DWORD vnum)
+	{
+		return CountPlayerBotLowArmourOnCounters(vnum) >= PLAYERBOT_LOW_ARMOUR_MARKET_CAP;
+	}
+
+	// The largest of PLAYERBOT_SHOP_POTION_PACKS that `units` fills, or zero.
+	int GetPlayerBotPotionPackUnits(int units)
+	{
+		for (size_t i = 0; i < sizeof(PLAYERBOT_SHOP_POTION_PACKS) / sizeof(PLAYERBOT_SHOP_POTION_PACKS[0]); ++i)
+			if (units >= PLAYERBOT_SHOP_POTION_PACKS[i])
+				return PLAYERBOT_SHOP_POTION_PACKS[i];
+		return 0;
+	}
+
+	// A line put up on a bot's counter or taken off it, for every cap the
+	// market keeps.
+	void NotePlayerBotCappedLineOnCounter(DWORD vnum, int units)
+	{
+		NotePlayerBotJunkWeaponOnCounter(vnum, units);
+		NotePlayerBotLowArmourOnCounter(vnum, units);
+	}
+
 	// A stall that has just opened goes on the ledger at once rather than at
 	// the next refresh: three keepers scoring the same material in the same
 	// minute would otherwise each see the counters empty of it and all three

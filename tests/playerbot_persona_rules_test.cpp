@@ -661,12 +661,12 @@ int main()
 		// limit the worst copies, a tie to the earlier position.
 		{
 			std::vector<TLppBoxPiece> box;
-			TLppBoxPiece a = { 1, 11240, 0, 2, false };
-			TLppBoxPiece b = { 2, 11240, 16, 2, false };
-			TLppBoxPiece c = { 3, 11240, 0, 2, false };
-			TLppBoxPiece d = { 4, 11250, 0, 2, true };
-			TLppBoxPiece e = { 5, 17100, 3, 1, false };
-			TLppBoxPiece f = { 6, 17100, 3, 1, false };
+			TLppBoxPiece a = { 1, 11240, 0, 2, false, 0 };
+			TLppBoxPiece b = { 2, 11240, 16, 2, false, 0 };
+			TLppBoxPiece c = { 3, 11240, 0, 2, false, 0 };
+			TLppBoxPiece d = { 4, 11250, 0, 2, true, 0 };
+			TLppBoxPiece e = { 5, 17100, 3, 1, false, 0 };
+			TLppBoxPiece f = { 6, 17100, 3, 1, false, 0 };
 			box.push_back(a);
 			box.push_back(b);
 			box.push_back(c);
@@ -687,6 +687,41 @@ int main()
 			assert(release.size() == box.size());
 			PlanLppBoxRelease(std::vector<TLppBoxPiece>(), release);
 			assert(release.empty());
+		}
+
+		// Iwakura's Patch 3, point 3: eighteen in all once the families have
+		// chosen, the most valuable first and a tie to the earlier position.
+		{
+			std::vector<TLppBoxPiece> box;
+			for (uint32_t i = 0; i < 25; ++i)
+			{
+				TLppBoxPiece piece = { 100 + i, 20000 + i * 10, 0, 2, false, (long long)(i % 5) * 1000 };
+				box.push_back(piece);
+			}
+			std::vector<uint32_t> release;
+			int kept = -1;
+			PlanLppBoxRelease(box, release, LPP_TOTAL_LIMIT, &kept);
+			assert(kept == 18);
+			std::sort(release.begin(), release.end());
+			// The five worth nothing go, and the last two of those worth 1000.
+			const uint32_t expected[] = { 100, 105, 110, 115, 116, 120, 121 };
+			assert(release.size() == sizeof(expected) / sizeof(expected[0]));
+			for (size_t i = 0; i < release.size(); ++i)
+				assert(release[i] == expected[i]);
+			// A family's own limit still comes first: its third copy goes
+			// however much it is worth, and the total is counted after it.
+			TLppBoxPiece third = { 200, 20000, 0, 2, false, 99999 };
+			TLppBoxPiece fourth = { 201, 20000, 0, 2, false, 99999 };
+			box.push_back(third);
+			box.push_back(fourth);
+			PlanLppBoxRelease(box, release, LPP_TOTAL_LIMIT, &kept);
+			assert(kept == 18);
+			assert(std::find(release.begin(), release.end(), 100u) != release.end());
+			assert(std::find(release.begin(), release.end(), 200u) == release.end());
+			assert(std::find(release.begin(), release.end(), 201u) != release.end());
+			// No total at all keeps nothing.
+			PlanLppBoxRelease(box, release, 0, &kept);
+			assert(kept == 0 && release.size() == box.size());
 		}
 
 		// "Wysoka Wartosc": a tier 5-6 line rolled half-way up at least.
@@ -732,8 +767,73 @@ int main()
 		s.mercenary = true;
 		assert(DecidePersona(s) == PERSONA_NAJEMNIK);
 		// The ids the status file and the client carry.
-		assert(PERSONA_GRINDER == 0 && PERSONA_TOWARZYSZ == 9 && PERSONA_COUNT == 10);
+		assert(PERSONA_GRINDER == 0 && PERSONA_TOWARZYSZ == 9);
 		assert(PERSONA_TITLE_BASE + PERSONA_TOWARZYSZ == 109);
+		// Iwakura's Patch 3, point 7: the rare ones after them, 110 to 114.
+		assert(PERSONA_METINOLOG == 10 && PERSONA_WEDKARZ == 14 && PERSONA_COUNT == 15);
+		assert(PERSONA_TITLE_BASE + PERSONA_EGZEKUTOR == 113);
+	}
+
+	// --- the rare personalities -------------------------------------------------
+	{
+		// A rare one outranks the situation, not a contract nor a party.
+		TPersonaSignals s;
+		s.rare = PERSONA_WEDKARZ;
+		assert(DecidePersona(s) == PERSONA_WEDKARZ);
+		s.fishing = true;
+		s.stoneFight = true;
+		s.gambling = true;
+		assert(DecidePersona(s) == PERSONA_WEDKARZ);
+		s.inParty = true;
+		assert(DecidePersona(s) == PERSONA_TOWARZYSZ);
+		s.mercenary = true;
+		assert(DecidePersona(s) == PERSONA_NAJEMNIK);
+
+		// His numbers, one kind at a time.
+		const TRareRule metin = GetRareRule(RARE_METINOLOG);
+		assert(metin.persona == PERSONA_METINOLOG && metin.oneIn == 300 && metin.worldPauseMin == 0);
+		assert(metin.minMinutes == 120 && metin.maxMinutes == 250 && metin.capByEligible);
+		assert(GetRareRule(RARE_NALOGOWIEC).oneIn == 1000 && GetRareRule(RARE_NALOGOWIEC).worldPauseMin == 240);
+		assert(GetRareRule(RARE_NAUKOWIEC).oneIn == 500 && GetRareRule(RARE_NAUKOWIEC).worldPauseMin == 480);
+		assert(GetRareRule(RARE_EGZEKUTOR).oneIn == 300 && GetRareRule(RARE_EGZEKUTOR).worldPauseMin == 180);
+		assert(GetRareRule(RARE_EGZEKUTOR).minMinutes == 120 && GetRareRule(RARE_EGZEKUTOR).maxMinutes == 120);
+		assert(GetRareRule(RARE_WEDKARZ).oneIn == 600 && GetRareRule(RARE_WEDKARZ).worldPauseMin == 720);
+		assert(GetRareRule(RARE_WEDKARZ).minMinutes == 360);
+		assert(GetRareRule(RARE_NONE).oneIn == 0);
+
+		// The Metinolog's cap grows with the bots that qualify, one at least.
+		assert(RareCap(metin, 0) == 0);
+		assert(RareCap(metin, 1) == 1);
+		assert(RareCap(metin, 299) == 1);
+		assert(RareCap(metin, 600) == 2);
+		assert(RareCap(metin, 1000) == 3);
+		// Every other kind runs one at a time.
+		assert(RareCap(GetRareRule(RARE_EGZEKUTOR), 5000) == 1);
+		assert(RareCap(GetRareRule(RARE_EGZEKUTOR), 0) == 0);
+
+		// The world's pause after one begins.
+		const TRareRule addict = GetRareRule(RARE_NALOGOWIEC);
+		assert(RareMayStart(addict, 0, 10, 1000, 0, false));
+		assert(!RareMayStart(addict, 0, 10, 1000, 900, true));
+		assert(RareMayStart(addict, 0, 10, 1140, 900, true));
+		assert(!RareMayStart(addict, 1, 10, 5000, 0, false));
+		assert(!RareMayStart(addict, 0, 0, 5000, 0, false));
+		// None for the Metinolog: only the cap.
+		assert(RareMayStart(metin, 0, 10, 1, 1, true));
+		assert(!RareMayStart(metin, 1, 10, 1, 1, true));
+
+		// The draw: one in oneIn.
+		unsigned int wins = 0;
+		for (uint32_t roll = 0; roll < 3000; ++roll)
+			wins += RareDrawWins(roll, metin) ? 1 : 0;
+		assert(wins == 10);
+		assert(!RareDrawWins(0, GetRareRule(RARE_NONE)));
+
+		// The length: his minutes, both ends reachable.
+		assert(RareMinutes(metin, 0) == 120);
+		assert(RareMinutes(metin, 130) == 250);
+		assert(RareMinutes(metin, 131) == 120);
+		assert(RareMinutes(GetRareRule(RARE_WEDKARZ), 12345) == 360);
 	}
 
 	{

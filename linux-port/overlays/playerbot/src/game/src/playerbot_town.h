@@ -91,7 +91,7 @@ namespace
 	// Iwakura's Useful Items List (playerbot_lpp.h, after the gambler): what
 	// the bot keeps rather than sells, what goes to the box, what comes out.
 	bool IsPlayerBotLppKeptItem(LPCHARACTER ch, LPITEM item);
-	void CollectPlayerBotLppBoxRelease(LPCHARACTER ch, CSafebox* box, std::set<DWORD>& ids);
+	void CollectPlayerBotLppBoxRelease(LPCHARACTER ch, CSafebox* box, std::set<DWORD>& ids, int* kept = NULL);
 	DWORD GetPlayerBotLppFamily(LPITEM item);
 	int GetPlayerBotHeldFamilyLimit(LPCHARACTER ch, LPITEM item);
 	bool IsPlayerBotLppHerb(LPITEM item);
@@ -200,6 +200,9 @@ namespace
 				int& n = going[family];
 				if ((stored != state.persona.mapGearStored.end() ? stored->second : 0) + n >=
 						GetPlayerBotHeldFamilyLimit(ch, item))
+					continue;
+				// And the box's eighteen in all (Iwakura's Patch 3, point 3).
+				if ((int)state.persona.wLppBoxGearKept + (int)cells.size() >= PLAYERBOT_LPP_TOTAL_LIMIT)
 					continue;
 				++n;
 			}
@@ -1529,6 +1532,24 @@ namespace
 		return false;
 	}
 
+	// Iwakura's Patch 3, point 2: "postac ta powinna pamietac o wystawianiu na
+	// rynek przedmiotow ulepszonych do poziomow +7, +8 oraz +9" - a piece at
+	// the gambler's +7 or past it, made by one of its sessions, still in the bag.
+	bool HasPlayerBotGambleGoods(LPCHARACTER ch, const TPlayerBotAIState& state)
+	{
+		if (!ch || state.persona.setGambleForSale.empty())
+			return false;
+		for (WORD cell = 0; cell < PLAYERBOT_BAG_CELLS; ++cell)
+		{
+			LPITEM item = ch->GetInventoryItem(cell);
+			if (item && item->GetCell() == cell && !item->IsEquipped() &&
+					item->GetRefineLevel() >= (int)playerbot_persona::GAMBLE_SAFE_PLUS &&
+					state.persona.setGambleForSale.find(item->GetID()) != state.persona.setGambleForSale.end())
+				return true;
+		}
+		return false;
+	}
+
 	BYTE GetPlayerBotShopReason(LPCHARACTER ch, const TPlayerBotAIState& state)
 	{
 		if (!ch || ch->GetLevel() < PLAYERBOT_SHOP_MIN_LEVEL)
@@ -1543,6 +1564,9 @@ namespace
 		// A valuable spare of a slot the bot already has filled is goods it
 		// should put up, whatever the trade roll or bag pressure said.
 		if (HasPlayerBotSellableSpare(ch))
+			return PLAYERBOT_SHOP_REASON_SPARE;
+		// And what a gambler's session made, the same way.
+		if (HasPlayerBotGambleGoods(ch, state))
 			return PLAYERBOT_SHOP_REASON_SPARE;
 		// A trader always has the stall open when it can. For everyone else it
 		// stays what it was: an occasional thing one bot in ten does with a spare.
@@ -2440,6 +2464,12 @@ namespace
 		// PLAYERBOT_JUNK_WEAPON_MARKET_CAP at a time, world-wide.
 		if (IsPlayerBotCappedJunkWeapon(item) && IsPlayerBotJunkWeaponMarketFull())
 			return -1;
+		// Iwakura's Patch 3, point 4: a body armour at +0..+4 of a family the
+		// bots' counters already carry PLAYERBOT_LOW_ARMOUR_MARKET_CAP of is no
+		// goods - the anvil takes it to +5 first if it can be paid
+		// (PlayerBotRefinesLowArmourForSale), the merchant otherwise.
+		if (IsPlayerBotCappedLowArmour(item) && IsPlayerBotLowArmourMarketFull(item->GetVnum()))
+			return -1;
 		// Gear under level thirty goes up at +6 or better and ranks under the
 		// materials whatever is rolled on it, and one counter carries only
 		// PLAYERBOT_SHOP_LOW_GEAR_MAX_LINES of it (CollectPlayerBotShopItems).
@@ -3263,6 +3293,50 @@ namespace
 		return changed;
 	}
 
+	int FindPlayerBotShopSlot(const bool* grid, int height);
+	void PutPlayerBotShopSlot(bool* grid, int slot, int height);
+	int PlayerBotShopSlotToEngine(int slot);
+
+	// Iwakura's Patch 3, point 6: the lines a stall is opening with, chosen
+	// best first, laid out again over a clear grid in the order of their
+	// categories (GetPlayerBotShopCategory), keeping that order within one. A
+	// layout the grid cannot take whole keeps the placement the choice made.
+	void RelayPlayerBotStallByCategory(LPCHARACTER ch, TShopItemTable* table,
+			std::vector<TPlayerBotShopOffer>& offers, BYTE count)
+	{
+		if (!ch || count == 0 || offers.size() != count)
+			return;
+		std::vector<std::pair<int, int> > order;
+		std::vector<int> heights(count, 1);
+		for (int i = 0; i < count; ++i)
+		{
+			LPITEM item = ch->GetInventoryItem(table[i].pos.cell);
+			if (!item)
+				return;
+			heights[i] = std::max<int>(1, std::min<int>(PLAYERBOT_SHOP_GRID_ROWS, item->GetSize()));
+			order.push_back(std::make_pair(GetPlayerBotShopCategory(item), i));
+		}
+		std::stable_sort(order.begin(), order.end(),
+				[](const std::pair<int, int>& a, const std::pair<int, int>& b) { return a.first < b.first; });
+		bool grid[PLAYERBOT_SHOP_GRID_CELLS];
+		memset(grid, 0, sizeof(grid));
+		std::vector<int> slots(count, -1);
+		for (size_t n = 0; n < order.size(); ++n)
+		{
+			const int line = order[n].second;
+			const int slot = FindPlayerBotShopSlot(grid, heights[line]);
+			if (slot < 0)
+				return;
+			PutPlayerBotShopSlot(grid, slot, heights[line]);
+			slots[line] = slot;
+		}
+		for (int i = 0; i < count; ++i)
+		{
+			table[i].display_pos = (BYTE)PlayerBotShopSlotToEngine(slots[i]);
+			offers[i].bSlot = (BYTE)PlayerBotShopSlotToEngine(slots[i]);
+		}
+	}
+
 	int FindPlayerBotShopSlot(const bool* grid, int height)
 	{
 		for (int row = 0; row + height <= PLAYERBOT_SHOP_GRID_ROWS; ++row)
@@ -3856,6 +3930,7 @@ namespace
 		// moves between the two - a town errand happens in between - and a stall
 		// that loses two of its three lines on the way to the pitch should stay
 		// packed up rather than open with what is left.
+		RelayPlayerBotStallByCategory(ch, table, offers, tableCount);
 		if (!IsPlayerBotStallWorthOpening(tableCount, bestScore, bPoor || IsPlayerBotBagFull(ch) ||
 				bShopReason == PLAYERBOT_SHOP_REASON_HOARD))
 		{
@@ -3987,7 +4062,7 @@ namespace
 		for (size_t i = 0; i < offers.size(); ++i)
 		{
 			AddPlayerBotMarketSupply(offers[i].dwVnum, offers[i].wCount, ch->GetMapIndex());
-			NotePlayerBotJunkWeaponOnCounter(offers[i].dwVnum, offers[i].wCount);
+			NotePlayerBotCappedLineOnCounter(offers[i].dwVnum, offers[i].wCount);
 		}
 		sys_log(0, "PLAYERBOT_SHOP: opened pid=%u name=%s reason=%s items=%u left_behind no_line=%u no_slot=%u antiflag=%u first_vnum=%u first_price=%u pos=(%ld,%ld) sign=\"%s\"",
 				ch->GetPlayerID(), ch->GetName(), GetPlayerBotShopReasonName(state.bShopOpenReason),

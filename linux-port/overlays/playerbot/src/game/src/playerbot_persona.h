@@ -43,6 +43,11 @@ namespace
 			case playerbot_persona::PERSONA_RYBAK: return "Rybak";
 			case playerbot_persona::PERSONA_NAJEMNIK: return "Najemnik";
 			case playerbot_persona::PERSONA_TOWARZYSZ: return "Towarzysz";
+			case playerbot_persona::PERSONA_METINOLOG: return "Metinolog";
+			case playerbot_persona::PERSONA_NALOGOWIEC: return "Nalogowiec";
+			case playerbot_persona::PERSONA_NAUKOWIEC: return "Szalony Naukowiec";
+			case playerbot_persona::PERSONA_EGZEKUTOR: return "Egzekutor";
+			case playerbot_persona::PERSONA_WEDKARZ: return "Szalony Wedkarz";
 			default: return "?";
 		}
 	}
@@ -485,6 +490,11 @@ namespace
 		s.trading = s.trading || state.offlineShop.visiting;
 #endif
 		s.advanced = p.bAdvanced;
+		// A rare personality is the bot's for its whole length (Iwakura's
+		// Patch 3, point 7).
+		const BYTE rare = GetPlayerBotRareNow(p, dwNow);
+		if (rare != 0)
+			s.rare = playerbot_persona::GetRareRule(rare).persona;
 		const BYTE persona = playerbot_persona::DecidePersona(s);
 		if (persona == p.bPersona && p.dwPersonaSince != 0)
 			return;
@@ -512,6 +522,8 @@ namespace
 
 	// The goal dropper's look at its purse, further down beside the AFK.
 	void ManagePlayerBotMedalGoal(LPCHARACTER ch, TPlayerBotAIState& state, DWORD dwNow);
+	// A rare personality's clock and ends (playerbot_rare_persona.h, later).
+	void ManagePlayerBotRareState(LPCHARACTER ch, TPlayerBotAIState& state, DWORD dwNow);
 
 	void ManagePlayerBotPersona(LPCHARACTER ch, TPlayerBotAIState& state, DWORD dwNow)
 	{
@@ -523,6 +535,7 @@ namespace
 		p.dwNextDecide = dwNow + PLAYERBOT_PERSONA_DECIDE_INTERVAL;
 		ManagePlayerBotMedalGoal(ch, state, dwNow);
 		ManagePlayerBotAdvancement(ch, state, dwNow);
+		ManagePlayerBotRareState(ch, state, dwNow);
 		DecidePlayerBotPersona(ch, state, dwNow);
 	}
 
@@ -763,8 +776,9 @@ namespace
 			return;
 		s_bPlayerBotPersonaCensusPass = false;
 		const unsigned int* c = s_auPlayerBotPersonaCensus;
-		sys_log(0, "PLAYERBOT_PERSONA: census grinder=%u zdobywca=%u handlarz=%u hazardzista=%u perfekcjonista=%u pogromca=%u gornik=%u rybak=%u najemnik=%u towarzysz=%u held=%u | mood slaby=%u normalny=%u bardzo_dobry=%u afk=%u | pvp=%u capitulated=%u",
-				c[0], c[1], c[2], c[3], c[4], c[5], c[6], c[7], c[8], c[9], s_uPlayerBotPersonaLocked,
+		sys_log(0, "PLAYERBOT_PERSONA: census grinder=%u zdobywca=%u handlarz=%u hazardzista=%u perfekcjonista=%u pogromca=%u gornik=%u rybak=%u najemnik=%u towarzysz=%u metinolog=%u nalogowiec=%u naukowiec=%u egzekutor=%u wedkarz=%u held=%u | mood slaby=%u normalny=%u bardzo_dobry=%u afk=%u | pvp=%u capitulated=%u",
+				c[0], c[1], c[2], c[3], c[4], c[5], c[6], c[7], c[8], c[9], c[10], c[11], c[12], c[13], c[14],
+				s_uPlayerBotPersonaLocked,
 				s_auPlayerBotMoodCensus[0], s_auPlayerBotMoodCensus[1], s_auPlayerBotMoodCensus[2],
 				s_uPlayerBotPersonaAfk, s_uPlayerBotPersonaPvp, s_uPlayerBotPersonaCapitulated);
 	}

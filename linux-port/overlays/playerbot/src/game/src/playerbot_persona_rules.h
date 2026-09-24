@@ -42,6 +42,13 @@ namespace playerbot_persona
 		PERSONA_RYBAK,
 		PERSONA_NAJEMNIK,
 		PERSONA_TOWARZYSZ,
+		// Iwakura's Patch 3, point 7: the rare ones (ERare below), shown in red.
+		// Appended, so every id before them means what it meant.
+		PERSONA_METINOLOG,
+		PERSONA_NALOGOWIEC,
+		PERSONA_NAUKOWIEC,
+		PERSONA_EGZEKUTOR,
+		PERSONA_WEDKARZ,
 		PERSONA_COUNT
 	};
 
@@ -893,6 +900,9 @@ namespace playerbot_persona
 	const int LPP_OTHER_CLASS_LIMIT = 1;
 	const int LPP_ONLY_ONE_LIMIT = 1;
 	const int LPP_OUTGROWN_LEVELS = AWANS_LEVEL_WINDOW;
+	// Iwakura's Patch 3, point 3: the whole stock, not a family, has a
+	// ceiling too - "lacznie maksymalnie 18 sztuk".
+	const int LPP_TOTAL_LIMIT = 18;
 	const uint8_t LPP_PERFECT_PLUS = 9;
 
 	struct TLppPiece
@@ -990,34 +1000,58 @@ namespace playerbot_persona
 		int rank;
 		int limit;
 		bool obsolete;
+		// What the piece is worth as stock (Iwakura's sheet at the gambler's
+		// +7): which pieces the total keeps when the families keep more.
+		long long value;
 	};
 
-	// `release` gets the ids to take out. `pieces` is taken by value because
-	// it is sorted; it comes in box order, which is what breaks a tie.
-	inline void PlanLppBoxRelease(std::vector<TLppBoxPiece> pieces, std::vector<uint32_t>& release)
+	// `release` gets the ids to take out, and `kept` (when asked) how many
+	// stay. `pieces` is taken by value because it is sorted; it comes in box
+	// order, which is what breaks a tie. The families choose first - each
+	// keeps its best `limit` - and then the whole box keeps no more than
+	// `totalLimit` of what they chose, the most valuable first.
+	inline void PlanLppBoxRelease(std::vector<TLppBoxPiece> pieces, std::vector<uint32_t>& release,
+			int totalLimit = LPP_TOTAL_LIMIT, int* kept = NULL)
 	{
 		release.clear();
-		std::stable_sort(pieces.begin(), pieces.end(),
-				[](const TLppBoxPiece& a, const TLppBoxPiece& b)
+		std::vector<size_t> order(pieces.size());
+		for (size_t i = 0; i < order.size(); ++i)
+			order[i] = i;
+		std::stable_sort(order.begin(), order.end(),
+				[&pieces](size_t a, size_t b)
 				{
-					return a.family != b.family ? a.family < b.family : a.rank > b.rank;
+					return pieces[a].family != pieces[b].family ? pieces[a].family < pieces[b].family
+							: pieces[a].rank > pieces[b].rank;
 				});
+		std::vector<size_t> survivors;
 		uint32_t family = 0;
-		int kept = 0;
-		for (size_t i = 0; i < pieces.size(); ++i)
+		int keptOfFamily = 0;
+		for (size_t n = 0; n < order.size(); ++n)
 		{
-			if (i == 0 || pieces[i].family != family)
+			const TLppBoxPiece& piece = pieces[order[n]];
+			if (n == 0 || piece.family != family)
 			{
-				family = pieces[i].family;
-				kept = 0;
+				family = piece.family;
+				keptOfFamily = 0;
 			}
-			if (!pieces[i].obsolete && kept < pieces[i].limit)
+			if (!piece.obsolete && keptOfFamily < piece.limit)
 			{
-				++kept;
+				++keptOfFamily;
+				survivors.push_back(order[n]);
 				continue;
 			}
-			release.push_back(pieces[i].id);
+			release.push_back(piece.id);
 		}
+		std::stable_sort(survivors.begin(), survivors.end(),
+				[&pieces](size_t a, size_t b)
+				{
+					return pieces[a].value != pieces[b].value ? pieces[a].value > pieces[b].value : a < b;
+				});
+		const size_t total = totalLimit < 0 ? 0 : (size_t)totalLimit;
+		for (size_t n = total; n < survivors.size(); ++n)
+			release.push_back(pieces[survivors[n]].id);
+		if (kept)
+			*kept = (int)std::min(total, survivors.size());
 	}
 
 	// The soul stones he keeps: +3 of PvE tier 3 at least, for the early gear
@@ -1034,6 +1068,86 @@ namespace playerbot_persona
 			return false;
 		return grade >= LPP_STONE_TOP_GRADE ||
 				(grade >= LPP_STONE_MIN_GRADE && pveTier >= LPP_STONE_MIN_PVE_TIER);
+	}
+
+	// ---------------------------------------------------------------------
+	// Iwakura's Patch 3, point 7: the rare personalities. Each is a state of
+	// its own length that outranks the bot's situation, drawn one bot at a
+	// time: at every draw each bot that qualifies wins it one time in
+	// `oneIn`, no more than RareCap of a kind run at once, and after one
+	// begins none of its kind begins for `worldPauseMin` minutes - his world
+	// cooldown, which the Metinolog has none of.
+	// ---------------------------------------------------------------------
+	enum ERare
+	{
+		RARE_NONE = 0,
+		RARE_METINOLOG,
+		RARE_NALOGOWIEC,
+		RARE_NAUKOWIEC,
+		RARE_EGZEKUTOR,
+		RARE_WEDKARZ,
+		RARE_COUNT
+	};
+
+	struct TRareRule
+	{
+		uint8_t persona;
+		uint32_t oneIn;
+		uint32_t worldPauseMin;
+		uint32_t minMinutes;
+		uint32_t maxMinutes;
+		// The Metinolog's "maksymalnie 1 bot na 300 spelniajacych warunki":
+		// its cap grows with the bots that qualify; every other kind runs one
+		// at a time, which its world pause spaces.
+		bool capByEligible;
+	};
+
+	// His numbers. The addict's session and the scientist's trip end the
+	// state themselves; their minutes are only its ceiling.
+	inline TRareRule GetRareRule(uint8_t rare)
+	{
+		switch (rare)
+		{
+			case RARE_METINOLOG:  return TRareRule{ PERSONA_METINOLOG, 300, 0, 120, 250, true };
+			case RARE_NALOGOWIEC: return TRareRule{ PERSONA_NALOGOWIEC, 1000, 240, 180, 180, false };
+			case RARE_NAUKOWIEC:  return TRareRule{ PERSONA_NAUKOWIEC, 500, 480, 90, 90, false };
+			case RARE_EGZEKUTOR:  return TRareRule{ PERSONA_EGZEKUTOR, 300, 180, 120, 120, false };
+			case RARE_WEDKARZ:    return TRareRule{ PERSONA_WEDKARZ, 600, 720, 360, 360, false };
+			default:              return TRareRule{ PERSONA_GRINDER, 0, 0, 0, 0, false };
+		}
+	}
+
+	// How many of a kind may run at once: one for every `oneIn` of the bots
+	// that qualify for a Metinolog - and one while any does, or a world of a
+	// hundred would never meet him - and one of every other kind.
+	inline uint32_t RareCap(const TRareRule& r, uint32_t eligible)
+	{
+		if (eligible == 0 || r.oneIn == 0)
+			return 0;
+		return r.capByEligible ? std::max<uint32_t>(1, eligible / r.oneIn) : 1;
+	}
+
+	// Whether one more of a kind may begin: under its cap, and past its world
+	// pause since the last one began (`started` is whether one ever has).
+	inline bool RareMayStart(const TRareRule& r, uint32_t running, uint32_t eligible,
+			uint32_t nowMin, uint32_t lastStartMin, bool started)
+	{
+		if (running >= RareCap(r, eligible))
+			return false;
+		return r.worldPauseMin == 0 || !started || nowMin - lastStartMin >= r.worldPauseMin;
+	}
+
+	// One qualifying bot's draw: one time in `oneIn`.
+	inline bool RareDrawWins(uint32_t roll, const TRareRule& r)
+	{
+		return r.oneIn > 0 && roll % r.oneIn == 0;
+	}
+
+	inline uint32_t RareMinutes(const TRareRule& r, uint32_t roll)
+	{
+		if (r.maxMinutes <= r.minMinutes)
+			return r.minMinutes;
+		return r.minMinutes + roll % (r.maxMinutes - r.minMinutes + 1);
 	}
 
 	// ---------------------------------------------------------------------
@@ -1057,8 +1171,10 @@ namespace playerbot_persona
 		bool perfecting;
 		bool trading;
 		bool advanced;
+		// A rare personality running now (its EPersona id), or 0.
+		uint8_t rare;
 		TPersonaSignals() : mercenary(false), inParty(false), hired(false), fishing(false), mining(false),
-			stoneFight(false), gambling(false), perfecting(false), trading(false), advanced(false) {}
+			stoneFight(false), gambling(false), perfecting(false), trading(false), advanced(false), rare(0) {}
 	};
 
 	inline uint8_t DecidePersona(const TPersonaSignals& s)
@@ -1067,6 +1183,11 @@ namespace playerbot_persona
 			return PERSONA_NAJEMNIK;
 		if (s.inParty && !s.hired)
 			return PERSONA_TOWARZYSZ;
+		// A rare personality is what the bot is for its whole length, the rod
+		// or the stone in front of it included; only a contract and a party,
+		// both somebody else's claim, come before it.
+		if (s.rare != 0)
+			return s.rare;
 		if (s.fishing)
 			return PERSONA_RYBAK;
 		if (s.mining)

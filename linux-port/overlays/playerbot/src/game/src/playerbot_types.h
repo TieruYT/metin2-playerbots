@@ -4784,6 +4784,13 @@ namespace
 	// lasts ten minutes and a boss is rarer than that, so a few of each is
 	// plenty and the rest is what players have never been able to buy.
 	const int PLAYERBOT_HERBALISM_POTION_KEEP = 5;
+	// Iwakura's Patch 3, point 5: the green and purple potions go on a counter
+	// in packs of these sizes and never in the 3, 4 and 5 a bag held - on 24
+	// September m2zip's counters carried 959 lines of the medium green one and
+	// 447 of the medium purple, all but ten of them under twenty. The largest
+	// pack the spare fills is the line; under the smallest nothing goes up.
+	const int PLAYERBOT_SHOP_POTION_PACKS[] = { 200, 100, 50, 20 };
+	const int PLAYERBOT_SHOP_POTION_PACK_MIN = 20;
 	// Drinking: only where it pays for the ten minutes it lasts - a boss, a
 	// Metin stone, a Demon Tower floor - and never twice inside one fight.
 	const DWORD PLAYERBOT_HERBALISM_DRINK_RETRY_MS = 60 * 1000;
@@ -5592,6 +5599,15 @@ namespace
 	};
 	const int PLAYERBOT_JUNK_WEAPON_MAX_REFINE = 3;
 	const int PLAYERBOT_JUNK_WEAPON_MARKET_CAP = 5;
+	// Iwakura's Patch 3, point 4: the market held a flood of body armours of
+	// level 34 at +0 to +4. At most this many of one family at those grades
+	// stand on all the bots' counters together; a bot that would list another
+	// takes it to the plain anvil for PLAYERBOT_LOW_ARMOUR_SALE_PLUS first, and
+	// one past the cap comes down and is treated like any other piece - the
+	// merchant's, when the anvil cannot be paid.
+	const int PLAYERBOT_LOW_ARMOUR_MARKET_CAP = 20;
+	const int PLAYERBOT_LOW_ARMOUR_MAX_PLUS = 4;
+	const int PLAYERBOT_LOW_ARMOUR_SALE_PLUS = 5;
 
 	// A weapon family is its base vnum plus the refine, 0..9.
 	bool IsPlayerBotJunkWeaponVnum(DWORD vnum)
@@ -5685,6 +5701,14 @@ namespace
 	// in PvE or in PvP. Body armour, helmets and shields are not in that list
 	// (he judges them by level and lines) and are taken as they come.
 	const int PLAYERBOT_GAMBLE_MIN_TIER = 3;
+	// Iwakura's Patch 3, point 2: the gambler works nothing under level
+	// thirty ("aby wyeliminowac sytuacje ulepszania ekwipunku na 1. poziom"),
+	// but a body armour from eighteen and earrings from twenty-two. The
+	// level is the item's own limit, and the list keeps nothing under it
+	// either, because the list is the gambler's stock.
+	const int PLAYERBOT_GAMBLE_MIN_ITEM_LEVEL = 30;
+	const int PLAYERBOT_GAMBLE_MIN_ARMOUR_LEVEL = 18;
+	const int PLAYERBOT_GAMBLE_MIN_EARRING_LEVEL = 22;
 	// At most this many pieces taken out of the safebox for one session.
 	const int PLAYERBOT_GAMBLE_SAFEBOX_TAKE = 4;
 	// And at most this many bases in the bag before it stops buying more off
@@ -5704,6 +5728,38 @@ namespace
 	// and a foe further than this, or in a safe zone, is let go.
 	const DWORD PLAYERBOT_ANTIPK_STRUCK_MEMORY_MS = 12000;
 	const int PLAYERBOT_ANTIPK_FOE_RANGE = 3000;
+	// Iwakura's Patch 3, point 7: the rare personalities
+	// (playerbot_rare_persona.h), drawn on each core this often.
+	const DWORD PLAYERBOT_RARE_DRAW_MS = 10 * 60 * 1000;
+	// Metinolog: a horse of eleven and a weapon at +7.
+	const int PLAYERBOT_METINOLOG_MIN_HORSE_LEVEL = 11;
+	const int PLAYERBOT_METINOLOG_MIN_WEAPON_PLUS = 7;
+	// Nalogowiec: 85 percent of the purse for the anvil, and bases bought off
+	// the counters to +6, this many to hand at most.
+	const int PLAYERBOT_NALOGOWIEC_BUDGET_PERCENT = 85;
+	const int PLAYERBOT_NALOGOWIEC_MARKET_BASES = 6;
+	const int PLAYERBOT_NALOGOWIEC_BASE_MAX_PLUS = 6;
+	// Szalony Naukowiec: 70 percent of the purse for its skill books.
+	const int PLAYERBOT_NAUKOWIEC_BUDGET_PERCENT = 70;
+	// Egzekutor: level 39 and a weapon at +6 or a line of 10% against people.
+	// Its prey is another kingdom's character in reach, within ten levels of
+	// it, never a GM; the victim's kingdom within the defence reach of it
+	// comes to help ("pozostale boty powinny podejmowac probe obrony"), for
+	// this long after its last blow and no more than this many at once.
+	const int PLAYERBOT_EGZEKUTOR_MIN_LEVEL = 39;
+	const int PLAYERBOT_EGZEKUTOR_MIN_WEAPON_PLUS = 6;
+	const int PLAYERBOT_EGZEKUTOR_HUMAN_BONUS = 10;
+	const int PLAYERBOT_EGZEKUTOR_HUNT_RANGE = 3000;
+	const int PLAYERBOT_EGZEKUTOR_LEVEL_WINDOW = 10;
+	const DWORD PLAYERBOT_EGZEKUTOR_SCAN_MS = 3000;
+	const int PLAYERBOT_EGZEKUTOR_DEFENCE_RANGE = 3500;
+	const DWORD PLAYERBOT_EGZEKUTOR_CALL_MS = 20000;
+	const int PLAYERBOT_EGZEKUTOR_DEFENDERS_MAX = 6;
+	// Szalony Wedkarz: level thirty, a rod and fishing done before; a minute
+	// or two between its sessions.
+	const int PLAYERBOT_WEDKARZ_MIN_LEVEL = 30;
+	const DWORD PLAYERBOT_WEDKARZ_REST_MIN_MS = 60 * 1000;
+	const DWORD PLAYERBOT_WEDKARZ_REST_MAX_MS = 120 * 1000;
 	// A party answers for a member struck this recently ("cala grupa rzuca sie
 	// na agresora"), from as far as this.
 	const DWORD PLAYERBOT_ANTIPK_PARTY_MEMORY_MS = 8000;
@@ -5818,6 +5874,10 @@ namespace
 	// przedmiotu ze wszystkich kategorii ... w ekwipunku i magazynie"; its
 	// class's level-30 weapon is the exception, PLAYERBOT_LEVEL30_KEEP_MAX.
 	const int PLAYERBOT_HELD_FAMILY_LIMIT = 2;
+	// And the most of all the gear a bot holds for the gambler, the bag and
+	// the box together: Iwakura's Patch 3, point 3, "lacznie maksymalnie 18
+	// sztuk", the surplus treated the ordinary way.
+	const int PLAYERBOT_LPP_TOTAL_LIMIT = playerbot_persona::LPP_TOTAL_LIMIT;
 	// The salt of the draw that makes a bot a gambler by nature, the one
 	// that keeps the list (IsPlayerBotGamblerByNature).
 	const DWORD PLAYERBOT_LPP_GAMBLER_SALT = 0x48415a41U;
@@ -5852,7 +5912,9 @@ namespace
 		BOT_FOE_PARTY,        // it struck a member of this bot's party
 		BOT_FOE_GRUDGE,       // it killed this bot, which has come back for it
 		BOT_FOE_STONE_RIVAL,  // another kingdom's, breaking this bot's stone
-		BOT_FOE_GUILD         // a person who struck a member of this bot's guild
+		BOT_FOE_GUILD,        // a person who struck a member of this bot's guild
+		BOT_FOE_EXECUTOR,     // another kingdom's character an executioner falls on
+		BOT_FOE_DEFEND        // an executioner who struck this bot's kingdom
 	};
 
 	// The gambler's plan for one piece (playerbot_gambler.h): the item, the
@@ -6027,6 +6089,19 @@ namespace
 		WORD wLppReleasable;
 		DWORD dwLppReleaseVisitAt;
 		std::map<DWORD, BYTE> mapGearStored;
+		// How many pieces of gear the box keeps once the release has run, list
+		// or no list: what PLAYERBOT_LPP_TOTAL_LIMIT is counted against.
+		WORD wLppBoxGearKept;
+		// Iwakura's Patch 3, point 7: a rare personality (playerbot_persona::ERare),
+		// how far into its errand it is, its length, and for the two that are
+		// budgets - the addict's anvil, the scientist's books - the purse it
+		// began with and what it has spent since (playerbot_rare_persona.h).
+		BYTE bRare;
+		BYTE bRareStage;
+		DWORD dwRareSince;
+		DWORD dwRareUntil;
+		long long llRareGoldStart;
+		long long llRareSpent;
 		// The pieces a gambler's session worked on, by item id: goods for the
 		// counter from the moment the session ends, never the list's to keep
 		// or the next session's to take (EndPlayerBotGamble).
@@ -6054,7 +6129,8 @@ namespace
 			dwCompanionBreakUntil(0), bWasInParty(false), dwAskedHumanPid(0), dwAskedHumanAt(0),
 			bAskedHow(0), dwNextHumanAsk(0), dwMercClientPid(0), dwMercApproachUntil(0),
 			dwNextMercScan(0), dwMercCooldownUntil(0), bBagFull(false), bLppStoredKnown(false),
-			bLppBoxFull(false), wLppReleasable(0), dwLppReleaseVisitAt(0) {}
+			bLppBoxFull(false), wLppReleasable(0), dwLppReleaseVisitAt(0), wLppBoxGearKept(0),
+			bRare(0), bRareStage(0), dwRareSince(0), dwRareUntil(0), llRareGoldStart(0), llRareSpent(0) {}
 	};
 
 	enum EPlayerBotAmbition
@@ -6878,6 +6954,18 @@ namespace
 
 	// Hunting stones right now: by role for life, or by expedition for half an
 	// hour. Every rule that used to ask for the role asks this instead.
+	// Iwakura's Patch 3, point 7: the rare personality running now, or none
+	// (playerbot_rare_persona.h ends it; this only reads its clock).
+	BYTE GetPlayerBotRareNow(const TPlayerBotPersona& p, DWORD dwNow)
+	{
+		return p.bRare != 0 && p.dwRareUntil != 0 && (int)(dwNow - p.dwRareUntil) < 0 ? p.bRare : 0;
+	}
+
+	bool IsPlayerBotRareNow(const TPlayerBotPersona& p, BYTE rare, DWORD dwNow)
+	{
+		return rare != 0 && GetPlayerBotRareNow(p, dwNow) == rare;
+	}
+
 	bool IsPlayerBotMetinHunting(const TPlayerBotAIState& state, DWORD dwNow)
 	{
 		return state.bBotRole == BOT_ROLE_METIN_HUNTER ||

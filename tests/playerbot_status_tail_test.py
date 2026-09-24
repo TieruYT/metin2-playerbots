@@ -168,12 +168,15 @@ class TitleTest(unittest.TestCase):
             self.assertIsNone(status.decode_title(vid, personality), (vid, personality))
 
     def test_every_personality_has_a_title_and_a_colour(self):
-        # The old eleven, and Iwakura's ten personalities at 100 + EPersona.
-        expected = list(range(11)) + list(range(100, 110))
+        # The old eleven, and Iwakura's personalities at 100 + EPersona: his
+        # ten, and the five rare ones of his Patch 3 (110-114).
+        expected = list(range(11)) + list(range(100, 115))
         self.assertEqual(sorted(status.PERSONALITY_TITLES), expected)
         self.assertEqual(sorted(status.PERSONALITY_COLOURS), expected)
         self.assertEqual(status.decode_title('42', '105'), (42, 105))
-        self.assertIsNone(status.decode_title('42', '110'))
+        self.assertEqual(status.decode_title('42', '110'), (42, 110))
+        self.assertEqual(status.decode_title('42', '114'), (42, 114))
+        self.assertIsNone(status.decode_title('42', '115'))
         self.assertIsNone(status.decode_title('42', '255'))
 
     def test_attached_and_kept_for_a_minute(self):

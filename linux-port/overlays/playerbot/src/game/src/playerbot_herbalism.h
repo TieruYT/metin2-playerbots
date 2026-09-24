@@ -86,6 +86,16 @@ namespace
 				item->GetSubType() == USE_CRAFT_RECIPE;
 	}
 
+	// The green and purple potions (Zielona/Fioletowa Mikstura M/S/D, both
+	// runs of them) that a counter sells in packs (PLAYERBOT_SHOP_POTION_PACKS).
+	bool IsPlayerBotPackedPotion(LPITEM item)
+	{
+		if (!item || item->GetType() != ITEM_POTION)
+			return false;
+		const DWORD vnum = item->GetVnum();
+		return (vnum >= 27100 && vnum <= 27105) || (vnum >= 27110 && vnum <= 27115);
+	}
+
 	// The quest's own ledger: pc.setf("crafting", "progress_<vnum>") in
 	// crafting.lua, which is `crafting.progress_<vnum>` to GetQuestFlag.
 	int GetPlayerBotCraftProgress(LPCHARACTER ch, DWORD recipeVnum)
@@ -474,7 +484,11 @@ namespace
 	{
 		if (!ch || !IsPlayerBotCraftedPotion(item))
 			return false;
-		return (int) ch->CountSpecifyItem(item->GetVnum()) > PLAYERBOT_HERBALISM_POTION_KEEP;
+		const int spare = (int) ch->CountSpecifyItem(item->GetVnum()) - PLAYERBOT_HERBALISM_POTION_KEEP;
+		// A packed potion is goods once the spare fills the smallest pack.
+		if (IsPlayerBotPackedPotion(item))
+			return GetPlayerBotPotionPackUnits(spare) > 0;
+		return spare > 0;
 	}
 
 	// Drinking. A crafted potion is ten minutes of something a bot cannot get
@@ -566,6 +580,7 @@ namespace
 	bool IsPlayerBotHerbalismHerb(DWORD) { return false; }
 	bool IsPlayerBotCraftedPotion(LPITEM) { return false; }
 	bool IsPlayerBotCraftRecipeItem(LPITEM) { return false; }
+	bool IsPlayerBotPackedPotion(LPITEM) { return false; }
 	bool IsPlayerBotHerbalismUnlocked(LPCHARACTER) { return false; }
 	bool IsPlayerBotSurplusPotion(LPCHARACTER, LPITEM) { return false; }
 	bool IsPlayerBotSurplusRecipe(LPCHARACTER, LPITEM) { return false; }

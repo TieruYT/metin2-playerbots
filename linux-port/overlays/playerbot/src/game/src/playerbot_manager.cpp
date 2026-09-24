@@ -147,6 +147,7 @@ namespace { bool HandlePlayerBotConversation(LPCHARACTER player, LPCHARACTER bot
 // Iwakura's Anti-PK protocol and the stone hunter: the war's fight, turned on
 // whoever struck the bot or is breaking its stone for another kingdom.
 #include "playerbot_anti_pk.h"
+#include "playerbot_rare_persona.h"
 #include "playerbot_demon_tower.h"
 // Iwakura's social personalities: the companion's phase and its invitations
 // to people, a companion Shaman's party buffs, and the mercenary's contracts.
@@ -5814,6 +5815,8 @@ void CPlayerBotManager::Update()
 	ReportPlayerBotMercCensus(get_dword_time());
 	ReportPlayerBotLppCensus(get_dword_time());
 	ReportPlayerBotGambleCensus(get_dword_time());
+	// Iwakura's Patch 3, point 7: the draw for the rare personalities.
+	ManagePlayerBotRarePersonas(get_dword_time());
 
 	// Publish one compact, atomic snapshot per game core. The web panel reads
 	// these files from the shared read-only game-var volume, so it sees the real

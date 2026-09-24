@@ -175,12 +175,18 @@ PERSONALITY_TITLES = {
 	107: "Rybak",
 	108: "Najemnik",
 	109: "Towarzysz",
+	# Iwakura's Patch 3, point 7: the rare personalities, in red.
+	110: "Metinolog",
+	111: "Na\xb3ogowiec",
+	112: "Szalony Naukowiec",
+	113: "Egzekutor",
+	114: "Szalony W\xeadkarz",
 }
 
 # Iwakura's names are Polish, and the English client shows English ones.
 import systemSetting
 if systemSetting.GetLanguage() == "en":
-	PERSONALITY_TITLES.update({0: 'Persistent Explorer', 1: 'Metin Slayer', 2: 'Team Player', 3: 'Equipment Master', 4: 'Careful Gatherer', 5: 'Trader', 6: 'Wanderer', 7: 'Metin Farmer', 8: 'M3 Farmer', 9: 'M2 Farmer', 10: 'Medal Farmer', 100: 'Grinder', 101: 'Conqueror', 102: 'Trader', 103: 'Gambler', 104: 'Perfectionist', 105: 'Metin Slayer', 106: 'Miner', 107: 'Fisher', 108: 'Mercenary', 109: 'Companion'})
+	PERSONALITY_TITLES.update({0: 'Persistent Explorer', 1: 'Metin Slayer', 2: 'Team Player', 3: 'Equipment Master', 4: 'Careful Gatherer', 5: 'Trader', 6: 'Wanderer', 7: 'Metin Farmer', 8: 'M3 Farmer', 9: 'M2 Farmer', 10: 'Medal Farmer', 100: 'Grinder', 101: 'Conqueror', 102: 'Trader', 103: 'Gambler', 104: 'Perfectionist', 105: 'Metin Slayer', 106: 'Miner', 107: 'Fisher', 108: 'Mercenary', 109: 'Companion', 110: 'Metinologist', 111: 'Addict', 112: 'Mad Scientist', 113: 'Executioner', 114: 'Mad Angler'})
 
 PERSONALITY_COLOURS = {
 	0: (0.75, 0.85, 1.0),
@@ -204,6 +210,11 @@ PERSONALITY_COLOURS = {
 	107: (0.45, 0.8, 1.0),
 	108: (1.0, 0.45, 0.45),
 	109: (0.45, 0.9, 0.95),
+	110: (1.0, 0.15, 0.15),
+	111: (1.0, 0.15, 0.15),
+	112: (1.0, 0.15, 0.15),
+	113: (1.0, 0.15, 0.15),
+	114: (1.0, 0.15, 0.15),
 }
 
 TITLE_REFRESH_SECONDS = 1.0

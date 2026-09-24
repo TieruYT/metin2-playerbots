@@ -2332,10 +2332,17 @@ namespace
 		return 6;
 	}
 
+	// Defined in playerbot_economy.h, after the junk rule it stands beside.
+	bool PlayerBotRefinesLowArmourForSale(LPCHARACTER ch, LPITEM item);
+
 	BYTE GetPlayerBotRefineTarget(LPCHARACTER ch, LPITEM item)
 	{
 		if (!ch || !item)
 			return 0;
+		// A body armour taken to +5 before it may go on a counter (Iwakura's
+		// Patch 3, point 4).
+		if (PlayerBotRefinesLowArmourForSale(ch, item))
+			return PLAYERBOT_LOW_ARMOUR_SALE_PLUS;
 		// A level-30 weapon of its own class in the hand, or the one it is
 		// grinding, goes to +9 whatever the personality: that is what the
 		// weapon is for. A scroll-only one gets there under scrolls or not at

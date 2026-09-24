@@ -316,11 +316,16 @@ BOT_PERSONA_LABELS = {
         0: "Grinder", 1: "Zdobywca", 2: "Handlarz", 3: "Hazardzista",
         4: "Perfekcjonista", 5: "Pogromca metinów", 6: "Górnik", 7: "Rybak",
         8: "Najemnik", 9: "Towarzysz",
+        # Iwakura's Patch 3, point 7: the rare ones, drawn in red over a bot.
+        10: "Metinolog", 11: "Nałogowiec", 12: "Szalony Naukowiec",
+        13: "Egzekutor", 14: "Szalony Wędkarz",
     },
     "en": {
         0: "Grinder", 1: "Conqueror", 2: "Trader", 3: "Gambler",
         4: "Perfectionist", 5: "Metin slayer", 6: "Miner", 7: "Fisherman",
         8: "Mercenary", 9: "Companion",
+        10: "Metinologist", 11: "Addict", 12: "Mad Scientist",
+        13: "Executioner", 14: "Mad Angler",
     },
 }
 BOT_MOOD_LABELS = {
@@ -3559,8 +3564,8 @@ T.update({
                   "tr":"Kapalı (varsayılan): bot tezgahını yalnızca oyuncuların alışveriş yaptığı ilk köylerde açar; ikinci köyde duran ve süresi dolan tezgah, sahibinin bir sonraki ziyaretinde ilk köyün pazar halkasında yenilenir. Açık: tezgahlar eskisi gibi iki köyde de durur."},
  "ai_shop_m2_on": {"en":"Allowed","pl":"Dozwolone","de":"Erlaubt","tr":"İzin verildi"},
  "ai_persona":   {"en":"Bot personalities (Iwakura v2)","pl":"Osobowości botów (Iwakura v2)","de":"Bot-Persönlichkeiten (Iwakura v2)","tr":"Bot kişilikleri (Iwakura v2)"},
- "ai_persona_help": {"en":"Iwakura's personality system. A bot's personality follows its situation (Grinder, Conqueror, Trader, Gambler, Perfectionist, Metin slayer, Miner, Fisherman, Mercenary, Companion) and it has a mood (poor, normal, very good) shown on its card. A Grinder holds its level at its tier (15, 23, 30-35, 40-48, 55-62) until it wears a weapon +7, an armour +6 and a shield +6 for its level, and only then may level on as a Conqueror. A bot in a poor mood pauses between packs and goes AFK now and then; only such bots rest in town. Off: the bots play as they did before, with their old personalities.",
-                  "pl":"System osobowości Iwakury. Osobowość bota wynika z jego sytuacji (Grinder, Zdobywca, Handlarz, Hazardzista, Perfekcjonista, Pogromca metinów, Górnik, Rybak, Najemnik, Towarzysz), a bot ma nastrój (słaby, normalny, bardzo dobry) widoczny na jego karcie. Grinder trzyma poziom swojego tieru (15, 23, 30-35, 40-48, 55-62), dopóki nie założy broni +7, zbroi +6 i tarczy +6 na swój poziom - dopiero wtedy może dalej expić jako Zdobywca. Bot w słabym nastroju robi przerwy między grupami mobów i co jakiś czas odchodzi od komputera; tylko takie boty odpoczywają w mieście. Wyłączone: boty grają jak wcześniej, ze starymi osobowościami.",
+ "ai_persona_help": {"en":"Iwakura's personality system. A bot's personality follows its situation (Grinder, Conqueror, Trader, Gambler, Perfectionist, Metin slayer, Miner, Fisherman, Mercenary, Companion) and it has a mood (poor, normal, very good) shown on its card. A Grinder holds its level at its tier (15, 23, 30-35, 40-48, 55-62) until it wears a weapon +7, an armour +6 and a shield +6 for its level, and only then may level on as a Conqueror. A bot in a poor mood pauses between packs and goes AFK now and then; only such bots rest in town. Now and then a bot becomes one of five rare personalities for a while, shown in red: Metinologist, Addict, Mad Scientist, Executioner, Mad Angler. Off: the bots play as they did before, with their old personalities.",
+                  "pl":"System osobowości Iwakury. Osobowość bota wynika z jego sytuacji (Grinder, Zdobywca, Handlarz, Hazardzista, Perfekcjonista, Pogromca metinów, Górnik, Rybak, Najemnik, Towarzysz), a bot ma nastrój (słaby, normalny, bardzo dobry) widoczny na jego karcie. Grinder trzyma poziom swojego tieru (15, 23, 30-35, 40-48, 55-62), dopóki nie założy broni +7, zbroi +6 i tarczy +6 na swój poziom - dopiero wtedy może dalej expić jako Zdobywca. Bot w słabym nastroju robi przerwy między grupami mobów i co jakiś czas odchodzi od komputera; tylko takie boty odpoczywają w mieście. Od czasu do czasu bot staje się na pewien czas jedną z pięciu rzadkich osobowości, widocznych na czerwono: Metinolog, Nałogowiec, Szalony Naukowiec, Egzekutor, Szalony Wędkarz. Wyłączone: boty grają jak wcześniej, ze starymi osobowościami.",
                   "de":"Iwakuras Persönlichkeitssystem. Die Persönlichkeit eines Bots folgt seiner Lage (Grinder, Eroberer, Händler, Spieler, Perfektionist, Metinjäger, Bergmann, Fischer, Söldner, Gefährte), und er hat eine Stimmung (schlecht, normal, sehr gut), die auf seiner Karte steht. Ein Grinder hält die Stufe seines Tiers (15, 23, 30-35, 40-48, 55-62), bis er eine Waffe +7, eine Rüstung +6 und einen Schild +6 für seine Stufe trägt, und erst dann darf er als Eroberer weiterleveln. Ein Bot in schlechter Stimmung macht Pausen zwischen den Gruppen und ist ab und zu AFK; nur solche Bots ruhen in der Stadt. Aus: die Bots spielen wie früher, mit ihren alten Persönlichkeiten.",
                   "tr":"Iwakura'nın kişilik sistemi. Bir botun kişiliği durumuna göre değişir (Grinder, Fatih, Tüccar, Kumarbaz, Mükemmeliyetçi, Metin avcısı, Madenci, Balıkçı, Paralı asker, Yoldaş) ve kartında görünen bir ruh hali vardır (kötü, normal, çok iyi). Bir Grinder, seviyesine uygun +7 silah, +6 zırh ve +6 kalkan giyene kadar kademesinin seviyesinde (15, 23, 30-35, 40-48, 55-62) kalır, ancak ondan sonra Fatih olarak seviye atlayabilir. Kötü ruh halindeki bot gruplar arasında durur ve ara sıra AFK olur; yalnızca bu botlar şehirde dinlenir. Kapalı: botlar eski kişilikleriyle önceki gibi oynar."},
  "ai_persona_on": {"en":"Enabled","pl":"Włączone","de":"Eingeschaltet","tr":"Açık"},
@@ -5991,7 +5996,7 @@ MAP_I18N = {
   "stats":"Statystyki","unspent_stats":"Nierozdane: {n} pkt statystyk","skills":"Umiejętności","profession_none":"Nie wybrano","profession_pending":"Profesja nie została jeszcze wybrana.","depot":"Magazyn","depot_empty":"Magazyn jest pusty.","shop":"Sklep","shop_none":"Ten bot nie ma otwartego sklepu.","shop_empty":"Lada jest pusta.","shop_price":"Cena","shop_premium":"premium",
   "unspent_skills":"Nierozdane: {n} pkt umiejętności","equipped":"Założony ekwipunek (EQ)","weapon":"Broń","armor":"Zbroja","helmet":"Hełm","shield":"Tarcza","bracelet":"Bransoleta",
   "boots":"Buty","necklace":"Naszyjnik","earrings":"Kolczyki","empty":"Puste","inventory":"Zawartość ekwipunku","items_count":"przedmiotów","inventory_empty":"Ekwipunek jest pusty.","quantity":"Ilość",
-  "gear_history":"Historia ekwipunku","gear_history_hint":"Ulepszenia, spalenia, założenia, prezenty, sprzedaż, magazyn — z log.log","gear_history_loading":"Ładowanie historii...","gear_history_empty":"Brak wpisów o ekwipunku tej postaci.","gear_history_more":"Pokaż starsze",
+  "gear_history":"Historia ekwipunku","gear_history_hint":"Handel, bonusy i ulepszanie w osobnych zakładkach — z log.log i dziennika sklepów offline","gear_history_loading":"Ładowanie historii...","gear_history_empty":"Brak wpisów w tej zakładce.","gear_history_more":"Pokaż starsze","gear_tab_trade":"Handel","gear_tab_bonus":"Bonusy","gear_tab_refine":"Ulepszanie","gear_tab_other":"Inne","gear_tab_all":"Wszystko",
   "event_log":"Dziennik zdarzeń bota (logi na żywo)","track_live":"Śledź na żywo","copy_logs":"Kopiuj logi","loading_logs":"Ładowanie logów postaci","no_logs":"Brak najświeższych wpisów w logach dla tej postaci.",
   "log_error":"Błąd odczytu logów","network_error":"Błąd sieci","teleporting":"Teleportowanie Twojej postaci w grze...","teleported":"Przeteleportowano {name} do bota w grze!","you":"Cię","failure":"Niepowodzenie",
   "copied":"Skopiowano","paste":"wklej w grze [Enter] → Ctrl+V → [Enter]","solo_exp":"Solo — zdobywanie doświadczenia","party_exp":"[PT] Zdobywanie doświadczenia w grupie","metin_hunt":"Polowanie na Metiny",
@@ -6012,7 +6017,7 @@ MAP_I18N = {
   "stats":"Statistics","unspent_stats":"Unspent: {n} stat points","skills":"Skills","profession_none":"Not selected","profession_pending":"The profession has not been selected yet.","depot":"Depot","depot_empty":"The depot is empty.","shop":"Shop","shop_none":"This bot has no stall open.","shop_empty":"The counter is empty.","shop_price":"Price","shop_premium":"premium",
   "unspent_skills":"Unspent: {n} skill points","equipped":"Equipped items","weapon":"Weapon","armor":"Armour","helmet":"Helmet","shield":"Shield","bracelet":"Bracelet",
   "boots":"Boots","necklace":"Necklace","earrings":"Earrings","empty":"Empty","inventory":"Inventory contents","items_count":"items","inventory_empty":"The inventory is empty.","quantity":"Quantity",
-  "gear_history":"Equipment history","gear_history_hint":"Refines, burns, equips, gifts, sales, safebox — from log.log","gear_history_loading":"Loading history...","gear_history_empty":"No equipment entries for this character.","gear_history_more":"Show older",
+  "gear_history":"Equipment history","gear_history_hint":"Trade, bonuses and refining on separate tabs — from log.log and the offline shop log","gear_history_loading":"Loading history...","gear_history_empty":"No entries on this tab.","gear_history_more":"Show older","gear_tab_trade":"Trade","gear_tab_bonus":"Bonuses","gear_tab_refine":"Refining","gear_tab_other":"Other","gear_tab_all":"All",
   "event_log":"Bot event log (live)","track_live":"Track live","copy_logs":"Copy logs","loading_logs":"Loading logs for","no_logs":"No recent log entries for this character.",
   "log_error":"Log read error","network_error":"Network error","teleporting":"Teleporting your in-game character...","teleported":"Teleported {name} to the bot in game!","you":"you","failure":"Failure",
   "copied":"Copied","paste":"paste in game [Enter] → Ctrl+V → [Enter]","solo_exp":"Solo levelling","party_exp":"[PT] Party levelling","metin_hunt":"Hunting Metins",
@@ -7931,6 +7936,7 @@ function openBotModal(pid) {
               '<button type="button" onclick="loadBotGearHistory(' + p.id + ', true)" style="padding:2px 8px;font-size:11px;background:#334155;color:#fff;border:none;border-radius:4px;cursor:pointer">' + I18N.gear_history_more + '</button>' +
               '</div>' +
               '<div class="muted" style="font-size:10px;margin-bottom:6px">' + I18N.gear_history_hint + '</div>' +
+              '<div id="botGearTabs" style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:6px">' + gearTabButtons(p.id) + '</div>' +
               '<div id="botGearHistory" style="background:#09090b;border:1px solid #27272a;border-radius:6px;padding:6px 8px;max-height:220px;overflow-y:auto;font-size:11px;line-height:1.5">' +
               I18N.gear_history_loading + '</div>' +
               '</div>';
@@ -8065,14 +8071,42 @@ var g_logInterval = null;
 var g_collectedLogs = [];
 var g_seenLogsSet = {};
 
+// Iwakura's Patch 3, point 1: the history on tabs - trade (sold and bought),
+// bonuses (lines added, stones of change), refining - so a question about one
+// of them is not a scroll through the other two. The tab chosen stays chosen
+// from one bot's card to the next.
+var GEAR_TABS = ['trade', 'bonus', 'refine', 'other', 'all'];
+var g_gearTab = 'trade';
+
+function gearTabButtons(pid) {
+  var html = '';
+  GEAR_TABS.forEach(function(t) {
+    var active = t === g_gearTab;
+    html += '<button type="button" onclick="selectGearTab(' + pid + ', \\'' + t + '\\')" style="padding:2px 9px;font-size:11px;border-radius:4px;cursor:pointer;border:1px solid ' +
+            (active ? 'var(--gold)' : '#3f3f46') + ';background:' + (active ? '#332814' : '#18181b') + ';color:' +
+            (active ? 'var(--gold)' : '#d4d4d8') + '">' + I18N['gear_tab_' + t] + '</button>';
+  });
+  return html;
+}
+
+function selectGearTab(pid, tab) {
+  g_gearTab = tab;
+  var bar = document.getElementById('botGearTabs');
+  if (bar) bar.innerHTML = gearTabButtons(pid);
+  var box = document.getElementById('botGearHistory');
+  if (box) box.textContent = I18N.gear_history_loading;
+  loadBotGearHistory(pid, false);
+}
+
 function loadBotGearHistory(pid, older) {
   var box = document.getElementById('botGearHistory');
   if (!box) return;
   var limit = older ? 400 : 60;
-  fetch('/api/bot_gear_history/' + pid + '?limit=' + limit)
+  var tab = g_gearTab;
+  fetch('/api/bot_gear_history/' + pid + '?limit=' + limit + '&tab=' + tab)
     .then(function(res) { return res.json(); })
     .then(function(data) {
-      if (!box) return;
+      if (!box || tab !== g_gearTab) return;
       if (!data || !data.ok || !data.rows || data.rows.length === 0) {
         box.textContent = (data && data.error) ? data.error : I18N.gear_history_empty;
         return;
@@ -8447,6 +8481,50 @@ GEAR_HISTORY_HOWS = {
     "EXCHANGE_GIVE":         ("gift_out",    {"pl": "Oddane w wymianie",  "en": "Given in a trade"}),
 }
 
+# Iwakura's Patch 3, point 1: the card's tabs. Trade is what was sold and
+# bought, bonuses the lines added and the stones of change, refining the
+# anvil; the rest (a piece put on, the safebox, a chest) is "other". A bot's
+# purchase from an offline shop is not in log.log at all - the engine writes
+# it to log.ikarusshop_log as BUY_ITEM - so the trade tab reads that table too.
+GEAR_HISTORY_TABS = {
+    "trade":  ("PLAYERBOT_STALL_SOLD", "SHOP_BUY", "PLAYERBOT_SHOP_SELL", "EXCHANGE_TAKE",
+               "EXCHANGE_GIVE", "PLAYERBOT_GIFT_OUT", "PLAYERBOT_GIFT_IN"),
+    "bonus":  ("PLAYERBOT_BONUS", "PLAYERBOT_BONUS_ADD", "PLAYERBOT_BONUS_CHANGE", "PLAYERBOT_BONUS_MARBLE"),
+    "refine": ("REFINE SUCCESS", "REFINE FAIL", "REMOVE (REFINE FAIL)", "REFINE FISH_ROD SUCCESS",
+               "REFINE FISH_ROD FAIL"),
+    "other":  ("PLAYERBOT_EQUIP", "SAFEBOX PUT", "SAFEBOX GET", "MOONLIGHT_GET"),
+}
+GEAR_HISTORY_OFFLINE_BUY = ("bought", {"pl": "Kupione w sklepie offline", "en": "Bought from an offline shop"})
+
+
+def gear_history_offline_buys(cur, pid, limit):
+    """A character's purchases from offline shops, newest first, with the
+    seller's name - [(time, vnum, count, yang, seller)]. The table is the 2.x
+    line's (ikashop); anything it cannot answer is no purchases."""
+    try:
+        cur.execute(
+            "SELECT time, vnum, count, yang, shop_owner FROM log.ikarusshop_log "
+            "WHERE who = %s AND what = 'BUY_ITEM' ORDER BY id DESC LIMIT %s",
+            (pid, limit),
+        )
+        buys = list(cur.fetchall())
+    except Exception:
+        return []
+    owners = sorted({int(b.get("shop_owner") or 0) for b in buys} - {0})
+    names = {}
+    if owners:
+        try:
+            cur.execute(
+                "SELECT id, CAST(name AS BINARY) AS name FROM player.player WHERE id IN (" +
+                ",".join(["%s"] * len(owners)) + ")",
+                tuple(owners),
+            )
+            names = {int(r["id"]): log_text(r.get("name")).strip() for r in cur.fetchall()}
+        except Exception:
+            names = {}
+    return [(b.get("time"), int(b.get("vnum") or 0), int(b.get("count") or 0), int(b.get("yang") or 0),
+             names.get(int(b.get("shop_owner") or 0), "")) for b in buys]
+
 # The way a refine was made, from log.refinelog, which the engine writes beside
 # each REFINE row of log.log: POWER for a blacksmith, GUILD for a guild's,
 # DEVILTOWER for the Demon Tower smith and SCROLL:<vnum> for a scroll (the last
@@ -8532,7 +8610,8 @@ def api_bot_gear_history(pid):
         limit = max(10, min(400, int(request.args.get("limit", 60))))
     except (TypeError, ValueError):
         limit = 60
-    hows = list(GEAR_HISTORY_HOWS.keys())
+    tab = request.args.get("tab", "all")
+    hows = list(GEAR_HISTORY_TABS[tab]) if tab in GEAR_HISTORY_TABS else list(GEAR_HISTORY_HOWS.keys())
     marks = ",".join(["%s"] * len(hows))
     try:
         with db() as c, c.cursor() as cur:
@@ -8587,14 +8666,29 @@ def api_bot_gear_history(pid):
                     if len(parts) == 2 and parts[1].isdigit() and int(parts[1]) > 1:
                         detail = "x" + parts[1]
                 t = r.get("time")
-                rows.append({
+                rows.append((t, {
                     "time": t.strftime("%d.%m %H:%M") if hasattr(t, "strftime") else str(t),
                     "kind": kind,
                     "label": labels.get(lang_key, labels["en"]),
                     "item": item or ("#%d" % vnum if vnum else ""),
                     "detail": detail,
-                })
-        return jsonify({"ok": True, "pid": pid, "rows": rows})
+                }))
+            if tab in ("trade", "all"):
+                kind, labels = GEAR_HISTORY_OFFLINE_BUY
+                for t, vnum, count, yang, seller in gear_history_offline_buys(cur, pid, limit):
+                    detail = ("x%d " % count if count > 1 else "") + ("for " if lang_key == "en" else "za ") +                         "{:,}".format(yang).replace(",", " ") + " yang"
+                    if seller:
+                        detail += (" from " if lang_key == "en" else " od ") + seller
+                    rows.append((t, {
+                        "time": t.strftime("%d.%m %H:%M") if hasattr(t, "strftime") else str(t),
+                        "kind": kind,
+                        "label": labels.get(lang_key, labels["en"]),
+                        "item": (localized_item_name(vnum, language) if vnum else "") or ("#%d" % vnum if vnum else ""),
+                        "detail": detail,
+                    }))
+                rows.sort(key=lambda e: e[0] if hasattr(e[0], "strftime") else datetime.datetime.min, reverse=True)
+                rows = rows[:limit]
+        return jsonify({"ok": True, "pid": pid, "tab": tab, "rows": [row for _, row in rows]})
     except Exception as e:
         return jsonify({"ok": False, "error": str(e), "rows": []})
 

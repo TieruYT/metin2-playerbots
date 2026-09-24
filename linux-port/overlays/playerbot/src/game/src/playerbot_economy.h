@@ -23,6 +23,7 @@ namespace
 	// Defined beside HasPlayerBotRefineOpportunity; the blacksmith pass asks it
 	// before taking a worn piece off for the anvil.
 	bool CanPlayerBotAttemptRefineItem(LPCHARACTER ch, LPITEM item);
+	bool CanPlayerBotPayRefineStep(LPCHARACTER ch, LPITEM item);
 
 	PIXEL_POSITION GetPlayerBotGeneralStorePos(long mapIndex)
 	{
@@ -81,6 +82,10 @@ namespace
 			return 0;
 		TPlayerBotPersona& p = st->second.persona;
 		const DWORD now = get_dword_time();
+		// Iwakura's Patch 3, point 7: the mad scientist's books come out of 70
+		// percent of the purse it began with.
+		if (IsPlayerBotRareNow(p, playerbot_persona::RARE_NAUKOWIEC, now))
+			return std::max(0LL, p.llRareGoldStart * PLAYERBOT_NAUKOWIEC_BUDGET_PERCENT / 100 - p.llRareSpent);
 		if (p.dwBookBudgetSince == 0 || now - p.dwBookBudgetSince >= PLAYERBOT_BOOK_BUDGET_WINDOW_MS)
 		{
 			p.llBookBudgetBase = (long long)ch->GetGold();
@@ -97,7 +102,11 @@ namespace
 			return;
 		TPlayerBotAIStateMap::iterator st = s_mapPlayerBotAIStates.find(ch->GetPlayerID());
 		if (st != s_mapPlayerBotAIStates.end())
+		{
 			st->second.persona.llBookBudgetSpent += price;
+			if (IsPlayerBotRareNow(st->second.persona, playerbot_persona::RARE_NAUKOWIEC, get_dword_time()))
+				st->second.persona.llRareSpent += price;
+		}
 	}
 
 	// A bot in town as the Trader: the personality says so, or the town visit
@@ -110,7 +119,9 @@ namespace
 		if (st == s_mapPlayerBotAIStates.end())
 			return false;
 		return (st->second.persona.bPersona == playerbot_persona::PERSONA_HANDLARZ ||
-				st->second.bVisitingShop) && GetPlayerBotBookBudgetLeft(ch) > 0;
+				st->second.bVisitingShop ||
+				IsPlayerBotRareNow(st->second.persona, playerbot_persona::RARE_NAUKOWIEC, get_dword_time())) &&
+				GetPlayerBotBookBudgetLeft(ch) > 0;
 	}
 
 	// Iwakura's list (playerbot_lpp.h, later): a piece on it the list does not
@@ -161,6 +172,14 @@ namespace
 	{
 		return item && item->GetType() == ITEM_WEAPON && IsPlayerBotJunkWeaponVnum(item->GetVnum()) &&
 				!IsPlayerBotPrizeItem(item);
+	}
+
+	// A body armour Iwakura's Patch 3, point 4 caps on the market: +0..+4, and
+	// not one rolled with prize lines, which is not what flooded it.
+	bool IsPlayerBotCappedLowArmour(LPITEM item)
+	{
+		return item && item->GetType() == ITEM_ARMOR && item->GetSubType() == ARMOR_BODY &&
+				item->GetRefineLevel() <= PLAYERBOT_LOW_ARMOUR_MAX_PLUS && !IsPlayerBotPrizeItem(item);
 	}
 
 	// Every skill book in the bag, whatever the skill.
@@ -540,6 +559,10 @@ namespace
 		// half to shift a single bag of them.
 		if (IsPlayerBotBonusStoneItem(item))
 			return PLAYERBOT_SHOP_PACK_UNITS;
+		// The green and purple potions in packs (Iwakura's Patch 3, point 5);
+		// the offline cut takes the largest pack the spare fills.
+		if (IsPlayerBotPackedPotion(item))
+			return PLAYERBOT_SHOP_POTION_PACK_MIN;
 		if (item->GetType() == ITEM_USE || item->GetType() == ITEM_METIN ||
 				item->GetType() == ITEM_TREASURE_KEY ||
 				(item->GetVnum() >= 27992 && item->GetVnum() <= 27994))
@@ -550,6 +573,40 @@ namespace
 		if (IsPlayerBotBulkGoods(item))
 			return PLAYERBOT_SHOP_BULK_PACK_UNITS;
 		return PLAYERBOT_SHOP_PACK_UNITS;
+	}
+
+	// Iwakura's Patch 3, point 6: a bot's counter is laid out the way a bag is
+	// sorted - "bronie, zbroje, bizuteria, ksiegi umiejetnosci (KU) oraz
+	// ulepszacze itp." - so its categories in that order, the rest after them.
+	int GetPlayerBotShopCategoryOf(BYTE type, BYTE subType, DWORD vnum)
+	{
+		if (type == ITEM_WEAPON && subType != WEAPON_ARROW)
+			return 0;
+		if (type == ITEM_ARMOR)
+			return subType == ARMOR_WRIST || subType == ARMOR_NECK || subType == ARMOR_EAR ? 2 : 1;
+		// The skill books, and the general ones - Leadership and Combo.
+		if (type == ITEM_SKILLBOOK || (vnum >= 50301 && vnum <= 50306))
+			return 3;
+		if (type == ITEM_MATERIAL || (type == ITEM_USE && subType == USE_TUNING))
+			return 4;
+		if (type == ITEM_METIN)
+			return 5;
+		if (type == ITEM_USE && (subType == USE_CHANGE_ATTRIBUTE || subType == USE_ADD_ATTRIBUTE ||
+				subType == USE_ADD_ATTRIBUTE2))
+			return 6;
+#if defined(PLAYERBOT_ENGINE_MT2009)
+		if (type == ITEM_POTION)
+			return 7;
+#endif
+		if (type == ITEM_USE && (subType == USE_POTION || subType == USE_POTION_NODELAY ||
+				subType == USE_ABILITY_UP))
+			return 7;
+		return 8;
+	}
+
+	int GetPlayerBotShopCategory(LPITEM item)
+	{
+		return item ? GetPlayerBotShopCategoryOf(item->GetType(), item->GetSubType(), item->GetVnum()) : 8;
 	}
 
 	bool IsPlayerBotSinglyTradedGoods(LPITEM item)
@@ -1215,6 +1272,17 @@ namespace
 	// Iwakura's Useful Items List (playerbot_lpp.h).
 	bool IsPlayerBotLppKeptItem(LPCHARACTER ch, LPITEM item);
 
+	// "Jesli bot chce wystawic taki przedmiot, musi najpierw ulepszyc go
+	// minimum do poziomu +5" (Iwakura's Patch 3, point 4): a body armour of a
+	// family whose cap is full goes to the plain anvil for +5 while the purse
+	// and the bag can pay the next step, and is goods once it is there.
+	bool PlayerBotRefinesLowArmourForSale(LPCHARACTER ch, LPITEM item)
+	{
+		return ch && IsPlayerBotCappedLowArmour(item) && !item->IsEquipped() &&
+				IsPlayerBotLowArmourMarketFull(item->GetVnum()) &&
+				!IsPlayerBotLppKeptItem(ch, item) && CanPlayerBotPayRefineStep(ch, item);
+	}
+
 	bool IsPlayerBotJunkItem(LPCHARACTER ch, LPITEM item)
 	{
 		if (!ch || !item || item->IsEquipped() || item->isLocked())
@@ -1257,6 +1325,13 @@ namespace
 		if (IsPlayerBotCappedJunkWeapon(item) && IsPlayerBotJunkWeaponMarketFull() &&
 				!IsPlayerBotUpgradeForSelf(ch, item) && !IsPlayerBotHigherTierSpare(ch, item) &&
 				!IsPlayerBotKeptBackupWeapon(ch, item))
+			return true;
+		// And a body armour at +0..+4 of a family at its cap on the market
+		// (Iwakura's Patch 3, point 4), unless the bot wears it, raises it for
+		// itself, takes it to +5 for the counter, or keeps it for the gambler.
+		if (IsPlayerBotCappedLowArmour(item) && IsPlayerBotLowArmourMarketFull(item->GetVnum()) &&
+				!IsPlayerBotUpgradeForSelf(ch, item) && !IsPlayerBotHigherTierSpare(ch, item) &&
+				!PlayerBotRefinesLowArmourForSale(ch, item) && !IsPlayerBotLppKeptItem(ch, item))
 			return true;
 		// The goods a player crafts further (IsPlayerBotPickupGoods) wait for a
 		// counter, and reach the merchant only from a bag under pressure that
@@ -1997,6 +2072,10 @@ namespace
 		// and never junk.
 		if (PlayerBotRefinesLevel30ForSale(ch, item))
 			return item->GetRefineLevel() < GetPlayerBotRefineTarget(ch, item);
+		// A body armour taken to +5 before it may go on a counter (Iwakura's
+		// Patch 3, point 4).
+		if (PlayerBotRefinesLowArmourForSale(ch, item))
+			return item->GetRefineLevel() < PLAYERBOT_LOW_ARMOUR_SALE_PLUS;
 		// The class's own level-30 weapon, whatever the damage model makes of
 		// it today (community patch 2, point 1).
 		if (IsPlayerBotPersonaEnabled() && item == FindPlayerBotClassLevel30Weapon(ch))

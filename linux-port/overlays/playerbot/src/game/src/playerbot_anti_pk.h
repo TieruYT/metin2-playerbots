@@ -48,6 +48,8 @@ namespace
 			case BOT_FOE_GRUDGE: return "grudge";
 			case BOT_FOE_STONE_RIVAL: return "stone_rival";
 			case BOT_FOE_GUILD: return "guild";
+			case BOT_FOE_EXECUTOR: return "executor";
+			case BOT_FOE_DEFEND: return "defend";
 			default: return "none";
 		}
 	}
@@ -77,6 +79,20 @@ namespace
 		long lMapIndex;
 	};
 	std::map<DWORD, TPlayerBotGuildCall> s_mapPlayerBotGuildCall;
+
+	// Iwakura's Patch 3, point 7: an executioner's last blow at a kingdom, by
+	// the victim's kingdom. Its bots near him come to the defence
+	// ("pozostale boty powinny podejmowac probe obrony"), a few of them.
+	struct TPlayerBotExecutorCall
+	{
+		DWORD dwAttackerVID;
+		DWORD dwAttackerPID;
+		DWORD dwVictimPID;
+		DWORD dwAt;
+		long lMapIndex;
+		std::set<DWORD> setDefenders;
+	};
+	std::map<BYTE, TPlayerBotExecutorCall> s_mapPlayerBotExecutorCall;
 
 	// The player who last killed a bot, and until when the bot comes back for
 	// him: Step 2's "ponownie probuje go przejac (po raz kolejny wdaje sie w
@@ -125,6 +141,22 @@ namespace
 				attackerState->second.dwTargetVID != (DWORD)victim->GetVID() &&
 				attackerState->second.persona.dwFoeVID != (DWORD)victim->GetVID())
 			return;
+		// An executioner's blow at another kingdom calls that kingdom's bots
+		// near the fight, whoever the victim is.
+		if (attackerState != s_mapPlayerBotAIStates.end() &&
+				attackerState->second.persona.bFoeReason == BOT_FOE_EXECUTOR &&
+				IsPlayerBotRareNow(attackerState->second.persona, playerbot_persona::RARE_EGZEKUTOR, dwNow) &&
+				victim->GetEmpire() != attacker->GetEmpire())
+		{
+			TPlayerBotExecutorCall& call = s_mapPlayerBotExecutorCall[victim->GetEmpire()];
+			if (call.dwAttackerPID != attacker->GetPlayerID() || dwNow - call.dwAt >= PLAYERBOT_EGZEKUTOR_CALL_MS)
+				call.setDefenders.clear();
+			call.dwAttackerVID = attacker->GetVID();
+			call.dwAttackerPID = attacker->GetPlayerID();
+			call.dwVictimPID = victim->GetPlayerID();
+			call.dwAt = dwNow;
+			call.lMapIndex = victim->GetMapIndex();
+		}
 		TPlayerBotAIStateMap::iterator it = s_mapPlayerBotAIStates.find(victim->GetPlayerID());
 		if (it == s_mapPlayerBotAIStates.end())
 		{
@@ -284,6 +316,87 @@ namespace
 		return attacker;
 	}
 
+	// Iwakura's Patch 3, point 7: an executioner who has just struck this bot's
+	// kingdom, on this map and within PLAYERBOT_EGZEKUTOR_DEFENCE_RANGE of it,
+	// while fewer than PLAYERBOT_EGZEKUTOR_DEFENDERS_MAX already answer. The
+	// victim answers the blow itself (BOT_FOE_STRUCK).
+	LPCHARACTER FindPlayerBotExecutorToDefendAgainst(LPCHARACTER ch, DWORD dwNow)
+	{
+		if (!ch || (ch->GetParty() && IsPlayerBotHumanLedParty(ch->GetParty())))
+			return NULL;
+		std::map<BYTE, TPlayerBotExecutorCall>::iterator call = s_mapPlayerBotExecutorCall.find(ch->GetEmpire());
+		if (call == s_mapPlayerBotExecutorCall.end() || call->second.lMapIndex != ch->GetMapIndex() ||
+				call->second.dwVictimPID == ch->GetPlayerID() ||
+				dwNow - call->second.dwAt >= PLAYERBOT_EGZEKUTOR_CALL_MS)
+			return NULL;
+		if (call->second.setDefenders.size() >= (size_t)PLAYERBOT_EGZEKUTOR_DEFENDERS_MAX &&
+				!call->second.setDefenders.count(ch->GetPlayerID()))
+			return NULL;
+		LPCHARACTER attacker = CHARACTER_MANAGER::instance().Find(call->second.dwAttackerVID);
+		if (!attacker || attacker->GetPlayerID() != call->second.dwAttackerPID ||
+				attacker->GetEmpire() == ch->GetEmpire() ||
+				!IsPlayerBotFoeFightable(ch, attacker, PLAYERBOT_EGZEKUTOR_DEFENCE_RANGE))
+			return NULL;
+		call->second.setDefenders.insert(ch->GetPlayerID());
+		return attacker;
+	}
+
+	// The executioner's own prey: another kingdom's character in reach on a
+	// shared map ("mapy wspoldzielone ... atakuje graczy wrogich krolestw"),
+	// within PLAYERBOT_EGZEKUTOR_LEVEL_WINDOW levels of it, never a GM, the
+	// nearest first; looked for on a clock.
+	class FFindPlayerBotExecutorPrey
+	{
+		public:
+			explicit FFindPlayerBotExecutorPrey(LPCHARACTER ch) :
+				m_ch(ch), m_found(NULL), m_bestDistance(INT_MAX) {}
+
+			void operator () (LPENTITY entity)
+			{
+				if (!entity || !entity->IsType(ENTITY_CHARACTER))
+					return;
+				LPCHARACTER other = static_cast<LPCHARACTER>(entity);
+				if (other == m_ch || !other->IsPC() || other->IsDead() || other->IsGM() ||
+						other->GetEmpire() == m_ch->GetEmpire() ||
+						other->GetMapIndex() != m_ch->GetMapIndex())
+					return;
+				const int gap = (int)other->GetLevel() - (int)m_ch->GetLevel();
+				if (gap > PLAYERBOT_EGZEKUTOR_LEVEL_WINDOW || gap < -PLAYERBOT_EGZEKUTOR_LEVEL_WINDOW)
+					return;
+				const int distance = DISTANCE_APPROX(m_ch->GetX() - other->GetX(), m_ch->GetY() - other->GetY());
+				if (distance >= m_bestDistance || distance > PLAYERBOT_EGZEKUTOR_HUNT_RANGE)
+					return;
+				if (!IsPlayerBotFoeFightable(m_ch, other, PLAYERBOT_EGZEKUTOR_HUNT_RANGE))
+					return;
+				m_bestDistance = distance;
+				m_found = other;
+			}
+
+			LPCHARACTER GetFound() const { return m_found; }
+
+		private:
+			LPCHARACTER m_ch;
+			LPCHARACTER m_found;
+			int m_bestDistance;
+	};
+
+	LPCHARACTER FindPlayerBotExecutorPrey(LPCHARACTER ch, TPlayerBotAIState& state, DWORD dwNow)
+	{
+		static std::map<DWORD, DWORD> s_mapNextScan;
+		if (!ch || !ch->GetSectree() ||
+				!IsPlayerBotRareNow(state.persona, playerbot_persona::RARE_EGZEKUTOR, dwNow) ||
+				ch->GetMapIndex() >= PLAYERBOT_INSTANCE_MAP_INDEX_MIN ||
+				playerbot_empire_rules::IsKingdomMap(ch->GetMapIndex()) || state.bRecoveringAfterDeath)
+			return NULL;
+		DWORD& next = s_mapNextScan[ch->GetPlayerID()];
+		if (next != 0 && (int)(dwNow - next) < 0)
+			return NULL;
+		next = dwNow + PLAYERBOT_EGZEKUTOR_SCAN_MS;
+		FFindPlayerBotExecutorPrey finder(ch);
+		ch->GetSectree()->ForEachAround(finder);
+		return finder.GetFound();
+	}
+
 	// Who this bot fights now, if anybody. The foe in hand first - to the end,
 	// or for a stone's rival until it has left the stone - then the player who
 	// has just struck it, one who has struck its party, one who killed it and
@@ -302,9 +415,16 @@ namespace
 		if (p.dwFoeVID != 0)
 		{
 			LPCHARACTER held = CHARACTER_MANAGER::instance().Find(p.dwFoeVID);
-			// A guild's aggressor is held from as far as the call reached.
+			// A guild's aggressor is held from as far as the call reached, and
+			// an executioner by the kingdom that answers him from as far as its
+			// defence reached.
 			bool keep = IsPlayerBotFoeFightable(ch, held, p.bFoeReason == BOT_FOE_GUILD
-					? PLAYERBOT_ANTIPK_GUILD_RANGE : PLAYERBOT_ANTIPK_FOE_RANGE);
+					? PLAYERBOT_ANTIPK_GUILD_RANGE : (p.bFoeReason == BOT_FOE_DEFEND
+						? PLAYERBOT_EGZEKUTOR_DEFENCE_RANGE : PLAYERBOT_ANTIPK_FOE_RANGE));
+			// An executioner's prey is let go when the state ends.
+			if (keep && p.bFoeReason == BOT_FOE_EXECUTOR &&
+					!IsPlayerBotRareNow(p, playerbot_persona::RARE_EGZEKUTOR, dwNow))
+				keep = false;
 			const char* why = keep ? "" : (!held || held->IsDead() ? "foe_down" : "out_of_reach");
 			if (keep && p.bFoeReason == BOT_FOE_STONE_RIVAL)
 			{
@@ -336,6 +456,8 @@ namespace
 			return BeginPlayerBotFoe(ch, state, aggressor, BOT_FOE_PARTY, dwNow);
 		if (LPCHARACTER aggressor = FindPlayerBotGuildAggressor(ch, dwNow))
 			return BeginPlayerBotFoe(ch, state, aggressor, BOT_FOE_GUILD, dwNow);
+		if (LPCHARACTER executor = FindPlayerBotExecutorToDefendAgainst(ch, dwNow))
+			return BeginPlayerBotFoe(ch, state, executor, BOT_FOE_DEFEND, dwNow);
 		std::map<DWORD, TPlayerBotGrudge>::iterator grudge = s_mapPlayerBotGrudge.find(ch->GetPlayerID());
 		if (grudge != s_mapPlayerBotGrudge.end())
 		{
@@ -364,6 +486,9 @@ namespace
 					return BeginPlayerBotFoe(ch, state, rival, BOT_FOE_STONE_RIVAL, dwNow);
 			}
 		}
+		// And last the executioner's own hunt (Iwakura's Patch 3, point 7).
+		if (LPCHARACTER prey = FindPlayerBotExecutorPrey(ch, state, dwNow))
+			return BeginPlayerBotFoe(ch, state, prey, BOT_FOE_EXECUTOR, dwNow);
 		return NULL;
 	}
 
@@ -464,6 +589,31 @@ namespace
 		}
 		if (!byPlayer)
 			return;
+		// Iwakura's Patch 3, point 7: an executioner killed by another bot
+		// changes its ground ("zmienia spot na inny") - the spot is avoided for
+		// the rest of its time, and the walk back to it is forgotten. None of
+		// the capitulation: that is for a bot that was hunted, not a hunter.
+		if (IsPlayerBotRareNow(p, playerbot_persona::RARE_EGZEKUTOR, dwNow) && p.dwStruckAt != 0 &&
+				dwNow - p.dwStruckAt < PLAYERBOT_ANTIPK_STRUCK_MEMORY_MS &&
+				CPlayerBotManager::instance().IsRegisteredBotPID(p.dwStruckByPID))
+		{
+			p.dwFoeVID = 0;
+			p.bFoeReason = BOT_FOE_NONE;
+			p.lAvoidSpotMap = ch->GetMapIndex();
+			p.lAvoidSpotX = ch->GetX();
+			p.lAvoidSpotY = ch->GetY();
+			p.dwAvoidSpotUntil = p.dwRareUntil;
+			state.lDeathX = 0;
+			state.lDeathY = 0;
+			state.dwTargetVID = 0;
+			state.dwNextWanderTime = dwNow;
+			state.dwHubChosenTime = 0;
+			ClearPlayerBotRoute(state, true);
+			sys_log(0, "PLAYERBOT_PERSONA: executioner changes ground pid=%u name=%s level=%u killer_pid=%u map=%ld spot=(%ld,%ld)",
+					ch->GetPlayerID(), ch->GetName(), (unsigned int)ch->GetLevel(), p.dwStruckByPID,
+					ch->GetMapIndex(), ch->GetX(), ch->GetY());
+			return;
+		}
 		// Who: the player whose blow the engine last reported, if it was recent.
 		// None means the blows that killed were not the protocol's business - a
 		// duel the bot agreed to, a guild war, another bot's splash that grazed

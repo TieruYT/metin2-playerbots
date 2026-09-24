@@ -266,6 +266,10 @@ namespace
 				}
 			}
 		}
+		// Iwakura's Patch 3, point 2: the gambler works nothing under its
+		// level floor, so the list keeps nothing under it for the gambler.
+		if (piece.kind != playerbot_persona::LPP_NONE && !IsPlayerBotGambleLevelOk(item))
+			piece.kind = playerbot_persona::LPP_NONE;
 		return piece.kind != playerbot_persona::LPP_NONE;
 	}
 
@@ -360,6 +364,73 @@ namespace
 		return item && item->GetVnum() >= PLAYERBOT_HERB_VNUM_FIRST && item->GetVnum() <= PLAYERBOT_HERB_VNUM_LAST;
 	}
 
+	// The family rule alone: the list names the piece, the bot has not
+	// outgrown it and its family's better copies leave it a place.
+	bool IsPlayerBotLppKeptByFamily(LPCHARACTER ch, const TPlayerBotPersona& p, LPITEM item)
+	{
+		playerbot_persona::TLppPiece piece;
+		DWORD family = 0;
+		if (!ClassifyPlayerBotLppItem(ch, item, piece, family))
+			return false;
+		return playerbot_persona::LppKeeps(piece, (int)ch->GetLevel(),
+				IsPlayerBotLppFamilyPerfect(ch, item, family),
+				CountPlayerBotLppKeptAhead(ch, p, item, family));
+	}
+
+	// What a piece is worth as the gambler's stock: Iwakura's sheet at its +7,
+	// which is what the total keeps the most of.
+	long long GetPlayerBotLppStockValue(LPITEM item)
+	{
+		return (long long)GetPlayerBotGambleValueAt(item, playerbot_persona::GAMBLE_SAFE_PLUS);
+	}
+
+	// Iwakura's Patch 3, point 3: "lacznie maksymalnie 18 sztuk", the bag and
+	// the box together. The box's kept pieces come first - wLppBoxGearKept, as
+	// the last visit's plan left them (PlanLppBoxRelease keeps the most
+	// valuable) - and the bag fills what is left, its most valuable pieces
+	// first. Worked out once a second a bot: every collector asks it of every
+	// piece, and each answer walks the bag.
+	struct TPlayerBotLppBagTotal
+	{
+		DWORD at;
+		int familyKept;
+		std::set<DWORD> kept;
+		TPlayerBotLppBagTotal() : at(0), familyKept(0) {}
+	};
+	std::map<DWORD, TPlayerBotLppBagTotal> s_mapPlayerBotLppBagTotal;
+
+	bool IsPlayerBotLppWithinTotal(LPCHARACTER ch, const TPlayerBotPersona& p, LPITEM item)
+	{
+		const DWORD dwNow = get_dword_time();
+		TPlayerBotLppBagTotal& total = s_mapPlayerBotLppBagTotal[ch->GetPlayerID()];
+		if (total.at == 0 || dwNow - total.at >= 1000)
+		{
+			total.at = dwNow;
+			total.kept.clear();
+			std::vector<std::pair<long long, WORD> > order;
+			for (WORD cell = 0; cell < PLAYERBOT_BAG_CELLS; ++cell)
+			{
+				LPITEM other = ch->GetInventoryItem(cell);
+				if (!other || other->GetCell() != cell || other->IsEquipped() ||
+						(other->GetType() != ITEM_WEAPON && other->GetType() != ITEM_ARMOR) ||
+						IsPlayerBotLppFinished(p, other) || !IsPlayerBotLppKeptByFamily(ch, p, other))
+					continue;
+				order.push_back(std::make_pair(-GetPlayerBotLppStockValue(other), cell));
+			}
+			std::sort(order.begin(), order.end());
+			total.familyKept = (int)order.size();
+			const int allowed = std::max(0, PLAYERBOT_LPP_TOTAL_LIMIT - (int)p.wLppBoxGearKept);
+			for (size_t i = 0; i < order.size() && (int)i < allowed; ++i)
+				total.kept.insert(ch->GetInventoryItem(order[i].second)->GetID());
+		}
+		const bool inBag = item->GetWindow() == INVENTORY && !item->IsEquipped() &&
+				ch->GetInventoryItem(item->GetCell()) == item;
+		if (inBag)
+			return total.kept.find(item->GetID()) != total.kept.end();
+		// A line on a counter comes behind every piece in the bag.
+		return total.familyKept < PLAYERBOT_LPP_TOTAL_LIMIT - (int)p.wLppBoxGearKept;
+	}
+
 	// Whether the bot keeps this piece - in its bag, on its way to the box, or
 	// standing on its counter (then it comes home). Soul stones by their own
 	// rule, five of a kind counting the box's.
@@ -393,14 +464,8 @@ namespace
 		if (IsPlayerBotLppFinished(p, item))
 			return false;
 		// A plain piece included: it is what the gambler's anvil works, two of
-		// a family like the rest.
-		playerbot_persona::TLppPiece piece;
-		DWORD family = 0;
-		if (!ClassifyPlayerBotLppItem(ch, item, piece, family))
-			return false;
-		return playerbot_persona::LppKeeps(piece, (int)ch->GetLevel(),
-				IsPlayerBotLppFamilyPerfect(ch, item, family),
-				CountPlayerBotLppKeptAhead(ch, p, item, family));
+		// a family like the rest - and eighteen pieces in all.
+		return IsPlayerBotLppKeptByFamily(ch, p, item) && IsPlayerBotLppWithinTotal(ch, p, item);
 	}
 
 	// A gambler's piece of the list the list does not keep - past its limit,
@@ -432,9 +497,11 @@ namespace
 	// dead stock of the unsold-stands rule, a level-30 weapon - is held two of
 	// a family (GetPlayerBotHeldFamilyLimit) like everything else, the rule
 	// applying "zawsze", always.
-	void CollectPlayerBotLppBoxRelease(LPCHARACTER ch, CSafebox* box, std::set<DWORD>& ids)
+	void CollectPlayerBotLppBoxRelease(LPCHARACTER ch, CSafebox* box, std::set<DWORD>& ids, int* kept)
 	{
 		ids.clear();
+		if (kept)
+			*kept = 0;
 		if (!ch || !box || !IsPlayerBotPersonaEnabled())
 			return;
 		TPlayerBotAIStateMap::const_iterator st = s_mapPlayerBotAIStates.find(ch->GetPlayerID());
@@ -453,6 +520,7 @@ namespace
 			held.id = item->GetID();
 			held.family = GetPlayerBotLppFamily(item);
 			held.rank = GetPlayerBotLppRank(item);
+			held.value = GetPlayerBotLppStockValue(item);
 			playerbot_persona::TLppPiece piece;
 			DWORD family = 0;
 			if (ClassifyPlayerBotLppItem(ch, item, piece, family))
@@ -469,7 +537,7 @@ namespace
 			pieces.push_back(held);
 		}
 		std::vector<uint32_t> release;
-		playerbot_persona::PlanLppBoxRelease(pieces, release);
+		playerbot_persona::PlanLppBoxRelease(pieces, release, PLAYERBOT_LPP_TOTAL_LIMIT, kept);
 		ids.insert(release.begin(), release.end());
 	}
 
@@ -571,8 +639,11 @@ namespace
 			++s_uPlayerBotLppVisits;
 		{
 			std::set<DWORD> release;
-			CollectPlayerBotLppBoxRelease(ch, box, release);
+			int kept = 0;
+			CollectPlayerBotLppBoxRelease(ch, box, release, &kept);
 			p.wLppReleasable = (WORD)std::min<size_t>(release.size(), 65535);
+			p.wLppBoxGearKept = (WORD)std::max(0, kept);
+			s_mapPlayerBotLppBagTotal.erase(ch->GetPlayerID());
 			p.dwLppReleaseVisitAt = get_dword_time() + PLAYERBOT_LPP_RELEASE_VISIT_GAP_MS;
 		}
 		const bool wasFull = p.bLppBoxFull;

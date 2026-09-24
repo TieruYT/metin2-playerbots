@@ -311,6 +311,9 @@ namespace
 		// A socket open on a piece it keeps.
 		if (PlayerBotHasOpenSoulStoneSocket(ch))
 			return true;
+		// The bases the addict's anvil works (Iwakura's Patch 3, point 7).
+		if (PlayerBotAddictWantsBases(ch))
+			return true;
 		// And a piece of gear for a slot that is empty or behind the ladder.
 		//
 		// This branch was missing, and it is the whole of why "I put +8 battle
@@ -385,6 +388,13 @@ namespace
 			return price <= spare * playerbot_persona::PERFECT_BUDGET_PERCENT / 100;
 		if (IsPlayerBotStrategicPurchase(item->GetVnum()) || IsPlayerBotStrategicWeaponOffer(ch, item))
 			return price <= GetPlayerBotStrategicPurchaseCap(ch);
+		// The addict's bases and materials come out of its own budget
+		// (GetPlayerBotAddictBudgetLeft, Iwakura's Patch 3, point 7).
+		{
+			const long long addictLeft = GetPlayerBotAddictBudgetLeft(ch);
+			if (addictLeft > 0 && WantsPlayerBotGambleOffer(ch, item))
+				return price <= addictLeft;
+		}
 		const long long cap = (long long)GetPlayerBotMarketMedianWallet() * PLAYERBOT_MARKET_STACK_WALLET_PERCENT / 100;
 		return cap <= 0 || price <= cap;
 	}
@@ -989,6 +999,7 @@ namespace
 		s_mapMarketLedger.clear();
 		s_mapMarketLocalSupply.clear();
 		s_iPlayerBotJunkWeaponsOnCounters = 0;
+		s_mapPlayerBotLowArmourOnCounters.clear();
 		RefreshPlayerBotWorldYang(dwNow);
 
 		DWORD stalls = 0, lines = 0, demandBots = 0;
@@ -1020,7 +1031,7 @@ namespace
 					if (!FindPlayerBotOfferItem(ch, offer))
 						continue;
 					AddPlayerBotMarketSupply(offer.dwVnum, offer.wCount, ch->GetMapIndex());
-					NotePlayerBotJunkWeaponOnCounter(offer.dwVnum, offer.wCount);
+					NotePlayerBotCappedLineOnCounter(offer.dwVnum, offer.wCount);
 					++lines;
 				}
 			}

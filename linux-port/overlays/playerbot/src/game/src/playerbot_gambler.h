@@ -32,6 +32,14 @@ namespace
 		return state.persona.bGambling && dwNow < state.persona.dwGambleUntil;
 	}
 
+	// Iwakura's Patch 3, point 7: the addict (Nalogowiec) stakes 85 percent of
+	// its purse where the gambler stakes forty.
+	int GetPlayerBotGambleBudgetPercent(const TPlayerBotPersona& p, DWORD dwNow)
+	{
+		return IsPlayerBotRareNow(p, playerbot_persona::RARE_NALOGOWIEC, dwNow)
+				? PLAYERBOT_NALOGOWIEC_BUDGET_PERCENT : playerbot_persona::GAMBLE_BUDGET_PERCENT;
+	}
+
 	// What the gamblers did and why the rest did not start, for the census
 	// every ten minutes (ReportPlayerBotGambleCensus): "czy strategia
 	// hazardzisty sie odpala" (Iwakura, 23 September) is a question the log
@@ -83,6 +91,28 @@ namespace
 		return 0;
 	}
 
+	// Iwakura's Patch 3, point 2: nothing under level thirty at the gambler's
+	// anvil ("aby wyeliminowac sytuacje ulepszania ekwipunku na 1. poziom"),
+	// a body armour from eighteen and earrings from twenty-two. The level is
+	// the item's own limit. The list asks it too (ClassifyPlayerBotLppItem):
+	// what the gambler will not work is no stock of the gambler's.
+	int GetPlayerBotGambleMinItemLevel(LPITEM item)
+	{
+		if (item && item->GetType() == ITEM_ARMOR)
+		{
+			if (item->GetSubType() == ARMOR_BODY)
+				return PLAYERBOT_GAMBLE_MIN_ARMOUR_LEVEL;
+			if (item->GetSubType() == ARMOR_EAR)
+				return PLAYERBOT_GAMBLE_MIN_EARRING_LEVEL;
+		}
+		return PLAYERBOT_GAMBLE_MIN_ITEM_LEVEL;
+	}
+
+	bool IsPlayerBotGambleLevelOk(LPITEM item)
+	{
+		return item && (int)GetPlayerBotPersonaLevelLimit(item) >= GetPlayerBotGambleMinItemLevel(item);
+	}
+
 	// A piece the gambler could work, judged by the item alone - which is all
 	// a piece in the safebox has. The LPP's "cenny ekwipunek": a family his tier
 	// list rates PLAYERBOT_GAMBLE_MIN_TIER or better in PvE or PvP, or the body
@@ -99,6 +129,8 @@ namespace
 		if (type != ITEM_WEAPON && type != ITEM_ARMOR)
 			return false;
 		if (item->GetRefinedVnum() == 0 || item->GetRefineLevel() >= 9)
+			return false;
+		if (!IsPlayerBotGambleLevelOk(item))
 			return false;
 		if (IsPlayerBotSpecialLevel30Weapon(item) || IsPlayerBotScrollOnlyWeapon(item) ||
 				IsPlayerBotPrizeItem(item) || IsPlayerBotMerchantOnlyGear(item))
@@ -278,6 +310,7 @@ namespace
 		if (!p.bGambling)
 			return;
 		p.bGambling = false;
+		const bool addict = IsPlayerBotRareNow(p, playerbot_persona::RARE_NALOGOWIEC, dwNow);
 		// Every piece the session took is for sale now, finished or stopped
 		// short: the list used to keep the best copy of a family - the highest
 		// plus - so what the anvil had just made went back to the storekeeper
@@ -285,6 +318,16 @@ namespace
 		// ulepszaja na sell", Iwakura, 23 September).
 		for (size_t i = 0; i < p.vecGamblePlans.size(); ++i)
 		{
+			// The addict wears what came off the anvil better than its own
+			// gear ("jesli ulepszony ekwipunek jest lepszy od jego obecnego -
+			// zaklada go"); the rest, worse or another class's, is for sale.
+			if (addict && ch)
+			{
+				LPITEM made = ITEM_MANAGER::instance().Find(p.vecGamblePlans[i].dwItemId);
+				if (made && made->GetOwner() == ch && made->GetWindow() == INVENTORY &&
+						IsPlayerBotWearableUpgrade(ch, made, made->GetCell()))
+					continue;
+			}
 			if (p.setGambleForSale.size() >= 64)
 				p.setGambleForSale.erase(p.setGambleForSale.begin());
 			p.setGambleForSale.insert(p.vecGamblePlans[i].dwItemId);
@@ -297,13 +340,15 @@ namespace
 		s_PlayerBotGambleCensus.spent += p.llGambleSpent;
 		p.dwNextGambleAt = dwNow + number(PLAYERBOT_GAMBLE_REST_MIN_MS, PLAYERBOT_GAMBLE_REST_MAX_MS);
 		p.dwNextDecide = 0;
-		const long long budget = p.llGambleGoldStart * playerbot_persona::GAMBLE_BUDGET_PERCENT / 100;
-		sys_log(0, "PLAYERBOT_PERSONA: gambler done pid=%u name=%s reason=%s spent=%lld budget=%lld attempts=%u set_aside=%u burned=%u downgraded=%u nines=%u gold=%lld",
+		const long long budget = p.llGambleGoldStart * GetPlayerBotGambleBudgetPercent(p, dwNow) / 100;
+		sys_log(0, "PLAYERBOT_PERSONA: gambler done pid=%u name=%s reason=%s spent=%lld budget=%lld attempts=%u set_aside=%u burned=%u downgraded=%u nines=%u gold=%lld addict=%d",
 				ch ? ch->GetPlayerID() : 0, ch ? ch->GetName() : "?", reason ? reason : "?",
 				p.llGambleSpent, budget, (unsigned int)p.wGambleAttempts,
 				(unsigned int)p.bGambleFinished, (unsigned int)p.bGambleBurned,
 				(unsigned int)p.bGambleDowngraded, (unsigned int)p.bGambleNines,
-				ch ? (long long)ch->GetGold() : 0LL);
+				ch ? (long long)ch->GetGold() : 0LL, addict ? 1 : 0);
+		if (addict)
+			p.llRareSpent = p.llGambleSpent;
 #if defined(PLAYERBOT_ENGINE_MT2009) && defined(ENABLE_IKASHOP_RENEWAL)
 		// "Bot aktualizuje swoj sklep offline": the stand is served as soon as
 		// the visit lets the bot go, so what came off the anvil goes up.
@@ -325,7 +370,11 @@ namespace
 		TPlayerBotPersona& p = state.persona;
 		if (!p.bRestored || p.bGambling)
 			return false;
-		if (dwNow < p.dwNextGambleAt)
+		// Iwakura's Patch 3, point 7: the addict goes to the anvil at the end
+		// of every visit, past the rest, the Perfectionist, the purse, its own
+		// gear and the roll - the village and the party are all it asks.
+		const bool addict = IsPlayerBotRareNow(p, playerbot_persona::RARE_NALOGOWIEC, dwNow);
+		if (!addict && dwNow < p.dwNextGambleAt)
 		{
 			++s_PlayerBotGambleCensus.restNotOver;
 			return false;
@@ -339,14 +388,14 @@ namespace
 			return false;
 		}
 		// Not straight after the Perfectionist, whose visit this may be.
-		if (p.bPersona == playerbot_persona::PERSONA_PERFEKCJONISTA ||
-				(p.dwPerfectEndedAt != 0 && dwNow - p.dwPerfectEndedAt < PLAYERBOT_GAMBLE_AFTER_PERFECT_MS))
+		if (!addict && (p.bPersona == playerbot_persona::PERSONA_PERFEKCJONISTA ||
+				(p.dwPerfectEndedAt != 0 && dwNow - p.dwPerfectEndedAt < PLAYERBOT_GAMBLE_AFTER_PERFECT_MS)))
 		{
 			++s_PlayerBotGambleCensus.afterPerfect;
 			return false;
 		}
 		const long long gold = (long long)ch->GetGold();
-		if (gold < (long long)ScalePlayerBotIwakuraPrice(PLAYERBOT_GAMBLE_MIN_PURSE_BASE))
+		if (!addict && gold < (long long)ScalePlayerBotIwakuraPrice(PLAYERBOT_GAMBLE_MIN_PURSE_BASE))
 		{
 			++s_PlayerBotGambleCensus.purse;
 			return false;
@@ -366,7 +415,7 @@ namespace
 				gold >= (long long)ScalePlayerBotIwakuraPrice(PLAYERBOT_GAMBLE_TOWN_PURSE_BASE);
 		// The bot's own gear comes first - the Perfectionist is "absolutny
 		// fundament", the gambler what a bot does with what is left over.
-		if (!townTrigger && HasPlayerBotRefineOpportunity(ch))
+		if (!townTrigger && !addict && HasPlayerBotRefineOpportunity(ch))
 		{
 			++s_PlayerBotGambleCensus.ownGear;
 			return false;
@@ -377,12 +426,14 @@ namespace
 		for (size_t i = 0; i < bases.size(); ++i)
 			if (IsPlayerBotGambleWorkable(ch, bases[i]))
 				++workable;
-		if (workable == 0 && !(townTrigger && !p.mapLppStored.empty()))
+		// The addict starts on what its box holds as the town trigger does:
+		// the session's first stop is the storekeeper.
+		if (workable == 0 && !((townTrigger || addict) && !p.mapLppStored.empty()))
 		{
 			++s_PlayerBotGambleCensus.noBases;
 			return false;
 		}
-		if (!townTrigger && number(1, 100) > GetPlayerBotGambleChance(state.bPersonality))
+		if (!townTrigger && !addict && number(1, 100) > GetPlayerBotGambleChance(state.bPersonality))
 		{
 			p.dwNextGambleAt = dwNow + number(PLAYERBOT_GAMBLE_RETRY_MIN_MS, PLAYERBOT_GAMBLE_RETRY_MAX_MS);
 			++s_PlayerBotGambleCensus.rollLost;
@@ -391,8 +442,12 @@ namespace
 		++s_PlayerBotGambleCensus.started;
 
 		p.bGambling = true;
-		p.llGambleGoldStart = gold;
-		p.llGambleSpent = 0;
+		// The addict's budget counts from the purse it began the state with,
+		// and what it bought off the counters since is already spent from it.
+		p.llGambleGoldStart = addict && p.llRareGoldStart > 0 ? p.llRareGoldStart : gold;
+		p.llGambleSpent = addict ? p.llRareSpent : 0;
+		if (addict)
+			p.bRareStage = 1;
 		p.dwGambleUntil = dwNow + PLAYERBOT_GAMBLE_MAX_MS;
 		p.dwNextGambleStep = 0;
 		p.bGambleNines = 0;
@@ -404,10 +459,11 @@ namespace
 		p.bGambleSafeboxTaken = 0;
 		p.vecGamblePlans.clear();
 		p.dwNextDecide = 0;
-		sys_log(0, "PLAYERBOT_PERSONA: gambler begins pid=%u name=%s gold=%lld budget=%lld pieces=%u workable=%u character=%u map=%ld town_trigger=%d",
+		sys_log(0, "PLAYERBOT_PERSONA: gambler begins pid=%u name=%s gold=%lld budget=%lld pieces=%u workable=%u character=%u map=%ld town_trigger=%d addict=%d",
 				ch->GetPlayerID(), ch->GetName(), gold,
-				gold * playerbot_persona::GAMBLE_BUDGET_PERCENT / 100, (unsigned int)bases.size(),
-				(unsigned int)workable, (unsigned int)state.bPersonality, mapIndex, townTrigger ? 1 : 0);
+				p.llGambleGoldStart * GetPlayerBotGambleBudgetPercent(p, dwNow) / 100, (unsigned int)bases.size(),
+				(unsigned int)workable, (unsigned int)state.bPersonality, mapIndex, townTrigger ? 1 : 0,
+				addict ? 1 : 0);
 
 		// The errands the visit came for are done; what is left is the
 		// storekeeper and the anvil, walked by the same phases as any visit.
@@ -463,7 +519,7 @@ namespace
 		p.dwNextGambleStep = dwNow + number(PLAYERBOT_GAMBLE_STEP_MIN_MS, PLAYERBOT_GAMBLE_STEP_MAX_MS);
 
 		const long long left = playerbot_persona::BudgetLeft(p.llGambleGoldStart,
-				playerbot_persona::GAMBLE_BUDGET_PERCENT, p.llGambleSpent);
+				GetPlayerBotGambleBudgetPercent(p, dwNow), p.llGambleSpent);
 		if (left <= 0)
 		{
 			EndPlayerBotGamble(ch, state, dwNow, "budget");
@@ -725,21 +781,69 @@ namespace
 			return false;
 		TPlayerBotAIStateMap::const_iterator it = s_mapPlayerBotAIStates.find(ch->GetPlayerID());
 		const DWORD dwNow = get_dword_time();
-		if (it == s_mapPlayerBotAIStates.end() || !IsPlayerBotGambling(it->second, dwNow))
+		if (it == s_mapPlayerBotAIStates.end())
 			return false;
 		const TPlayerBotPersona& p = it->second.persona;
-		if (playerbot_persona::BudgetLeft(p.llGambleGoldStart,
-				playerbot_persona::GAMBLE_BUDGET_PERCENT, p.llGambleSpent) <= 0)
+		// The addict buys what its anvil will want before its session too
+		// ("wlacznie z kupowaniem ulepszaczy i itemow do +6"), out of the
+		// purse it began the state with.
+		const bool gambling = IsPlayerBotGambling(it->second, dwNow);
+		const bool addict = IsPlayerBotRareNow(p, playerbot_persona::RARE_NALOGOWIEC, dwNow);
+		if (!gambling && !addict)
+			return false;
+		const long long start = gambling ? p.llGambleGoldStart : p.llRareGoldStart;
+		const long long spent = gambling ? p.llGambleSpent : p.llRareSpent;
+		if (playerbot_persona::BudgetLeft(start, GetPlayerBotGambleBudgetPercent(p, dwNow), spent) <= 0)
 			return false;
 		if (offer->GetType() == ITEM_WEAPON || offer->GetType() == ITEM_ARMOR)
 		{
+			if (addict && offer->GetRefineLevel() > PLAYERBOT_NALOGOWIEC_BASE_MAX_PLUS)
+				return false;
 			std::vector<LPITEM> bases;
 			CollectPlayerBotGambleBases(ch, bases);
-			return (int)bases.size() < PLAYERBOT_GAMBLE_MARKET_BASES && IsPlayerBotGambleStock(ch, offer);
+			return (int)bases.size() < (addict ? PLAYERBOT_NALOGOWIEC_MARKET_BASES : PLAYERBOT_GAMBLE_MARKET_BASES) &&
+					IsPlayerBotGambleStock(ch, offer);
 		}
 		std::set<DWORD> materials;
 		CollectPlayerBotGambleMaterials(ch, materials);
 		return materials.find(offer->GetVnum()) != materials.end();
+	}
+
+	// Whether the addict still looks for bases on the counters before its
+	// session: nothing else sends it to a market, and with no base in the bag
+	// its session never starts (no_bases) - BohenHleba, drawn on m2zip on
+	// 24 September, visited three merchants and no anvil in a quarter of an hour.
+	// What is left of the addict's 85 percent, or 0 for any other bot. The
+	// addict pays for its anvil's bases and materials out of this, not out
+	// of the share of the median wallet an ordinary buyer is held to: at a
+	// yang rate of 3000% that share was 0.8 million against bases of several.
+	long long GetPlayerBotAddictBudgetLeft(LPCHARACTER ch)
+	{
+		if (!ch || !IsPlayerBotPersonaEnabled())
+			return 0;
+		TPlayerBotAIStateMap::const_iterator it = s_mapPlayerBotAIStates.find(ch->GetPlayerID());
+		if (it == s_mapPlayerBotAIStates.end())
+			return 0;
+		const DWORD dwNow = get_dword_time();
+		const TPlayerBotPersona& p = it->second.persona;
+		if (!IsPlayerBotRareNow(p, playerbot_persona::RARE_NALOGOWIEC, dwNow))
+			return 0;
+		const bool gambling = IsPlayerBotGambling(it->second, dwNow);
+		const long long left = playerbot_persona::BudgetLeft(gambling ? p.llGambleGoldStart : p.llRareGoldStart,
+				GetPlayerBotGambleBudgetPercent(p, dwNow), gambling ? p.llGambleSpent : p.llRareSpent);
+		return std::max(0LL, left);
+	}
+
+	bool PlayerBotAddictWantsBases(LPCHARACTER ch)
+	{
+		if (GetPlayerBotAddictBudgetLeft(ch) <= 0)
+			return false;
+		TPlayerBotAIStateMap::const_iterator it = s_mapPlayerBotAIStates.find(ch->GetPlayerID());
+		if (it == s_mapPlayerBotAIStates.end() || IsPlayerBotGambling(it->second, get_dword_time()))
+			return false;
+		std::vector<LPITEM> bases;
+		CollectPlayerBotGambleBases(ch, bases);
+		return (int)bases.size() < PLAYERBOT_NALOGOWIEC_MARKET_BASES;
 	}
 
 	// Anything a gambler buys comes out of the session's budget, the fees and
@@ -751,9 +855,12 @@ namespace
 		if (!ch || paid <= 0)
 			return;
 		TPlayerBotAIStateMap::iterator it = s_mapPlayerBotAIStates.find(ch->GetPlayerID());
-		if (it == s_mapPlayerBotAIStates.end() || !IsPlayerBotGambling(it->second, get_dword_time()))
+		if (it == s_mapPlayerBotAIStates.end())
 			return;
-		it->second.persona.llGambleSpent += paid;
+		if (IsPlayerBotGambling(it->second, get_dword_time()))
+			it->second.persona.llGambleSpent += paid;
+		else if (IsPlayerBotRareNow(it->second.persona, playerbot_persona::RARE_NALOGOWIEC, get_dword_time()))
+			it->second.persona.llRareSpent += paid;
 	}
 }
 

@@ -1092,8 +1092,12 @@ namespace
 		state.dwFishingIdleSince = 0;
 		state.dwFishingSessionEndTime = 0;
 		state.dwNextFishingActionTime = 0;
+		// The mad angler is back at the water a minute or two later (Iwakura's
+		// Patch 3, point 7).
 		state.dwNextFishingCheckTime = dwNow +
-				number(PLAYERBOT_FISHING_REST_MIN, PLAYERBOT_FISHING_REST_MAX);
+				(IsPlayerBotRareNow(state.persona, playerbot_persona::RARE_WEDKARZ, dwNow)
+					? number(PLAYERBOT_WEDKARZ_REST_MIN_MS, PLAYERBOT_WEDKARZ_REST_MAX_MS)
+					: number(PLAYERBOT_FISHING_REST_MIN, PLAYERBOT_FISHING_REST_MAX));
 		StowPlayerBotRod(ch);
 		// The Rybak sells them to the Fisherman beside the bank, and only from
 		// a bag seventy percent full; without the switch they are thrown away.

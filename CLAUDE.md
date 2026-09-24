@@ -122,6 +122,7 @@ dependency order at the top of `playerbot_manager.cpp`:
 | `playerbot_persona.h` | Which personality claims a bot now, its Grinder tier and lock, the Law of Advancement, the two habits of a weak mood (the pause and the AFK stop), and the census. |
 | `playerbot_gambler.h` | The gambler's session: the pieces it takes to the anvil, the ambition rolled for each, the budget, and what it does with what survives. |
 | `playerbot_lpp.h` | Iwakura's Useful Items List: what a bot keeps at the storekeeper rather than sells, what the box holds, and what it lets go. |
+| `playerbot_rare_persona.h` | Iwakura's rare personalities (Patch 3, point 7): the draw on each core, a state's start and end. After anti_pk.h, whose foe pass is the Executioner's fight. |
 | `playerbot_anti_pk.h` | The Anti-PK protocol and the stone hunter's quarrel: who struck the bot, who it fights back, and the capitulation after five deaths on one spot. |
 | `playerbot_companions.h` | The two social personalities: the companion's phase and its invitations to people, a companion Shaman's party buffs, and the mercenary's contracts. After demon_tower.h. |
 | `playerbot_manager.cpp` | Personality, party, upkeep, the watchdog - and `CPlayerBotManager` with the tick. |
@@ -8366,6 +8367,66 @@ not in `data/`) reworked these point by point. What each hangs on:
   one roll. A Hermit's Advice waits for its class book, because the quest takes
   it off at any recipe read. Two minutes after the deploy: 60 bots onboarded,
   201 recipes read, 100 learnt.
+- **Iwakura's Patch 3 (24 September) is seven points, each on an old path.**
+  (1) The classic panel's gear history has tabs - trade, bonuses, refining,
+  other, all - and the trade tab reads `log.ikarusshop_log` too: a bot's
+  purchase from an offline shop is BUY_ITEM there and nothing in `log.log`.
+  (2) The gambler works nothing under level thirty, a body armour from
+  eighteen and earrings from twenty-two (`IsPlayerBotGambleLevelOk`, asked by
+  `IsPlayerBotGambleStock` and by the list, which keeps nothing the gambler
+  will not work), and a piece its session made at +7 or past is a reason to
+  keep a counter (`HasPlayerBotGambleGoods`). (3) The list keeps eighteen
+  pieces of gear in all, the bag and the box together: `PlanLppBoxRelease`
+  takes a total after the families have chosen, the most valuable on his sheet
+  at +7 first (unit-tested), `wLppBoxGearKept` is what the bag's share is
+  counted against, and the dead-stock deposit stops at it too. (4) At most
+  `PLAYERBOT_LOW_ARMOUR_MARKET_CAP` (twenty) body armours of one family at +0
+  to +4 stand on all the bots' counters: counted on the ledger like the junk
+  weapons (`NotePlayerBotCappedLineOnCounter`), refused past it, one past it
+  comes home (`low_armour`), and a bot that would list another takes it to the
+  plain anvil for +5 while the next step can be paid
+  (`PlayerBotRefinesLowArmourForSale`), the merchant's otherwise. m2zip held
+  98, 81, 76 and 66 lines of the four level-34 families. (5) The green and
+  purple potions (27100-27115) go up only in packs of 20, 50, 100 or 200 - the
+  largest the spare fills - and a line that is not a whole pack comes home to be
+  poured together (`potion_pack`): 1 396 of 1 406 lines on m2zip were under
+  twenty. (6) A counter is laid out by category - weapons, armour, jewellery,
+  books, refine goods, soul stones, bonus stones, potions, the rest
+  (`GetPlayerBotShopCategory`): a stall is laid out again over a clear grid
+  when it opens (`RelayPlayerBotStallByCategory`), and an offline shop puts a
+  new line between the categories before and after its own
+  (`BotOfflineSlot`), because a counter changes a line a visit and moving a
+  line costs two mutations. (7) The rare personalities, below.
+- **The rare personalities are old errands held open longer.**
+  `playerbot_rare_persona.h` draws them on each core every ten minutes
+  (`GetRareRule`, `RareCap`, `RareMayStart`, `RareDrawWins`, pure and
+  unit-tested): each qualifying bot wins a kind one time in its number, the
+  Metinolog one per 300 of the bots that qualify at once, every other kind one
+  at a time behind a world pause (4, 8, 3 and 12 hours). The Metinolog is a
+  Metin expedition of 120-250 minutes; the Nalogowiec the gambler's session
+  past every gate but the village and the party, on 85 percent of the purse it
+  began with, buying bases to +6 off the counters before the session too, and
+  wearing what comes out better than its gear; the Szalony Naukowiec one market
+  trip for its Master skills' books on 70 percent of the purse
+  (`PlayerBotNeedsMasterBooks`); the Egzekutor two hours of falling on another
+  kingdom's characters within ten levels on the shared maps - the Anti-PK
+  foe pass is its fight (`BOT_FOE_EXECUTOR`), its victim answers the blow, up
+  to six bots of the victim's kingdom within 3 500 come to help
+  (`BOT_FOE_DEFEND`, the executor call), and a death at a bot's hands sends it
+  to other ground instead of any capitulation; the Szalony Wedkarz six hours of
+  the fishing spell with a minute or two between sessions. The persona is the
+  rare one's for its whole length, after a contract and a party only; its title
+  is 110-114 and red, which a client before 2.0.31 does not know and draws
+  nothing for. The states and the pauses are in the core's memory: a restart
+  ends them. The first addict drawn on m2zip, BohenHleba, went round three
+  merchants and never reached the anvil: a session wants a workable base in
+  the bag (`no_bases`), and nothing sent the bot to a counter for one. So its
+  want of bases is a reason to walk to a market (`PlayerBotAddictWantsBases`
+  in `PlayerBotWantsAnythingFromMarket`), what it buys for its anvil is paid
+  from its own budget, not the median wallet's share, which at m2zip's rate
+  was 0.8 million against bases of several (`GetPlayerBotAddictBudgetLeft` in
+  `CanPlayerBotPayForOffer`), and it starts on its box's pieces as the town
+  trigger does.
 
 
 ## Engine facts worth not re-deriving

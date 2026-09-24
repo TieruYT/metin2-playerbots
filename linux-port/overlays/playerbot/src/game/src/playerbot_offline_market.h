@@ -310,7 +310,7 @@ namespace {
             for (const auto& [id, item] : shop->GetItems()) {
                 if (!item) continue;
                 AddPlayerBotMarketSupply(item->GetVnum(), item->GetInfo().count, shop->GetSpawn().map);
-                if (botShop) NotePlayerBotJunkWeaponOnCounter(item->GetVnum(), item->GetInfo().count);
+                if (botShop) NotePlayerBotCappedLineOnCounter(item->GetVnum(), item->GetInfo().count);
                 ++lines;
             }
         }

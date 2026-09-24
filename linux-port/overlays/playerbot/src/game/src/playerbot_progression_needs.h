@@ -77,6 +77,18 @@ namespace {
         return offer && offer->GetCount() > 0 &&
             (int)offer->GetCount() <= GetPlayerBotProgressionNeed(ch, offer);
     }
+    // A skill of the bot's build at Master still short of its books: what the
+    // mad scientist goes to the market for (playerbot_rare_persona.h).
+    bool PlayerBotNeedsMasterBooks(LPCHARACTER ch) {
+        if (!ch || !ch->IsItemLoaded() || !ch->GetSkillGroup()) return false;
+        const TJobSkillBuild build = GetPlayerBotSkillBuild(ch->GetJob(), ch->GetSkillGroup(), ch->GetPlayerID());
+        for (BYTE i = 0; i < build.bSkillCount; ++i) {
+            DWORD skill = build.dwSkills[i];
+            if (skill && ch->GetSkillMasterType(skill) == SKILL_MASTER &&
+                    CountPlayerBotOwnedSkillBooks(ch, skill) < GetPlayerBotBookKeepLimit(ch, skill)) return true;
+        }
+        return false;
+    }
     bool PlayerBotNeedsProgressionShopping(LPCHARACTER ch) {
         if (!ch || !ch->IsItemLoaded() || !ch->GetSkillGroup()) return false;
         const TJobSkillBuild build = GetPlayerBotSkillBuild(ch->GetJob(), ch->GetSkillGroup(), ch->GetPlayerID());
@@ -148,6 +160,18 @@ namespace {
             if (PlayerBotNeedsProgressionShopping(ch)) return true;
             s_mapPlayerBotProgressionTrip.erase(ch->GetPlayerID());
             state.dwProgressionTripUntil = 0;
+        }
+        // Iwakura's Patch 3, point 7: the mad scientist goes to the market for
+        // its books at once, past the share and the clocks - one trip, whose
+        // end is the end of the state (playerbot_rare_persona.h).
+        if (IsPlayerBotRareNow(state.persona, playerbot_persona::RARE_NAUKOWIEC, now)) {
+            if (state.persona.bRareStage != 0 || !PlayerBotNeedsMasterBooks(ch)) return false;
+            state.persona.bRareStage = 1;
+            state.dwProgressionTripUntil = now + PLAYERBOT_PROGRESSION_TRIP_MS;
+            s_mapPlayerBotProgressionTrip[ch->GetPlayerID()] = state.dwProgressionTripUntil;
+            sys_log(0, "PLAYERBOT_MARKET: progression trip pid=%u name=%s map=%ld level=%d gold=%lld mad_scientist=1",
+                ch->GetPlayerID(), ch->GetName(), ch->GetMapIndex(), (int)ch->GetLevel(), (long long)ch->GetGold());
+            return true;
         }
         if (!state.dwProgressionTripNext) {
             state.dwProgressionTripNext = now + PLAYERBOT_PROGRESSION_TRIP_FIRST_MIN_MS +
