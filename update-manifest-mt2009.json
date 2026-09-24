@@ -1,20 +1,20 @@
 {
   "schema": 1,
   "channel": "stable",
-  "publishedAt": "2026-09-24T13:57:07Z",
-  "statusMessage": "2.2.9 (serwer 2.2.9, klient 2.0.30 - zaktualizuj oba): autologin w Auto Lowach (klient 2.0.30); botom-lucznikom strzaly sie nie koncza; demony na 7. pietrze Wiezy pojawiaja sie raz; kompilacja przy aktualizacji wedlug wolnej pamieci Dockera. Zawiera wszystko z 2.2.8.",
+  "publishedAt": "2026-09-24T16:46:05Z",
+  "statusMessage": "2.2.10 (serwer 2.2.10, klient 2.0.31 - zaktualizuj oba): wojna gildii graczy z gildia botow i obozy na wojnach gildii; boty czytaja receptury od razu i nie traca many na umiejetnosci w odnowieniu; Patch 3 Iwakury z rzadkimi osobowosciami (tytuly od klienta 2.0.31). Zawiera wszystko z 2.2.9.",
   "server": {
-    "version": "2.2.9",
-    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.9/metin2-server-update-2.2.9.zip",
-    "sha256": "694E559EA5CFCFAD7739C0F315F379E78B08657B54E40CF848DB2CB9481CE797"
+    "version": "2.2.10",
+    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.10/metin2-server-update-2.2.10.zip",
+    "sha256": "46D74809B69518FD8A0F1B4B45211A7C4130A9E5C968D631FAD06946C22B505E"
   },
   "support": {
     "contactUrl": "https://discord.gg/pt5tvnrN6",
     "uploadUrl": ""
   },
   "client": {
-    "version": "2.0.30",
-    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.9/metin2-client-update-2.0.30.zip",
-    "sha256": "94378328EDF4953DE15A88D9E6F91C573CCF527CFC68F7C9B78A329B7CAECE25"
+    "version": "2.0.31",
+    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.10/metin2-client-update-2.0.31.zip",
+    "sha256": "F88FCE31A91C47F567B32FC4E83A11E74F2ABEF4B23243DC90CF13DC97809019"
   }
 }
