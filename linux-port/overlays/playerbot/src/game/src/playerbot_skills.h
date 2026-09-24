@@ -453,6 +453,21 @@ namespace
 		return false;
 	}
 
+	// A buff that is up but nearly spent, which a rider standing on the ground
+	// for another one may as well renew (PLAYERBOT_SADDLE_BUFF_REFRESH_SECONDS).
+	// The skill's affect carries the skill's vnum and ProcessAffect counts its
+	// seconds down, so the time left is the engine's own. A toggle is never
+	// renewed: UseSkill takes an active toggle off rather than casting it again.
+	bool IsPlayerBotBuffRunningOut(LPCHARACTER ch, DWORD buffVnum)
+	{
+		const CSkillProto* proto = CSkillManager::instance().Get(buffVnum);
+		if (!ch || !proto || (proto->dwFlag & SKILL_FLAG_TOGGLE))
+			return false;
+		const CAffect* affect = ch->FindAffect(buffVnum);
+		return affect && affect->lDuration > 0 &&
+				affect->lDuration <= PLAYERBOT_SADDLE_BUFF_REFRESH_SECONDS;
+	}
+
 	bool ChoosePlayerBotSkillGroup(LPCHARACTER ch)
 	{
 		if (!ch || ch->GetLevel() < 5)

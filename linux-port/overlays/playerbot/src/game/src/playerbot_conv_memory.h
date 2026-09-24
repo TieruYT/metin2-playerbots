@@ -38,7 +38,8 @@ namespace playerbot_conv
 		ASK_ACTIVITY,      // "A ty co robisz?"
 		ASK_TOPIC,         // "A ty lubisz zime?" - botAskTopic says which
 		ASK_JOIN,          // "Idziesz na exp?"
-		ASK_FOUND          // "Znalazles cos ciekawego?"
+		ASK_FOUND,         // "Znalazles cos ciekawego?"
+		ASK_SUMMON         // "Po co mam przyjsc?" - a stranger called the bot over
 	};
 
 	enum ETier
@@ -227,14 +228,24 @@ namespace playerbot_conv
 		}
 
 		// An answer to what the bot asked. Only when the line is not a new
-		// question and not one of the fixed social moves.
-		if (m.botAsk != ASK_NONE && now - m.botAskAt < CONV_BOT_ASK_TTL_MS && !IsQuestionLine(a) &&
+		// question and not one of the fixed social moves. The summon and its
+		// release are moves of their own too ("chodz tu" again, "mozesz isc");
+		// but "pomoz mi" after "Po co mam przyjsc?" is the reason asked for,
+		// which the party words would otherwise take for an invitation. And
+		// the reason often sounds like a question ("pokaze ci cos", "pomozesz
+		// mi z metinem?"): after that question only one about the bot itself
+		// ("jaki masz lvl?") is a new question.
+		const bool newQuestion = IsQuestionLine(a) &&
+				(m.botAsk != ASK_SUMMON || IsGameIntent((EIntent)a.intent));
+		if (m.botAsk != ASK_NONE && now - m.botAskAt < CONV_BOT_ASK_TTL_MS && !newQuestion &&
 				a.intent != I_FAREWELL && a.intent != I_GREETING && a.intent != I_INSULT &&
-				a.intent != I_BUY && a.intent != I_SELL && a.intent != I_PARTY_REQUEST &&
-				a.intent != I_THANKS)
+				a.intent != I_BUY && a.intent != I_SELL &&
+				(a.intent != I_PARTY_REQUEST || m.botAsk == ASK_SUMMON) &&
+				a.intent != I_SUMMON && a.intent != I_DISMISS && a.intent != I_THANKS)
 		{
 			a.subject = (EIntent)a.intent;
 			a.intent = I_ANSWER_TO_BOT;
+			a.answeredAsk = (unsigned char)m.botAsk;
 			if (a.topic == T_NONE && m.botAsk == ASK_TOPIC)
 				a.topic = m.botAskTopic;
 			return;
@@ -274,7 +285,7 @@ namespace playerbot_conv
 							base == I_EQUIPMENT) a.intent = I_INVENTORY_SPACE;
 					else if (base == I_LEVEL || base == I_PROGRESS_TODAY) a.intent = base;
 					else if (base == I_HP || base == I_FISHING || base == I_DEATH || base == I_HORSE ||
-							base == I_SKILLS) a.intent = base;
+							base == I_SKILLS || base == I_BUFFS) a.intent = base;
 					else if (baseGeneral) { a.intent = I_GENERAL; a.topic = baseTopic; a.qtype = Q_OPEN; }
 					else a.intent = I_FOLLOW_UP; // "ale czego?"
 					break;

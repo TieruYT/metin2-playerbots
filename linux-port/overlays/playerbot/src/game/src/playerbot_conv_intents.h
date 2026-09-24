@@ -43,6 +43,10 @@ namespace playerbot_conv
 		I_PARTY_REQUEST, I_SHOP, I_MARKET, I_BUY, I_SELL, I_SKILLS, I_PVP, I_TRAVEL,
 		I_REST, I_REFINE, I_MISSIONS, I_DEATH, I_RELATIONSHIP, I_TIME_HERE,
 		I_MAP_OPINION, I_DROP_LUCK, I_PROGRESS_TODAY, I_PRICE, I_ITEMSHOP,
+		// the class's path, and what a Shaman's buffs give
+		I_BUILD, I_BUFFS,
+		// asking the bot to come over, and letting it go again
+		I_SUMMON, I_DISMISS,
 		// conversation mechanics
 		I_FOLLOW_UP, I_ACK, I_LAUGH, I_YES, I_NO, I_ANSWER_TO_BOT,
 		// everything that is not the game
@@ -116,16 +120,22 @@ namespace playerbot_conv
 		u32 gapBefore;        // ms since the player's previous line (0 = first)
 		long long offerYang;  // "za 2kk" - a sum named in the line
 		long mentionMap;      // "v1", "m1", "dolina" - a place named (see FindMapAlias)
+		// For I_ANSWER_TO_BOT: which of the bot's questions (EBotAsk) it answers.
+		// The memory closes the question the moment the line arrives, and the
+		// reply is composed a second later, so it has to travel with the line.
+		unsigned char answeredAsk;
 
 		TAnalysis() : intent(I_NONE), rawIntent(I_NONE), subject(I_NONE), follow(F_NONE),
 			topic(T_NONE), qtype(Q_STATEMENT), score(0), question(false), greetingToo(false),
 			thanksToo(false), returnToTopic(false), topicChange(false), repeated(false),
-			polarityNegative(false), at(0), gapBefore(0), offerYang(0), mentionMap(0) {}
+			polarityNegative(false), at(0), gapBefore(0), offerYang(0), mentionMap(0), answeredAsk(0) {}
 	};
 
+	// The summon and its release are requests, not a subject the conversation
+	// returns to, so they sit outside the game range.
 	inline bool IsGameIntent(EIntent i)
 	{
-		return i >= I_NAME && i <= I_ITEMSHOP;
+		return i >= I_NAME && i <= I_BUFFS;
 	}
 
 	inline bool IsSocialIntent(EIntent i)
@@ -176,6 +186,7 @@ namespace playerbot_conv
 			"PARTY_REQUEST", "SHOP", "MARKET", "BUY", "SELL", "SKILLS", "PVP", "TRAVEL",
 			"REST", "REFINE", "MISSIONS", "DEATH", "RELATIONSHIP", "TIME_HERE",
 			"MAP_OPINION", "DROP_LUCK", "PROGRESS_TODAY", "PRICE", "ITEMSHOP",
+			"BUILD", "BUFFS", "SUMMON", "DISMISS",
 			"FOLLOW_UP", "ACK", "LAUGH", "YES", "NO", "ANSWER_TO_BOT",
 			"GENERAL_CONVERSATION", "UNKNOWN_QUESTION", "UNKNOWN_STATEMENT"
 		};
@@ -388,6 +399,22 @@ namespace playerbot_conv
 			{ PBC_R(I_MOB_COUNT, 0, 62), { C_MOB, C_HOW }, { 0 }, { C_HIT, C_LIKE }, { 0 } },
 			// "masz tarcze?" - is it in the bag (the engine looks), not "what do you wear"
 			{ PBC_R(I_ITEM_OWN, 0, 68), { C_HAVE, C_GEAR }, { 0 }, { C_WHICH, C_WHAT, C_FREE }, { 0 } },
+
+			// ---------------- the class's path and a Shaman's buffs
+			// "jaka masz profesje?", "jestes body czy mental?", "grasz archerem?"
+			{ PBC_R(I_BUILD, 0, 72), { C_BUILD }, { 0 }, { C_GIVE, C_BUFF, C_BUFFNAME, C_BUYME, C_SELLYOU },
+				{ C_WHICH, C_YOU, C_PLAY } },
+			// "jakie masz buffy?", "co daja twoje buffy?", "zbuffujesz mnie?"
+			{ PBC_R(I_BUFFS, 0, 74), { C_BUFF }, { 0 }, { C_BUYME, C_SELLYOU, C_PRICEQ }, { C_WHAT, C_GIVE, C_HAVE } },
+			// "ile daje blogoslawienstwo?", "co daje odbicie", "ile leczysz?"
+			{ PBC_R(I_BUFFS, 0, 76), { C_BUFFNAME }, { 0 }, { C_BUYME, C_SELLYOU, C_PRICEQ }, { C_GIVE, C_HOWMUCH, C_WHAT } },
+			// "co daje smok?" - what the path's buffs give
+			{ PBC_R(I_BUFFS, 0, 74), { C_GIVE }, { C_BUILD }, { C_BUYME, C_SELLYOU, C_PRICEQ }, { C_WHAT, C_HOWMUCH } },
+
+			// ---------------- come over, and go back to your own life
+			// "chodz do mnie do pt" is an invitation, and the party rule has it.
+			{ PBC_R(I_SUMMON, 0, 80), { C_SUMMON }, { 0 }, { C_HYPO, C_PARTY, C_DISMISS }, { C_ME, C_THERE } },
+			{ PBC_R(I_DISMISS, 0, 82), { C_DISMISS }, { 0 }, { C_HYPO }, { 0 } },
 			// weak catch-alls
 			{ PBC_R(I_ITEM_OWN, 0, 42), { C_HAVE }, { 0 }, { C_WHICH, C_DREAM, C_HOBBY, C_WHAT }, { 0 } },
 		};
@@ -595,9 +622,11 @@ namespace playerbot_conv
 	{
 		for (int i = C_DO; i < C_COUNT; ++i)
 		{
+			// A give word is about something only beside what gives it: "a ile
+			// daje?" after the buffs is a follow-up about the buffs.
 			if (i == C_MANY || i == C_ALONE || i == C_ACK || i == C_LAUGH || i == C_SURPRISE ||
 					i == C_YES || i == C_NO || i == C_BUDDY || i == C_OR || i == C_NEXT ||
-					i == C_TODAY || i == C_NOW || i == C_POSITIVE || i == C_NEGATIVE)
+					i == C_TODAY || i == C_NOW || i == C_POSITIVE || i == C_NEGATIVE || i == C_GIVE)
 				continue;
 			if (c.Has(i))
 				return true;

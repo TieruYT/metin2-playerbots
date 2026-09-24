@@ -427,15 +427,99 @@ namespace
 
 	// ------------------------------------------------------------ the fight
 	//
+	// An Archer's one step back from a monster at its side, by pid: when it
+	// may step again, and the monster it last stepped from.
+	struct TPlayerBotTowerArcherStep
+	{
+		DWORD dwNextAt;
+		DWORD dwFromVID;
+		TPlayerBotTowerArcherStep() : dwNextAt(0), dwFromVID(0) {}
+	};
+	std::map<DWORD, TPlayerBotTowerArcherStep> s_mapPlayerBotTowerArcherStep;
+
+	// The monster nearest a point, within radius, off the floor's scan.
+	const TPlayerBotTowerEntity* FindPlayerBotTowerMonsterNear(const TPlayerBotTowerScan* scan,
+			long x, long y, int radius)
+	{
+		const TPlayerBotTowerEntity* best = NULL;
+		int bestDistance = radius + 1;
+		for (size_t i = 0; scan && i < scan->entities.size(); ++i)
+		{
+			const TPlayerBotTowerEntity& e = scan->entities[i];
+			if (e.npc || e.stone)
+				continue;
+			const int distance = DISTANCE_APPROX(x - e.x, y - e.y);
+			if (distance < bestDistance)
+			{
+				bestDistance = distance;
+				best = &e;
+			}
+		}
+		return best;
+	}
+
+	// An Archer a monster has reached takes one step back towards the pack
+	// before it shoots again (PLAYERBOT_TOWER_ARCHER_KEEP_AWAY), so the monster
+	// that follows it walks into the bots that fight it hand to hand. One step
+	// a monster and never away from the pack: a monster that has the Archer's
+	// aggro keeps coming whatever it does, and an Archer that stepped back
+	// from it every time would spend the fight running instead of shooting
+	// (Tieru, 24 September: "moze byc tak, ze ninja ciagle bedzie uciekala
+	// przed mobem"). With the pack beside it or ahead of it, or the same
+	// monster at its side again, it stands and shoots; a step the ground
+	// refuses leaves it shooting where it stands.
+	bool StepPlayerBotTowerArcherBack(LPCHARACTER ch, TPlayerBotAIState& state, DWORD dwNow)
+	{
+		TPlayerBotTowerArcherStep& step = s_mapPlayerBotTowerArcherStep[ch->GetPlayerID()];
+		if (dwNow < step.dwNextAt)
+			return false;
+		const TPlayerBotTowerScan* scan = ScanPlayerBotTowerMap(ch->GetMapIndex(), dwNow);
+		if (!scan || scan->packN < 2)
+			return false;
+		const TPlayerBotTowerEntity* monster = FindPlayerBotTowerMonsterNear(scan,
+				ch->GetX(), ch->GetY(), PLAYERBOT_TOWER_ARCHER_KEEP_AWAY);
+		if (!monster || monster->vid == step.dwFromVID)
+			return false;
+		// The pack is behind the Archer when going to it is going away from
+		// the monster - and far enough that a step changes anything.
+		const double ax = (double)(ch->GetX() - monster->x);
+		const double ay = (double)(ch->GetY() - monster->y);
+		const double dx = (double)(scan->packX - ch->GetX());
+		const double dy = (double)(scan->packY - ch->GetY());
+		const double length = sqrt(dx * dx + dy * dy);
+		if (dx * ax + dy * ay <= 0.0 || length < (double)PLAYERBOT_TOWER_ARCHER_KEEP_AWAY)
+			return false;
+		step.dwNextAt = dwNow + PLAYERBOT_TOWER_ARCHER_STEP_MS;
+		step.dwFromVID = monster->vid;
+		const double reach = std::min((double)PLAYERBOT_TOWER_ARCHER_STEP_BACK, length);
+		const long toX = ch->GetX() + (long)(dx / length * reach);
+		const long toY = ch->GetY() + (long)(dy / length * reach);
+		if (!MovePlayerBot(ch, toX, toY, dwNow, 4, false, false))
+			return false;
+		SetPlayerBotAction(state, BOT_ACTION_FIGHT, dwNow);
+		PlayerBotLogThrottled("tower_archer_step", dwNow,
+				"PLAYERBOT_TOWER: archer steps back pid=%u name=%s map=%ld monster_race=%u",
+				ch->GetPlayerID(), ch->GetName(), ch->GetMapIndex(), (unsigned int)monster->race);
+		return true;
+	}
+
 	// The duel's shape, as in the guild war: the aura first, a caster from its
 	// range, a warrior across the gap, a blade from where it reaches, a bow
-	// from its own reach. In here an Archer keeps the bow for the stones too
-	// (ManagePlayerBotEquipment), and a battle horse's rider climbs down for
-	// one, as it does outside (CanPlayerBotFightOnHorse).
+	// from its own reach - which in here is the tower's standoff
+	// (GetPlayerBotBowRange), with one step back towards the pack from a
+	// monster that reaches it. An Archer keeps the bow for the stones too
+	// (ManagePlayerBotEquipment). The saddle is the foe's business, as
+	// outside: a battle horse's rider breaks a stone from it and climbs down
+	// for what it fights on foot (CanPlayerBotFightOnHorse) - "nikt nie
+	// przywolywal konia nawet na dt" (prodnathin, 23 September). A change
+	// spends the tick; a refusal (the flip hold after a climb-down for a buff,
+	// a tired horse) leaves the bot fighting as it stands.
 	bool FightPlayerBotTowerObjective(LPCHARACTER ch, TPlayerBotAIState& state, LPCHARACTER foe, DWORD dwNow)
 	{
-		if (foe->IsStone() && ch->IsRiding() &&
-				SetPlayerBotRidingForTravel(ch, state, false, dwNow, "tower_stone"))
+		const bool wantsSaddle = CanPlayerBotFightOnHorse(ch, foe);
+		if (wantsSaddle != ch->IsRiding() &&
+				SetPlayerBotRidingForTravel(ch, state, wantsSaddle, dwNow,
+						wantsSaddle ? "tower_stone" : "tower"))
 			return true;
 		const int distance = DISTANCE_APPROX(ch->GetX() - foe->GetX(), ch->GetY() - foe->GetY());
 		state.dwTargetVID = (DWORD)foe->GetVID();
@@ -448,9 +532,11 @@ namespace
 		LPITEM weapon = ch->GetWear(WEAR_WEAPON);
 		const bool isBow = (weapon && weapon->GetType() == ITEM_WEAPON &&
 				weapon->GetSubType() == WEAPON_BOW);
-		const int combatRange = isBow ? 800 : PLAYERBOT_DUEL_MELEE_RANGE;
+		const int combatRange = isBow ? GetPlayerBotBowRange(ch->GetMapIndex()) : PLAYERBOT_DUEL_MELEE_RANGE;
 		const bool caster = ch->GetJob() == JOB_SHAMAN ||
 				(ch->GetJob() == JOB_SURA && ch->GetSkillGroup() == 2);
+		if (isBow && StepPlayerBotTowerArcherBack(ch, state, dwNow))
+			return true;
 		if (distance > combatRange)
 		{
 			if (!isBow && caster && distance <= PLAYERBOT_DUEL_CASTER_RANGE &&
@@ -467,7 +553,8 @@ namespace
 			if (dwNow >= state.dwNextTowerMoveTime)
 			{
 				state.dwNextTowerMoveTime = dwNow + 1000;
-				MovePlayerBot(ch, foe->GetX(), foe->GetY(), dwNow, 4, distance > PLAYERBOT_SEARCH_RANGE, false);
+				MovePlayerBot(ch, foe->GetX(), foe->GetY(), dwNow, 4, distance > PLAYERBOT_SEARCH_RANGE,
+						wantsSaddle, wantsSaddle);
 			}
 			return true;
 		}
@@ -1060,7 +1147,10 @@ namespace
 
 		if (KeepPlayerBotTowerAlive(ch, state, dwNow))
 			return true;
-		if (ch->IsRiding() && !CanPlayerBotEverFightOnHorse(ch))
+		// A transport horse never fights; a battle horse's rider is asked about
+		// the foe itself (FightPlayerBotTowerObjective), a stone keeping it in
+		// the saddle.
+		if (ch->IsRiding() && !HasPlayerBotBattleHorse(ch))
 		{
 			SetPlayerBotRidingForTravel(ch, state, false, dwNow, "tower");
 			return true;
@@ -1272,7 +1362,10 @@ namespace
 		}
 		if (KeepPlayerBotTowerAlive(ch, state, dwNow))
 			return true;
-		if (ch->IsRiding() && !CanPlayerBotEverFightOnHorse(ch))
+		// A transport horse never fights; a battle horse's rider is asked about
+		// the foe itself (FightPlayerBotTowerObjective), a stone keeping it in
+		// the saddle.
+		if (ch->IsRiding() && !HasPlayerBotBattleHorse(ch))
 		{
 			SetPlayerBotRidingForTravel(ch, state, false, dwNow, "tower");
 			return true;
@@ -1355,7 +1448,10 @@ namespace
 		}
 		if (KeepPlayerBotTowerAlive(ch, state, dwNow))
 			return true;
-		if (ch->IsRiding() && !CanPlayerBotEverFightOnHorse(ch))
+		// A transport horse never fights; a battle horse's rider is asked about
+		// the foe itself (FightPlayerBotTowerObjective), a stone keeping it in
+		// the saddle.
+		if (ch->IsRiding() && !HasPlayerBotBattleHorse(ch))
 		{
 			SetPlayerBotRidingForTravel(ch, state, false, dwNow, "tower");
 			return true;

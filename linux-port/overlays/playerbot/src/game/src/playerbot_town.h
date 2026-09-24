@@ -114,11 +114,19 @@ namespace
 		int keep = PLAYERBOT_SAFEBOX_BOOK_KEEP;
 		if (GetPlayerBotPersonalityByPID(ch->GetPlayerID()) == BOT_PERSONALITY_METIN_DROPPER)
 			keep = PLAYERBOT_DROPPER_BOOK_KEEP;
+		// Another class's book is the counter's, not the box's, for a bot
+		// that can keep a counter (PLAYERBOT_SHOP_OTHER_CLASS_BOOK_MIN); one
+		// that cannot - under the shop's level, on the second channel - puts
+		// them down as before rather than carry them for ever.
+		const bool counter = PlayerBotCanOpenShop(ch);
 		int surplus = 0;
 		for (WORD cell = 0; cell < PLAYERBOT_BAG_CELLS; ++cell)
 		{
 			LPITEM item = ch->GetInventoryItem(cell);
 			if (!IsPlayerBotSurplusSkillBook(ch, item))
+				continue;
+			if (counter && ch->GetSkillGroup() != 0 &&
+					!IsPlayerBotOwnSkill(ch, GetPlayerBotSkillBookSkillVnum(item)))
 				continue;
 			surplus += item->GetCount();
 			if (surplus > keep)
@@ -370,6 +378,18 @@ namespace
 				// limit rose with it, or the bot finally has a skill group.
 				wanted = !IsPlayerBotSurplusSkillBook(ch, item);
 				why = "book";
+				// And another class's book comes out for the counter, into a
+				// bag that stays clear of the pressure the deposit waits for -
+				// the deposit keeps them in the bag now, so it does not go
+				// straight back down.
+				if (!wanted && ch->GetSkillGroup() != 0 && PlayerBotCanOpenShop(ch) &&
+						!IsPlayerBotOwnSkill(ch, GetPlayerBotSkillBookSkillVnum(item)))
+				{
+					const int freeAfter = CountPlayerBotFreeInventoryCells(ch) - (int)item->GetSize();
+					wanted = freeAfter > PLAYERBOT_BAG_PRESSURE_FREE_CELLS &&
+							(PLAYERBOT_BAG_CELLS - freeAfter) * 100 < PLAYERBOT_BAG_CELLS * PLAYERBOT_BAG_FULL_PERCENT;
+					why = "book_counter";
+				}
 			}
 			else if (IsPlayerBotSafeRefineScroll(item->GetVnum()))
 			{
@@ -484,7 +504,13 @@ namespace
 					(unsigned int)item->GetCount());
 			box->Remove(pos);
 			item->AddToCharacter(ch, TItemPos(INVENTORY, (WORD)cell));
-			ITEM_MANAGER::instance().FlushDelayedSave(item);
+			// The row now, as CInputMain::SafeboxCheckout writes it
+			// (HEADER_GD_ITEM_FLUSH): QUERY_SAFEBOX_LOAD reads the table, and
+			// a bag row still in the db core's cache left the item in the box
+			// there, so the next visit's load made it again and CreateItem
+			// refused the id ("LoadSafebox: cannot create item"). A bot comes
+			// back for the list's pieces every few minutes, inside the seven.
+			FlushPlayerBotItemRow(item);
 			LogManager::instance().ItemLog(ch, item, "SAFEBOX GET", szHint);
 			sys_log(0, "PLAYERBOT_TOWN: safebox withdraw pid=%u name=%s vnum=%u count=%u reason=%s",
 					ch->GetPlayerID(), ch->GetName(), item->GetVnum(),
@@ -3447,6 +3473,11 @@ namespace
 		if (HasPlayerBotOfflineShop(ch)) return false;
 #endif
 		if (!ch || !ch->IsItemLoaded())
+			return false;
+		// A bot a person called over opens no stand: the stand is a claim with
+		// a better right than the summon (SB_STALL), so opening one would end
+		// the summon it was called for.
+		if (IsPlayerBotSummoned(ch->GetPlayerID()))
 			return false;
 		// Every shop in the world stands on the first channel (the operator's
 		// rule for the second one, playerbot_channel_rules.h). Without the

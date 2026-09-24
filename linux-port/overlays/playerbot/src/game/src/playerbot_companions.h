@@ -176,7 +176,8 @@ namespace
 	// document lets the mercenary appear ("podczas expienia lub dropienia").
 	bool IsPlayerBotMercAvailable(LPCHARACTER ch, const TPlayerBotAIState& state, DWORD dwNow)
 	{
-		if (!ch || ch->IsDead() || (int)ch->GetLevel() < PLAYERBOT_MERC_MIN_LEVEL || ch->GetParty())
+		if (!ch || ch->IsDead() || (int)ch->GetLevel() < PLAYERBOT_MERC_MIN_LEVEL || ch->GetParty() ||
+				IsPlayerBotSummoned(ch->GetPlayerID()))
 			return false;
 		const TPlayerBotPersona& p = state.persona;
 		if ((p.dwMercCooldownUntil != 0 && dwNow < p.dwMercCooldownUntil) ||
@@ -208,6 +209,8 @@ namespace
 			return "person";
 		if (client->GetParty() || IsPlayerBotOnMercContract(client->GetPlayerID()))
 			return "party";
+		if (IsPlayerBotSummoned(client->GetPlayerID()))
+			return "summoned";
 		TPlayerBotAIStateMap::const_iterator it = s_mapPlayerBotAIStates.find(client->GetPlayerID());
 		if (it == s_mapPlayerBotAIStates.end() || !it->second.persona.bRestored)
 			return "state";
@@ -861,7 +864,10 @@ namespace
 		if (!ch)
 			return false;
 		const DWORD pid = ch->GetPlayerID();
-		if (IsPlayerBotHiredClient(pid))
+		// Called over by a person ("chodz do mnie"): the market, the walk to
+		// its own stand and the world travel all ask this, and any of them
+		// would take the bot off the map the person called it on.
+		if (IsPlayerBotHiredClient(pid) || IsPlayerBotSummoned(pid))
 			return true;
 		TPlayerBotMercContractMap::const_iterator own = s_mapPlayerBotMercContracts.find(pid);
 		if (own != s_mapPlayerBotMercContracts.end())

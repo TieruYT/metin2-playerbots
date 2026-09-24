@@ -882,8 +882,10 @@ namespace
 	// Defined with the builds (playerbot_skills.h), which come later.
 	bool PlayerBotSkillsBeatTheSaddle(LPCHARACTER ch);
 
-	// A battle horse (level 11+) and a weapon that can be swung from it. Not
-	// what a player breaks the stones with - see CanPlayerBotFightOnHorse.
+	// A battle horse (level 11+) and a weapon that can be swung from it: what a
+	// player raises for the stones, and what every bot that owns one breaks
+	// them from (CanPlayerBotFightOnHorse). A bow is not swung, so an Archer
+	// shoots its stones on foot.
 	bool HasPlayerBotBattleHorse(LPCHARACTER ch)
 	{
 		if (!ch || ch->GetHorseLevel() < PLAYERBOT_BATTLE_HORSE_LEVEL)
@@ -913,14 +915,22 @@ namespace
 
 	bool CanPlayerBotFightOnHorse(LPCHARACTER ch, LPCHARACTER target)
 	{
-		if (!CanPlayerBotEverFightOnHorse(ch))
-			return false;
-
-		// A Metin is broken on foot. The saddle was once the stone hunter's
-		// first choice here, and it is nobody's: "do zbijania metinow nikt nie
-		// uzywa bojowca" (prodnathin, 23 September). The target section climbs
-		// down for one (dismount_for_target), as it does for a transport horse.
+		// A Metin is broken from the battle horse by whoever owns one, whatever
+		// its class and whatever its skills: "kazdy kamien metin powinien byc
+		// bity na koniu bojowym" (Tieru, 24 September). 2.2.6 had it the other
+		// way round on a misreading - "do zbijania metinow nikt nie uzywa
+		// bojowca" was prodnathin's complaint that no bot did, "nikt nie
+		// przywolywal konia nawet na dt". The skill rule below is for monsters;
+		// on a stone the rotation the saddle cannot cast is the price the
+		// operator's rule pays, and the horse lends its rider its own strength
+		// and dexterity where those are higher (CHARACTER::ComputePoints). The
+		// target section and the tower mount for one (mounted_combat,
+		// tower_stone), and a missing buff still takes the rider down for a
+		// moment and puts it back (ManagePlayerBotCombatBuffs).
 		if (target && target->IsStone())
+			return HasPlayerBotBattleHorse(ch);
+
+		if (!CanPlayerBotEverFightOnHorse(ch))
 			return false;
 
 		// Warriors and Suras clear mob spots (multi-pull / valour cloak packs) from
@@ -929,6 +939,23 @@ namespace
 			return true;
 
 		return false;
+	}
+
+	// Whether a rider keeps the saddle for the fight in hand: the foe it holds
+	// decides, and with none the bot's own build does. The passes that climb
+	// down "for a fight" ask this and not CanPlayerBotEverFightOnHorse, or a
+	// bot whose skills keep it on foot for monsters would climb down again on
+	// the tick after it mounted for a stone.
+	bool CanPlayerBotKeepSaddleInFight(LPCHARACTER ch, const TPlayerBotAIState& state)
+	{
+		if (!ch)
+			return false;
+		LPCHARACTER foe = ch->GetVictim();
+		if (!foe && state.dwTargetVID != 0)
+			foe = CHARACTER_MANAGER::instance().Find(state.dwTargetVID);
+		if (foe && !foe->IsDead())
+			return CanPlayerBotFightOnHorse(ch, foe);
+		return CanPlayerBotEverFightOnHorse(ch);
 	}
 
 	void UpdatePlayerBotTravelMount(LPCHARACTER ch, TPlayerBotAIState& state,
@@ -975,8 +1002,9 @@ namespace
 		// give up, not this pass's to take; once the foe is gone the next leg
 		// mounts as before. Only for a real, live foe, so a stale VID cannot
 		// strand the bot on foot. A battle horse is asked the same about its
-		// foe: its rider breaks a stone on foot too, and a Shaman or a Ninja
-		// fights on foot whatever it faces (CanPlayerBotFightOnHorse).
+		// foe: a Shaman or a Ninja fights a monster on foot, and a stone is
+		// the one foe every battle horse's rider keeps the saddle for
+		// (CanPlayerBotFightOnHorse).
 		if (!fightOnHorse && !keepHorseAtDestination)
 		{
 			LPCHARACTER foe = ch->GetVictim();

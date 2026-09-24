@@ -12,6 +12,17 @@
 //                                    pending and by CPlayerBotManager::Update
 //   CPlayerBotConvHost             - builds the TBotSnapshot from the real AI state
 //                                    and character, sends the whisper, logs
+//   DescribePlayerBotBuffs()       - a Shaman's three buffs, evaluated from the
+//                                    world's own skill_proto the way ComputeSkill does
+//   ManagePlayerBotSummon()        - "chodz do mnie": the walk to the person and a few
+//                                    minutes beside them (one line in the tick, after
+//                                    the follow pass); IsPlayerBotSummoned for the
+//                                    passes that must leave such a bot alone
+//
+// The summon is the one thing here that moves a bot. It keeps its own state
+// (s_mapPlayerBotSummons) instead of a field in TPlayerBotAIState, and ends by
+// itself: the few minutes over, the person gone or off the map, a walk that
+// does not arrive, or a claim with a better right (a duel, a war, a stall).
 //
 // The conversation itself - normalization, intents, context, memory,
 // persona, mood, relationship, general conversation, merging, the queue - is
@@ -19,7 +30,9 @@
 // tests/playerbot_conversation_test.cpp.
 //
 // The layer READS the AI (TPlayerBotAIState, the persona and mood, the friend
-// ledger, the party, the guild, the counter, the bag). It never writes to it.
+// ledger, the party, the guild, the counter, the bag). It never writes to it,
+// but for the summon's walk and its guard, which drop the bot's own route and
+// target while a person has called it.
 //
 // Runtime switches (files in the game core's working directory, checked every
 // 30 s, no restart needed):
@@ -225,6 +238,622 @@ namespace
 		return playerbot_conv::ItemNameMatches(protoName, query);
 	}
 
+	// The whisper packet, as SendPlayerBotWhisper builds it, without its
+	// per-line syslog entry: a conversation is many lines and the debug switch
+	// logs them when wanted.
+	void SendPlayerBotConvWhisper(LPCHARACTER bot, LPCHARACTER to, const char* text)
+	{
+		if (!bot || !to || !to->GetDesc() || !text || !*text)
+			return;
+		const size_t len = std::min<size_t>(strlen(text), CHAT_MAX_LEN);
+		TPacketGCWhisper pack;
+		pack.bHeader = HEADER_GC_WHISPER;
+		pack.bType = WHISPER_TYPE_NORMAL;
+		pack.wSize = (WORD)(sizeof(TPacketGCWhisper) + len);
+		strlcpy(pack.szNameFrom, bot->GetName(), sizeof(pack.szNameFrom));
+		TEMP_BUFFER tmpbuf;
+		tmpbuf.write(&pack, sizeof(pack));
+		tmpbuf.write(text, (int)len);
+		to->GetDesc()->Packet(tmpbuf.read_peek(), tmpbuf.size());
+	}
+
+	// ------------------------------------------------------ a Shaman's buffs
+
+	// One buff as CHARACTER::ComputeSkill would put it on `victim`: the skill's
+	// own proto, its k (GetSkillPower times bMaxLevel over a hundred) and the
+	// variables ComputeSkill sets, in its order - so the numbers are whatever
+	// this world's skill_proto says, on either engine, and nothing here knows
+	// a formula. Two things are the engine's and not the proto's: the magic
+	// weapon's random draw (SetPolyVarForAttack), evaluated at both ends, which
+	// is the range a heal lands in; and on mt2009 the cut a buff takes on
+	// somebody else (ComputeSkill's IsBuffSkill branch: 75%, the Cure's heal
+	// 110% and its shield 70%) with the caster's POINT_SKILL_DURATION. A
+	// Grand Master casts the master bonus poly, as ComputeSkill does. Setting
+	// the proto's variables is safe: ComputeSkill sets every one of them again
+	// before its own Eval.
+	void EvaluatePlayerBotBuff(LPCHARACTER bot, LPCHARACTER victim, DWORD vnum, playerbot_conv::TBuffLine& line)
+	{
+		line = playerbot_conv::TBuffLine();
+		line.skill = vnum;
+		if (!bot || !victim)
+			return;
+		line.level = bot->GetSkillLevel(vnum);
+		if (line.level <= 0)
+			return;
+		CSkillProto* pk = CSkillManager::instance().Get(vnum);
+		if (!pk)
+			return;
+		const BYTE level = (BYTE)std::min<int>(line.level, SKILL_MAX_LEVEL);
+		const float k = 1.0 * bot->GetSkillPower(vnum, level) * pk->bMaxLevel / 100;
+		pk->SetPointVar("k", k);
+		if (pk->bPointOn == POINT_MOV_SPEED)
+			pk->SetPointVar("maxv", victim->GetLimitPoint(POINT_MOV_SPEED));
+#if defined(PLAYERBOT_ENGINE_MT2009)
+		pk->SetPointVar("gr", bot->GetSkillMasterType(vnum));
+		pk->SetPointVar("sl", line.level);
+#endif
+		pk->SetPointVar("lv", bot->GetLevel());
+		pk->SetPointVar("iq", bot->GetPoint(POINT_IQ));
+		pk->SetPointVar("str", bot->GetPoint(POINT_ST));
+		pk->SetPointVar("dex", bot->GetPoint(POINT_DX));
+		pk->SetPointVar("con", bot->GetPoint(POINT_HT));
+		pk->SetPointVar("maxhp", victim->GetMaxHP());
+		pk->SetPointVar("maxsp", victim->GetMaxSP());
+		pk->SetPointVar("chain", 0);
+		pk->SetPointVar("ar", CalcAttackRating(bot, victim));
+		pk->SetPointVar("def", bot->GetPoint(POINT_DEF_GRADE));
+		pk->SetPointVar("odef", bot->GetPoint(POINT_DEF_GRADE) - bot->GetPoint(POINT_DEF_GRADE_BONUS));
+		pk->SetPointVar("horse_level", bot->GetHorseLevel());
+		int magicLow = 0;
+		int magicHigh = 0;
+		int weaponAverage = 0;
+		int magicAverage = 0;
+		LPITEM weapon = bot->GetWear(WEAR_WEAPON);
+		if (weapon && weapon->GetType() == ITEM_WEAPON)
+		{
+			magicLow = weapon->GetValue(1) + weapon->GetValue(5);
+			magicHigh = weapon->GetValue(2) + weapon->GetValue(5);
+			weaponAverage = (weapon->GetValue(3) + weapon->GetValue(4)) / 2 + weapon->GetValue(5);
+			magicAverage = (weapon->GetValue(1) + weapon->GetValue(2)) / 2 + weapon->GetValue(5);
+		}
+		pk->SetPointVar("wep", weaponAverage);
+#if defined(PLAYERBOT_ENGINE_MT2009)
+		pk->SetPointVar("amwep", magicAverage);
+#else
+		(void)magicAverage;
+#endif
+		pk->SetDurationVar("k", k);
+
+		const bool grand = bot->GetSkillMasterType(vnum) >= SKILL_GRAND_MASTER;
+		pk->SetPointVar("mwep", magicLow);
+		pk->SetPointVar("mtk", magicLow);
+		int low = grand ? (int)pk->kMasterBonusPoly.Eval() : (int)pk->kPointPoly.Eval();
+		pk->SetPointVar("mwep", magicHigh);
+		pk->SetPointVar("mtk", magicHigh);
+		int high = grand ? (int)pk->kMasterBonusPoly.Eval() : (int)pk->kPointPoly.Eval();
+		int amount2 = pk->bPointOn2 != POINT_NONE ? (int)pk->kPointPoly2.Eval() : 0;
+		int amount3 = 0;
+		if (pk->bPointOn3 != POINT_NONE)
+		{
+#if defined(PLAYERBOT_ENGINE_MT2009)
+			// CanSkillAddThirdPoint: a third point marked self-only stays on the caster.
+			if (!IS_SET(pk->dwFlag, SKILL_FLAG_THIRD_POINT_SELFONLY) || victim == bot)
+				amount3 = (int)pk->kPointPoly3.Eval();
+#else
+			// r40250 adds the third point for a Grand Master only.
+			if (grand)
+				amount3 = (int)pk->kPointPoly3.Eval();
+#endif
+		}
+		int seconds = (int)pk->kDurationPoly.Eval();
+		int seconds3 = amount3 != 0 ? (int)pk->kDurationPoly3.Eval() : 0;
+#if defined(PLAYERBOT_ENGINE_MT2009)
+		if (victim != bot)
+		{
+			const int percent1 = vnum == playerbot_conv::CONV_SKILL_CURE ? 110 : 75;
+			const int percent3 = vnum == playerbot_conv::CONV_SKILL_CURE ? 70 : 75;
+			low = low * percent1 / 100;
+			high = high * percent1 / 100;
+			amount2 = amount2 * 75 / 100;
+			amount3 = amount3 * percent3 / 100;
+		}
+		const int durationBonus = bot->GetPoint(POINT_SKILL_DURATION);
+		if (seconds > 0)
+			seconds += seconds * durationBonus / 100;
+		if (seconds3 > 0)
+			seconds3 += seconds3 * durationBonus / 100;
+#endif
+		if (seconds > 0)
+			seconds += bot->GetPoint(POINT_PARTY_BUFFER_BONUS);
+		if (seconds3 > 0)
+			seconds3 += bot->GetPoint(POINT_PARTY_BUFFER_BONUS);
+		line.known = true;
+		line.amount = std::min(low, high);
+		line.amountMax = std::max(low, high);
+		line.amount2 = amount2;
+		line.amount3 = amount3;
+		line.seconds = seconds > 0 ? seconds : 0;
+		line.seconds3 = seconds3 > 0 ? seconds3 : 0;
+	}
+
+	// The three buffs of a Shaman's path, for the person asking when there is
+	// one, the bot itself otherwise.
+	bool DescribePlayerBotBuffs(LPCHARACTER bot, LPCHARACTER player, playerbot_conv::TBuffReport& out)
+	{
+		using namespace playerbot_conv;
+		out = TBuffReport();
+		if (!bot || bot->GetJob() != JOB_SHAMAN)
+			return false;
+		const BYTE group = bot->GetSkillGroup();
+		if (group != 1 && group != 2)
+			return false;
+		static const DWORD kDragon[3] = { CONV_SKILL_BLESSING, CONV_SKILL_REFLECT, CONV_SKILL_DRAGON_AID };
+		static const DWORD kHealing[3] = { CONV_SKILL_CURE, CONV_SKILL_SWIFTNESS, CONV_SKILL_ATTACK_UP };
+		const DWORD* buffs = group == 1 ? kDragon : kHealing;
+		LPCHARACTER victim = player ? player : bot;
+		out.onAsker = victim != bot;
+#if defined(PLAYERBOT_ENGINE_MT2009)
+		out.cutForOthers = out.onAsker;
+#endif
+		for (int i = 0; i < 3; ++i)
+			EvaluatePlayerBotBuff(bot, victim, buffs[i], out.lines[out.count++]);
+		return true;
+	}
+
+	// --------------------------------------------------------- coming over
+
+	// "Chodz do mnie": the walk to the person and a few minutes beside them.
+	// The state lives in its own map here, not in TPlayerBotAIState: nothing
+	// else writes it, and a field there would have to be initialised in
+	// declaration order for -Wreorder's sake.
+	const DWORD PLAYERBOT_SUMMON_STAY_MS = 4 * 60 * 1000;       // "a few minutes" beside the person
+	const DWORD PLAYERBOT_SUMMON_WALK_MAX_MS = 3 * 60 * 1000;   // a walk not done by then is given up
+	const int PLAYERBOT_SUMMON_STAY_DISTANCE = playerbot_conv::CONV_SUMMON_NEAR_DISTANCE;
+	const int PLAYERBOT_SUMMON_FOLLOW_DISTANCE = 900;           // the person walked off: after them
+	const int PLAYERBOT_SUMMON_OFFSET = 200;                    // beside the person, not on top of them
+	const int PLAYERBOT_SUMMON_SNAP_CELLS = 4;
+	const int PLAYERBOT_SUMMON_GUARD_RANGE = 1200;              // a monster at the person, this near them
+	const int PLAYERBOT_SUMMON_SELF_GUARD_RANGE = 1500;         // a monster at the bot, this near it
+	const DWORD PLAYERBOT_SUMMON_GUARD_SCAN_MS = 700;
+	const DWORD PLAYERBOT_SUMMON_PRUNE_MS = 30000;
+	// The walk's goal snaps up to PLAYERBOT_SUMMON_SNAP_CELLS and MovePlayerBot
+	// calls a walk done PLAYERBOT_NAV_ARRIVAL_DISTANCE short: both have to fit
+	// inside the distance that counts as beside the person, or the bot stands
+	// in the gap for good (the arrival trap in CLAUDE.md, a fourth time).
+	static_assert(PLAYERBOT_SUMMON_SNAP_CELLS * PLAYERBOT_NAV_CELL + PLAYERBOT_SUMMON_OFFSET +
+			PLAYERBOT_NAV_ARRIVAL_DISTANCE <= PLAYERBOT_SUMMON_STAY_DISTANCE,
+			"a summon's walk must end inside the distance that counts as beside the person");
+	static_assert(PLAYERBOT_SUMMON_FOLLOW_DISTANCE > PLAYERBOT_SUMMON_STAY_DISTANCE,
+			"the walk resumes past the stop distance, or it starts and stops on one step");
+
+	struct TPlayerBotSummon
+	{
+		DWORD dwPlayerPID;
+		DWORD dwStartedAt;      // the walk's clock; held while the bot recovers from a death
+		DWORD dwArrivedAt;      // 0 while it walks
+		DWORD dwUntil;          // the stay ends then; set on arrival
+		DWORD dwNextGuardScanAt;
+		DWORD dwGuardVID;
+		long lMapIndex;         // the map it was called on; a bot moved off it is released
+		bool bFollowing;        // after arrival: walking after the person until close again
+		TPlayerBotSummon() : dwPlayerPID(0), dwStartedAt(0), dwArrivedAt(0), dwUntil(0), dwNextGuardScanAt(0),
+			dwGuardVID(0), lMapIndex(0), bFollowing(false) {}
+	};
+
+	typedef std::map<DWORD, TPlayerBotSummon> TPlayerBotSummonMap;
+	TPlayerBotSummonMap s_mapPlayerBotSummons;   // by the bot's pid
+	DWORD s_dwPlayerBotSummonPruneTime = 0;
+
+	// Defined with the targeting (playerbot_targeting.h), which comes later.
+	bool ExecutePlayerBotBasicAttack(LPCHARACTER ch, LPCHARACTER target, TPlayerBotAIState& state, DWORD dwNow);
+
+	// Whether a bot is on its way to, or standing with, somebody who called it.
+	// The passes that would take it away - the market, the service walk to its
+	// own stand, the world travel, the town errands - ask
+	// IsPlayerBotHeldForCompany, which is where this belongs. Inline because
+	// its callers are in later files, and a build without them must not warn.
+	inline bool IsPlayerBotSummoned(DWORD botPID)
+	{
+		return s_mapPlayerBotSummons.find(botPID) != s_mapPlayerBotSummons.end();
+	}
+
+	DWORD GetPlayerBotSummonerPID(DWORD botPID)
+	{
+		TPlayerBotSummonMap::const_iterator it = s_mapPlayerBotSummons.find(botPID);
+		return it != s_mapPlayerBotSummons.end() ? it->second.dwPlayerPID : 0;
+	}
+
+	// A person in the bot's party who is not the one asking.
+	bool PlayerBotPartyHasOtherPerson(LPPARTY party, LPCHARACTER asker)
+	{
+		if (!party)
+			return false;
+		struct FFindOtherPerson
+		{
+			LPCHARACTER asker;
+			bool found;
+			explicit FFindOtherPerson(LPCHARACTER a) : asker(a), found(false) {}
+			void operator()(LPCHARACTER member)
+			{
+				if (member && member != asker && member->IsPC() &&
+						(!member->GetDesc() || !member->GetDesc()->IsBot()))
+					found = true;
+			}
+		};
+		FFindOtherPerson finder(asker);
+		party->ForEachOnlineMember(finder);
+		return finder.found;
+	}
+
+	// Why the bot cannot come to `player` now (playerbot_conv::ESummonBlock).
+	// Everything here is something that owns the bot for a reason of its own:
+	// a counter it stands behind, a session at the water or the vein, a fight
+	// the engine made it part of, another person's claim.
+	int GetPlayerBotSummonBlock(LPCHARACTER bot, const TPlayerBotAIState& state, LPCHARACTER player, DWORD dwNow)
+	{
+		using namespace playerbot_conv;
+		if (!bot || !player)
+			return SB_OTHER_MAP;
+		if (bot->IsDead())
+			return SB_DEAD;
+		const long mapIndex = bot->GetMapIndex();
+		if (IsPlayerBotDemonTowerInstance(mapIndex) || state.lTowerInstance != 0 ||
+				state.dwTowerRaidGuild != 0 || state.bTowerSummoned)
+			return SB_TOWER;
+		if (mapIndex >= PLAYERBOT_INSTANCE_MAP_INDEX_MIN)
+			return SB_DUNGEON;
+		if (player->GetMapIndex() != mapIndex)
+			return SB_OTHER_MAP;
+		if (playerbot_pvp::IsInDuel(bot->GetPlayerID(), dwNow))
+			return SB_DUEL;
+		if (state.dwGuildWarEnemyGID != 0)
+			return SB_GUILD_WAR;
+		if (bot->GetMyShop())
+			return SB_STALL;
+		if (state.bFishingSession || state.bIsFishing)
+			return SB_FISHING;
+		if (IsPlayerBotMiningNow(bot->GetPlayerID(), dwNow))
+			return SB_MINING;
+		if (IsPlayerBotOnMercContract(bot->GetPlayerID()))
+			return SB_MERC;
+		if (state.dwLurePlayerPID != 0 && state.dwLurePlayerPID != player->GetPlayerID())
+			return SB_OTHER_PARTY;
+		// A person's party, or a companion holding a person in its own: the
+		// follow pass keeps such a bot beside them, and a walk to somebody
+		// else would be undone on the next tick. The leader's pid answers for
+		// a person on another core, whose character this one cannot see.
+		LPPARTY party = bot->GetParty();
+		if (party && party != player->GetParty() &&
+				(IsPlayerBotHumanLedParty(party) || PlayerBotPartyHasOtherPerson(party, player)))
+			return SB_OTHER_PARTY;
+		const DWORD summoner = GetPlayerBotSummonerPID(bot->GetPlayerID());
+		if (summoner != 0 && summoner != player->GetPlayerID())
+			return SB_OTHER_SUMMON;
+		return SB_NONE;
+	}
+
+	// The stay is over: the bot goes back to its own life. What it was doing
+	// before kept its flags and resumes; only the walk's route and a guard's
+	// target are dropped. A bot that leaves by itself says so, if the person is
+	// still in the game to read it.
+	void EndPlayerBotSummon(DWORD botPID, int reason, DWORD dwNow)
+	{
+		using namespace playerbot_conv;
+		TPlayerBotSummonMap::iterator it = s_mapPlayerBotSummons.find(botPID);
+		if (it == s_mapPlayerBotSummons.end())
+			return;
+		const TPlayerBotSummon summon = it->second;
+		s_mapPlayerBotSummons.erase(it);
+		LPCHARACTER bot = CHARACTER_MANAGER::instance().FindByPID(botPID);
+		LPCHARACTER player = CHARACTER_MANAGER::instance().FindByPID(summon.dwPlayerPID);
+		TPlayerBotAIStateMap::iterator st = s_mapPlayerBotAIStates.find(botPID);
+		if (bot && st != s_mapPlayerBotAIStates.end())
+		{
+			TPlayerBotAIState& state = st->second;
+			if (summon.dwGuardVID != 0 && state.dwTargetVID == summon.dwGuardVID)
+			{
+				state.dwTargetVID = 0;
+				bot->SetVictim(NULL);
+			}
+			ClearPlayerBotRoute(state, true);
+			state.dwLastMeaningfulActivityTime = dwNow;
+			SetPlayerBotAction(state, BOT_ACTION_IDLE, dwNow);
+		}
+		sys_log(0, "PLAYERBOT_SUMMON: over pid=%u name=%s by=%s reason=%s walked_ms=%u stayed_ms=%u",
+				botPID, bot ? bot->GetName() : "?", player ? player->GetName() : "?", SummonEndName(reason),
+				summon.dwArrivedAt ? summon.dwArrivedAt - summon.dwStartedAt : dwNow - summon.dwStartedAt,
+				summon.dwArrivedAt ? dwNow - summon.dwArrivedAt : 0);
+		const char* words = NULL;
+		switch (reason)
+		{
+			case SUMMON_END_EXPIRED: words = "Dobra, musze wracac do swoich spraw. Na razie!"; break;
+			case SUMMON_END_UNREACHABLE: words = "Nie moge do ciebie dojsc, sorki. Wracam do swoich spraw."; break;
+			case SUMMON_END_BLOCKED: words = "Musze isc, cos mi wypadlo."; break;
+			case SUMMON_END_PLAYER_LEFT: words = "Poszedles gdzies, to wracam do swoich spraw."; break;
+			default: break;
+		}
+		if (words && bot && player && player->GetDesc())
+			SendPlayerBotConvWhisper(bot, player, words);
+	}
+
+	// The conversation's "chodz do mnie": the gates asked once more, and the walk
+	// begins (playerbot_conv::ESummonStart). The same person calling again
+	// starts the stay over.
+	int StartPlayerBotSummon(LPCHARACTER bot, LPCHARACTER player, DWORD dwNow)
+	{
+		using namespace playerbot_conv;
+		if (!bot || !player || !player->GetDesc())
+			return SUMMON_START_FAILED;
+		TPlayerBotAIStateMap::iterator st = s_mapPlayerBotAIStates.find(bot->GetPlayerID());
+		if (st == s_mapPlayerBotAIStates.end())
+			return SUMMON_START_FAILED;
+		TPlayerBotAIState& state = st->second;
+		TPlayerBotSummonMap::iterator it = s_mapPlayerBotSummons.find(bot->GetPlayerID());
+		if (it != s_mapPlayerBotSummons.end() && it->second.dwPlayerPID == player->GetPlayerID())
+		{
+			if (it->second.dwArrivedAt != 0)
+				it->second.dwUntil = dwNow + PLAYERBOT_SUMMON_STAY_MS;
+			sys_log(0, "PLAYERBOT_SUMMON: renewed pid=%u name=%s by=%s arrived=%d",
+					bot->GetPlayerID(), bot->GetName(), player->GetName(), it->second.dwArrivedAt ? 1 : 0);
+			return SUMMON_START_RENEWED;
+		}
+		const int block = GetPlayerBotSummonBlock(bot, state, player, dwNow);
+		if (block != SB_NONE)
+		{
+			sys_log(0, "PLAYERBOT_SUMMON: refused pid=%u name=%s by=%s reason=%s",
+					bot->GetPlayerID(), bot->GetName(), player->GetName(), SummonBlockName(block));
+			return SUMMON_START_BLOCKED;
+		}
+		TPlayerBotSummon summon;
+		summon.dwPlayerPID = player->GetPlayerID();
+		summon.dwStartedAt = dwNow;
+		summon.lMapIndex = bot->GetMapIndex();
+		s_mapPlayerBotSummons[bot->GetPlayerID()] = summon;
+		// The bot's own fight and route are dropped; its errands keep their
+		// flags and wait for the stay to end.
+		state.dwTargetVID = 0;
+		bot->SetVictim(NULL);
+		ClearPlayerBotRoute(state, true);
+		state.dwLastMeaningfulActivityTime = dwNow;
+		sys_log(0, "PLAYERBOT_SUMMON: called pid=%u name=%s by=%s map=%ld distance=%d",
+				bot->GetPlayerID(), bot->GetName(), player->GetName(), bot->GetMapIndex(),
+				DISTANCE_APPROX(bot->GetX() - player->GetX(), bot->GetY() - player->GetY()));
+		return SUMMON_START_OK;
+	}
+
+	// "mozesz isc" from the person who called: ends the stay (ESummonEnd).
+	int EndPlayerBotSummonBy(LPCHARACTER bot, LPCHARACTER player, DWORD dwNow)
+	{
+		if (!bot || !player || GetPlayerBotSummonerPID(bot->GetPlayerID()) != player->GetPlayerID())
+			return playerbot_conv::SUMMON_END_NOT_SUMMONED;
+		EndPlayerBotSummon(bot->GetPlayerID(), playerbot_conv::SUMMON_END_DISMISSED, dwNow);
+		return playerbot_conv::SUMMON_END_DISMISSED;
+	}
+
+	// A monster that is after the bot or after the person: the only fights a
+	// summoned bot takes. The nearest to the bot.
+	struct FPlayerBotSummonThreat
+	{
+		LPCHARACTER m_bot;
+		LPCHARACTER m_player;
+		LPCHARACTER m_best;
+		int m_bestDistance;
+		FPlayerBotSummonThreat(LPCHARACTER bot, LPCHARACTER player)
+			: m_bot(bot), m_player(player), m_best(NULL), m_bestDistance(INT_MAX) {}
+		void operator () (LPENTITY ent)
+		{
+			if (!ent || !ent->IsType(ENTITY_CHARACTER))
+				return;
+			LPCHARACTER mob = static_cast<LPCHARACTER>(ent);
+			if (!mob->IsMonster() || mob->IsDead())
+				return;
+			LPCHARACTER victim = mob->GetVictim();
+			const int toBot = DISTANCE_APPROX(mob->GetX() - m_bot->GetX(), mob->GetY() - m_bot->GetY());
+			if (victim == m_bot)
+			{
+				if (toBot > PLAYERBOT_SUMMON_SELF_GUARD_RANGE)
+					return;
+			}
+			else if (victim == m_player)
+			{
+				if (DISTANCE_APPROX(mob->GetX() - m_player->GetX(), mob->GetY() - m_player->GetY()) >
+						PLAYERBOT_SUMMON_GUARD_RANGE)
+					return;
+			}
+			else
+				return;
+			if (IsPlayerBotSafeZone(mob->GetMapIndex(), mob->GetX(), mob->GetY()))
+				return;
+			if (toBot < m_bestDistance)
+			{
+				m_best = mob;
+				m_bestDistance = toBot;
+			}
+		}
+	};
+
+	// The summon's part of the tick, right after the follow pass
+	// (playerbot_manager.cpp). While a summon holds it claims every full tick,
+	// because everything below would take the bot somewhere of its own - the
+	// loot, the travel, the town, the wander, the hunt - and it does for
+	// itself what those passes would have: the recovery after a death, the
+	// potions, and the fights it is allowed, which are the monsters after it or
+	// after the person. The light tick keeps walking the route and swinging at
+	// the guard's target between two full ticks. Standing beside the person is
+	// the errand, so the inactivity watchdog is told so every tick.
+	bool ManagePlayerBotSummon(LPCHARACTER ch, TPlayerBotAIState& state, DWORD dwNow)
+	{
+		using namespace playerbot_conv;
+		if (!ch)
+			return false;
+		TPlayerBotSummonMap::iterator it = s_mapPlayerBotSummons.find(ch->GetPlayerID());
+		if (it == s_mapPlayerBotSummons.end())
+			return false;
+		TPlayerBotSummon& summon = it->second;
+		LPCHARACTER player = CHARACTER_MANAGER::instance().FindByPID(summon.dwPlayerPID);
+		int end = SUMMON_END_NONE;
+		if (!player || !player->GetDesc())
+			end = SUMMON_END_PLAYER_GONE;
+		// Moved off the map it was called on - a warp, a dungeon's jump, a GM:
+		// whatever did it had the better claim.
+		else if (ch->GetMapIndex() != summon.lMapIndex)
+			end = SUMMON_END_BLOCKED;
+		else if (player->GetMapIndex() != ch->GetMapIndex())
+			end = SUMMON_END_PLAYER_LEFT;
+		else if (summon.dwArrivedAt == 0 && dwNow - summon.dwStartedAt > PLAYERBOT_SUMMON_WALK_MAX_MS)
+			end = SUMMON_END_UNREACHABLE;
+		else if (summon.dwArrivedAt != 0 && (int)(dwNow - summon.dwUntil) >= 0)
+			end = SUMMON_END_EXPIRED;
+		else
+		{
+			const int block = GetPlayerBotSummonBlock(ch, state, player, dwNow);
+			if (block != SB_NONE && block != SB_DEAD)
+				end = SUMMON_END_BLOCKED;
+		}
+		if (end != SUMMON_END_NONE)
+		{
+			EndPlayerBotSummon(ch->GetPlayerID(), end, dwNow);
+			return false;
+		}
+		if (ch->IsDead())
+			return false;
+		// What the passes below would have done to keep it standing. A bot
+		// standing up from a death is healing, invisible, and not walking, so
+		// the walk's clock is held until it is on its feet again.
+		if (HandlePostDeathRecovery(ch, state, dwNow))
+		{
+			if (summon.dwArrivedAt == 0)
+				summon.dwStartedAt = dwNow;
+			return true;
+		}
+		UseHealthPotion(ch, state, dwNow);
+		UseManaPotion(ch, state, dwNow);
+		state.dwLastMeaningfulActivityTime = dwNow;
+		state.lLastX = ch->GetX();
+		state.lLastY = ch->GetY();
+
+		// The guard: a monster after the bot or the person.
+		LPCHARACTER threat = summon.dwGuardVID ? CHARACTER_MANAGER::instance().Find(summon.dwGuardVID) : NULL;
+		if (threat && (threat->IsDead() || threat->GetMapIndex() != ch->GetMapIndex() ||
+				(threat->GetVictim() != ch && threat->GetVictim() != player)))
+			threat = NULL;
+		if (!threat && dwNow >= summon.dwNextGuardScanAt && ch->GetSectree())
+		{
+			summon.dwNextGuardScanAt = dwNow + PLAYERBOT_SUMMON_GUARD_SCAN_MS;
+			FPlayerBotSummonThreat finder(ch, player);
+			ch->GetSectree()->ForEachAround(finder);
+			threat = finder.m_best;
+		}
+		if (!threat && summon.dwGuardVID != 0)
+		{
+			if (state.dwTargetVID == summon.dwGuardVID)
+			{
+				state.dwTargetVID = 0;
+				ch->SetVictim(NULL);
+			}
+			summon.dwGuardVID = 0;
+		}
+		if (threat)
+		{
+			summon.dwGuardVID = (DWORD)threat->GetVID();
+			state.dwTargetVID = summon.dwGuardVID;
+			if (ch->IsRiding() && !CanPlayerBotFightOnHorse(ch, threat))
+				SetPlayerBotRidingForTravel(ch, state, false, dwNow, "summon_guard");
+			LPITEM weapon = ch->GetWear(WEAR_WEAPON);
+			const bool bow = weapon && weapon->GetType() == ITEM_WEAPON && weapon->GetSubType() == WEAPON_BOW;
+			const int reach = bow ? 750 : 250;
+			if (DISTANCE_APPROX(ch->GetX() - threat->GetX(), ch->GetY() - threat->GetY()) > reach)
+				MovePlayerBot(ch, threat->GetX(), threat->GetY(), dwNow, 2, true, false, false, false);
+			else
+			{
+				if (ch->IsStateMove())
+					ch->Stop();
+				ExecutePlayerBotBasicAttack(ch, threat, state, dwNow);
+			}
+			SetPlayerBotAction(state, BOT_ACTION_FIGHT, dwNow);
+			return true;
+		}
+
+		const int distance = DISTANCE_APPROX(ch->GetX() - player->GetX(), ch->GetY() - player->GetY());
+		if (summon.dwArrivedAt == 0 && distance <= PLAYERBOT_SUMMON_STAY_DISTANCE)
+		{
+			summon.dwArrivedAt = dwNow;
+			summon.dwUntil = dwNow + PLAYERBOT_SUMMON_STAY_MS;
+			ClearPlayerBotRoute(state, true);
+			if (ch->IsStateMove())
+				ch->Stop();
+			sys_log(0, "PLAYERBOT_SUMMON: arrived pid=%u name=%s by=%s walk_ms=%u",
+					ch->GetPlayerID(), ch->GetName(), player->GetName(), dwNow - summon.dwStartedAt);
+		}
+		// After arrival the bot stays put while the person moves about near it,
+		// and once they are past PLAYERBOT_SUMMON_FOLLOW_DISTANCE it walks after
+		// them until it is close again - two distances, or a person standing on
+		// the edge of one would start and stop it on every step.
+		if (summon.dwArrivedAt != 0)
+		{
+			if (distance > PLAYERBOT_SUMMON_FOLLOW_DISTANCE)
+				summon.bFollowing = true;
+			else if (distance <= PLAYERBOT_SUMMON_STAY_DISTANCE)
+				summon.bFollowing = false;
+		}
+		if (summon.dwArrivedAt == 0 || summon.bFollowing)
+		{
+			// Beside the person, at a place of its own round them.
+			static const int kSide[8][2] = {
+				{ 200, 0 }, { 141, 141 }, { 0, 200 }, { -141, 141 }, { -200, 0 }, { -141, -141 }, { 0, -200 }, { 141, -141 } };
+			const int* side = kSide[ch->GetPlayerID() % 8];
+			const long goalX = player->GetX() + side[0] * PLAYERBOT_SUMMON_OFFSET / 200;
+			const long goalY = player->GetY() + side[1] * PLAYERBOT_SUMMON_OFFSET / 200;
+			// The horse for a long walk; UpdatePlayerBotTravelMount refuses it
+			// for a short one by itself.
+			MovePlayerBot(ch, goalX, goalY, dwNow, PLAYERBOT_SUMMON_SNAP_CELLS, true, true, false, false);
+			SetPlayerBotAction(state, BOT_ACTION_TRAVEL, dwNow);
+			return true;
+		}
+		if (!state.vecRoute.empty())
+			ClearPlayerBotRoute(state, true);
+		if (ch->IsStateMove())
+			ch->Stop();
+		SetPlayerBotAction(state, BOT_ACTION_IDLE, dwNow);
+		return true;
+	}
+
+	// The summons of bots that are no longer in the game.
+	void PrunePlayerBotSummons(DWORD dwNow)
+	{
+		if (s_dwPlayerBotSummonPruneTime != 0 && dwNow - s_dwPlayerBotSummonPruneTime < PLAYERBOT_SUMMON_PRUNE_MS)
+			return;
+		s_dwPlayerBotSummonPruneTime = dwNow;
+		for (TPlayerBotSummonMap::iterator it = s_mapPlayerBotSummons.begin(); it != s_mapPlayerBotSummons.end(); )
+		{
+			if (s_mapPlayerBotAIStates.find(it->first) == s_mapPlayerBotAIStates.end() ||
+					!CHARACTER_MANAGER::instance().FindByPID(it->first))
+				s_mapPlayerBotSummons.erase(it++);
+			else
+				++it;
+		}
+	}
+
+	// The line over the bot's head while it is called (playerbot_status.h may
+	// ask it the way it asks BuildPlayerBotMercStatus). A fight says what it
+	// is fighting. Inline because nothing in this file calls it.
+	inline bool BuildPlayerBotSummonStatus(LPCHARACTER ch, const TPlayerBotAIState& state, const char* prefix,
+			char* status, size_t statusSize, bool en)
+	{
+		if (!ch || !status || statusSize == 0 || state.bCurrentAction == BOT_ACTION_FIGHT)
+			return false;
+		TPlayerBotSummonMap::const_iterator it = s_mapPlayerBotSummons.find(ch->GetPlayerID());
+		if (it == s_mapPlayerBotSummons.end())
+			return false;
+		LPCHARACTER player = CHARACTER_MANAGER::instance().FindByPID(it->second.dwPlayerPID);
+		const char* who = player ? player->GetName() : PBT(en, "gracza", "a player");
+		if (it->second.dwArrivedAt == 0)
+			snprintf(status, statusSize, PBT(en, "%sIde do %s", "%sGoing to %s"), prefix ? prefix : "", who);
+		else
+			snprintf(status, statusSize, PBT(en, "%sStoje przy %s", "%sStaying with %s"), prefix ? prefix : "", who);
+		return true;
+	}
+
 	// --------------------------------------------------------------- world
 
 	// The cheapest single-piece price of a matching line, per piece for stacks.
@@ -388,29 +1017,29 @@ namespace
 				return reply;
 			}
 
+			// "co daja twoje buffy?": the three of the bot's path, evaluated as
+			// the engine would cast them on the person asking.
+			bool DescribeBuffs(playerbot_conv::TBuffReport& out)
+			{
+				return DescribePlayerBotBuffs(m_bot, m_player, out);
+			}
+
+			// "chodz do mnie" and "mozesz isc", made at the moment the reply is
+			// composed, which is when the snapshot that decided them was read.
+			int StartSummon()
+			{
+				return StartPlayerBotSummon(m_bot, m_player, get_dword_time());
+			}
+
+			int EndSummon()
+			{
+				return EndPlayerBotSummonBy(m_bot, m_player, get_dword_time());
+			}
+
 		private:
 			LPCHARACTER m_bot;
 			LPCHARACTER m_player;
 	};
-
-	// The whisper packet, as SendPlayerBotWhisper builds it, without its
-	// per-line syslog entry: a conversation is many lines and the debug switch
-	// logs them when wanted.
-	void SendPlayerBotConvWhisper(LPCHARACTER bot, LPCHARACTER to, const char* text)
-	{
-		if (!bot || !to || !to->GetDesc() || !text || !*text)
-			return;
-		const size_t len = std::min<size_t>(strlen(text), CHAT_MAX_LEN);
-		TPacketGCWhisper pack;
-		pack.bHeader = HEADER_GC_WHISPER;
-		pack.bType = WHISPER_TYPE_NORMAL;
-		pack.wSize = (WORD)(sizeof(TPacketGCWhisper) + len);
-		strlcpy(pack.szNameFrom, bot->GetName(), sizeof(pack.szNameFrom));
-		TEMP_BUFFER tmpbuf;
-		tmpbuf.write(&pack, sizeof(pack));
-		tmpbuf.write(text, (int)len);
-		to->GetDesc()->Packet(tmpbuf.read_peek(), tmpbuf.size());
-	}
 
 	// ---------------------------------------------------------------- host
 
@@ -469,6 +1098,18 @@ namespace
 				s.expPct = nextExp > 0 ? (int)((unsigned long long)bot->GetExp() * 100ULL / nextExp) : -1;
 				s.gold = (long long)bot->GetGold();
 				s.horseLevel = bot->GetHorseLevel();
+				// The path and its skills as the build knows them (playerbot_skills.h):
+				// "jestes body czy mental?" and "jaki masz skill?" read these.
+				s.skillGroup = bot->GetSkillGroup();
+				{
+					const TJobSkillBuild build = GetPlayerBotSkillBuild(bot->GetJob(), bot->GetSkillGroup(), botPID);
+					for (BYTE i = 0; i < build.bSkillCount && i < 6; ++i)
+					{
+						s.skillVnums[i] = build.dwSkills[i];
+						s.skillLevels[i] = build.dwSkills[i] ? bot->GetSkillLevel(build.dwSkills[i]) : 0;
+					}
+					s.mainSkill = build.dwPrimaryMaxSkill;
+				}
 
 				LPPARTY party = bot->GetParty();
 				if (party)
@@ -608,6 +1249,26 @@ namespace
 				s.askerLevel = player->GetLevel();
 				s.askerNear = player->GetMapIndex() == mapIndex &&
 						DISTANCE_APPROX(player->GetX() - bot->GetX(), player->GetY() - bot->GetY()) <= PLAYERBOT_CONV_NEAR_RADIUS;
+				// "chodz do mnie": where the person is, whether the bot is already
+				// called, and what would stop it coming now.
+				s.askerOnMap = player->GetMapIndex() == mapIndex;
+				s.askerDistance = s.askerOnMap
+						? DISTANCE_APPROX(player->GetX() - bot->GetX(), player->GetY() - bot->GetY()) : -1;
+				{
+					TPlayerBotSummonMap::const_iterator sm = s_mapPlayerBotSummons.find(botPID);
+					if (sm != s_mapPlayerBotSummons.end())
+					{
+						s.summoned = true;
+						s.summonedByAsker = sm->second.dwPlayerPID == playerPID;
+						s.summonArrived = sm->second.dwArrivedAt != 0;
+						if (!s.summonedByAsker)
+						{
+							LPCHARACTER summoner = CHARACTER_MANAGER::instance().FindByPID(sm->second.dwPlayerPID);
+							s.summonerName = summoner ? summoner->GetName() : "";
+						}
+					}
+				}
+				s.summonBlock = GetPlayerBotSummonBlock(bot, state, player, now);
 				s.afk = state.persona.dwAfkUntil != 0 && now < state.persona.dwAfkUntil;
 				{
 					const time_t t = time(0);
@@ -649,6 +1310,7 @@ namespace
 	{
 		RefreshPlayerBotConvSwitches(dwNow);
 		s_PlayerBotConvEngine.Pump(s_PlayerBotConvHost, dwNow);
+		PrunePlayerBotSummons(dwNow);
 		if (s_dwPlayerBotConvStatsTime == 0)
 			s_dwPlayerBotConvStatsTime = dwNow;
 		else if (dwNow - s_dwPlayerBotConvStatsTime >= PLAYERBOT_CONV_STATS_INTERVAL_MS)

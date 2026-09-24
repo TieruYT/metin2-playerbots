@@ -107,7 +107,7 @@ dependency order at the top of `playerbot_manager.cpp`:
 | `playerbot_market.h` | Buying from another bot's counter: what is worth having, the walk to the stall, and the purchase. |
 | `playerbot_chat_trade.h` | Trading over the chat: what a bot shouts about its counter and its wants, and the whisper it answers a player's "Kupie"/"Sprzedam" with. Fed by patch 0007. Anything else whispered falls through to the conversation. |
 | `playerbot_conv_*.h` | ĹŌŞƬĒĶ's conversation layer as pure code (text, aliases, lexicon, intents, memory, state, say, general, generator, engine): what a whisper means, what the bot remembers of the person, and the reply. `playerbot_conv_aliases.h` is the players' own words (FMS, KK, KD, bodzio; M1, V1, DT; 2kk) and is also included by `playerbot_chat_trade.h`. No engine types, unit-tested (`tests/playerbot_conversation_test.cpp`). Included by the next row only. |
-| `playerbot_chat_conversation.h` | The conversation's engine side: the snapshot of the bot it answers from, the whisper packet, the short timer while replies wait. After status.h. |
+| `playerbot_chat_conversation.h` | The conversation's engine side: the snapshot of the bot it answers from, the whisper packet, the short timer while replies wait, a Shaman's buffs evaluated from `skill_proto`, and the summon ("chodz do mnie") with its pass in the tick. After status.h. |
 | `playerbot_loot.h` | Picking things up, in and out of a fight, without sweeping the floor. |
 | `playerbot_lure_order_rules.h` | What a person's whisper to a bot means: "luruj" and "przestan lurowac". No engine types, unit-tested. Included first, with the other rules headers. |
 | `playerbot_survival.h` | Saving progress, breaking off a losing fight, and the walk back after dying. |
@@ -2744,7 +2744,19 @@ not in `data/`) reworked these point by point. What each hangs on:
   then. Its stones stand among the floor's demons and a raid breaks them
   together, and an Archer walking in to stab one was a bot in melee with a
   pack ("ninja archerzy fajnie jakby stali z daleka i strzelali, a nie
-  podbiegali i bili z bliska", prodnathin, 23 September).
+  podbiegali i bili z bliska", prodnathin, 23 September). The bow alone was
+  not enough: it walked up to eight metres of its foe like everybody walks up
+  to theirs, Feather Walk made it the first to arrive, and the demons turned on
+  it ("archer jest zawsze pierwszy i wpierdala sie prosto w walke"). In the
+  tower a bow reaches `PLAYERBOT_TOWER_ARCHER_RANGE` (fifteen metres; the
+  shots and the archery skills all reach 2500) - `GetPlayerBotBowRange`, one
+  number for the approach and the shot - and a monster that comes within
+  `PLAYERBOT_TOWER_ARCHER_KEEP_AWAY` gets one step back towards the pack
+  standing behind the Archer, one step a monster and no more: a monster with
+  its aggro keeps coming, and an Archer that stepped away every time would
+  spend the fight running (Tieru's caution, 24 September). Outside the tower
+  the range is the old eight metres. Not watched: m2zip has no guild for the
+  tower.
 - **A portal walk asked for once is a route somebody else finishes.**
   `MovePlayerBotToWorldPortal` plans the route and makes the map change only
   when the pass that called it calls it again within
@@ -6591,6 +6603,25 @@ not in `data/`) reworked these point by point. What each hangs on:
   8 in, 27 and 7) and then swapped one for one with a dozen waiting; ticks 6-7 s
   of 60 on channel 1 and 4.7 s on channel 2; no pid on both channels, no login
   refused. A player never sees any of this but the numbers on the channel list.
+  Nor did any bot change channel for any other reason, which players took for
+  a static split ("it would be cool if bots change channels itself like 4
+  hours", Dixdros; "myslalem ze jest tak dynamicznie zrobione", Tieru, 24
+  September). At the end of every gate, after whatever the plan did, a few
+  bots now trade places: `PLAYERBOT_CHANNEL_ROAM_PER_MILLE` of the playing
+  bots each way (PB_CHSQL_ROAM_IN, then ROAM_OUT for as many as came in; the
+  census sets `s_uPlayerBotChannelRoamWant` and the step that ends the gate
+  spends it, once). The first version roamed only at a gate the plan left
+  alone, and in the half hour after a start on m2zip every gate was a swap
+  or an ease (three swaps, then drains of 7, 19, 15 and 3), so no roam ran
+  at all - and nothing else ever brings a bot with no stand back from the
+  second channel. The roam takes bots of the
+  second channel that have stayed `_ROAM_MIN_STAY_SECONDS` and nothing pins,
+  and as many of the shop channel's, the cheapest first. Not the gentle
+  drain's rule of no live stand: on m2zip seven of 877 bots of channel 1 had
+  no stand and stood outside a village, so that roam would have moved nobody
+  on a world that has played; an owner sent across asks to come back for its
+  service 45 to 75 minutes on, which is a change of channel too.
+  `PLAYERBOT_CHANNEL: roam to_channel_1= from_channel_1=` is the line.
 - **An event that cancels itself wrote into freed memory.** `event_process`
   deletes the queue element before calling the event and left `q_el` on it,
   and `event_cancel` of a processing event writes `q_el->bCancel`. A quest's
@@ -6705,6 +6736,16 @@ not in `data/`) reworked these point by point. What each hangs on:
   is oldest goes first (`s_mapPlayerBotLastWarPair`,
   `s_mapPlayerBotGuildLastWarAt`, kept for the process). The panel already
   showed a running war's score; gregory asked for one not knowing it.
+  And the nearest enemy, held to his death, made every war a queue: both
+  sides rally on one ground, so the first enemy to arrive was everybody's
+  nearest ("wszyscy sie rzucaja na jedna osobe i tak w kolko", prodnathin;
+  "bardziej naturalnie", Tieru, 24 September). `FindPlayerBotGuildWarFoe`
+  prices a foe at his distance plus `PLAYERBOT_GUILD_WAR_CROWD_PENALTY` for
+  every bot of the chooser's guild already on him plus a draw of up to
+  `_JITTER` by the pair of pids, the one held `_KEEP_BONUS` cheaper, and the
+  choice is made again every `_RETARGET_MS` - one pass over the roster finds
+  the enemies and counts the own side's targets at once. Compiled; the
+  test world had no war running when it went in.
 - **A Compose that pulls what the project builds, and a diagnosis that read
   any 404.** seban-collector and seban-item-grants run metin2/seban-panel,
   which the seban-panel service builds; an older Compose pulls it from Docker
@@ -7427,6 +7468,27 @@ not in `data/`) reworked these point by point. What each hangs on:
   saved on "Zapisz"), `autohunt/postacie/<name>.cfg` per character, and
   `autohunt/<name>.cfg` (2.0.17-2.0.24) or `autohunt_<name>.cfg` read until
   the first save. `tests/uiautohunt_test.py`, 59 tests on 2.7 and 3.
+- **Fast Attack is the one skill that moves the character, so Auto Lowy
+  casts it only from melee reach.** Buby's Ninja (23 September) hung in a
+  night sky with no world round it, still hitting a monster. Read from the
+  client's source (`Downloads\Metin2 Singleplayer\Source\Source Client`):
+  skill 32's motion (`gungsin.msa`) carries a WARP event 0.25 s in, and
+  `ProcessMotionEventWarp` puts the character 270 units before the target's
+  middle along the straight line in three dimensions, with one `IsBlock` at
+  the landing and no look at what lies between - over a cliff, through a
+  wall, into a hillside - and the height taken from that line, not the
+  ground. The hunter clicked every slot on its own clock, and with no live
+  target in the client's hand a skill goes at the monster under the mouse
+  cursor, or is reserved and walked to in a straight line from up to 800
+  away. `NeedsTarget` (a class or horse skill that is neither standing, a
+  toggle nor one of `SELF_SKILLS`) now waits for the hunter's own target:
+  alive, marked in the client (`player.GetTargetVID`) and within `Reach()`,
+  and `WARP_SKILLS` within `MELEE_REACH` whatever the reach. Buffs, standing
+  skills and Stealth go on their clocks as before. A caster therefore casts
+  from 200 rather than while walking - which it never did at its own target
+  anyway, because `Chase` marks one only in reach. Why the world disappears
+  is still a guess (the camera under the terrain, whose underside is
+  culled); 69 tests on 2.7 and 3, never run in a client.
 - **The launcher's window is a layout file over the old controls.**
   `Metin2-Launcher-GUI.Layout.ps1` (22 September, prepared outside this
   repository as a UI test and brought in here) is dot-sourced by the GUI
@@ -7514,6 +7576,40 @@ not in `data/`) reworked these point by point. What each hangs on:
   bot began itself, no core died, and the tick at 7.0 s of 60 against 6.5 to
   6.9 before. Never watched with a person whispering: the test world has
   none, and the author runs it on their own.
+- **A whisper can ask a bot what it plays, what its buffs give, and to come
+  over.** Remigiusz's three ideas (24 September): `I_BUILD`, `I_BUFFS`,
+  `I_SUMMON` and `I_DISMISS` are pure-layer intents (`playerbot_conv_*.h`,
+  tested - 604 checks). A Shaman's buffs are not a table:
+  `DescribePlayerBotBuffs` (`playerbot_chat_conversation.h`) evaluates the
+  world's own `skill_proto` the way `ComputeSkill` does - k from the skill
+  power, the same variables, the master bonus poly from Grand Master, and on
+  mt2009 the 75/110/70 percent cut on another target plus
+  `POINT_SKILL_DURATION`. Setting the proto's variables from outside a cast
+  is safe only because `ComputeSkill` sets every one it reads again before
+  its own `Eval` (`SetPolyVarForAttack` for wep/mtk/mwep/amwep, each duration
+  poly's `k` just before its `Eval` on r40250) - checked on both engines;
+  a new variable in a proto is a leak into players' skills until it is. The
+  summon is the conversation's one move: `ManagePlayerBotSummon` sits right
+  after the follow pass in the tick, claims every full tick while it holds,
+  keeps its state by pid in `s_mapPlayerBotSummons`, and ends by itself on
+  the four-minute stay, the person leaving the map or the game, a walk not
+  done in three minutes, or a claim with a better right (duel, war, tower,
+  stall, dungeon, another person's party). What sits above it in the tick
+  or elsewhere had to be told (`IsPlayerBotSummoned`): the passes that ask
+  `IsPlayerBotHeldForCompany` (market, service walk, world travel), the
+  mood's playing-alone (or a SLABY bot's pause stops it halfway), the stall
+  pass (a stand ends the summon), the mercenary on both sides, the status
+  line ("Ide do X" / "Stoje przy X"), the LIFE log-out, the channel
+  coordinator's pin, and the duel's pickers and acceptance through
+  `GetPlayerBotDuelRefusal` - not the Anti-PK fight, which asks the plain
+  `GetPlayerBotDuelUnreadiness` because a summoned bot struck by somebody
+  must still hit back. And an answer to the bot's own question carries the
+  question with it (`TAnalysis::answeredAsk`): the memory closed it on
+  arrival and the reply is composed a second later, so every
+  `GenAnswerToBot` branch but the topic one was dead until then.
+  `PLAYERBOT_SUMMON: called/refused/renewed/arrived/over` is in the bundle's
+  grep list. Compiled on both engines and unit-tested; never watched with a
+  person whispering.
 - **A full package is built from an installation, and an installation keeps
   secrets beside its files.** The 2.0.71, 2.0.85 and 2.0.86 full packages
   carried the test client's saved logins (`Klient/cache/credentials.json`,
@@ -7799,16 +7895,33 @@ not in `data/`) reworked these point by point. What each hangs on:
   transport horse. One that still fights mounted climbs down for a missing
   buff in a fight (`PLAYERBOT_HORSE: dismounted ... reason=buff`) and the
   flip hold keeps it on foot while the set goes up; the three support-buff
-  passes climb down from any saddle. And since 2.2.6 a stone is broken on
-  foot from any saddle (`CanPlayerBotFightOnHorse` answers no for one, the
-  tower's fight climbs down for one too): "do zbijania metinow nikt nie
-  uzywa bojowca" (prodnathin, 23 September). With that the planner's
-  twice-as-many Metin expeditions for a battle horse went too, since they
-  stood on the same belief. On foot the
+  passes climb down from any saddle. A stone is the exception to all of it:
+  every owner of a battle horse (`HasPlayerBotBattleHorse`, so not an Archer
+  with its bow) breaks one from the saddle whatever its skills, the target
+  section and the tower mount for it (`mounted_combat`, `tower_stone`), and
+  the passes that climb down "for a fight" ask the foe in hand
+  (`CanPlayerBotKeepSaddleInFight`), not the build, so the rider is not taken
+  down again on the next tick. 2.2.6 did the opposite on a misreading:
+  "do zbijania metinow nikt nie uzywa bojowca" (prodnathin, 23 September) was
+  the complaint that no bot did - "tu chodzilo o to, ze nie bili wcale z
+  konia ... nikt nie przywolywal konia nawet na dt ... akurat na metinie
+  mogliby z bojowca bic" - and the operator's rule the next morning was
+  "kazdy kamien metin powinien byc bity na koniu bojowym". Read a player's
+  one-line report as a complaint about what is missing before reading it as a
+  rule; ask when it can be read both ways. The planner's twice-as-many Metin
+  expeditions for a battle horse came back with it. On foot the
   buffs were always cast: ten minutes of game1 before the change had aura
-  601, berserk 567, strong body 390, enchanted blade 476 casts. No bot on
-  m2zip owns a battle horse (the four GM characters do), so the saddle half
-  is compiled and read, not watched.
+  601, berserk 567, strong body 390, enchanted blade 476 casts. Three bots
+  of m2zip own a battle horse, and the first one watched after the change - a
+  Shaman of 42, pid 10, on Bokjung - mounted for its Metin
+  (`reason=mounted_combat`, "Rozbijam Metin Zazdrosci") and fought it from
+  the saddle for a minute. Then its three buffs ran out one at a time, and
+  it climbed down for Reflect, was back up six seconds later and down again
+  two seconds after that for Blessing. While it stands on the ground for one
+  buff it now renews every other with `PLAYERBOT_SADDLE_BUFF_REFRESH_SECONDS`
+  or less left (`IsPlayerBotBuffRunningOut`; never a toggle, which UseSkill
+  would switch off), and each cast holds the saddle off for the next
+  (`dwSaddleBuffRefreshUntil`, `renewed=1` in the buff line).
 - **A raid is a guild, and nothing written for a party reached it.** Inside
   the Demon Tower the Shamans buffed themselves and nobody else: the
   companion pass needs a party, and the party branch of the self-buff pass
@@ -7939,6 +8052,25 @@ not in `data/`) reworked these point by point. What each hangs on:
   Smiert. Zbroja Plytowa and a Smocza out and sold the six ten seconds later,
   and in seventeen minutes the boxes went from 33 521 pieces of gear to
   29 195.
+  The next morning they still held 13 800 pieces, 3 225 of them body
+  armour at +0 and 8 800 earrings, boots and necklaces nearly all at +0 to
+  +2 - a gambler's two a family over twenty-four jewel families and every
+  armour past 33 of four classes fills a box - and a warrior of forty-five
+  had three quarters of his first page full ("Boty zbieraja nadmiar itemow,
+  ktore do niczego sie im nie przydadza", GoracyDelfin; "zbroje na 34 czy 42
+  lv tez sa malo warte jesli nie sa ulepszone ... to juz lepiej jak laduja u
+  handlarza", Tieru, 24 September). The list keeps its gear from
+  `PLAYERBOT_LPP_KEEP_MIN_PLUS` (+4, what the tower's smith takes as goods)
+  or with a line of his tier 5-6 rolled half-way up
+  (`IsPlayerBotLppUnderKeepFloor`); what falls under that is neither kept nor
+  the gamblers' counter stock, the box gives it back and the merchant buys
+  it. A gambler's session still works any base in the bag that is not junk.
+  And the books of another build go to the counter, not the box: one is
+  enough to open a counter (`PLAYERBOT_SHOP_OTHER_CLASS_BOOK_MIN`),
+  `CollectPlayerBotSafeboxBooks` leaves them in the bag of a bot that can keep
+  a counter, and `WithdrawPlayerBotSafebox` brings back what an older version
+  put down (`why=book_counter`). On m2zip that morning 709 bots held 1 587 of
+  them in their bags, two apiece, and opened no counter for them.
 - **What a gambler made is goods, and the list's rank used to hide it.**
   The list keeps the best copies of a family by `GetPlayerBotLppRank`, the
   plus first, so the one piece a session had just taken to +6 or +7 was the

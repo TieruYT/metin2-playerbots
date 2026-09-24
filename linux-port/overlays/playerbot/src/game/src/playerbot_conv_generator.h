@@ -526,12 +526,108 @@ namespace playerbot_conv
 		return out;
 	}
 
+	// The class and its path in the instrumental a sentence needs, with the
+	// players' word and the game's in brackets where they differ.
+	inline const char* BuildPhrase(int build)
+	{
+		switch (build)
+		{
+			case B_BODY: return "wojownikiem body";
+			case B_MENTAL: return "wojownikiem mental";
+			case B_DAGGER: return "ninja na sztyletach (dagger)";
+			case B_ARCHER: return "ninja lucznikiem (archer)";
+			case B_WEAPON: return "sura WP (magiczna bron)";
+			case B_BLACK_MAGIC: return "sura BM (czarna magia)";
+			case B_DRAGON: return "szamanem smok";
+			case B_HEAL: return "szamanem heal (leczenie)";
+			default: return "";
+		}
+	}
+
+	// The path's skills, best first - the build's own first skill ahead of an
+	// equal one - as "Aura Miecza M3, Wir Miecza 17". Empty before any is
+	// learnt.
+	inline std::string SkillsList(const TBotSnapshot& s, size_t maxItems)
+	{
+		int order[6];
+		int n = 0;
+		for (int i = 0; i < 6; ++i)
+		{
+			if (s.skillVnums[i] == 0 || s.skillLevels[i] <= 0 || !*SkillNameOf(s.skillVnums[i]))
+				continue;
+			int at = n++;
+			while (at > 0)
+			{
+				const int prev = order[at - 1];
+				const bool before = s.skillLevels[i] > s.skillLevels[prev] ||
+						(s.skillLevels[i] == s.skillLevels[prev] && s.skillVnums[i] == s.mainSkill);
+				if (!before)
+					break;
+				order[at] = prev;
+				--at;
+			}
+			order[at] = i;
+		}
+		std::string out;
+		for (int k = 0; k < n && (size_t)k < maxItems; ++k)
+		{
+			if (!out.empty())
+				out += ", ";
+			out += SkillNameOf(s.skillVnums[order[k]]);
+			out += ' ';
+			out += SkillGradeText(s.skillLevels[order[k]]);
+		}
+		return out;
+	}
+
 	inline std::string GenClass(TGen& g)
 	{
 		static const char* const k[] = { "Gram $CLASSI.", "Jestem $CLASSI.", "$CLASSI, od poczatku." };
 		std::string out = Pick(g, k, 3);
-		ReplaceAll(out, "$CLASSI", ClassNameInstr(g.s.job));
+		const int build = g.s.Build();
+		ReplaceAll(out, "$CLASSI", build != B_NONE ? BuildPhrase(build) : ClassNameInstr(g.s.job));
 		CapitalizeFirst(out);
+		return out;
+	}
+
+	// "jaka masz profesje?", "jestes body czy mental?", "grasz archerem?" - the
+	// path, a yes or a no when the line named one, the level and the best
+	// skill of the path.
+	inline std::string GenBuild(TGen& g)
+	{
+		const TBotSnapshot& s = g.s;
+		const int build = s.Build();
+		if (build == B_NONE)
+		{
+			g.reason = "Bo sciezke wybiera sie u trenera od piatego poziomu.";
+			if (s.level < 5)
+				return Fill(g, "Jeszcze nie mam sciezki, mam dopiero $LVL poziom. Wybiera sie ja od piatego.");
+			return "Jeszcze nie wybralem sciezki, musze isc do trenera.";
+		}
+		const unsigned int named = g.a ? NamedBuildsInLine(g.a->tokens, g.a->concepts) : 0;
+		const unsigned int mine = 1u << build;
+		std::string out;
+		if (named != 0 && (named & mine) == 0)
+			out = std::string("Nie, gram ") + BuildPhrase(build) + ".";
+		else if (named == mine)
+		{
+			static const char* const k[] = { "Tak, gram $P.", "Zgadza sie, jestem $P.", "Tak, jestem $P." };
+			out = Pick(g, k, 3);
+			ReplaceAll(out, "$P", BuildPhrase(build));
+		}
+		else
+		{
+			static const char* const k[] = { "Gram $P.", "Jestem $P.", "Gram $P, tak wybralem u trenera." };
+			out = Pick(g, k, 3);
+			ReplaceAll(out, "$P", BuildPhrase(build));
+		}
+		CapitalizeFirst(out);
+		std::string tail = Fill(g, "Mam $LVL poziom");
+		const std::string best = SkillsList(s, 1);
+		if (!best.empty())
+			tail += ", najwyzej " + best;
+		Append(out, tail + ".");
+		g.reason = "Tak wybralem u trenera i tak juz zostalo.";
 		return out;
 	}
 
@@ -1106,12 +1202,21 @@ namespace playerbot_conv
 
 	inline std::string GenSkills(TGen& g)
 	{
+		std::string out;
 		if (g.s.action == A_READ_BOOK)
-			return "Wlasnie czytam ksiegi, podbijam skille.";
-		if (g.s.goal == G_SKILL)
-			return "Teraz glownie podbijam umiejetnosci.";
-		static const char* const k[] = { "Rozwijam, jak mam ksiegi. Tanio nie jest.", "Powoli do przodu z umiejetnosciami." };
-		return PBC_SAY(g, k);
+			out = "Wlasnie czytam ksiegi, podbijam skille.";
+		else if (g.s.goal == G_SKILL)
+			out = "Teraz glownie podbijam umiejetnosci.";
+		else
+		{
+			static const char* const k[] = { "Rozwijam, jak mam ksiegi. Tanio nie jest.", "Powoli do przodu z umiejetnosciami." };
+			out = PBC_SAY(g, k);
+		}
+		// What they are at, from the character sheet.
+		const std::string list = SkillsList(g.s, 3);
+		if (!list.empty())
+			Append(out, "Najwyzej mam " + list + ".");
+		return out;
 	}
 
 	inline std::string GenPvp(TGen& g)
@@ -1464,6 +1569,331 @@ namespace playerbot_conv
 		return PBC_SAY(g, k);
 	}
 
+	// ------------------------------------------------------------- buffs
+
+	inline std::string DurationText(int seconds)
+	{
+		if (seconds < 120)
+			return ToString(seconds) + " s";
+		const int minutes = seconds / 60;
+		const int rest = seconds % 60;
+		return rest ? ToString(minutes) + " min " + ToString(rest) + " s" : ToString(minutes) + " min";
+	}
+
+	// What one buff does, in the words a player reads it in. The numbers are
+	// the engine's (TBuffLine); only the words are chosen here.
+	inline std::string BuffEffectText(const TBuffLine& l)
+	{
+		char buf[160];
+		buf[0] = 0;
+		switch (l.skill)
+		{
+			case CONV_SKILL_BLESSING:
+				snprintf(buf, sizeof(buf), "o %d%% mniej obrazen", l.amount);
+				break;
+			case CONV_SKILL_REFLECT:
+				snprintf(buf, sizeof(buf), "odbija %d%% obrazen wrecz", l.amount);
+				break;
+			case CONV_SKILL_DRAGON_AID:
+				snprintf(buf, sizeof(buf), "+%d%% szansy na cios krytyczny", l.amount);
+				break;
+			case CONV_SKILL_CURE:
+				if (l.amountMax > l.amount)
+					snprintf(buf, sizeof(buf), "leczy %d-%d HP", l.amount, l.amountMax);
+				else
+					snprintf(buf, sizeof(buf), "leczy %d HP", l.amount);
+				break;
+			case CONV_SKILL_SWIFTNESS:
+				if (l.amount2 > 0)
+					snprintf(buf, sizeof(buf), "+%d do szybkosci ruchu i +%d%% do szybkosci czarowania",
+							l.amount, l.amount2);
+				else
+					snprintf(buf, sizeof(buf), "+%d do szybkosci ruchu", l.amount);
+				break;
+			case CONV_SKILL_ATTACK_UP:
+				snprintf(buf, sizeof(buf), "+%d do wartosci ataku", l.amount);
+				break;
+			default:
+				break;
+		}
+		std::string out = buf;
+		if (l.seconds > 0)
+			out += " przez " + DurationText(l.seconds);
+		if (l.skill == CONV_SKILL_CURE && l.amount3 > 0)
+		{
+			out += ", do tego oslona na " + ToString(l.amount3) + " obrazen od potworow";
+			if (l.seconds3 > 0)
+				out += " przez " + DurationText(l.seconds3);
+		}
+		return out;
+	}
+
+	// "zbuffuj mnie", "dasz buffa?" - asked for, not asked about.
+	inline bool IsBuffRequest(const TAnalysis& a)
+	{
+		for (size_t i = 0; i < a.tokens.words.size(); ++i)
+		{
+			const std::string& w = a.tokens.words[i];
+			if (StartsWith(w, "zbuf") || StartsWith(w, "buffuj") || StartsWith(w, "bufuj") ||
+					StartsWith(w, "buffnij") || StartsWith(w, "bufnij"))
+				return true;
+		}
+		return a.concepts.Has(C_BUFF) && (a.tokens.Has("daj") || a.tokens.Has("dasz") ||
+				a.tokens.Has("potrzebuje") || (a.concepts.Has(C_CAN) && a.concepts.Has(C_ME)));
+	}
+
+	// "co daja twoje buffy?", "ile daje blogoslawienstwo?" - the Shaman's
+	// buffs of its path as the engine would cast them on the person asking.
+	inline std::string GenBuffs(TGen& g)
+	{
+		const TBotSnapshot& s = g.s;
+		int askedWord = -1;
+		const unsigned int asked = g.a && g.a->concepts.Has(C_BUFFNAME) ? NamedBuffSkill(g.a->tokens, askedWord) : 0;
+		g.reason = "Tyle wychodzi z moich skilli i inteligencji.";
+		if (s.job != 3)
+		{
+			std::string out = std::string("Nie mam buffow, gram ") + ClassNameInstr(s.job) + ".";
+			Append(out, "Buffy daje szaman.");
+			return out;
+		}
+		const int build = s.Build();
+		if (build == B_NONE)
+			return "Nie wybralem jeszcze sciezki, wiec buffow jeszcze nie mam.";
+		if (asked && BuffBuildOf(asked) != build)
+			return std::string("Tego nie mam, jestem ") + BuildPhrase(build) + ". " + SkillNameOf(asked) +
+					" ma szaman " + BuildShortName(BuffBuildOf(asked)) + ".";
+		TBuffReport report;
+		if (!g.world || !g.world->DescribeBuffs(report) || report.count <= 0)
+			return "Nie umiem ci teraz tego policzyc.";
+		std::string list;
+		int shown = 0;
+		int unlearnt = 0;
+		for (int i = 0; i < report.count && i < 3; ++i)
+		{
+			const TBuffLine& l = report.lines[i];
+			if (asked && l.skill != asked)
+				continue;
+			if (l.level <= 0)
+			{
+				if (asked)
+					return std::string("Tego jeszcze sie nie nauczylem (") + SkillNameOf(l.skill) + ").";
+				++unlearnt;
+				continue;
+			}
+			if (!l.known)
+				continue;
+			Append(list, std::string(SkillNameOf(l.skill)) + " (" + SkillGradeText(l.level) + ") - " +
+					BuffEffectText(l) + ".");
+			++shown;
+		}
+		if (shown == 0)
+			return unlearnt ? "Zadnego buffa jeszcze sie nie nauczylem." : "Nie umiem ci teraz tego policzyc.";
+		std::string out = std::string(report.onAsker ? "Na tobie: " : "Moje buffy: ") + list;
+		if (unlearnt)
+			Append(out, "Reszty jeszcze nie umiem.");
+		if (g.a && IsBuffRequest(*g.a))
+			Append(out, s.askerInParty ? "Jestesmy w PT, to pilnuje twoich buffow." :
+					"Zapros mnie do PT, to bede cie buffowac.");
+		return out;
+	}
+
+	// --------------------------------------------------------- coming over
+
+	// Whether the line gives a reason a stranger would come for.
+	inline bool SummonHasReason(const TAnalysis& a)
+	{
+		static const int kReasons[] = {
+			C_EXP, C_HIT, C_MOB, C_METIN, C_BOSS, C_DT, C_HELP, C_PARTY, C_TRADE, C_SHOP, C_BUYME,
+			C_SELLYOU, C_GIVE, C_QUEST, C_BIO, C_WAR, C_PVP, C_BUFF, C_BUFFNAME, C_FISH, C_MINE, C_ITEMWORD,
+			C_GEAR, C_GOLD, C_UPGRADE, C_GUILD, C_HORSE };
+		for (size_t i = 0; i < sizeof(kReasons) / sizeof(kReasons[0]); ++i)
+			if (a.concepts.Has(kReasons[i]))
+				return true;
+		// "chodz" is a joining word too, and the one the summon itself is said
+		// with: only another one ("razem", "zaprosze", "dolacz") is a reason.
+		if (a.concepts.Has(C_JOIN))
+		{
+			const int w = a.concepts.firstWord[C_JOIN];
+			const std::string word = w >= 0 && w < (int)a.tokens.words.size() ? a.tokens.words[w] : std::string();
+			if (word != "chodz" && word != "choc" && word != "chodzze")
+				return true;
+		}
+		static const char* const kWords[] = {
+			"dam", "dac", "dostaniesz", "prezent", "pokaze", "pokazac", "pomoc", "pomoz", "pomozesz",
+			"potrzebuje", "sprawa", "sprawe", "pogadac", "porozmawiac", "zobaczysz", "zobacz" };
+		for (size_t i = 0; i < sizeof(kWords) / sizeof(kWords[0]); ++i)
+			if (a.tokens.Has(kWords[i]))
+				return true;
+		return a.offerYang > 0;
+	}
+
+	// The same answer to the same stranger: the pair decides, not a roll per
+	// line, or asking three times would be the way round a refusal.
+	inline int SummonStrangerRoll(const TGen& g)
+	{
+		return (int)(HashStr("summon", g.m.botPID * 2654435761u ^ (g.m.playerPID * 40503u)) % 100u);
+	}
+
+	// How many strangers a voice sends away without asking what for.
+	inline int SummonRefuseShare(const TGen& g)
+	{
+		int share = 30;
+		switch (g.voice)
+		{
+			case V_SOCIAL: share = 10; break;
+			case V_WANDERER: share = 25; break;
+			case V_GRINDER: share = 45; break;
+			default: break;
+		}
+		if (g.Bad())
+			share += 20;
+		return share;
+	}
+
+	inline std::string SummonRefusal(TGen& g, int block)
+	{
+		switch (block)
+		{
+			case SB_OTHER_MAP:
+				g.reason = "Bo jestem na innej mapie.";
+				if (IsKnownMap(g.s.mapIndex))
+					return Fill(g, "Jestem daleko, $MAPIN. Stad nie dam rady przyjsc.");
+				return "Jestem daleko, na innej mapie. Stad nie dam rady przyjsc.";
+			case SB_STALL:
+				g.reason = "Bo pilnuje straganu.";
+				return "Stoje teraz ze straganem, nie moge odejsc.";
+			case SB_FISHING:
+				g.reason = "Bo lowie.";
+				return "Wlasnie lowie, nie zostawie wedki.";
+			case SB_MINING:
+				g.reason = "Bo kopie rude.";
+				return "Kopie teraz rude, nie moge odejsc.";
+			case SB_DUEL:
+				g.reason = "Bo mam pojedynek.";
+				return "Mam teraz pojedynek, pozniej.";
+			case SB_GUILD_WAR:
+				g.reason = "Bo moja gildia ma wojne.";
+				return "Moja gildia ma teraz wojne, nie moge.";
+			case SB_TOWER:
+				g.reason = "Bo jestem w Wiezy Demonow.";
+				return "Jestem z gildia w Wiezy Demonow, teraz nie wyjde.";
+			case SB_DUNGEON:
+				g.reason = "Bo jestem w lochu.";
+				return "Jestem w lochu, teraz stad nie wyjde.";
+			case SB_MERC:
+				g.reason = "Bo mam kontrakt.";
+				return "Mam kontrakt, najpierw musze go skonczyc.";
+			case SB_OTHER_PARTY:
+				g.reason = "Bo jestem z kims innym.";
+				return "Jestem teraz z kims w druzynie, nie moge odejsc.";
+			case SB_OTHER_SUMMON:
+				g.reason = "Bo juz ide do kogos innego.";
+				return "Juz ide do kogos innego, sorki.";
+			case SB_DEAD:
+				return "Chwila, najpierw wstane.";
+			default:
+				return "Teraz nie moge, sorki.";
+		}
+	}
+
+	// The walk begins - or the engine, asked once more, says no.
+	inline std::string SummonGo(TGen& g)
+	{
+		const TBotSnapshot& s = g.s;
+		if (s.summonBlock != SB_NONE)
+			return SummonRefusal(g, s.summonBlock);
+		const int code = g.world ? g.world->StartSummon() : (int)SUMMON_START_FAILED;
+		g.reason = "Bo mnie zawolales.";
+		switch (code)
+		{
+			case SUMMON_START_OK:
+			case SUMMON_START_RENEWED:
+				if (s.askerOnMap && s.askerDistance >= 0 && s.askerDistance <= CONV_SUMMON_NEAR_DISTANCE)
+					return "Jestem obok, poczekam chwile.";
+				if (g.tier >= TIER_FRIEND)
+				{
+					static const char* const k[] = { "Jasne, juz lece!", "Dla ciebie zawsze, juz ide!" };
+					return PBC_SAY(g, k);
+				}
+				{
+					static const char* const k[] = { "Juz ide!", "Dobra, zaraz bede.", "Ok, ide do ciebie." };
+					return PBC_SAY(g, k);
+				}
+			case SUMMON_START_BLOCKED:
+				return "Teraz nie moge, sorki.";
+			default:
+				return "Nie widze cie, gdzie jestes?";
+		}
+	}
+
+	// "chodz do mnie", "przyjdz", "podejdz". Somebody the bot knows it comes
+	// to; a stranger is asked what for (or, by the pair's own roll, sent away);
+	// what the bot cannot leave it says it cannot leave.
+	inline std::string GenSummon(TGen& g)
+	{
+		const TBotSnapshot& s = g.s;
+		if (s.summonedByAsker)
+		{
+			const int code = g.world ? g.world->StartSummon() : (int)SUMMON_START_FAILED;
+			g.reason = "Bo mnie zawolales.";
+			if (code == SUMMON_START_OK || code == SUMMON_START_RENEWED)
+				return s.summonArrived ? "Przeciez jestem obok :) Zostane jeszcze chwile." : "Juz ide, juz!";
+			return "Teraz nie moge, sorki.";
+		}
+		if (g.tier == TIER_HOSTILE)
+		{
+			g.reason = "Bo mnie obrazasz.";
+			return "Po tym, jak mnie traktujesz? Nie.";
+		}
+		if (s.summonBlock != SB_NONE)
+			return SummonRefusal(g, s.summonBlock);
+		if (g.tier == TIER_STRANGER && !(g.a && SummonHasReason(*g.a)))
+		{
+			const bool askedAlready = g.m.botAsk == ASK_SUMMON && g.now - g.m.botAskAt < CONV_BOT_ASK_TTL_MS;
+			if (askedAlready || SummonStrangerRoll(g) < SummonRefuseShare(g))
+			{
+				g.reason = "Bo sie nie znamy.";
+				static const char* const k[] = {
+					"Nie znamy sie, a ja mam swoje sprawy.", "Sorki, nie chodze do obcych bez powodu." };
+				return PBC_SAY(g, k);
+			}
+			// The question belongs to this reply and outranks an "a ty?" another
+			// line of the same batch may have put there: without it the answer
+			// is not read as one, and a stranger with no reason must not be
+			// walked to by default.
+			g.askBack = "Po co mam przyjsc?";
+			g.askBackKind = ASK_SUMMON;
+			g.askBackTopic = T_NONE;
+			return "Hm, nie znamy sie.";
+		}
+		return SummonGo(g);
+	}
+
+	// "mozesz isc", "wracaj do siebie".
+	inline std::string GenDismiss(TGen& g)
+	{
+		if (g.s.summonedByAsker)
+		{
+			if (g.world)
+				g.world->EndSummon();
+			static const char* const k[] = {
+				"Dobra, to wracam do swoich spraw.", "Ok, to lece. Na razie!", "Jasne. Gdyby co, pisz." };
+			return PBC_SAY(g, k);
+		}
+		static const char* const k[] = { "Przeciez nigdzie za toba nie chodze :)", "Dobra, i tak mam swoje sprawy." };
+		return PBC_SAY(g, k);
+	}
+
+	// Thanks, goodbye or an insult from the person who called the bot over
+	// ends the stay as well.
+	inline bool ReleaseSummonFor(TGen& g)
+	{
+		if (!g.s.summonedByAsker || !g.world)
+			return false;
+		g.world->EndSummon();
+		return true;
+	}
+
 	// ------------------------------------------------------------- follow-ups
 
 	inline std::string GenerateOne(TGen& g, const TAnalysis& a);
@@ -1588,7 +2018,9 @@ namespace playerbot_conv
 		const TConceptSet& c = a.concepts;
 		const bool yes = c.Has(C_YES) || c.Has(C_ACK) || c.Has(C_POSITIVE) || c.Has(C_HAPPY);
 		const bool no = c.Has(C_NO) || c.Has(C_NEGATIVE) || c.Has(C_SAD);
-		switch (g.m.botAsk)
+		// The question the line answers travels with it: the memory has
+		// already closed it by the time the reply is composed.
+		switch (a.answeredAsk != ASK_NONE ? (int)a.answeredAsk : (int)g.m.botAsk)
 		{
 			case ASK_HOW_ARE_YOU:
 				if (no)
@@ -1625,6 +2057,13 @@ namespace playerbot_conv
 				if (yes || c.Has(C_POSITIVE))
 					return "O, gratki!";
 				return "Nastepnym razem sie uda.";
+			case ASK_SUMMON:
+				// "Po co mam przyjsc?" - a reason is what was asked for.
+				if (SummonHasReason(a))
+					return SummonGo(g);
+				if (no)
+					return "No to zostaje przy swoim.";
+				return "Hm, to jednak zostane przy swoim.";
 			case ASK_TOPIC:
 			default:
 			{
@@ -1735,9 +2174,20 @@ namespace playerbot_conv
 		switch (a.intent)
 		{
 			case I_GREETING: out = GenGreeting(g, false); break;
-			case I_FAREWELL: out = GenFarewell(g); break;
+			case I_FAREWELL:
+				out = GenFarewell(g);
+				if (ReleaseSummonFor(g))
+					Append(out, "Wracam do swoich spraw.");
+				break;
 			case I_THANKS:
 			{
+				if (ReleaseSummonFor(g))
+				{
+					static const char* const k[] = {
+						"Nie ma sprawy! To wracam do swoich spraw.", "Spoko, to ja lece do swoich spraw." };
+					out = PBC_SAY(g, k);
+					break;
+				}
 				static const char* const k[] = { "Nie ma sprawy.", "Spoko.", "Nie ma za co.", "Luz." };
 				out = PBC_SAY(g, k);
 				break;
@@ -1748,7 +2198,11 @@ namespace playerbot_conv
 			case I_HOW_ARE_YOU: out = GenHowAreYou(g); break;
 			case I_HELP: out = GenHelp(g); break;
 			case I_IS_BOT: out = GenIsBot(g); break;
-			case I_INSULT: out = GenInsult(g); break;
+			case I_INSULT:
+				out = GenInsult(g);
+				if (ReleaseSummonFor(g))
+					Append(out, "Radz sobie sam.");
+				break;
 			case I_PRAISE: out = GenPraise(g); break;
 			case I_AGE: out = GenAge(g); break;
 			case I_ORIGIN: out = GenOrigin(g); break;
@@ -1805,6 +2259,10 @@ namespace playerbot_conv
 			case I_MAP_OPINION: out = GenMapOpinion(g); break;
 			case I_DROP_LUCK: out = GenDropLuck(g); break;
 			case I_PROGRESS_TODAY: out = GenProgressToday(g); break;
+			case I_BUILD: out = GenBuild(g); break;
+			case I_BUFFS: out = GenBuffs(g); break;
+			case I_SUMMON: out = GenSummon(g); break;
+			case I_DISMISS: out = GenDismiss(g); break;
 			case I_FOLLOW_UP: out = GenFollowUp(g, a); break;
 			case I_ANSWER_TO_BOT: out = GenAnswerToBot(g, a); break;
 			case I_ACK: case I_LAUGH: case I_YES: case I_NO: out = GenReaction(g, a); break;

@@ -165,8 +165,9 @@ namespace
 		// every non-horse skill while riding one, and a rider on a long leg
 		// now keeps its horse until it has a target. The aura goes up on the
 		// tick after it climbs down. A rider that fights from its battle horse
-		// climbs down for the buff itself, below.
-		if (ch->IsRiding() && !CanPlayerBotEverFightOnHorse(ch))
+		// climbs down for the buff itself, below - a stone's rider too, which
+		// the foe in hand says (CanPlayerBotKeepSaddleInFight).
+		if (ch->IsRiding() && !CanPlayerBotKeepSaddleInFight(ch, state))
 			return false;
 		// A bot minding its own stall is not hunting. Casting does not close a
 		// private shop - the engine only does that on stun, death and leaving the
@@ -201,6 +202,9 @@ namespace
 		const bool inCombat = fighting ||
 				(state.dwLastCombatActionTime != 0 &&
 				 dwNow - state.dwLastCombatActionTime < PLAYERBOT_BUFF_COMBAT_WINDOW);
+		// A rider that climbed down for one buff renews the rest that are
+		// nearly spent before the saddle takes it back (IsPlayerBotBuffRunningOut).
+		const bool refreshing = fighting && !ch->IsRiding() && dwNow < state.dwSaddleBuffRefreshUntil;
 
 		const TJobSkillBuild build = GetPlayerBotSkillBuild(ch->GetJob(), ch->GetSkillGroup(), ch->GetPlayerID());
 		for (size_t i = 0; i < sizeof(build.dwBuffSkills) / sizeof(build.dwBuffSkills[0]); ++i)
@@ -212,7 +216,8 @@ namespace
 				continue;
 
 			// Check if buff is currently active (including toggle skills like Enchanted Blade / Flame Spirit)
-			if (IsPlayerBotBuffActive(ch, buffVnum, dwNow, state))
+			const bool active = IsPlayerBotBuffActive(ch, buffVnum, dwNow, state);
+			if (active && !(refreshing && IsPlayerBotBuffRunningOut(ch, buffVnum)))
 				continue;
 
 			if (buffVnum == 109) // Cure / Heal
@@ -237,6 +242,7 @@ namespace
 				if (!SetPlayerBotRidingForTravel(ch, state, false, dwNow, "buff"))
 					return false;
 				state.dwNextBuffCheckTime = dwNow + PLAYERBOT_BUFF_RECHECK_FAST;
+				state.dwSaddleBuffRefreshUntil = dwNow + PLAYERBOT_HORSE_TRAVEL_FLIP_HOLD_MS;
 				return true;
 			}
 
@@ -255,8 +261,16 @@ namespace
 				// Straight back for the next one. The ordinary five seconds
 				// resume on the first pass that finds nothing missing.
 				state.dwNextBuffCheckTime = dwNow + PLAYERBOT_BUFF_RECHECK_FAST;
-				sys_log(0, "PLAYERBOT_AI: activated self buff skill pid=%u name=%s vnum=%u",
-						ch->GetPlayerID(), ch->GetName(), buffVnum);
+				// On foot for the saddle's sake: stay down for the next cast.
+				if (refreshing)
+				{
+					const DWORD until = dwNow + PLAYERBOT_SADDLE_BUFF_NEXT_MS;
+					state.dwSaddleBuffRefreshUntil = until;
+					if (state.dwNextHorseRideCheckTime < until)
+						state.dwNextHorseRideCheckTime = until;
+				}
+				sys_log(0, "PLAYERBOT_AI: activated self buff skill pid=%u name=%s vnum=%u renewed=%d",
+						ch->GetPlayerID(), ch->GetName(), buffVnum, active ? 1 : 0);
 				return true;
 			}
 

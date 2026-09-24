@@ -29,7 +29,40 @@ class CMockWorld : public IConvWorld
 {
 	public:
 		const TBotSnapshot* snap;
-		CMockWorld() : snap(NULL) {}
+		TBotSnapshot* live;      // the host's snapshot: a summon changes what the next line sees
+		TBuffReport buffs;
+		bool hasBuffs;
+		int startResult;         // what StartSummon answers
+		int starts;
+		int ends;
+		CMockWorld() : snap(NULL), live(NULL), hasBuffs(false), startResult(SUMMON_START_OK), starts(0), ends(0) {}
+		bool DescribeBuffs(TBuffReport& out)
+		{
+			if (!hasBuffs)
+				return false;
+			out = buffs;
+			return true;
+		}
+		int StartSummon()
+		{
+			++starts;
+			if ((startResult == SUMMON_START_OK || startResult == SUMMON_START_RENEWED) && live)
+			{
+				live->summoned = true;
+				live->summonedByAsker = true;
+			}
+			return startResult;
+		}
+		int EndSummon()
+		{
+			++ends;
+			if (!live || !live->summonedByAsker)
+				return SUMMON_END_NOT_SUMMONED;
+			live->summoned = false;
+			live->summonedByAsker = false;
+			live->summonArrived = false;
+			return SUMMON_END_DISMISSED;
+		}
 		bool FindItem(const std::string& q, std::string& name, unsigned int& count)
 		{
 			if (q.find("tarcz") != std::string::npos)
@@ -73,6 +106,7 @@ class CMockHost : public IConvHost
 		CMockHost() : now(0), alive(true)
 		{
 			world.snap = &snap;
+			world.live = &snap;
 			snap.name = "Punnane";
 			snap.askerName = "Lost3k";
 			snap.level = 42;
@@ -533,6 +567,11 @@ static void TestAnswerToBot()
 			s.Say("dobrze");
 			s.Wait(2000);
 			CHECK(p->mem.turns[0].intent == I_ANSWER_TO_BOT, "answer read as answer (%s)", IntentName(p->mem.turns[0].intent));
+			// And answered as the answer to that question: the memory has
+			// closed it by the time the reply is composed, so the kind travels
+			// with the line (TAnalysis::answeredAsk).
+			CHECK(Contains(s.Last(), "To dobrze") || Contains(s.Last(), "Super") || Contains(s.Last(), "git") ||
+					Contains(s.Last(), "jak u mnie"), "answer to 'a u ciebie?': '%s'", s.Last().c_str());
 			ok = 1;
 		}
 	}
@@ -771,6 +810,322 @@ static void TestSlangScenarios()
 	CHECK(Contains(s.Last(), "1200"), "sm: '%s'", s.Last().c_str());
 }
 
+// ------------------------------------ v6.2: the path, the buffs, "chodz do mnie"
+
+// Everything the bot sent since `from`, one string: a long reply is split in
+// two whispers.
+static std::string SentSince(const TScenario& s, size_t from)
+{
+	std::string out;
+	for (size_t i = from; i < s.host.sent.size(); ++i)
+	{
+		if (!out.empty())
+			out += ' ';
+		out += s.host.sent[i].text;
+	}
+	return out;
+}
+
+static std::string Ask(TScenario& s, const char* text, u32 wait = 4000)
+{
+	const size_t before = s.Sent();
+	s.Say(text);
+	s.Wait(wait);
+	return SentSince(s, before);
+}
+
+static void TestBuildBuffSummonIntents()
+{
+	static const TIntentCase kCases[] = {
+		{ "jaka masz profesje?", I_BUILD }, { "jestes body czy mental?", I_BUILD }, { "grasz archerem?", I_BUILD },
+		{ "jaka sciezke wybrales?", I_BUILD }, { "jestes smokiem czy healem?", I_BUILD }, { "jaki masz build?", I_BUILD },
+		{ "bm czy wp?", I_BUILD }, { "jestes daggerem?", I_BUILD }, { "jestes heal?", I_BUILD },
+		{ "a ty jestes archer czy dagger?", I_BUILD }, { "jestes sura bm?", I_BUILD },
+		{ "jaka klasa", I_CLASS }, { "czym grasz?", I_CLASS }, { "jakie masz skille?", I_SKILLS },
+		{ "co daja twoje buffy?", I_BUFFS }, { "ile daje blogoslawienstwo?", I_BUFFS }, { "ile leczy heal?", I_BUFFS },
+		{ "jaki masz reflect?", I_BUFFS }, { "zbuffujesz mnie?", I_BUFFS }, { "ile daje pomoc smoka?", I_BUFFS },
+		{ "co daje zwinnosc?", I_BUFFS }, { "ile daje zwiekszenie ataku", I_BUFFS }, { "dasz buffa?", I_BUFFS },
+		{ "ile za zwoj blogoslawienstwa?", I_PRICE }, { "masz zwoj blogoslawienstwa?", I_ITEM_OWN },
+		{ "chodz do mnie", I_SUMMON }, { "chodz tu", I_SUMMON }, { "przyjdz do mnie", I_SUMMON }, { "podejdz", I_SUMMON },
+		{ "przyjdziesz?", I_SUMMON }, { "mozesz do mnie przyjsc?", I_SUMMON }, { "wroc do mnie", I_SUMMON },
+		{ "chodz do mnie do pt", I_PARTY_REQUEST }, { "chodz na exp", I_PARTY_REQUEST }, { "chodz ze mna", I_PARTY_REQUEST },
+		{ "mozesz isc", I_DISMISS }, { "wracaj do siebie", I_DISMISS }, { "dobra, mozesz juz isc", I_DISMISS },
+		{ "nie potrzebuje cie juz", I_DISMISS }, { "dzieki", I_THANKS }, { "nara", I_FAREWELL },
+	};
+	for (size_t i = 0; i < sizeof(kCases) / sizeof(kCases[0]); ++i)
+	{
+		const EIntent got = IntentOf(kCases[i].text);
+		CHECK(got == kCases[i].intent, "\"%s\" -> %s, expected %s", kCases[i].text, IntentName(got), IntentName(kCases[i].intent));
+	}
+	// The words a path shares with a skill or a buff.
+	TAnalysis a;
+	AnalyzeLine("masz silne cialo?", a, 1);
+	CHECK(a.intent != I_BUILD && !a.concepts.Has(C_BUILD), "silne cialo is a skill: %s", IntentName(a.intent));
+	AnalyzeLine("ile daje pomoc smoka?", a, 1);
+	CHECK(!a.concepts.Has(C_BUILD) && a.concepts.Has(C_BUFFNAME), "pomoc smoka is the buff, not the dragon path");
+	AnalyzeLine("ile leczy heal?", a, 1);
+	CHECK(a.concepts.Has(C_BUFFNAME) && !a.concepts.Has(C_BUILD), "heal asked for its numbers is the Cure");
+	AnalyzeLine("jestes heal czy smok?", a, 1);
+	CHECK(a.concepts.Has(C_BUILD) && NamedBuildsInLine(a.tokens, a.concepts) == ((1u << B_HEAL) | (1u << B_DRAGON)),
+			"heal czy smok names both paths");
+	AnalyzeLine("masz zwoj blogoslawienstwa?", a, 1);
+	CHECK(!a.concepts.Has(C_BUFFNAME), "zwoj blogoslawienstwa is the scroll");
+	// Pure helpers.
+	CHECK(SkillGradeText(17) == "17" && SkillGradeText(20) == "M1" && SkillGradeText(29) == "M10" &&
+			SkillGradeText(30) == "G1" && SkillGradeText(39) == "G10" && SkillGradeText(40) == "P", "skill grades");
+	CHECK(BuildOf(0, 1) == B_BODY && BuildOf(1, 2) == B_ARCHER && BuildOf(3, 2) == B_HEAL && BuildOf(2, 0) == B_NONE, "BuildOf");
+	CHECK(BuffBuildOf(CONV_SKILL_REFLECT) == B_DRAGON && BuffBuildOf(CONV_SKILL_SWIFTNESS) == B_HEAL, "BuffBuildOf");
+}
+
+static void TestBuildAnswers()
+{
+	struct TCase { int job; int group; const char* word; };
+	static const TCase kCases[] = {
+		{ 0, 1, "body" }, { 0, 2, "mental" }, { 1, 1, "dagger" }, { 1, 2, "archer" },
+		{ 2, 1, "WP" }, { 2, 2, "BM" }, { 3, 1, "smok" }, { 3, 2, "heal" } };
+	for (size_t i = 0; i < sizeof(kCases) / sizeof(kCases[0]); ++i)
+	{
+		TScenario s(700 + (u32)i);
+		s.host.snap.job = kCases[i].job;
+		s.host.snap.skillGroup = kCases[i].group;
+		const std::string l = Ask(s, "jaka masz profesje?");
+		CHECK(Contains(l, kCases[i].word) && Contains(l, "42"), "path %d/%d: '%s'", kCases[i].job, kCases[i].group, l.c_str());
+	}
+
+	TScenario s(710);
+	s.host.snap.job = 0;
+	s.host.snap.skillGroup = 2;
+	s.host.snap.skillVnums[0] = 16; s.host.snap.skillLevels[0] = 20;
+	s.host.snap.skillVnums[1] = 19; s.host.snap.skillLevels[1] = 25;
+	s.host.snap.skillVnums[2] = 17; s.host.snap.skillLevels[2] = 0;
+	s.host.snap.mainSkill = 16;
+	std::string l = Ask(s, "jestes body czy mental?");
+	CHECK(Contains(l, "mental") && !Contains(l, "Nie,") && Contains(l, "najwyzej Silne Cialo M6"), "both named: '%s'", l.c_str());
+	l = Ask(s, "jestes body?");
+	CHECK(Contains(l, "Nie") && Contains(l, "mental"), "the other named: '%s'", l.c_str());
+	l = Ask(s, "grasz mentalem?");
+	CHECK((Contains(l, "Tak") || Contains(l, "Zgadza")) && Contains(l, "mental"), "own named: '%s'", l.c_str());
+	l = Ask(s, "jaka klasa?");
+	CHECK(Contains(l, "wojownikiem mental"), "class says the path: '%s'", l.c_str());
+	l = Ask(s, "jakie masz skille?");
+	CHECK(Contains(l, "Silne Cialo M6") && Contains(l, "Duchowe Uderzenie M1"), "skills listed with grades: '%s'", l.c_str());
+
+	TScenario young(711);
+	young.host.snap.level = 3;
+	young.host.snap.skillGroup = 0;
+	l = Ask(young, "jaka masz profesje?");
+	CHECK(Contains(l, "sciezki") && Contains(l, "3"), "no path yet: '%s'", l.c_str());
+}
+
+static TBuffLine MakeBuff(unsigned int skill, int level, int amount, int seconds)
+{
+	TBuffLine l;
+	l.skill = skill;
+	l.level = level;
+	l.known = level > 0;
+	l.amount = amount;
+	l.amountMax = amount;
+	l.seconds = seconds;
+	return l;
+}
+
+static void TestBuffAnswers()
+{
+	{
+		TScenario s(720);
+		s.host.snap.job = 0;
+		s.host.snap.skillGroup = 1;
+		const std::string l = Ask(s, "co daja twoje buffy?");
+		CHECK(Contains(l, "Nie mam buffow") && Contains(l, "szaman"), "a warrior has none: '%s'", l.c_str());
+	}
+	{
+		TScenario s(721);
+		s.host.snap.job = 3;
+		s.host.snap.skillGroup = 1;
+		TBuffReport& r = s.host.world.buffs;
+		r.count = 3;
+		r.onAsker = true;
+		r.lines[0] = MakeBuff(CONV_SKILL_BLESSING, 20, 22, 260);
+		r.lines[1] = MakeBuff(CONV_SKILL_REFLECT, 17, 15, 220);
+		r.lines[2] = MakeBuff(CONV_SKILL_DRAGON_AID, 0, 0, 0);
+		s.host.world.hasBuffs = true;
+		std::string l = Ask(s, "co daja twoje buffy?");
+		CHECK(Contains(l, "Na tobie") && Contains(l, "Blogoslawienstwo (M1)") && Contains(l, "o 22% mniej obrazen") &&
+				Contains(l, "4 min 20 s") && Contains(l, "Odbicie (17)") && Contains(l, "odbija 15% obrazen wrecz") &&
+				Contains(l, "3 min 40 s") && Contains(l, "Reszty jeszcze nie umiem") && !Contains(l, "Pomoc Smoka ("),
+				"dragon buffs: '%s'", l.c_str());
+		l = Ask(s, "ile daje pomoc smoka?");
+		CHECK(Contains(l, "nie nauczylem") && Contains(l, "Pomoc Smoka"), "unlearnt one: '%s'", l.c_str());
+		l = Ask(s, "ile daje blogoslawienstwo?");
+		CHECK(Contains(l, "22%") && !Contains(l, "Odbicie"), "one named: '%s'", l.c_str());
+		l = Ask(s, "ile leczy heal?");
+		CHECK(Contains(l, "Tego nie mam") && Contains(l, "szaman heal"), "the other path's buff: '%s'", l.c_str());
+	}
+	{
+		TScenario s(722);
+		s.host.snap.job = 3;
+		s.host.snap.skillGroup = 2;
+		TBuffReport& r = s.host.world.buffs;
+		r.count = 3;
+		r.onAsker = true;
+		r.lines[0] = MakeBuff(CONV_SKILL_CURE, 25, 1200, 0);
+		r.lines[0].amountMax = 1500;
+		r.lines[0].amount3 = 800;
+		r.lines[0].seconds3 = 30;
+		r.lines[1] = MakeBuff(CONV_SKILL_SWIFTNESS, 20, 25, 300);
+		r.lines[1].amount2 = 20;
+		r.lines[2] = MakeBuff(CONV_SKILL_ATTACK_UP, 30, 60, 280);
+		s.host.world.hasBuffs = true;
+		const std::string l = Ask(s, "zbuffujesz mnie?");
+		CHECK(Contains(l, "Leczenie (M6) - leczy 1200-1500 HP") && Contains(l, "oslona na 800 obrazen od potworow przez 30 s") &&
+				Contains(l, "+25 do szybkosci ruchu i +20% do szybkosci czarowania przez 5 min") &&
+				Contains(l, "Zwiekszenie Ataku (G1) - +60 do wartosci ataku przez 4 min 40 s") &&
+				Contains(l, "Zapros mnie do PT"), "heal buffs on request: '%s'", l.c_str());
+	}
+	{
+		TScenario s(723);
+		s.host.snap.job = 3;
+		s.host.snap.skillGroup = 0;
+		const std::string l = Ask(s, "co daja twoje buffy?");
+		CHECK(Contains(l, "sciezki"), "no path, no buffs: '%s'", l.c_str());
+	}
+	{
+		TScenario s(724);
+		s.host.snap.job = 3;
+		s.host.snap.skillGroup = 1;
+		TBuffReport& r = s.host.world.buffs;
+		r.count = 3;
+		r.lines[0] = MakeBuff(CONV_SKILL_BLESSING, 0, 0, 0);
+		r.lines[1] = MakeBuff(CONV_SKILL_REFLECT, 0, 0, 0);
+		r.lines[2] = MakeBuff(CONV_SKILL_DRAGON_AID, 0, 0, 0);
+		s.host.world.hasBuffs = true;
+		const std::string l = Ask(s, "jakie masz buffy?");
+		CHECK(Contains(l, "Zadnego buffa"), "none learnt: '%s'", l.c_str());
+	}
+}
+
+static void TestSummon()
+{
+	{
+		// Somebody the bot knows comes, is called again, and is let go.
+		TScenario s(730);
+		s.host.snap.affinity = 30;
+		s.host.snap.askerOnMap = true;
+		s.host.snap.askerDistance = 3000;
+		std::string l = Ask(s, "chodz do mnie");
+		CHECK(s.host.world.starts == 1 && s.host.snap.summonedByAsker, "friend: walk started (%d)", s.host.world.starts);
+		CHECK(Contains(l, "lece") || Contains(l, "ide") || Contains(l, "bede"), "friend comes: '%s'", l.c_str());
+		l = Ask(s, "chodz tu");
+		CHECK(s.host.world.starts == 2 && Contains(l, "ide"), "called again, renewed: '%s'", l.c_str());
+		l = Ask(s, "dzieki, mozesz isc");
+		CHECK(s.host.world.ends == 1 && !s.host.snap.summonedByAsker, "let go (%d)", s.host.world.ends);
+		CHECK(Contains(l, "swoich spraw") || Contains(l, "lece") || Contains(l, "pisz"), "goes back: '%s'", l.c_str());
+		l = Ask(s, "mozesz isc");
+		CHECK(s.host.world.ends == 1 && (Contains(l, "nie chodze") || Contains(l, "swoje sprawy")), "not called: '%s'", l.c_str());
+	}
+	{
+		// Thanks and a goodbye let it go as well.
+		TScenario s(731);
+		s.host.snap.affinity = 30;
+		Ask(s, "chodz do mnie");
+		std::string l = Ask(s, "dzieki");
+		CHECK(s.host.world.ends == 1 && Contains(l, "swoich spraw"), "thanks lets go: '%s'", l.c_str());
+		Ask(s, "podejdz");
+		l = Ask(s, "nara");
+		CHECK(s.host.world.ends == 2 && Contains(l, "swoich spraw"), "goodbye lets go: '%s'", l.c_str());
+	}
+	{
+		// Beside the person already.
+		TScenario s(732);
+		s.host.snap.affinity = 30;
+		s.host.snap.askerOnMap = true;
+		s.host.snap.askerDistance = 300;
+		const std::string l = Ask(s, "chodz do mnie");
+		CHECK(Contains(l, "Jestem obok"), "already beside: '%s'", l.c_str());
+	}
+	{
+		// What the bot cannot leave, it says.
+		struct TBlock { int block; const char* word; };
+		static const TBlock kBlocks[] = {
+			{ SB_STALL, "straganem" }, { SB_FISHING, "lowie" }, { SB_MINING, "Kopie" }, { SB_DUEL, "pojedynek" },
+			{ SB_GUILD_WAR, "wojne" }, { SB_TOWER, "Wiezy Demonow" }, { SB_DUNGEON, "lochu" }, { SB_MERC, "kontrakt" },
+			{ SB_OTHER_PARTY, "druzynie" }, { SB_OTHER_SUMMON, "kogos innego" }, { SB_OTHER_MAP, "daleko" } };
+		for (size_t i = 0; i < sizeof(kBlocks) / sizeof(kBlocks[0]); ++i)
+		{
+			TScenario s(740 + (u32)i);
+			s.host.snap.affinity = 30;
+			s.host.snap.summonBlock = kBlocks[i].block;
+			const std::string l = Ask(s, "chodz do mnie");
+			CHECK(s.host.world.starts == 0 && Contains(l, kBlocks[i].word), "block %s: '%s'",
+					SummonBlockName(kBlocks[i].block), l.c_str());
+		}
+		// A race the snapshot did not see: the engine says no at the start.
+		TScenario s(755);
+		s.host.snap.affinity = 30;
+		s.host.world.startResult = SUMMON_START_BLOCKED;
+		const std::string l = Ask(s, "chodz do mnie");
+		CHECK(s.host.world.starts == 1 && Contains(l, "nie moge"), "refused at the start: '%s'", l.c_str());
+	}
+	{
+		// Somebody who insults it does not get it.
+		TScenario s(756);
+		s.host.snap.affinity = 30;
+		for (int i = 0; i < 5; ++i)
+			Ask(s, "debil", 2000);
+		const std::string l = Ask(s, "chodz do mnie");
+		CHECK(s.host.world.starts == 0 && Contains(l, "Nie"), "hostile: '%s'", l.c_str());
+	}
+	{
+		// A stranger with a reason in the line comes.
+		TScenario s(757);
+		const std::string l = Ask(s, "chodz do mnie, pokaze ci cos");
+		CHECK(s.host.world.starts == 1, "stranger with a reason: '%s'", l.c_str());
+	}
+	{
+		// A stranger without one is asked what for, or sent away - by the pair,
+		// the same way every time - and a reason given then brings it.
+		int asked = 0, refused = 0, came = 0, sameAgain = 0;
+		for (u32 player = 1; player <= 60; ++player)
+		{
+			CConvEngine e;
+			e.Seed(900 + player);
+			e.SetInitiative(false);
+			CMockHost h;
+			u32 t = 1000000;
+			h.now = t;
+			e.OnPlayerLine(h, player, 99, "chodz do mnie", t, "Obcy", "Punnane");
+			for (int k = 0; k < 80; ++k) { t += 50; h.now = t; e.Pump(h, t); }
+			const std::string first = h.sent.empty() ? std::string() : h.sent.back().text;
+			if (Contains(first, "Po co mam przyjsc"))
+			{
+				++asked;
+				e.OnPlayerLine(h, player, 99, "pokaze ci cos fajnego", t, "Obcy", "Punnane");
+				for (int k = 0; k < 80; ++k) { t += 50; h.now = t; e.Pump(h, t); }
+				if (h.world.starts == 1)
+					++came;
+			}
+			else if (h.world.starts == 0)
+			{
+				++refused;
+				e.OnPlayerLine(h, player, 99, "chodz tu", t, "Obcy", "Punnane");
+				for (int k = 0; k < 80; ++k) { t += 50; h.now = t; e.Pump(h, t); }
+				if (h.world.starts == 0)
+					++sameAgain;
+			}
+		}
+		CHECK(asked > 0 && refused > 0, "strangers: asked %d, refused %d", asked, refused);
+		CHECK(came == asked, "a reason brings it (%d/%d)", came, asked);
+		CHECK(sameAgain == refused, "a refusal holds on asking again (%d/%d)", sameAgain, refused);
+	}
+	{
+		// "chodz do mnie do pt" is still a party request.
+		TScenario s(758);
+		s.host.snap.affinity = 30;
+		Ask(s, "chodz do mnie do pt");
+		CHECK(s.host.world.starts == 0, "party request is no summon");
+	}
+}
+
 static void DemoConversation()
 {
 	if (!g_verbose) return;
@@ -818,6 +1173,10 @@ int main(int argc, char** argv)
 	TestSlangIntents();
 	TestShopAnswers();
 	TestSlangScenarios();
+	TestBuildBuffSummonIntents();
+	TestBuildAnswers();
+	TestBuffAnswers();
+	TestSummon();
 	DemoConversation();
 	printf("\n%d checks, %d failures\n", g_checks, g_failures);
 	return g_failures ? 1 : 0;

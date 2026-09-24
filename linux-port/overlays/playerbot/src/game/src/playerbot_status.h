@@ -336,6 +336,10 @@ namespace
 	// (playerbot_companions.h).
 	bool BuildPlayerBotMercStatus(LPCHARACTER ch, const TPlayerBotAIState& state, const char* prefix,
 			char* status, size_t statusSize, bool en = false);
+	// A bot a person called over: on its way, or standing with them
+	// (playerbot_chat_conversation.h, which comes after this file).
+	inline bool BuildPlayerBotSummonStatus(LPCHARACTER ch, const TPlayerBotAIState& state, const char* prefix,
+			char* status, size_t statusSize, bool en);
 
 	void BuildPlayerBotStatusText(LPCHARACTER ch, const TPlayerBotAIState& state,
 			char* status, size_t statusSize, bool en = false)
@@ -492,6 +496,10 @@ namespace
 		// fight says what it is fighting.
 		if (state.bCurrentAction != BOT_ACTION_FIGHT &&
 				BuildPlayerBotMercStatus(ch, state, prefix, status, statusSize, en))
+			return;
+		// So does a person's call ("Ide do X", "Stoje przy X"), with the same
+		// exception for a fight.
+		if (BuildPlayerBotSummonStatus(ch, state, prefix, status, statusSize, en))
 			return;
 
 		LPCHARACTER target = state.dwTargetVID != 0

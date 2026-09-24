@@ -52,6 +52,8 @@ namespace playerbot_conv
 		C_POSITIVE, C_NEGATIVE,
 		// items, prices, the shorthand of the game
 		C_ITEMWORD, C_PRICEQ, C_ITEMSHOP, C_KS, C_READY, C_GOODLUCK, C_BRB, C_MAPNAME, C_BONUS,
+		// a class's path, a Shaman's buffs, a person calling the bot over and letting it go
+		C_BUILD, C_BUFF, C_BUFFNAME, C_GIVE, C_SUMMON, C_DISMISS,
 		C_COUNT
 	};
 
@@ -470,6 +472,47 @@ namespace playerbot_conv
 			{ "respawn", C_MOB, M_EXACT }, { "magazyn", C_TOWN, M_PREFIX }, { "polimorfi", C_SKILL, M_PREFIX },
 			{ "rewanz", C_PVP, M_EXACT }, { "sprzedasz", C_BUYME, M_EXACT },
 			{ "wystawiony", C_SHOP, M_EXACT }, { "wystawiles", C_SHOP, M_EXACT }, { "wystawila", C_SHOP, M_EXACT },
+			// ---- a class's path, a Shaman's buffs. The path's own names (body,
+			// mental, archer, BM, smok, heal ...) and the six buffs' names are
+			// read by NamedBuildsMask / NamedBuffSkill below, which set C_BUILD
+			// and C_BUFFNAME themselves: one list, so the concept and the answer
+			// cannot disagree about what a word names.
+			// In this game "profesja" is the path a trainer gives at level five
+			// (the goal "wybrac profesje"), so it asks for the path as well as
+			// the class; the build rule outranks the class rule.
+			{ "build", C_BUILD, M_PREFIX }, { "specjaliz", C_BUILD, M_PREFIX }, { "sciezk", C_BUILD, M_PREFIX },
+			{ "profes", C_BUILD, M_PREFIX }, { "doktryn", C_BUILD, M_PREFIX },
+			{ "buff", C_BUFF, M_PREFIX }, { "buf", C_BUFF, M_EXACT }, { "bufy", C_BUFF, M_EXACT },
+			{ "bufa", C_BUFF, M_EXACT }, { "bufow", C_BUFF, M_EXACT }, { "bufuj", C_BUFF, M_PREFIX },
+			{ "zbuf", C_BUFF, M_PREFIX },
+			// A give word counts only beside a buff or a path (the I_BUFFS rules):
+			// "ile dasz za fms" is still a price.
+			{ "daje", C_GIVE, M_EXACT }, { "dajesz", C_GIVE, M_EXACT }, { "daja", C_GIVE, M_EXACT },
+			{ "dasz", C_GIVE, M_EXACT }, { "daj", C_GIVE, M_EXACT }, { "zwieksza", C_GIVE, M_EXACT },
+			{ "podbija", C_GIVE, M_EXACT }, { "wzmacnia", C_GIVE, M_EXACT }, { "leczy", C_GIVE, M_EXACT },
+			// ---- "chodz do mnie": come over. A bare "chodz" stays an invitation
+			// to a party (C_JOIN); the imperatives are exact, because a prefix of
+			// "przyjdz" is one typo away from "przejdz" and a portal.
+			{ "chodz do mnie", C_SUMMON, M_PHRASE }, { "chodz tu", C_SUMMON, M_PHRASE },
+			{ "chodz tutaj", C_SUMMON, M_PHRASE }, { "choc do mnie", C_SUMMON, M_PHRASE },
+			{ "choc tu", C_SUMMON, M_PHRASE }, { "chodzze", C_SUMMON, M_EXACT },
+			{ "przyjdz", C_SUMMON, M_EXACT }, { "przyjdzcie", C_SUMMON, M_EXACT }, { "przyjdziesz", C_SUMMON, M_EXACT },
+			{ "przyjdzze", C_SUMMON, M_EXACT }, { "podejdz", C_SUMMON, M_EXACT }, { "podejdziesz", C_SUMMON, M_EXACT },
+			{ "przybadz", C_SUMMON, M_EXACT }, { "wracaj do mnie", C_SUMMON, M_PHRASE },
+			{ "wroc do mnie", C_SUMMON, M_PHRASE },
+			// The infinitive only beside "do mnie": "moge przyjsc?" is the person
+			// asking to come to the bot.
+			{ "przyjsc do mnie", C_SUMMON, M_PHRASE }, { "do mnie przyjsc", C_SUMMON, M_PHRASE },
+			{ "podejsc do mnie", C_SUMMON, M_PHRASE }, { "do mnie podejsc", C_SUMMON, M_PHRASE },
+			// ---- and go back to your own life
+			{ "mozesz isc", C_DISMISS, M_PHRASE }, { "mozesz juz isc", C_DISMISS, M_PHRASE },
+			{ "mozesz odejsc", C_DISMISS, M_PHRASE }, { "mozesz wracac", C_DISMISS, M_PHRASE },
+			{ "mozesz juz wracac", C_DISMISS, M_PHRASE }, { "wracaj do siebie", C_DISMISS, M_PHRASE },
+			{ "wroc do siebie", C_DISMISS, M_PHRASE }, { "wracaj do swoich", C_DISMISS, M_PHRASE },
+			{ "wracaj do swojego", C_DISMISS, M_PHRASE }, { "idz juz", C_DISMISS, M_PHRASE },
+			{ "juz idz", C_DISMISS, M_PHRASE }, { "idz sobie", C_DISMISS, M_PHRASE },
+			{ "zmykaj", C_DISMISS, M_EXACT }, { "odejdz", C_DISMISS, M_EXACT },
+			{ "nie potrzebuje cie", C_DISMISS, M_PHRASE }, { "juz cie nie potrzebuje", C_DISMISS, M_PHRASE },
 			// ---- sentiment of a statement
 			{ "super", C_POSITIVE, M_EXACT }, { "fajnie", C_POSITIVE, M_EXACT }, { "ekstra", C_POSITIVE, M_EXACT },
 			{ "wbilem", C_POSITIVE, M_EXACT }, { "dropnalem", C_POSITIVE, M_EXACT }, { "dropnelo", C_POSITIVE, M_EXACT },
@@ -539,6 +582,140 @@ namespace playerbot_conv
 			if (words[at + i] != pw[i])
 				return false;
 		return true;
+	}
+
+	// ------------------------------------------------------ a class's path
+
+	// The two paths of each class, in the order (job, skill group) gives them,
+	// so BuildOf is arithmetic and nothing has to keep two tables in step.
+	enum EBuild
+	{
+		B_NONE = 0,
+		B_BODY, B_MENTAL,         // warrior: skill group 1, 2
+		B_DAGGER, B_ARCHER,       // ninja
+		B_WEAPON, B_BLACK_MAGIC,  // sura
+		B_DRAGON, B_HEAL,         // shaman
+		B_COUNT
+	};
+
+	typedef char TBuildMaskFits[B_COUNT <= 32 ? 1 : -1];
+
+	inline int BuildOf(int job, int group)
+	{
+		if (job < 0 || job > 3 || group < 1 || group > 2)
+			return B_NONE;
+		return 1 + job * 2 + (group - 1);
+	}
+
+	inline int BuildJob(int build)
+	{
+		return build > B_NONE && build < B_COUNT ? (build - 1) / 2 : -1;
+	}
+
+	// The words players use for a path. "heal" and "leczenie" are also the
+	// name of the Shaman's Cure; which one a line means is decided in
+	// ExtractConcepts, where the rest of the line is known.
+	inline int BuildOfWord(const std::string& w)
+	{
+		static const struct { const char* word; unsigned char build; } kWords[] = {
+			{ "body", B_BODY }, { "bodziak", B_BODY }, { "bodziaka", B_BODY }, { "bodziakiem", B_BODY },
+			{ "cialo", B_BODY }, { "ciala", B_BODY }, { "cialem", B_BODY }, { "ciele", B_BODY },
+			{ "mental", B_MENTAL }, { "mentala", B_MENTAL }, { "mentalem", B_MENTAL }, { "mentalny", B_MENTAL },
+			{ "mentalnym", B_MENTAL }, { "umysl", B_MENTAL }, { "umyslu", B_MENTAL }, { "umyslem", B_MENTAL },
+			{ "dagger", B_DAGGER }, { "daggera", B_DAGGER }, { "daggerem", B_DAGGER }, { "sztyletach", B_DAGGER },
+			{ "sztyleciarz", B_DAGGER }, { "sztyleciarzem", B_DAGGER }, { "skrytobojca", B_DAGGER },
+			{ "skrytobojcy", B_DAGGER }, { "asasyn", B_DAGGER }, { "asasynem", B_DAGGER },
+			{ "assassin", B_DAGGER },
+			{ "archer", B_ARCHER }, { "archera", B_ARCHER }, { "archerem", B_ARCHER }, { "archerka", B_ARCHER },
+			{ "lucznik", B_ARCHER }, { "lucznika", B_ARCHER }, { "lucznikiem", B_ARCHER }, { "luczniczka", B_ARCHER },
+			{ "wp", B_WEAPON }, { "weapon", B_WEAPON }, { "weapona", B_WEAPON }, { "weaponem", B_WEAPON },
+			{ "bm", B_BLACK_MAGIC }, { "bmem", B_BLACK_MAGIC }, { "bmka", B_BLACK_MAGIC },
+			{ "smok", B_DRAGON }, { "smoka", B_DRAGON }, { "smokiem", B_DRAGON }, { "dragon", B_DRAGON },
+			{ "dragona", B_DRAGON },
+			{ "heal", B_HEAL }, { "heala", B_HEAL }, { "healem", B_HEAL }, { "healer", B_HEAL },
+			{ "healera", B_HEAL }, { "healerem", B_HEAL }, { "healerka", B_HEAL }, { "hil", B_HEAL },
+			{ "hila", B_HEAL }, { "hilem", B_HEAL }, { "leczacy", B_HEAL }, { "leczaca", B_HEAL },
+			{ "leczacym", B_HEAL }, { "leczenie", B_HEAL }, { "leczeniem", B_HEAL }
+		};
+		for (size_t i = 0; i < sizeof(kWords) / sizeof(kWords[0]); ++i)
+			if (w == kWords[i].word)
+				return kWords[i].build;
+		return B_NONE;
+	}
+
+	// The words that name the Cure and the Healing path at once.
+	inline bool IsHealWord(const std::string& w)
+	{
+		return w == "heal" || w == "heala" || w == "healem" || w == "hil" || w == "hila" || w == "hilem" ||
+				w == "leczenie" || w == "leczeniem" || w == "leczenia";
+	}
+
+	// Every path the line names, as a mask of 1 << EBuild, and the first word
+	// that named one. Three phrases are not a path: "pomoc smoka" is the
+	// Dragon's Aid, "silne cialo" a Mental warrior's skill, and "czarna magia"
+	// is two words for the one path.
+	inline unsigned int NamedBuildsMask(const TTokens& tok, int& firstWord)
+	{
+		unsigned int mask = 0;
+		firstWord = -1;
+		const std::vector<std::string>& w = tok.words;
+		for (size_t i = 0; i < w.size(); ++i)
+		{
+			int build = BuildOfWord(w[i]);
+			if (build == B_DRAGON && i > 0 && (w[i - 1] == "pomoc" || w[i - 1] == "pomocy" || w[i - 1] == "pomoca"))
+				build = B_NONE;
+			if (build == B_BODY && i > 0 && StartsWith(w[i - 1], "siln"))
+				build = B_NONE;
+			if (build == B_NONE && StartsWith(w[i], "czarn") && i + 1 < w.size() && StartsWith(w[i + 1], "magi"))
+				build = B_BLACK_MAGIC;
+			if (build == B_NONE && StartsWith(w[i], "magiczn") && i + 1 < w.size() && StartsWith(w[i + 1], "bron"))
+				build = B_WEAPON;
+			if (build == B_NONE)
+				continue;
+			mask |= 1u << build;
+			if (firstWord < 0)
+				firstWord = (int)i;
+		}
+		return mask;
+	}
+
+	// The Shaman buff the line names by its own name, as the skill vnum, or 0.
+	// "Zwoj blogoslawienstwa" is a refine scroll and not the buff.
+	inline unsigned int NamedBuffSkill(const TTokens& tok, int& word)
+	{
+		word = -1;
+		const std::vector<std::string>& w = tok.words;
+		for (size_t i = 0; i < w.size(); ++i)
+		{
+			const std::string& x = w[i];
+			const std::string next = i + 1 < w.size() ? w[i + 1] : std::string();
+			unsigned int skill = 0;
+			if ((StartsWith(x, "blogoslawienstw") || x == "bless" || x == "blessa" || x == "blessing" || x == "hosin") &&
+					!(i > 0 && StartsWith(w[i - 1], "zwoj")))
+				skill = 94;
+			else if (StartsWith(x, "odbici") || x == "reflect" || x == "reflecta" || x == "boho")
+				skill = 95;
+			else if ((x == "pomoc" || x == "pomocy" || x == "pomoca") && (StartsWith(next, "smok") || StartsWith(next, "smocz")))
+				skill = 96;
+			else if (x == "gicheon")
+				skill = 96;
+			else if (IsHealWord(x) || x == "cure" || x == "uzdrawianie" || x == "leczysz")
+				skill = 109;
+			else if (StartsWith(x, "zwinnos") || x == "swiftness" || x == "swift" || x == "kwaesok")
+				skill = 110;
+			else if (StartsWith(x, "zwiekszen") && StartsWith(next, "atak"))
+				skill = 111;
+			else if ((x == "attack" || x == "atak" || x == "atack") && next == "up")
+				skill = 111;
+			else if (x == "jeungryeok")
+				skill = 111;
+			if (skill)
+			{
+				word = (int)i;
+				return skill;
+			}
+		}
+		return 0;
 	}
 
 	inline void ExtractConcepts(const TTokens& tok, TConceptSet& out)
@@ -645,6 +822,47 @@ namespace playerbot_conv
 		// "co tam" is a greeting even with "co".
 		if (out.Has(C_HOWAREYOU) && tok.words.size() <= 3)
 			out.Unset(C_WHAT);
+
+		// A path named by its own word ("body", "archerem", "smok") and a buff
+		// named by its own ("odbicie", "pomoc smoka"). "heal" and "leczenie"
+		// name both the Healing path and the Cure: beside a give or a buff word
+		// or "ile" the line is about what the Cure does ("ile leczy twoj
+		// heal?"), otherwise about the path ("jestes heal czy smok?").
+		int buildWord = -1;
+		unsigned int builds = NamedBuildsMask(tok, buildWord);
+		int buffWord = -1;
+		const unsigned int buff = NamedBuffSkill(tok, buffWord);
+		if (buff == 109 && buffWord >= 0 && IsHealWord(tok.words[buffWord]))
+		{
+			if (out.Has(C_GIVE) || out.Has(C_BUFF) || out.Has(C_HOWMUCH))
+				builds &= ~(1u << B_HEAL);
+			else
+				buffWord = -1;
+		}
+		// A path word alone is a weak signal - "bijesz smoka?" is a monster -
+		// so it counts beside a question about the bot, a class, a choice or
+		// a buff, or as a line of one or two words ("archer?").
+		if (builds && (out.Has(C_BE) || out.Has(C_PLAY) || out.Has(C_OR) || out.Has(C_CLASS) ||
+				out.Has(C_WHICH) || out.Has(C_YOU) || out.Has(C_HAVE) || out.Has(C_GIVE) || out.Has(C_BUFF) ||
+				out.Has(C_BUILD) || tok.words.size() <= 2))
+			out.Set(C_BUILD, buildWord);
+		if (buff && buffWord >= 0)
+			out.Set(C_BUFFNAME, buffWord);
+	}
+
+	// The paths a line names, filtered the way ExtractConcepts filters them,
+	// for the generator's yes/no ("grasz archerem?" - "Nie, gram ...").
+	inline unsigned int NamedBuildsInLine(const TTokens& tok, const TConceptSet& c)
+	{
+		if (!c.Has(C_BUILD))
+			return 0;
+		int first = -1;
+		unsigned int builds = NamedBuildsMask(tok, first);
+		int buffWord = -1;
+		if (NamedBuffSkill(tok, buffWord) == 109 && buffWord >= 0 && IsHealWord(tok.words[buffWord]) &&
+				(c.Has(C_GIVE) || c.Has(C_BUFF) || c.Has(C_HOWMUCH)))
+			builds &= ~(1u << B_HEAL);
+		return builds;
 	}
 }
 

@@ -116,6 +116,8 @@ namespace
 
 	// A mercenary's contract, either side (playerbot_companions.h).
 	bool IsPlayerBotOnMercContract(DWORD pid);
+	// Called over by a person's whisper (playerbot_chat_conversation.h).
+	inline bool IsPlayerBotSummoned(DWORD botPID);
 
 	// Playing alone, in the document's sense: no party, no dungeon, no raid,
 	// no war, no duel. Everywhere else the bot plays NORMALNY whatever it
@@ -123,9 +125,13 @@ namespace
 	// A mercenary's contract counts as company for its whole length, the
 	// pause included ("blokuje nastroj obu botow ... na czas trwania
 	// kontraktu"), though the party is apart while the mercenary is in town.
+	// A bot a person called over is in that person's company too: a SLABY
+	// bot's pause and AFK stop sit above the summon in the tick and would
+	// leave the person waiting for a bot that stopped halfway.
 	bool IsPlayerBotPlayingAlone(LPCHARACTER ch, const TPlayerBotAIState& state, DWORD dwNow)
 	{
-		if (!ch || ch->GetParty() != NULL || IsPlayerBotOnMercContract(ch->GetPlayerID()))
+		if (!ch || ch->GetParty() != NULL || IsPlayerBotOnMercContract(ch->GetPlayerID()) ||
+				IsPlayerBotSummoned(ch->GetPlayerID()))
 			return false;
 		if (ch->GetMapIndex() >= PLAYERBOT_INSTANCE_MAP_INDEX_MIN)
 			return false;

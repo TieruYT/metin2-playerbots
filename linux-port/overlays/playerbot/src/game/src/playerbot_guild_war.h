@@ -596,33 +596,76 @@ namespace
 		return false;
 	}
 
-	// The nearest bot of the enemy guild on the bot's map that a blow can
-	// reach. One standing in the safe zone was chosen like any other, so its
-	// enemies walked in after it and swung at nothing for as long as it stood
-	// there: "sporo stalo w bezpiecznej czesci i inne boty nie mogly ich
-	// zaatakowac" (gregory_955, 17 September).
-	LPCHARACTER FindPlayerBotGuildWarFoe(LPCHARACTER ch, CGuild* enemy)
+	// A bot of the enemy guild on the bot's map that a blow can reach, near
+	// and not already everybody's (PLAYERBOT_GUILD_WAR_CROWD_PENALTY and its
+	// neighbours). One standing in the safe zone was chosen like any other, so
+	// its enemies walked in after it and swung at nothing for as long as it
+	// stood there: "sporo stalo w bezpiecznej czesci i inne boty nie mogly ich
+	// zaatakowac" (gregory_955, 17 September). The one pass over the roster
+	// both finds the enemies and counts the chooser's own side on each of them.
+	LPCHARACTER FindPlayerBotGuildWarFoe(LPCHARACTER ch, CGuild* mine, CGuild* enemy, DWORD heldVID)
 	{
-		LPCHARACTER best = NULL;
-		int bestDistance = INT_MAX;
+		std::vector<std::pair<LPCHARACTER, int> > foes;
+		std::map<DWORD, int> attackers;
 		for (TPlayerBotAIStateMap::const_iterator it = s_mapPlayerBotAIStates.begin();
 				it != s_mapPlayerBotAIStates.end(); ++it)
 		{
 			LPCHARACTER other = CHARACTER_MANAGER::instance().FindByPID(it->first);
-			if (!other || other == ch || other->IsDead() || other->GetGuild() != enemy ||
-					other->GetMapIndex() != ch->GetMapIndex() || !IsPlayerBotWarTargetable(other) ||
+			if (!other || other == ch || other->IsDead() || other->GetMapIndex() != ch->GetMapIndex())
+				continue;
+			CGuild* guild = other->GetGuild();
+			if (guild == mine)
+			{
+				if (it->second.dwTargetVID != 0)
+					++attackers[it->second.dwTargetVID];
+				continue;
+			}
+			if (guild != enemy || !IsPlayerBotWarTargetable(other) ||
 					it->second.bRecoveringAfterDeath || other->IsAffectFlag(AFF_REVIVE_INVISIBLE) ||
 					!IsPlayerBotOnWarField(other->GetMapIndex(), other->GetX(), other->GetY()))
 				continue;
-			const int distance = DISTANCE_APPROX(ch->GetX() - other->GetX(), ch->GetY() - other->GetY());
-			if (distance < bestDistance)
+			foes.push_back(std::make_pair(other,
+					DISTANCE_APPROX(ch->GetX() - other->GetX(), ch->GetY() - other->GetY())));
+		}
+		LPCHARACTER best = NULL;
+		long bestCost = LONG_MAX;
+		for (size_t i = 0; i < foes.size(); ++i)
+		{
+			LPCHARACTER foe = foes[i].first;
+			const DWORD vid = (DWORD)foe->GetVID();
+			std::map<DWORD, int>::const_iterator crowd = attackers.find(vid);
+			long cost = (long)foes[i].second +
+					(long)(crowd != attackers.end() ? crowd->second : 0) * PLAYERBOT_GUILD_WAR_CROWD_PENALTY +
+					(long)(PlayerBotNavHash(ch->GetPlayerID() * 2654435761U ^ foe->GetPlayerID()) %
+							(DWORD)PLAYERBOT_GUILD_WAR_JITTER);
+			if (vid == heldVID)
+				cost -= PLAYERBOT_GUILD_WAR_KEEP_BONUS;
+			if (cost < bestCost)
 			{
-				bestDistance = distance;
-				best = other;
+				bestCost = cost;
+				best = foe;
 			}
+		}
+		// Once a minute, how the chooser's side is spread over its enemies -
+		// the measure of "everybody on one", which deaths alone only hint at.
+		if (!attackers.empty())
+		{
+			int attacking = 0, busiest = 0;
+			for (std::map<DWORD, int>::const_iterator a = attackers.begin(); a != attackers.end(); ++a)
+			{
+				attacking += a->second;
+				busiest = MAX(busiest, a->second);
+			}
+			PlayerBotLogThrottled("guild_war_spread", get_dword_time(),
+					"PLAYERBOT_GUILD: war spread guild=%s enemies_up=%u attacking=%d targets=%u busiest=%d",
+					mine->GetName(), (unsigned int)foes.size(), attacking,
+					(unsigned int)attackers.size(), busiest);
 		}
 		return best;
 	}
+
+	// When each bot at war looks at its foe again, by pid.
+	std::map<DWORD, DWORD> s_mapPlayerBotWarRetargetAt;
 
 	// A bot's part in its guild's war. Claims the tick for the war's whole
 	// half hour: the walk to the battlefield, the rally, the fight; and the way
@@ -714,9 +757,11 @@ namespace
 			return true;
 		}
 
-		// The foe in hand is kept while it stands on the field; the roster is
-		// searched only when it is lost, because that search is every bot in
-		// the world.
+		// The foe in hand is kept while it stands on the field, and looked at
+		// again every PLAYERBOT_GUILD_WAR_RETARGET_MS: the search is every bot
+		// in the world, so not on every tick, but often enough for a bot to
+		// turn to the enemy who came up beside it and for the crowd on one
+		// enemy to thin out.
 		LPCHARACTER foe = NULL;
 		if (state.dwTargetVID != 0)
 		{
@@ -727,8 +772,14 @@ namespace
 					IsPlayerBotOnWarField(held->GetMapIndex(), held->GetX(), held->GetY()))
 				foe = held;
 		}
-		if (!foe)
-			foe = FindPlayerBotGuildWarFoe(ch, enemy);
+		DWORD& retargetAt = s_mapPlayerBotWarRetargetAt[pid];
+		if (!foe || dwNow >= retargetAt)
+		{
+			retargetAt = dwNow + PLAYERBOT_GUILD_WAR_RETARGET_MS;
+			LPCHARACTER chosen = FindPlayerBotGuildWarFoe(ch, mine, enemy, foe ? (DWORD)foe->GetVID() : 0);
+			if (chosen)
+				foe = chosen;
+		}
 		if (!foe)
 		{
 			state.dwTargetVID = 0;

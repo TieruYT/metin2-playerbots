@@ -38,6 +38,12 @@
 // (CollectPlayerBotLppBoxRelease). The soul stones and the herbs are the
 // document's other modules, not point 9, and stay every bot's.
 //
+// And a gambler keeps its gear from +4 up (PLAYERBOT_LPP_KEEP_MIN_PLUS, what
+// the Demon Tower's smith takes) or with a line of his tier 5-6: the boxes
+// were thirteen thousand plain armours and jewels, and "zbroje na 34 czy 42
+// lv tez sa malo warte jesli nie sa ulepszone ... to juz lepiej jak laduja u
+// handlarza" (Tieru, 24 September).
+//
 // The box is only seen when it is open, so what it holds is remembered from
 // the last visit (TPlayerBotPersona::mapLppStored). Until a visit has looked,
 // it counts as empty - which keeps more rather than less, and the visit that
@@ -255,6 +261,32 @@ namespace
 		return piece.kind != playerbot_persona::LPP_NONE;
 	}
 
+	// Under the list's floor (PLAYERBOT_LPP_KEEP_MIN_PLUS): a piece of its
+	// gear below the grade the Demon Tower's smith takes, with no line of his
+	// tier 5 or 6 rolled half-way up. Such a piece is not the list's at all -
+	// not kept, not the gamblers' counter stock, and given back by the box -
+	// so the ordinary rules have it, and they take a plain piece to the
+	// merchant.
+	bool IsPlayerBotLppUnderKeepFloor(LPCHARACTER ch, LPITEM item, const playerbot_persona::TLppPiece& piece)
+	{
+		if (!ch || !item || piece.kind == playerbot_persona::LPP_VALUE ||
+				item->GetRefineLevel() >= PLAYERBOT_LPP_KEEP_MIN_PLUS)
+			return false;
+		const int job = piece.ownClass ? (int)ch->GetJob() : -1;
+		for (int i = 0; i < ITEM_ATTRIBUTE_MAX_NUM; ++i)
+		{
+			const BYTE apply = item->GetAttributeType(i);
+			if (apply == 0)
+				continue;
+			const int bonusTier = std::max(GetPlayerBotBonusTier(apply, job, false),
+					GetPlayerBotBonusTier(apply, job, true));
+			if (playerbot_persona::LppValueLine(bonusTier, item->GetAttributeValue(i),
+					GetPlayerBotBonusMaxRoll(item, apply)))
+				return false;
+		}
+		return true;
+	}
+
 	// How a kept copy ranks against another of its family: the plus first,
 	// then how many lines it carries.
 	int GetPlayerBotLppRank(LPITEM item)
@@ -350,7 +382,8 @@ namespace
 			return false;
 		playerbot_persona::TLppPiece piece;
 		DWORD family = 0;
-		if (!ClassifyPlayerBotLppItem(ch, item, piece, family))
+		if (!ClassifyPlayerBotLppItem(ch, item, piece, family) ||
+				IsPlayerBotLppUnderKeepFloor(ch, item, piece))
 			return false;
 		return playerbot_persona::LppKeeps(piece, (int)ch->GetLevel(),
 				IsPlayerBotLppFamilyPerfect(ch, item, family),
@@ -372,13 +405,15 @@ namespace
 			return false;
 		playerbot_persona::TLppPiece piece;
 		DWORD family = 0;
-		return ClassifyPlayerBotLppItem(ch, item, piece, family) && !IsPlayerBotLppKeptItem(ch, item);
+		return ClassifyPlayerBotLppItem(ch, item, piece, family) &&
+				!IsPlayerBotLppUnderKeepFloor(ch, item, piece) && !IsPlayerBotLppKeptItem(ch, item);
 	}
 
 	// The pieces of gear in the box it lets go of, by item id: for a gambler
 	// the list's pieces it has outgrown, a plain copy of a family it now wears
-	// at +9, and every copy past a family's limit (the best stay); for any
-	// other bot every piece of the list. The gear the list does not name - the
+	// at +9, every copy past a family's limit (the best stay) and every piece
+	// under the list's floor (IsPlayerBotLppUnderKeepFloor); for any other bot
+	// every piece of the list. The gear the list does not name - the
 	// dead stock of the unsold-stands rule, a level-30 weapon - is held two of
 	// a family (GetPlayerBotHeldFamilyLimit) like everything else, the rule
 	// applying "zawsze", always.
@@ -407,7 +442,8 @@ namespace
 			DWORD family = 0;
 			if (ClassifyPlayerBotLppItem(ch, item, piece, family))
 			{
-				held.limit = keeper && !IsPlayerBotLppFinished(st->second.persona, item)
+				held.limit = keeper && !IsPlayerBotLppFinished(st->second.persona, item) &&
+						!IsPlayerBotLppUnderKeepFloor(ch, item, piece)
 						? playerbot_persona::LppLimit(piece, IsPlayerBotLppFamilyPerfect(ch, item, family)) : 0;
 				held.obsolete = playerbot_persona::LppObsolete(piece, (int)ch->GetLevel());
 			}

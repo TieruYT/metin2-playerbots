@@ -600,6 +600,18 @@ namespace
 		return NULL;
 	}
 
+	// The same for a duel a bot may start or agree to: a bot a person called
+	// over takes none, because a duel ends the call (SB_DUEL). The Anti-PK
+	// fight asks the plain one above, since a summoned bot struck by somebody
+	// must still hit back.
+	const char* GetPlayerBotDuelRefusal(LPCHARACTER ch, DWORD dwNow)
+	{
+		const char* unready = GetPlayerBotDuelUnreadiness(ch, dwNow);
+		if (unready)
+			return unready;
+		return ch && IsPlayerBotSummoned(ch->GetPlayerID()) ? "summoned" : NULL;
+	}
+
 	// Agreeing to a duel.
 	//
 	// CPVPManager::Insert is a two-sided agreement, so answering a challenge is
@@ -641,7 +653,7 @@ namespace
 			refusal = "safe_zone";
 		// Nor one fought with a rod or a pickaxe (GetPlayerBotDuelUnreadiness).
 		else
-			refusal = GetPlayerBotDuelUnreadiness(ch, dwNow);
+			refusal = GetPlayerBotDuelRefusal(ch, dwNow);
 		if (refusal)
 		{
 			sys_log(0, "PLAYERBOT_PVP: declined a duel pid=%u name=%s challenger_pid=%u challenger=%s reason=%s level=%u challenger_level=%u",
@@ -998,7 +1010,7 @@ namespace
 		if (state.bVisitingShop || state.bVisitingBiologist || state.bVisitingStable ||
 				state.bMarketTrip || state.bFishingSession || state.bTacticalRetreat ||
 				state.bRecoveringAfterDeath || ch->GetMyShop() ||
-				GetPlayerBotDuelUnreadiness(ch, dwNow) != NULL)
+				GetPlayerBotDuelRefusal(ch, dwNow) != NULL)
 			return;
 		if (ch->GetMaxHP() <= 0 ||
 				(ch->GetHP() * 100) / ch->GetMaxHP() < PLAYERBOT_PVP_MIN_HP_PERCENT)
@@ -1032,7 +1044,7 @@ namespace
 				if (playerbot_pvp::IsInDuel(candidate->GetPlayerID(), m_now))
 					return false;
 				// Not a bot on the bank with its rod out, nor one at a vein.
-				if (GetPlayerBotDuelUnreadiness(candidate, m_now) != NULL)
+				if (GetPlayerBotDuelRefusal(candidate, m_now) != NULL)
 					return false;
 				if (abs((int)candidate->GetLevel() - (int)m_me->GetLevel()) >
 						PLAYERBOT_PVP_CHALLENGE_LEVEL_DELTA)
@@ -1117,7 +1129,7 @@ namespace
 				state.bMarketTrip || state.bFishingSession || state.bTacticalRetreat ||
 				state.bRecoveringAfterDeath || ch->GetMyShop() ||
 				IsPlayerBotMiningNow(ch->GetPlayerID(), dwNow) ||
-				GetPlayerBotDuelUnreadiness(ch, dwNow) != NULL)
+				GetPlayerBotDuelRefusal(ch, dwNow) != NULL)
 			return;
 		if (ch->GetMaxHP() <= 0 ||
 				(ch->GetHP() * 100) / ch->GetMaxHP() < PLAYERBOT_PVP_MIN_HP_PERCENT)
@@ -1151,7 +1163,7 @@ namespace
 				if (playerbot_pvp::IsInDuel(candidate->GetPlayerID(), m_now))
 					return false;
 				// The same for a quarrel: nobody is set upon with a rod in hand.
-				if (GetPlayerBotDuelUnreadiness(candidate, m_now) != NULL)
+				if (GetPlayerBotDuelRefusal(candidate, m_now) != NULL)
 					return false;
 				if (abs((int)candidate->GetLevel() - (int)m_me->GetLevel()) >
 						PLAYERBOT_KINGDOM_PVP_LEVEL_DELTA)
@@ -3515,7 +3527,10 @@ void CPlayerBotManager::ManageLifeSchedule(DWORD dwNow)
 		if ((int)(dwNow - session->second) < 0)
 			continue;
 		LPCHARACTER ch = it->second ? it->second->GetCharacter() : NULL;
-		if (ch && ch->GetParty() && IsPlayerBotHumanLedParty(ch->GetParty()))
+		// A person's company holds the log-out off: their party, or their
+		// call ("chodz do mnie", which lasts minutes).
+		if (ch && ((ch->GetParty() && IsPlayerBotHumanLedParty(ch->GetParty())) ||
+				IsPlayerBotSummoned(pid)))
 		{
 			session->second = dwNow + PLAYERBOT_LIFE_POSTPONE_MS;
 			continue;
@@ -3832,7 +3847,9 @@ namespace
 		PB_CHSQL_PROMOTE,			// waiting bots move straight to the shop channel
 		PB_CHSQL_SWAP_OUT,			// free bots of the shop channel step aside...
 		PB_CHSQL_SWAP_IN,			// ...and the waiting bots take their places
-		PB_CHSQL_DRAIN				// nobody waiting: the shop channel eases back
+		PB_CHSQL_DRAIN,				// nobody waiting: the shop channel eases back
+		PB_CHSQL_ROAM_IN,			// nobody waiting, the split as wanted: bots of the
+		PB_CHSQL_ROAM_OUT			// second channel and of the shop channel trade places
 	};
 
 	struct TPlayerBotChannelSql
@@ -3895,8 +3912,55 @@ namespace
 				" ORDER BY request_at,pid LIMIT " + std::to_string(want);
 	}
 
+	// Roaming (PLAYERBOT_CHANNEL_ROAM_PER_MILLE): who has stayed on its
+	// channel long enough to change it of its own accord.
+	std::string PlayerBotChannelStayedLongEnough()
+	{
+		return "(moved_at IS NULL OR moved_at<DATE_SUB(NOW(),INTERVAL " +
+				std::to_string(PLAYERBOT_CHANNEL_ROAM_MIN_STAY_SECONDS) + " SECOND))";
+	}
+
+	// Bots of the second channel onto the shop channel: they play, nothing
+	// pins them, they ask for nothing, and they have stayed a while.
+	std::string PlayerBotChannelRoamInQuery(unsigned int want)
+	{
+		const std::string shop = std::to_string(playerbot_channel_rules::SHOP_CHANNEL);
+		return "UPDATE common.playerbot_channel_assignment SET channel=" + shop +
+				",requested_channel=0,request_reason='',request_at=NULL,"
+				"ready_at=DATE_ADD(NOW(),INTERVAL " + std::to_string(PLAYERBOT_CHANNEL_READY_IN_SECONDS) +
+				" SECOND),moved_at=NOW(),updated_at=NOW() "
+				"WHERE channel<>" + shop + " AND requested_channel=0 AND shop_busy<" +
+				std::to_string(playerbot_channel_rules::MOVE_COST_PINNED) + " AND " +
+				PlayerBotChannelSeen() + " AND " + PlayerBotChannelStayedLongEnough() + " "
+				"ORDER BY shop_busy,CRC32(CONCAT(pid,UNIX_TIMESTAMP())) LIMIT " + std::to_string(want);
+	}
+
+	// And as many of the shop channel's the other way, the cheapest first.
+	// Not only bots with no live stand, as the gentle drain takes: on m2zip on
+	// 24 September seven of the 877 bots of channel 1 had none and stood
+	// outside a village, so a roam kept to those would have moved nobody on a
+	// world that has played. An owner sent across asks to come back for its
+	// next service, 45 to 75 minutes on, and that is a change of channel too.
+	std::string PlayerBotChannelRoamOutQuery(unsigned int want)
+	{
+		const std::string shop = std::to_string(playerbot_channel_rules::SHOP_CHANNEL);
+		const std::string other = std::to_string(3 - playerbot_channel_rules::SHOP_CHANNEL);
+		return "UPDATE common.playerbot_channel_assignment SET channel=" + other +
+				",requested_channel=0,request_reason='',request_at=NULL,"
+				"ready_at=DATE_ADD(NOW(),INTERVAL " + std::to_string(PLAYERBOT_CHANNEL_READY_OUT_SECONDS) +
+				" SECOND),moved_at=NOW(),updated_at=NOW() "
+				"WHERE channel=" + shop + " AND shop_busy<" +
+				std::to_string(playerbot_channel_rules::MOVE_COST_PINNED) + " AND requested_channel=0 AND " +
+				PlayerBotChannelSeen() + " AND " + PlayerBotChannelStayedLongEnough() + " "
+				"ORDER BY shop_busy,CRC32(CONCAT(pid,UNIX_TIMESTAMP())) LIMIT " + std::to_string(want);
+	}
+
 	const char* PLAYERBOT_CHANNEL_GATE_STAMP =
 			"UPDATE common.playerbot_channel_control SET last_batch=NOW() WHERE id=1";
+
+	// How many bots roam each way at the end of this gate, set by the census
+	// and spent by the first step that ends the gate (0: none left to run).
+	unsigned int s_uPlayerBotChannelRoamWant = 0;
 }
 
 // Defined in config.cpp (playerbotify.py), which holds the common database's
@@ -3981,6 +4045,8 @@ void CPlayerBotManager::ProcessChannelSql()
 			case PB_CHSQL_SWAP_OUT:
 			case PB_CHSQL_SWAP_IN:
 			case PB_CHSQL_DRAIN:
+			case PB_CHSQL_ROAM_IN:
+			case PB_CHSQL_ROAM_OUT:
 				OnChannelSwapStep(pMsg);
 				break;
 			default:
@@ -4070,7 +4136,7 @@ void CPlayerBotManager::PublishChannelPresence(DWORD dwNow)
 		// it, so a dropper moved there would become an ordinary bot and the
 		// top-up here would never bring it back.
 		bool pinned = IsMedalDropperCohortPID(pid) || ch->GetMyShop() != NULL ||
-				(ch->GetParty() && IsPlayerBotHumanLedParty(ch->GetParty())) ||
+				(ch->GetParty() && IsPlayerBotHumanLedParty(ch->GetParty())) || IsPlayerBotSummoned(pid) ||
 				ch->GetMapIndex() >= PLAYERBOT_INSTANCE_MAP_INDEX_MIN ||
 				playerbot_pvp::GetDuelOpponent(pid, dwNow) != 0 ||
 				(state && (IsPlayerBotOnTowerBusiness(ch, *state) || state->dwGuildWarEnemyGID != 0));
@@ -4222,6 +4288,13 @@ void CPlayerBotManager::OnChannelCensus(void* pvMsg)
 	unsigned int batch = (total * playerbot_channel_rules::MOVE_BATCH_PERCENT + 99U) / 100U;
 	if (batch < 1)
 		batch = 1;
+	// Whatever the gate does, a few bots then change channel of their own
+	// accord, the same number each way (PLAYERBOT_CHANNEL_ROAM_PER_MILLE). It
+	// used to be only at a gate the plan left alone, and on m2zip nearly every
+	// gate had somebody waiting or a channel to ease: in the half hour after a
+	// start not one roam ran, so a bot with no stand that the drains had put
+	// on the second channel would have stayed there for good.
+	s_uPlayerBotChannelRoamWant = std::max(1U, total * PLAYERBOT_CHANNEL_ROAM_PER_MILLE / 1000U);
 	switch (plan.kind)
 	{
 		case playerbot_channel_rules::MOVE_DRAIN:
@@ -4242,8 +4315,15 @@ void CPlayerBotManager::OnChannelCensus(void* pvMsg)
 							playerbot_channel_rules::MOVE_COST_PINNED - 1));
 			return;
 		default:
-			m_bChannelCoordInFlight = false;
+		{
+			// Nothing asked of this gate but the roam. The second channel's
+			// bots go first, so the shop channel is never the one left short
+			// when either side has too few who may go.
+			const unsigned int roam = s_uPlayerBotChannelRoamWant;
+			s_uPlayerBotChannelRoamWant = 0;
+			SendChannelSql(PB_CHSQL_ROAM_IN, 0, roam, 0, 0, PlayerBotChannelRoamInQuery(roam));
 			return;
+		}
 	}
 }
 
@@ -4258,15 +4338,47 @@ void CPlayerBotManager::OnChannelSwapStep(void* pvMsg)
 	TPlayerBotChannelSql* pCtx = static_cast<TPlayerBotChannelSql*>(pMsg->pvUserData);
 	const unsigned int moved = (pMsg->uiSQLErrno == 0 && pMsg->Get()) ? (unsigned int)pMsg->Get()->uiAffectedRows : 0;
 	const unsigned int shop = (unsigned int)playerbot_channel_rules::SHOP_CHANNEL;
+	// The end of the plan's step: the gate is stamped when it moved anybody,
+	// and then this gate's roam runs, once (s_uPlayerBotChannelRoamWant).
+	auto endGate = [this](bool stamp)
+	{
+		if (stamp)
+			m_pChannelSql->AsyncQuery(PLAYERBOT_CHANNEL_GATE_STAMP);
+		const unsigned int roam = s_uPlayerBotChannelRoamWant;
+		s_uPlayerBotChannelRoamWant = 0;
+		if (roam > 0)
+		{
+			SendChannelSql(PB_CHSQL_ROAM_IN, 0, roam, 0, 0, PlayerBotChannelRoamInQuery(roam));
+			return;
+		}
+		m_bChannelCoordInFlight = false;
+	};
+
+	if (pCtx->iKind == PB_CHSQL_ROAM_IN)
+	{
+		// As many of the shop channel's the other way; nobody free to roam
+		// this time is no gate spent, and the next census asks again.
+		if (moved > 0)
+		{
+			SendChannelSql(PB_CHSQL_ROAM_OUT, moved, 0, 0, 0, PlayerBotChannelRoamOutQuery(moved));
+			return;
+		}
+		m_bChannelCoordInFlight = false;
+		return;
+	}
+	if (pCtx->iKind == PB_CHSQL_ROAM_OUT)
+	{
+		sys_log(0, "PLAYERBOT_CHANNEL: roam to_channel_%u=%u from_channel_%u=%u", shop, pCtx->uA, shop, moved);
+		m_pChannelSql->AsyncQuery(PLAYERBOT_CHANNEL_GATE_STAMP);
+		m_bChannelCoordInFlight = false;
+		return;
+	}
 
 	if (pCtx->iKind == PB_CHSQL_DRAIN)
 	{
 		if (moved > 0)
-		{
 			sys_log(0, "PLAYERBOT_CHANNEL: %u bots eased from channel %u to keep room", moved, shop);
-			m_pChannelSql->AsyncQuery(PLAYERBOT_CHANNEL_GATE_STAMP);
-		}
-		m_bChannelCoordInFlight = false;
+		endGate(moved > 0);
 		return;
 	}
 
@@ -4281,9 +4393,7 @@ void CPlayerBotManager::OnChannelSwapStep(void* pvMsg)
 					PlayerBotChannelSwapOutQuery(want, playerbot_channel_rules::MOVE_COST_PINNED - 1));
 			return;
 		}
-		if (moved > 0)
-			m_pChannelSql->AsyncQuery(PLAYERBOT_CHANNEL_GATE_STAMP);
-		m_bChannelCoordInFlight = false;
+		endGate(moved > 0);
 		return;
 	}
 
@@ -4300,15 +4410,12 @@ void CPlayerBotManager::OnChannelSwapStep(void* pvMsg)
 			return;
 		}
 		// Nobody free right now; the next gate tries again.
-		if (pCtx->uC > 0)
-			m_pChannelSql->AsyncQuery(PLAYERBOT_CHANNEL_GATE_STAMP);
-		m_bChannelCoordInFlight = false;
+		endGate(pCtx->uC > 0);
 		return;
 	}
 
 	sys_log(0, "PLAYERBOT_CHANNEL: shop swap target=%u outgoing=%u incoming=%u", shop, pCtx->uA, moved);
-	m_pChannelSql->AsyncQuery(PLAYERBOT_CHANNEL_GATE_STAMP);
-	m_bChannelCoordInFlight = false;
+	endGate(true);
 }
 
 void CPlayerBotManager::RefreshChannelAssignments(DWORD dwNow)
@@ -5025,6 +5132,9 @@ void CPlayerBotManager::Update()
 		// tick, or the wander pass walks it out of the party it just joined.
 		if (ManagePlayerBotFollowHumanLeader(ch, state, dwNow))
 			continue;
+		// A person who called the bot over ("chodz do mnie", playerbot_chat_conversation.h).
+		if (ManagePlayerBotSummon(ch, state, dwNow))
+			continue;
 		// The regular levelup.quest opens a selection dialog. A fake descriptor
 		// cannot press its Confirm button, so accept/claim that official mission
 		// here while leaving kill counting to the normal quest event.
@@ -5260,8 +5370,10 @@ void CPlayerBotManager::Update()
 		// few minutes, nobody within three kilometres of the Spider Queen).
 		// A rider with no target keeps the saddle; the target section below
 		// climbs down the moment it picks one, and the buff and multi-pull
-		// passes stay out of the saddle themselves.
-		if (ch->IsRiding() && !CanPlayerBotEverFightOnHorse(ch) &&
+		// passes stay out of the saddle themselves. The foe in hand decides
+		// (CanPlayerBotKeepSaddleInFight): a battle horse's rider keeps it for
+		// a stone, whatever its skills make of the monsters.
+		if (ch->IsRiding() && !CanPlayerBotKeepSaddleInFight(ch, state) &&
 				(state.dwTargetVID != 0 || ch->GetVictim() != NULL) &&
 				SetPlayerBotRidingForTravel(ch, state, false, dwNow, "combat_ready"))
 			continue;
@@ -5576,8 +5688,10 @@ void CPlayerBotManager::Update()
 		// In range, target known: this is the one place that can say whether the
 		// fight itself happens from the saddle. Mount for the ones that should,
 		// climb down for the ones that should not - a bot that walked up on foot
-		// would otherwise never get back on, however good its horse.
-		if (CanPlayerBotEverFightOnHorse(ch))
+		// would otherwise never get back on, however good its horse. Every owner
+		// of a battle horse is asked, not only the ones that fight monsters from
+		// it: a stone is broken from the saddle whatever the skills.
+		if (HasPlayerBotBattleHorse(ch))
 		{
 			const bool wantsSaddle = CanPlayerBotFightOnHorse(ch, target);
 			if (wantsSaddle != ch->IsRiding())
@@ -5600,10 +5714,11 @@ void CPlayerBotManager::Update()
 
 		LPITEM equippedWeapon = ch->GetWear(WEAR_WEAPON);
 		const bool isBow = (equippedWeapon && equippedWeapon->GetType() == ITEM_WEAPON && equippedWeapon->GetSubType() == WEAPON_BOW);
-		const int combatRange = isBow ? 800 : 280;
+		const int combatRange = isBow ? GetPlayerBotBowRange(ch->GetMapIndex()) : 280;
 		// A warrior or a sura on a battle horse closes on a mob spot without
-		// dismounting, so the fight happens from the saddle. A stone, and
-		// everyone else's fight, is approached on foot.
+		// dismounting, so the fight happens from the saddle, and so does every
+		// battle horse's rider on a stone. Everyone else's fight is approached
+		// on foot.
 		const bool fightOnHorse = CanPlayerBotFightOnHorse(ch, target);
 
 		if (distance > combatRange)

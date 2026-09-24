@@ -2024,7 +2024,7 @@ namespace
 			if (ch->GetArrowAndBow(&bow, &arrow, 1) != 1)
 				return false;
 		}
-		const int combatRange = isBow ? 800 : 280;
+		const int combatRange = isBow ? GetPlayerBotBowRange(ch->GetMapIndex()) : 280;
 		if (DISTANCE_APPROX(ch->GetX() - target->GetX(), ch->GetY() - target->GetY()) > combatRange)
 			return false;
 
