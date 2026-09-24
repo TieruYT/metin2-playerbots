@@ -17,6 +17,112 @@ every version here.
 
 ---
 
+## 2.2.7 — 2026-09-24
+
+Serwer 2.2.7 i klient 2.0.29. Zaktualizuj oba („AKTUALIZUJ wszystko”
+w launcherze). Nowy klient poprawia Szybki Atak w Auto Łowach, a poprzedni
+działa z nowym serwerem tak jak dotąd. Zawiera wszystko z 2.2.6.
+
+### Auto Łowy: Szybki Atak nie wyrzuca już postaci poza świat (zgłosił Buby)
+
+Szybki Atak ninja jako jedyna umiejętność przenosi postać: stawia ją przed
+celem po prostej linii, nie sprawdzając, co jest po drodze (urwisko, ściana,
+zbocze). Auto Łowy klikał go na zegarze także wtedy, gdy nie miał jeszcze
+celu w zasięgu. Klient brał wtedy potwora spod kursora myszy albo odległy cel
+i przenosił postać przez przeszkody. Tak ninja mogła zawisnąć w pustce bez
+świata dookoła. Teraz:
+
+- Umiejętności rzucane na przeciwnika idą tylko w cel, który Auto Łowy
+  naprawdę bije: żywy, zaznaczony i w zasięgu.
+- Szybki Atak idzie zawsze z bliska, więc przeskok to najwyżej krok po
+  ziemi, po której postać właśnie przyszła.
+- Buffy, umiejętności wokół postaci i Krycie się działają jak wcześniej.
+
+### Metiny z konia bojowego (zgłosił prodnathin, poprawił Tieru)
+
+W 2.2.6 zrozumieliśmy zgłoszenie odwrotnie: chodziło o to, że boty w ogóle
+nie biły Metinów z konia, a nie o to, żeby z niego zsiadały. Teraz:
+
+- Każdy bot z koniem bojowym (koń od 11. poziomu) wsiada na niego i bije
+  Metina z siodła, niezależnie od klasy i od poziomu umiejętności. Dotyczy to
+  także Wieży Demonów, w której dotąd żaden bot nie przywoływał konia.
+- Łucznik z łukiem w ręku strzela do kamienia pieszo.
+- Gdy botowi zejdzie buff (np. aura albo berserk), zsiada na chwilę, rzuca go
+  i wsiada z powrotem. Umiejętności klasy nie da się używać z konia. Przy
+  okazji od razu odnawia buffy, którym zostało mniej niż 45 sekund, żeby nie
+  zsiadać z konia co kilka sekund dla każdego z osobna.
+- Właściciel konia bojowego znowu wybiera się na wyprawy po Metiny dwa razy
+  częściej niż inni.
+
+### Łucznicy w Wieży Demonów (prodnathin, Tieru)
+
+- Łucznik strzela z 15 m zamiast z 8 m, także umiejętnościami, więc nie
+  wbiega już pierwszy między demony.
+- Gdy potwór podejdzie do niego bliżej niż na 5 m, łucznik robi jeden krok
+  w stronę drużyny stojącej za nim, żeby potwór wszedł na walczących wręcz.
+  Robi to raz na potwora: jeśli potwór dalej za nim idzie, łucznik stoi
+  i strzela, więc nie ucieka w kółko.
+
+### Wojny gildii: każdy bije swój cel (prodnathin, Tieru)
+
+Boty nie rzucają się już całą gildią na jedną osobę. Każdy wybiera bliskiego
+przeciwnika, którego nie bije jeszcze tłum z jego gildii, z odrobiną
+losowości, i co 4 sekundy sprawdza, czy obok nie ma lepszego celu.
+
+### Magazyny i księgi (zgłosił GorącyDelfin, Tieru)
+
+- Księgi innej klasy albo innej ścieżki bot wystawia na straganie: wystarczy
+  jedna, żeby otworzył stragan (było: trzy). Takie księgi nie trafiają już do
+  magazynu, a te, które tam leżą, bot wyjmuje przy najbliższej wizycie
+  u magazyniera i wystawia.
+- Lista przydatnych przedmiotów trzyma zbroje, tarcze, biżuterię i broń
+  dopiero od +4 (tyle przyjmuje kowal w Wieży Demonów) albo z cennym bonusem.
+  Przedmioty +0..+3, np. zbroje na 34. i 42. poziom, idą do handlarza. To, co
+  już zalega w magazynach, boty wyjmują przy wizytach u magazyniera
+  i sprzedają. Na naszym świecie testowym magazyny botów trzymały rano ponad
+  14 tys. przedmiotów, a godzinę po wdrożeniu o prawie 3 tys. mniej.
+- Przedmiot wyjęty z magazynu trafia od razu do bazy, tak jak u gracza.
+  Wcześniej przy kolejnej wizycie w ciągu kilku minut serwer próbował
+  załadować go do magazynu drugi raz i pisał błąd do logu.
+
+### Szepty do botów: ścieżka, buffy i „chodź do mnie” (pomysły Remigiusza)
+
+- **Ścieżka:** zapytany o profesję, bot mówi, jaką ścieżkę gra: body,
+  mental, sztylety, łuk, WP, BM, smok albo heal. Rozumie też pytania
+  w rodzaju „jesteś body?” i „jakie masz skille?”.
+- **Buffy szamana:** szaman na pytanie „co dają twoje buffy?” podaje wartości
+  i czas trwania swoich buffów na osobie, która pyta. Liczy je tak samo jak
+  gra, ze swoich umiejętności i statystyk. Na kimś innym niż on sam buffy są
+  słabsze, tak jak w grze. Szaman, który czegoś nie umie albo ma inną ścieżkę,
+  mówi to wprost.
+- **„Chodź do mnie”:** bot przychodzi do gracza, staje obok na kilka minut
+  i broni jego i siebie przed potworami. Gdy gracz odejdzie, idzie za nim.
+  Znajomy przychodzi od razu, obcy zwykle wtedy, gdy podasz powód („pokażę
+  ci coś”, „chodź na exp”). Bot nie przyjdzie, gdy stoi przy straganie,
+  łowi, kopie, walczy w pojedynku, na wojnie gildii albo w Wieży, jest
+  w lochu albo w drużynie innej osoby. Wtedy mówi, dlaczego. „Możesz iść”
+  go odprawia.
+- Bot odpowiada też wreszcie na odpowiedzi na swoje własne pytania
+  („a u ciebie?”, „idziesz na exp?”). Wcześniej przez błąd te odpowiedzi
+  ginęły.
+
+### Boty zmieniają kanały (Dixdros)
+
+Gdy w grze jest drugi kanał, co 2 minuty kilka botów z każdego kanału
+zamienia się miejscami. Z kanału 2 przechodzą tylko te, które spędziły na nim
+co najmniej 2 godziny. Proporcja między kanałami się nie zmienia, a przy
+tysiącu botów bot zostaje na kanale 2 średnio 3–4 godziny. Dotąd bot bez
+straganu, który trafił na kanał 2, zostawał tam na stałe. Właściciel
+straganu przeniesiony na kanał 2 wraca na kanał 1, gdy przychodzi pora na
+obsługę straganu.
+
+### Launcher szybciej widzi nową wersję
+
+Launcher sprawdzał aktualizacje przez serwer pośredni GitHuba, który
+pamięta stary plik do 5 minut, bo szybsza droga przez API w Windows
+PowerShell 5.1 nigdy nie działała. Teraz działa, więc nowa wersja jest
+widoczna od razu po wydaniu.
+
 ## 2.2.6 — 2026-09-24
 
 Serwer 2.2.6 i klient 2.0.28. Zaktualizuj oba („AKTUALIZUJ wszystko”
