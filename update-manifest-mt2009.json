@@ -1,20 +1,20 @@
 {
   "schema": 1,
   "channel": "stable",
-  "publishedAt": "2026-09-24T10:45:26Z",
-  "statusMessage": "2.2.8 (serwer 2.2.8, klient bez zmian 2.0.29): hazardzista znowu trzyma bazy do ulepszania, po 2 sztuki kazdego przedmiotu z listy, takze bez plusa; boty na probie konia bojowego szukaja lucznikow na pustyni i ida do nich. Zawiera wszystko z 2.2.7.",
+  "publishedAt": "2026-09-24T13:57:07Z",
+  "statusMessage": "2.2.9 (serwer 2.2.9, klient 2.0.30 - zaktualizuj oba): autologin w Auto Lowach (klient 2.0.30); botom-lucznikom strzaly sie nie koncza; demony na 7. pietrze Wiezy pojawiaja sie raz; kompilacja przy aktualizacji wedlug wolnej pamieci Dockera. Zawiera wszystko z 2.2.8.",
   "server": {
-    "version": "2.2.8",
-    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.8/metin2-server-update-2.2.8.zip",
-    "sha256": "D02B3344124197C24D302E9788343D1FE78CA25901137EF9C6256FF5C704C3F7"
+    "version": "2.2.9",
+    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.9/metin2-server-update-2.2.9.zip",
+    "sha256": "694E559EA5CFCFAD7739C0F315F379E78B08657B54E40CF848DB2CB9481CE797"
   },
   "support": {
     "contactUrl": "https://discord.gg/pt5tvnrN6",
     "uploadUrl": ""
   },
   "client": {
-    "version": "2.0.29",
-    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.7/metin2-client-update-2.0.29.zip",
-    "sha256": "97919854F3B480C9CFE60DDFDA18F943050D3DF8242A63E40F9EC9649A4237B0"
+    "version": "2.0.30",
+    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.9/metin2-client-update-2.0.30.zip",
+    "sha256": "94378328EDF4953DE15A88D9E6F91C573CCF527CFC68F7C9B78A329B7CAECE25"
   }
 }
