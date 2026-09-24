@@ -974,6 +974,7 @@ namespace
 
 	// Defined further down, with the arrows' purchase.
 	int CountPlayerBotArrows(LPCHARACTER ch);
+	bool UpgradePlayerBotArrows(LPCHARACTER ch);
 
 	bool ManagePlayerBotEquipment(LPCHARACTER ch, TPlayerBotAIState& state, DWORD dwNow)
 	{
@@ -1019,6 +1020,11 @@ namespace
 
 		if (dwNow < state.dwNextEquipmentCheckTime && !state.bEquipPending)
 			return false;
+
+		// A better arrow goes in on this pass's clock: the quiver is never
+		// emptied, so running out no longer brings the next one to the slot.
+		if (IsPlayerBotArcherBuild(ch))
+			UpgradePlayerBotArrows(ch);
 
 		LPITEM bestItem = NULL;
 		LPITEM bestOldItem = NULL;
@@ -2560,6 +2566,26 @@ namespace
 		return true;
 	}
 
+	// What an arrow adds to a shot, as the engine counts it: value3, which
+	// both engines add to the bow's roll (wooden 3 to silver 25). -1 for an
+	// arrow that cannot hurt anything at a bow's range: mt2009's
+	// CalcArrowDamage fades a shot past value4 down to value2 per cent (twice
+	// that against a monster) at value5, and the four elemental arrows
+	// (8006-8009) carry 0 in all three there, so past point-blank they deal
+	// nothing. Worn with a quiver that never empties, one of them would be an
+	// Archer that shoots for nothing for life. r40250 fades a shot by the
+	// distance alone and reads no value2.
+	int GetPlayerBotArrowGrade(LPITEM arrow)
+	{
+		if (!arrow || arrow->GetType() != ITEM_WEAPON || arrow->GetSubType() != WEAPON_ARROW)
+			return -1;
+#if defined(PLAYERBOT_ENGINE_MT2009)
+		if (arrow->GetValue(2) <= 0)
+			return -1;
+#endif
+		return std::max<int>(0, (int)arrow->GetValue(3));
+	}
+
 	// Arrows this bot can nock now. A progression chest hands an archer the
 	// next tier early - 8003 wants level forty, 8004 forty-five - and counting
 	// those said "a hundred arrows, no need to buy" to a bot of thirty-four
@@ -2568,8 +2594,28 @@ namespace
 	// archers stood at arrival points for twenty minutes at a time.
 	bool IsPlayerBotUsableArrow(LPCHARACTER ch, LPITEM item)
 	{
-		return item && item->GetType() == ITEM_WEAPON && item->GetSubType() == WEAPON_ARROW &&
+		return item && GetPlayerBotArrowGrade(item) >= 0 &&
 				item->GetCount() > 0 && item->GetLevelLimit() <= ch->GetLevel();
+	}
+
+	// The bag's best arrow this bot can nock now, by grade; the first of equals.
+	LPITEM FindPlayerBotBestBagArrow(LPCHARACTER ch)
+	{
+		LPITEM best = NULL;
+		int bestGrade = -1;
+		for (WORD cell = 0; cell < PLAYERBOT_BAG_CELLS; ++cell)
+		{
+			LPITEM item = ch->GetInventoryItem(cell);
+			if (!IsPlayerBotUsableArrow(ch, item))
+				continue;
+			const int grade = GetPlayerBotArrowGrade(item);
+			if (grade > bestGrade)
+			{
+				best = item;
+				bestGrade = grade;
+			}
+		}
+		return best;
 	}
 
 	int CountPlayerBotArrows(LPCHARACTER ch)
@@ -2593,17 +2639,34 @@ namespace
 	{
 		if (!ch)
 			return false;
-		LPITEM worn = ch->GetWear(WEAR_ARROW);
-		if (worn && worn->GetType() == ITEM_WEAPON && worn->GetSubType() == WEAPON_ARROW &&
-				worn->GetCount() > 0)
+		if (IsPlayerBotUsableArrow(ch, ch->GetWear(WEAR_ARROW)))
 			return true;
-		for (WORD cell = 0; cell < PLAYERBOT_BAG_CELLS; ++cell)
-		{
-			LPITEM item = ch->GetInventoryItem(cell);
-			if (IsPlayerBotUsableArrow(ch, item) && PlayerBotEquipItem(ch, item, WEAR_ARROW))
-				return true;
-		}
-		return false;
+		LPITEM best = FindPlayerBotBestBagArrow(ch);
+		return best && PlayerBotEquipItem(ch, best, WEAR_ARROW);
+	}
+
+	// The quiver is never emptied - a bot's shot spends no arrow - so a better
+	// arrow picked up later was never nocked by running out, as it used to
+	// be: the equipment pass puts it in the slot on its own clock, and what
+	// comes off is scrap to the junk rule. An arrow slot is exempt from
+	// EquipItem's stand-still rule, so this may run in the middle of a fight.
+	bool UpgradePlayerBotArrows(LPCHARACTER ch)
+	{
+		if (!ch)
+			return false;
+		LPITEM worn = ch->GetWear(WEAR_ARROW);
+		const int wornGrade = IsPlayerBotUsableArrow(ch, worn) ? GetPlayerBotArrowGrade(worn) : -1;
+		LPITEM best = FindPlayerBotBestBagArrow(ch);
+		if (!best || GetPlayerBotArrowGrade(best) <= wornGrade)
+			return false;
+		const DWORD oldVnum = worn ? worn->GetVnum() : 0;
+		const DWORD newVnum = best->GetVnum();
+		if (!PlayerBotEquipItem(ch, best, WEAR_ARROW))
+			return false;
+		sys_log(0, "PLAYERBOT_GEAR: nocked a better arrow pid=%u name=%s old_vnum=%u new_vnum=%u",
+				ch->GetPlayerID(), ch->GetName(), oldVnum, newVnum);
+		FlushPlayerBotItemRow(ch->GetWear(WEAR_ARROW));
+		return true;
 	}
 
 	// Whether a shield slot is a slot this bot can fill at all: never with a
@@ -2618,26 +2681,16 @@ namespace
 				(weapon->GetSubType() == WEAPON_BOW || weapon->GetSubType() == WEAPON_TWO_HANDED));
 	}
 
+	// An Archer with no arrow it can nock: the only time it has to buy any,
+	// since the quiver is never emptied (PLAYERBOT_ARROW_RESTOCK_THRESHOLD).
+	// A dropper's archer and a trial archer used to fill their quivers to a
+	// thousand here, because a Monkey Dungeon visit and the desert trial shot
+	// their bundles away in minutes; nothing is shot away now.
 	bool NeedsPlayerBotArrows(LPCHARACTER ch)
 	{
 		if (!ch || ch->GetJob() != JOB_ASSASSIN || ch->GetSkillGroup() != 2)
 			return false;
 		return CountPlayerBotArrows(ch) < PLAYERBOT_ARROW_RESTOCK_THRESHOLD;
-	}
-
-	// Whether a dropper's archer, already past the need above, still fills its
-	// quiver at the merchant (PLAYERBOT_DROPPER_ARROW_STOCK). The need stays
-	// what ends a dungeon visit and holds a trip; this only decides how much is
-	// bought once the bot stands at the counter.
-	bool WantsPlayerBotArrowTopUp(LPCHARACTER ch)
-	{
-		// A trial archer too: the hundred kills of the battle-horse trial cost
-		// more arrows than the hundred the restock threshold leaves, and every
-		// trip back for them is a stay on the desert lost.
-		return ch && ch->GetJob() == JOB_ASSASSIN && ch->GetSkillGroup() == 2 &&
-				(IsPlayerBotDropper(GetPlayerBotPersonalityByPID(ch->GetPlayerID())) ||
-				 IsPlayerBotOnBattleHorseTrial(ch)) &&
-				CountPlayerBotArrows(ch) < PLAYERBOT_DROPPER_ARROW_STOCK;
 	}
 
 	long long GetPlayerBotNpcPurchasePrice(const TItemTable* proto, int count)
@@ -3069,34 +3122,21 @@ namespace
 
 	bool BuyPlayerBotArrowsAtMerchant(LPCHARACTER ch)
 	{
-		if (!NeedsPlayerBotArrows(ch) && !WantsPlayerBotArrowTopUp(ch))
+		if (!NeedsPlayerBotArrows(ch))
 			return false;
 		TItemTable* proto = ITEM_MANAGER::instance().GetTable(PLAYERBOT_WOODEN_ARROW_VNUM);
 		if (!proto)
 			return false;
 
-		const long long smallPrice = GetPlayerBotNpcPurchasePrice(
-				proto, PLAYERBOT_ARROW_SMALL_BUNDLE);
-		if (ch->GetGold() < smallPrice)
-		{
-			// Running out is worth selling potions for; a top-up is not.
-			if (!NeedsPlayerBotArrows(ch))
-				return false;
-			RaisePlayerBotEmergencyGold(ch, smallPrice, "arrows");
-		}
-
-		int bundle = 0;
-		long long price = GetPlayerBotNpcPurchasePrice(
-				proto, PLAYERBOT_ARROW_LARGE_BUNDLE);
-		if (price > 0 && ch->GetGold() >= price)
-			bundle = PLAYERBOT_ARROW_LARGE_BUNDLE;
-		else
-		{
-			price = smallPrice;
-			if (price > 0 && ch->GetGold() >= price)
-				bundle = PLAYERBOT_ARROW_SMALL_BUNDLE;
-		}
-		if (bundle == 0)
+		// One bundle, once: the quiver is never emptied, so this is a bot that
+		// has no arrow at all - a new Archer, or one whose only arrows were of
+		// a kind that cannot hit (GetPlayerBotArrowGrade) - and it is worth
+		// selling potions for.
+		const int bundle = PLAYERBOT_ARROW_SMALL_BUNDLE;
+		const long long price = GetPlayerBotNpcPurchasePrice(proto, bundle);
+		if (ch->GetGold() < price)
+			RaisePlayerBotEmergencyGold(ch, price, "arrows");
+		if (price <= 0 || ch->GetGold() < price)
 			return false;
 		// AutoGiveItem hands the item back even when it had nowhere to put it:
 		// with no free cell the bundle goes on the ground at the bot's feet, the
@@ -3120,10 +3160,6 @@ namespace
 		sys_log(0, "PLAYERBOT_GEAR: bought wooden arrows pid=%u name=%s vnum=%u count=%d price=%lld equipped=%d",
 				ch->GetPlayerID(), ch->GetName(), PLAYERBOT_WOODEN_ARROW_VNUM,
 				bundle, price, equipped ? 1 : 0);
-		// A dropper's archer fills the quiver on the same visit, a bundle at a
-		// time, for as long as the yang and the cells allow.
-		if (WantsPlayerBotArrowTopUp(ch))
-			BuyPlayerBotArrowsAtMerchant(ch);
 		return true;
 	}
 

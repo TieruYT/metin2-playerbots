@@ -655,8 +655,8 @@ namespace
 				// packet follows the same order as the build verified in the client.
 				ch->ComputeSkill(skillVnum, target);
 				SendPlayerBotSkillPacket(ch, skillVnum);
-				if (archerArrow)
-					ch->UseArrow(archerArrow, 1);
+				// The arrow is needed in the slot and never spent: a bot's quiver
+				// never empties (ExecutePlayerBotBasicAttack).
 				state.dwLastBotSkillTime = dwNow;
 				state.dwLastCombatActionTime = dwNow;
 				// Shamans should weave weapon attacks between spells.  Casting an

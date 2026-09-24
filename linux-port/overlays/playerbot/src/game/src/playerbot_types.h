@@ -173,15 +173,13 @@ namespace
 	const DWORD PLAYERBOT_EQUIPMENT_COMBAT_DELAY = 1700;
 	const DWORD PLAYERBOT_GEAR_LOG_INTERVAL = 10000;
 	const DWORD PLAYERBOT_WOODEN_ARROW_VNUM = 8000;
-	const int PLAYERBOT_ARROW_RESTOCK_THRESHOLD = 100;
+	// A bot's quiver is never emptied (Tieru, 24 September: "zeby boty Archer
+	// nie musialy kupowac ciagle strzal, a mialy je bez limitu"), so an Archer
+	// needs arrows only when it has none it can nock, and one bundle bought
+	// then lasts it for good. The shots of a player's Archer still spend
+	// arrows: only the bots' own two shots stopped calling UseArrow.
+	const int PLAYERBOT_ARROW_RESTOCK_THRESHOLD = 1;
 	const int PLAYERBOT_ARROW_SMALL_BUNDLE = 100;
-	const int PLAYERBOT_ARROW_LARGE_BUNDLE = 200;
-	// What a dropper's archer fills its quiver to at the weapon merchant, a
-	// bundle at a time (WantsPlayerBotArrowTopUp). A Monkey Dungeon visit is half
-	// an hour of shooting and a bundle of two hundred lasted minutes: 18 of the
-	// 22 medal droppers that left a dungeon for supplies were archers, each with
-	// more than five hundred red potions still in the bag.
-	const int PLAYERBOT_DROPPER_ARROW_STOCK = 1000;
 	const DWORD PLAYERBOT_POTION_LOG_INTERVAL = 10000;
 	// The engine already saves every character on save_event_second_cycle,
 	// which config.cpp sets to 120 s, and a level change forces a save below

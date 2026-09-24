@@ -1536,16 +1536,27 @@ namespace
 		if (vnum >= PLAYERBOT_GRILLED_FISH_FIRST_VNUM && vnum <= PLAYERBOT_GRILLED_FISH_LAST_VNUM)
 			return false;
 
-		// Arrows are ammunition, not a primary weapon/equipment candidate. Keep all
-		// spare stacks for an Archer (including a Ninja which is about to choose the
-		// deterministic Bow profession), while other classes may sell accidental
-		// arrow drops at the Weapon Merchant.
+		// Arrows are ammunition, not a primary weapon/equipment candidate, and
+		// other classes sell accidental arrow drops at the Weapon Merchant. An
+		// Archer's quiver never empties, so the stack in the slot is all it
+		// ever shoots: a bag stack is kept only while it is better than that
+		// one - the next tier, waiting for its level, or the one the equipment
+		// pass is about to nock (UpgradePlayerBotArrows) - and the rest is
+		// scrap, or the bag of a dropper's archer would carry its old thousand
+		// for good. A Ninja about to choose the Bow profession keeps what can
+		// hit, and nothing keeps an arrow that cannot (GetPlayerBotArrowGrade).
 		if (item->GetType() == ITEM_WEAPON && item->GetSubType() == WEAPON_ARROW)
 		{
 			const bool isOrWillBeArcher = ch->GetJob() == JOB_ASSASSIN &&
 					(ch->GetSkillGroup() == 2 ||
 					 (ch->GetSkillGroup() == 0 && (ch->GetPlayerID() % 2) != 0));
-			return !isOrWillBeArcher;
+			const int grade = GetPlayerBotArrowGrade(item);
+			if (!isOrWillBeArcher || grade < 0)
+				return true;
+			LPITEM worn = ch->GetWear(WEAR_ARROW);
+			if (!IsPlayerBotUsableArrow(ch, worn))
+				return false;
+			return grade <= GetPlayerBotArrowGrade(worn);
 		}
 
 		// A skill book never goes to the merchant. Its own working stock stays

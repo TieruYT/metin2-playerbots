@@ -4572,11 +4572,12 @@ not in `data/`) reworked these point by point. What each hangs on:
   was not potions, which is what this note said first: `needsPotions` is
   `NeedsPlayerBotEmergencyPotions` - under ten red, or eight blue for a
   caster - and the bots that left carried hundreds of both. They were
-  archers: `NeedsPlayerBotArrows` sends one out under
-  `PLAYERBOT_ARROW_RESTOCK_THRESHOLD` (a hundred), and the merchant pass
-  bought arrows only while that need stood. A dropper archer fills up to
-  `PLAYERBOT_DROPPER_ARROW_STOCK` there now (`WantsPlayerBotArrowTopUp`, and
-  never with an emergency sale). In the fourteen minutes after that restart
+  archers: `NeedsPlayerBotArrows` sent one out under
+  `PLAYERBOT_ARROW_RESTOCK_THRESHOLD` (a hundred then), and the merchant pass
+  bought arrows only while that need stood. A dropper archer filled up to a
+  thousand there (`WantsPlayerBotArrowTopUp`, gone since 24 September, when
+  a bot's quiver stopped emptying at all - see "A bot's quiver never
+  empties"). In the fourteen minutes after that restart
   109 of the 119 medal droppers stood in a dungeon, the 14 visits that ended
   were restocks of 14 archers, and 85 purchases put 17 000 arrows into their
   slots; twenty minutes on, the same fourteen held 650 to 915.
@@ -5106,6 +5107,27 @@ not in `data/`) reworked these point by point. What each hangs on:
   the one archer with none anywhere was walking to the weapon merchant; a
   report of "shooting without arrows" is worth checking against the arrow
   slot (`EQUIPMENT` position 9), which a bag view does not show.
+- **A bot's quiver never empties (24 September).** "Zeby boty Archer nie
+  musialy kupowac ciagle strzal, a mialy je bez limitu" (Tieru): the bots'
+  two shots - `ExecutePlayerBotBasicAttack` and the skill path in
+  `ExecutePlayerBotAttackSkill` - no longer call `UseArrow`, which was the
+  only way a bot ever spent one (the engine's own calls are all in
+  `CFuncShoot`, which no bot reaches). A player's Archer still spends
+  arrows. So an Archer needs arrows only when it has none it can nock
+  (`PLAYERBOT_ARROW_RESTOCK_THRESHOLD` 1), buys one bundle then, and the
+  dropper's and the trial's thousand-arrow top-up is gone. Two things had to
+  come with it. Running out used to be what brought a better arrow to the
+  slot, so the equipment pass nocks the best one in the bag on its own clock
+  (`UpgradePlayerBotArrows`; `GetPlayerBotArrowGrade` is value3, wooden 3 to
+  silver 25) and the junk rule keeps only a bag stack better than the worn
+  one - the next tier waiting for its level - and scraps the rest, or a
+  dropper's bag would carry its old thousand for good. And an arrow that
+  cannot hit is never nocked: mt2009's `CalcArrowDamage` fades a shot past
+  value4 to value2 per cent (doubled against a monster) at value5, and the
+  four elemental arrows 8006-8009 carry 0 in all three there, so past
+  point-blank they deal nothing - worn forever, that would be an Archer
+  shooting for nothing for life. r40250 fades by distance alone, reads no
+  value2, and its elemental arrows are as good as silver.
 - **A keep is a count of scrolls, not of cells before this one.** The
   scroll rule in `ScorePlayerBotShopStock` held a stack back while fewer
   than `PLAYERBOT_REFINE_SCROLL_KEEP` scrolls lay in the cells *ahead* of
@@ -5868,7 +5890,8 @@ not in `data/`) reworked these point by point. What each hangs on:
   and the personality's frontier visit clock ended a trial two-thirds done
   ("frontier_visit_complete" after 41 minutes). On the trial a bot is
   blocked by what stops the fight alone, its visit does not expire, and a
-  trial archer fills its quiver like a dropper (2.0.67). A trial is one
+  trial archer filled its quiver like a dropper (2.0.67; since 24 September
+  no bot's quiver empties at all). A trial is one
   errand with one end; every clock and every need that ends an ordinary
   frontier visit has to be asked whether it ends this one.
 - **An open horse trial outranks the herb errand, not only the hunt row.**
@@ -8364,8 +8387,13 @@ stack, a friend runs only the client. Built on 19 September and shipped the
 same day in an ordinary release, at the operator's choice: every install
 carries it, the hosting half asks for a password that only the patrons get,
 and the changelog and the devlog say one sentence about it - "nie
-upublicznimy innym dopoki to nie bedzie dzialac". Say no more than that
-anywhere public until the operator does.
+upublicznimy innym dopoki to nie bedzie dzialac". On 24 September the
+operator had the Discord's public FAQ written - 👥・faq-coop, under
+❓・faq-pomoc: what host and friend each need, both walkthroughs, the VPN,
+the common failures - and it says only that supporters get the password on
+👑・patron-chat. Describe COOP publicly no further than that FAQ does, and
+never the password itself; a changed button or port in the COOP window is a
+change to that FAQ as well (Uriel's messages, edited through the API).
 
 - **The server needs no change; the client does.** The server names one
   address for the game cores - PROXY_IP, which is M2_PUBLIC_ADDRESS and
