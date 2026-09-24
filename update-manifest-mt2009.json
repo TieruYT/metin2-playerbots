@@ -1,12 +1,12 @@
 {
   "schema": 1,
   "channel": "stable",
-  "publishedAt": "2026-09-24T07:58:59Z",
-  "statusMessage": "2.2.7 (serwer 2.2.7, klient 2.0.29 - zaktualizuj oba): boty bija Metiny z konia bojowego; lucznicy w Wiezy strzelaja z 15 m; w wojnach gildii kazdy bije swoj cel; magazyny botow oprozniaja sie z niepotrzebnego sprzetu, ksiegi innej klasy ida na stragan; boty zmieniaja kanaly; w szepcie bot powie swoja sciezke, szaman wartosci buffow, a na \"chodz do mnie\" bot przyjdzie; Szybki Atak w Auto Lowach nie wyrzuca juz postaci poza swiat. Zawiera wszystko z 2.2.6.",
+  "publishedAt": "2026-09-24T10:45:26Z",
+  "statusMessage": "2.2.8 (serwer 2.2.8, klient bez zmian 2.0.29): hazardzista znowu trzyma bazy do ulepszania, po 2 sztuki kazdego przedmiotu z listy, takze bez plusa; boty na probie konia bojowego szukaja lucznikow na pustyni i ida do nich. Zawiera wszystko z 2.2.7.",
   "server": {
-    "version": "2.2.7",
-    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.7/metin2-server-update-2.2.7.zip",
-    "sha256": "4F1053139078F9B54B3C07FE9AF6B13D03DB4B7D9CCA5F39B18280C882302789"
+    "version": "2.2.8",
+    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.8/metin2-server-update-2.2.8.zip",
+    "sha256": "D02B3344124197C24D302E9788343D1FE78CA25901137EF9C6256FF5C704C3F7"
   },
   "support": {
     "contactUrl": "https://discord.gg/pt5tvnrN6",
