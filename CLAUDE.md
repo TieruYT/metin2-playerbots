@@ -8350,6 +8350,22 @@ not in `data/`) reworked these point by point. What each hangs on:
   Twelve minutes after the deploy: 723-753 blue potions a minute, PoteznyKoxu96
   at 218-297 SP, and 2 of 50 climb-downs casting nothing. Any new place that
   casts for a bot goes through `PlayerBotUseSkill`, or it pays for refusals.
+- **A recipe was read only by a bot Baek-Go had onboarded, and only the
+  Zielarz went to him.** `ManagePlayerBotCraftRecipes` returned for a bot
+  without `herbalism_onboarding.completed`, and the onboarding happened only
+  on the herbalist's visit, which only an advanced Conqueror of forty-five
+  makes under the PERSONA switch - so on 24 September m2zip had 1 597 recipes
+  in the bags of 822 bots and not one bot onboarded ("maja ich pelno w eq a
+  powinny czytac od razu po dropnieciu", Iwakura). A bot holding a recipe is
+  onboarded wherever it stands now, on the quest's terms: level fifteen and ten
+  Peach Blossoms, which the quest only looks at and never takes (the first
+  build took them), the first recipe and five bottles back. A read is the
+  quest's `crafting.learn_recipe`: the row's level, the bots' book wait on the
+  quest's own `crafting.learn_delay<vnum>` flag, a learning potion spent, and
+  one recipe used per read - the first build removed the whole stack, ten for
+  one roll. A Hermit's Advice waits for its class book, because the quest takes
+  it off at any recipe read. Two minutes after the deploy: 60 bots onboarded,
+  201 recipes read, 100 learnt.
 
 
 ## Engine facts worth not re-deriving

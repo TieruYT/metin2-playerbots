@@ -4742,6 +4742,19 @@ namespace
 	const DWORD PLAYERBOT_HERBALISM_ONBOARD_FLOWER = 50721;  // Kwiat Brzoskwini
 	const int PLAYERBOT_HERBALISM_ONBOARD_COUNT = 10;
 	const DWORD PLAYERBOT_HERBALISM_FIRST_RECIPE = 50909;    // Fioletowa Mikstura
+	// The quest's reward beside the first recipe: five of the smallest bottle.
+	const int PLAYERBOT_HERBALISM_ONBOARD_BOTTLES = 5;
+	// Reading recipes (ManagePlayerBotCraftRecipes). A recipe is read the moment
+	// it can be ("powinny czytac od razu po dropnieciu", Iwakura, 24 September),
+	// so after a read the next comes a few seconds later, the way a stack is
+	// worked through; with nothing to read the pass looks again on the slow
+	// clock, and a bot that cannot onboard yet looks on a slower one still.
+	const DWORD PLAYERBOT_HERBALISM_RECIPE_READ_GAP_MIN_MS = 3000;
+	const DWORD PLAYERBOT_HERBALISM_RECIPE_READ_GAP_MAX_MS = 6000;
+	const DWORD PLAYERBOT_HERBALISM_RECIPE_IDLE_MIN_MS = 20000;
+	const DWORD PLAYERBOT_HERBALISM_RECIPE_IDLE_MAX_MS = 40000;
+	const DWORD PLAYERBOT_HERBALISM_ONBOARD_RETRY_MIN_MS = 60000;
+	const DWORD PLAYERBOT_HERBALISM_ONBOARD_RETRY_MAX_MS = 120000;
 	// His shop, bought the way the fishing pass and the Forgetting Scroll are:
 	// the counter is a quest window a bot cannot open, so the bottle is created
 	// for the price the shop asks (world.shop_special, shop 14).

@@ -106,11 +106,15 @@ namespace
 		ch->SetQuestFlag(flag, value);
 	}
 
-	// herbalism.lua asks for this before it opens the board at all. The quest
-	// sets it by walking a player through Baek-Go's dialog; a bot has no dialog,
-	// so it does what the fishing session does with fishing_onboarding: pays the
-	// same price the quest asks - ten Peach Blossoms, which drop from 29
-	// monsters on this world - and takes the same first recipe.
+	// herbalism.lua asks for this before it opens the board at all, and before
+	// a recipe may be read (herbalism.can_craft). The quest sets it by walking a
+	// player through Baek-Go's dialog; a bot has no dialog, so it is given the
+	// same thing on the same terms wherever it stands: level fifteen and ten
+	// Peach Blossoms in the bag - which drop from 29 monsters on this world -
+	// and in return the first recipe and five bottles. The quest only looks at
+	// the flowers and never takes them (herbalism_onboarding.quest, the
+	// state_progress handler), and neither does this: the first build took
+	// them, which was a price no player paid.
 	bool IsPlayerBotHerbalismUnlocked(LPCHARACTER ch)
 	{
 		return ch && ch->GetQuestFlag("herbalism_onboarding.completed") > 0;
@@ -124,54 +128,127 @@ namespace
 			return true;
 		if (ch->GetLevel() < PLAYERBOT_HERBALISM_MIN_LEVEL)
 			return false;
-		if (ch->CountSpecifyItem(PLAYERBOT_HERBALISM_ONBOARD_FLOWER) <
-				PLAYERBOT_HERBALISM_ONBOARD_COUNT)
+		const int flowers = (int) ch->CountSpecifyItem(PLAYERBOT_HERBALISM_ONBOARD_FLOWER);
+		if (flowers < PLAYERBOT_HERBALISM_ONBOARD_COUNT)
 			return false;
 		if (CountPlayerBotFreeInventoryCells(ch) < 2)
 			return false;
-		ch->RemoveSpecifyItem(PLAYERBOT_HERBALISM_ONBOARD_FLOWER,
-				PLAYERBOT_HERBALISM_ONBOARD_COUNT);
 		ch->AutoGiveItem(PLAYERBOT_HERBALISM_FIRST_RECIPE, 1);
+		ch->AutoGiveItem(PLAYERBOT_HERBALISM_BOTTLE_M, PLAYERBOT_HERBALISM_ONBOARD_BOTTLES);
 		ch->SetQuestFlag("herbalism_onboarding.completed", 1);
-		sys_log(0, "PLAYERBOT_HERB: onboarding done pid=%u name=%s flowers=%d",
-				ch->GetPlayerID(), ch->GetName(), PLAYERBOT_HERBALISM_ONBOARD_COUNT);
+		sys_log(0, "PLAYERBOT_HERB: onboarding done pid=%u name=%s level=%u flowers=%d",
+				ch->GetPlayerID(), ch->GetName(), (unsigned int) ch->GetLevel(), flowers);
 		return true;
 	}
 
-	// One recipe read per call, the way one skill book is read per pass. The
-	// odds and the ceiling are the item's own (value1, value2) and the progress
-	// is the quest's flag, so a bot's knowledge is a player's knowledge. Note
-	// that crafting.learn_recipe consumes the recipe on a FAILED roll too - it
-	// returns true either way and the caller removes the item - so this does.
+	// The quest's own wait flag, pc.setf("crafting", "learn_delay"..vnum).
+	int GetPlayerBotRecipeLearnDelay(LPCHARACTER ch, DWORD recipeVnum)
+	{
+		char flag[64];
+		snprintf(flag, sizeof(flag), "crafting.learn_delay%u", recipeVnum);
+		return ch->GetQuestFlag(flag);
+	}
+
+	void SetPlayerBotRecipeLearnDelay(LPCHARACTER ch, DWORD recipeVnum, int value)
+	{
+		char flag[64];
+		snprintf(flag, sizeof(flag), "crafting.learn_delay%u", recipeVnum);
+		ch->SetQuestFlag(flag, value);
+	}
+
+	// Whether a recipe could be read at all, by anybody: crafting.learn_recipe
+	// answers false for a row crafting_data does not know, and keeps the item.
+	const TCraftingItem* GetPlayerBotRecipeRow(LPITEM item)
+	{
+		if (!IsPlayerBotCraftRecipeItem(item) || item->GetValue(0) <= 0)
+			return NULL;
+		const TCraftingItem* row = CCraftingManager::instance().GetCraftingRecipe(item->GetValue(0));
+		return row && row->itemVnum != 0 ? row : NULL;
+	}
+
+	// One recipe read per call, the way crafting.learn_recipe reads one: the
+	// odds and the ceiling are the item's own (value1, value2), the progress is
+	// the quest's flag, so a bot's knowledge is a player's knowledge, and the
+	// quest's refusals are this one's - no row, the ceiling, the row's level, a
+	// wait still running. A read that gets past them costs ONE recipe whether it
+	// succeeds or not (the quest's item.remove(1)); the first build removed the
+	// whole stack, ten recipes for one roll.
+	//
+	// The wait is the bots' book wait (GetPlayerBotBookWaitSeconds), not the
+	// quest's twenty-one hours: it is the same number the operator set for the
+	// bots' skill books, and on the default world it is none. And a Hermit's
+	// Advice waits: the quest takes it off at any recipe read without using it,
+	// and the book pass puts it on for the class book it is about to read.
 	bool ReadPlayerBotCraftRecipe(LPCHARACTER ch)
 	{
 		if (!ch || !IsPlayerBotHerbalismUnlocked(ch))
 			return false;
+		if (ch->FindAffect(AFFECT_SKILL_BOOK_BONUS))
+			return false;
+		const int wait = GetPlayerBotBookWaitSeconds();
+		const int now = (int) get_global_time();
 		for (int cell = 0; cell < PLAYERBOT_BAG_CELLS; ++cell)
 		{
 			LPITEM item = ch->GetInventoryItem(cell);
-			if (!IsPlayerBotCraftRecipeItem(item))
+			const TCraftingItem* row = GetPlayerBotRecipeRow(item);
+			if (!row)
 				continue;
 			const DWORD recipeVnum = item->GetValue(0);
 			const int chance = item->GetValue(1);
 			const int maxRead = item->GetValue(2);
-			if (recipeVnum == 0 || maxRead <= 0)
+			if (maxRead <= 0)
 				continue;
 			const int progress = GetPlayerBotCraftProgress(ch, recipeVnum);
 			if (progress >= maxRead)
 				continue;   // known to the ceiling: the stack is goods now
+			if (ch->GetLevel() < row->reqLevel)
+				continue;
+			if (wait > 0)
+			{
+				// A wait written under a longer setting ends where the current
+				// one would have ended it, as the book wait does.
+				int until = GetPlayerBotRecipeLearnDelay(ch, recipeVnum);
+				if (until > now + wait)
+				{
+					until = now + wait;
+					SetPlayerBotRecipeLearnDelay(ch, recipeVnum, until);
+				}
+				if (until > now)
+					continue;
+			}
 			const int bonus = ch->GetPoint(POINT_LEARN_CHANCE);
 			const int rolled = chance * (100 + bonus) / 100;
+			// The quest spends a learning potion's affect on any read.
+			CAffect* learnPotion = ch->FindAffect(AFFECT_POTION_GENERAL_USE, POINT_LEARN_CHANCE);
+			if (learnPotion)
+				ch->RemoveAffect(learnPotion);
 			const bool learnt = number(1, 100) <= rolled;
 			if (learnt)
+			{
 				SetPlayerBotCraftProgress(ch, recipeVnum, progress + 1);
-			ITEM_MANAGER::instance().RemoveItem(item, "PLAYERBOT_RECIPE");
-			sys_log(0, "PLAYERBOT_HERB: recipe read pid=%u name=%s recipe=%u progress=%d/%d chance=%d %s",
-					ch->GetPlayerID(), ch->GetName(), recipeVnum,
-					learnt ? progress + 1 : progress, maxRead, rolled,
+				if (wait > 0)
+					SetPlayerBotRecipeLearnDelay(ch, recipeVnum, now + wait);
+			}
+			const DWORD vnum = item->GetVnum();
+			const int left = (int) item->GetCount() - 1;
+			if (left > 0)
+				item->SetCount(left);
+			else
+				ITEM_MANAGER::instance().RemoveItem(item, "PLAYERBOT_RECIPE");
+			sys_log(0, "PLAYERBOT_HERB: recipe read pid=%u name=%s item=%u recipe=%u progress=%d/%d chance=%d left=%d %s",
+					ch->GetPlayerID(), ch->GetName(), vnum, recipeVnum,
+					learnt ? progress + 1 : progress, maxRead, rolled, left,
 					learnt ? "LEARNT" : "FAILED");
 			return true;
 		}
+		return false;
+	}
+
+	bool PlayerBotHoldsCraftRecipe(LPCHARACTER ch)
+	{
+		for (int cell = 0; cell < PLAYERBOT_BAG_CELLS; ++cell)
+			if (IsPlayerBotCraftRecipeItem(ch->GetInventoryItem(cell)))
+				return true;
 		return false;
 	}
 
@@ -182,18 +259,37 @@ namespace
 	// bag and 55 skill books beside it, so the book pass always had something
 	// better to do and the recipe sat unread for half an hour. A feature wired
 	// into somebody else's early return is a feature that never runs.
+	//
+	// And the second build waited for an onboarding only Baek-Go's visit gave,
+	// which only the Zielarz makes - a Conqueror of forty-five under the
+	// PERSONA switch. On 24 September m2zip had 1597 recipes in the bags of 822
+	// bots and not one bot onboarded ("maja ich pelno w eq a powinny czytac od
+	// razu po dropnieciu", Iwakura). A bot holding a recipe is onboarded here,
+	// wherever it stands, and then reads one every few seconds until nothing in
+	// its bag can teach it more.
 	void ManagePlayerBotCraftRecipes(LPCHARACTER ch, DWORD dwNow)
 	{
 		static std::map<DWORD, DWORD> s_mapPlayerBotRecipeNext;
 		if (!ch || !ch->IsItemLoaded() || ch->IsDead() || ch->GetExchange() ||
-				ch->GetMyShop() || !IsPlayerBotHerbalismUnlocked(ch))
+				ch->GetMyShop())
 			return;
 		const DWORD pid = ch->GetPlayerID();
 		std::map<DWORD, DWORD>::iterator it = s_mapPlayerBotRecipeNext.find(pid);
 		if (it != s_mapPlayerBotRecipeNext.end() && dwNow < it->second)
 			return;
-		s_mapPlayerBotRecipeNext[pid] = dwNow + number(20000, 40000);
-		ReadPlayerBotCraftRecipe(ch);
+		if (!IsPlayerBotHerbalismUnlocked(ch))
+		{
+			if (!PlayerBotHoldsCraftRecipe(ch) || !EnsurePlayerBotHerbalismStarted(ch))
+			{
+				s_mapPlayerBotRecipeNext[pid] = dwNow + number(
+						PLAYERBOT_HERBALISM_ONBOARD_RETRY_MIN_MS, PLAYERBOT_HERBALISM_ONBOARD_RETRY_MAX_MS);
+				return;
+			}
+		}
+		const bool read = ReadPlayerBotCraftRecipe(ch);
+		s_mapPlayerBotRecipeNext[pid] = dwNow + (read ?
+				number(PLAYERBOT_HERBALISM_RECIPE_READ_GAP_MIN_MS, PLAYERBOT_HERBALISM_RECIPE_READ_GAP_MAX_MS) :
+				number(PLAYERBOT_HERBALISM_RECIPE_IDLE_MIN_MS, PLAYERBOT_HERBALISM_RECIPE_IDLE_MAX_MS));
 	}
 
 	// The bottles are Baek-Go's shop, which is a quest window like the board.
@@ -458,8 +554,10 @@ namespace
 			return false;
 		const DWORD recipeVnum = item->GetValue(0);
 		const int maxRead = item->GetValue(2);
-		if (recipeVnum == 0 || maxRead <= 0)
-			return true;   // a recipe nothing can be learnt from
+		// A recipe nothing can be learnt from: no reads, or a row the board
+		// does not have (Mikstura Nietykalnosci, 50931, names row 70).
+		if (recipeVnum == 0 || maxRead <= 0 || !GetPlayerBotRecipeRow(item))
+			return true;
 		return GetPlayerBotCraftProgress(ch, recipeVnum) >= maxRead;
 	}
 
