@@ -1,20 +1,20 @@
 {
   "schema": 1,
   "channel": "stable",
-  "publishedAt": "2026-09-23T22:02:21Z",
-  "statusMessage": "2.2.6 (serwer 2.2.6, klient 2.0.28 - zaktualizuj oba): Wieza Demonow - boty podnosza swoj drop, marmury tylko na Rozpruwaczu, kowal ulepsza przedmiot z plecaka i podaje wynik na czacie, krotsze czekanie po kowalu, lucznicy strzelaja z dystansu; Metiny bez konia bojowego; statusy botow po angielsku w kliencie ustawionym na inny jezyk; launcher proponuje angielski w kliencie; panele pokazuja aktualny poziom botow. Zawiera wszystko z 2.2.5.",
+  "publishedAt": "2026-09-24T07:58:59Z",
+  "statusMessage": "2.2.7 (serwer 2.2.7, klient 2.0.29 - zaktualizuj oba): boty bija Metiny z konia bojowego; lucznicy w Wiezy strzelaja z 15 m; w wojnach gildii kazdy bije swoj cel; magazyny botow oprozniaja sie z niepotrzebnego sprzetu, ksiegi innej klasy ida na stragan; boty zmieniaja kanaly; w szepcie bot powie swoja sciezke, szaman wartosci buffow, a na \"chodz do mnie\" bot przyjdzie; Szybki Atak w Auto Lowach nie wyrzuca juz postaci poza swiat. Zawiera wszystko z 2.2.6.",
   "server": {
-    "version": "2.2.6",
-    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.6/metin2-server-update-2.2.6.zip",
-    "sha256": "AA9CF4CBA197288AA8412D161C71A0BC6ECF283D14EC5964B571D1646A68D9C6"
+    "version": "2.2.7",
+    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.7/metin2-server-update-2.2.7.zip",
+    "sha256": "4F1053139078F9B54B3C07FE9AF6B13D03DB4B7D9CCA5F39B18280C882302789"
   },
   "support": {
     "contactUrl": "https://discord.gg/pt5tvnrN6",
     "uploadUrl": ""
   },
   "client": {
-    "version": "2.0.28",
-    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.6/metin2-client-update-2.0.28.zip",
-    "sha256": "2B5BB806AD2C2F905CC34B3BB4517AFEF172E2D1F18875B24C2361715EE53DFA"
+    "version": "2.0.29",
+    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.7/metin2-client-update-2.0.29.zip",
+    "sha256": "97919854F3B480C9CFE60DDFDA18F943050D3DF8242A63E40F9EC9649A4237B0"
   }
 }
