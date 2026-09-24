@@ -23,7 +23,7 @@ Serwer 2.2.9 i klient 2.0.30. Zaktualizuj oba („AKTUALIZUJ wszystko”
 w launcherze). Nowy klient dodaje autologin w Auto Łowach, a poprzedni działa
 z nowym serwerem tak jak dotąd. Zawiera wszystko z 2.2.8.
 
-### Autologin w Auto Łowach (Tieru, klient 2.0.30)
+### Autologin w Auto Łowach (Tieru, zgłosił i podesłał Mur4s, klient 2.0.30)
 
 - W oknie Auto Łowów, w siatce „Ustawienia Walki”, jest nowy przełącznik
   Autologin. Zapisuje się osobno dla każdej postaci, razem z resztą ustawień.
