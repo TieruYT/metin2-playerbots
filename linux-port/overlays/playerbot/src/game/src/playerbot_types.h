@@ -1392,6 +1392,10 @@ namespace
 	// its target, one it holds is let go, and what it fights is ranked from
 	// where it stands rather than from the stone.
 	const int PLAYERBOT_TOWER_STONE_THREAT_RANGE = 1000;
+	// The seventh floor's keys are used between blows: the next of a stack
+	// after this long, and after a use the engine refused, this long.
+	const DWORD PLAYERBOT_TOWER_KEY_RETRY_MS = 3000;
+	const DWORD PLAYERBOT_TOWER_KEY_REFUSED_MS = 20000;
 	// The pack spreads its blows, not itself: an ordinary monster is taken
 	// from the few standing nearest the pack, about this many bots to each,
 	// and only among those no further than SPREAD_RANGE beyond the nearest

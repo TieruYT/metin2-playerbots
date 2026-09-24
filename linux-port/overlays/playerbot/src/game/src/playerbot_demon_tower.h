@@ -678,21 +678,42 @@ namespace
 		return -1;
 	}
 
+	// When each bot may try a floor key again, by pid.
+	std::map<DWORD, DWORD> s_mapPlayerBotTowerKeyNext;
+
 	// A key that is used where the bot stands: the Unknown Old Chest (30300)
-	// and the Map of the Tower (30302) on the seventh floor.
+	// and the Map of the Tower (30302) on the seventh floor. Only the use
+	// takes the tick. It used to take every tick for as long as the bot held
+	// one, the three seconds between two uses included, so a bot with a chest
+	// in its bag did not fight at all, and one whose use the engine refused
+	// stood for good - the seventh floor's pack standing about with no skill
+	// cast ("stoja w miejscu, nie rzucaja skilli nawet", prodnathin, 24
+	// September). A refusal waits PLAYERBOT_TOWER_KEY_REFUSED_MS and names the
+	// two things UseItem asks first.
 	bool UsePlayerBotTowerKey(LPCHARACTER ch, TPlayerBotAIState& state, DWORD vnum, DWORD dwNow)
 	{
 		const int cell = FindPlayerBotTowerItemCell(ch, vnum);
 		if (cell < 0)
 			return false;
-		if (dwNow < state.dwNextTowerMoveTime)
-			return true;
-		state.dwNextTowerMoveTime = dwNow + 3000;
+		DWORD& nextAt = s_mapPlayerBotTowerKeyNext[ch->GetPlayerID()];
+		if (dwNow < nextAt)
+			return false;
 		if (ch->IsStateMove())
 			ch->Stop();
 		const bool ok = ch->UseItem(TItemPos(INVENTORY, (WORD)cell));
-		sys_log(0, "PLAYERBOT_TOWER: key used pid=%u name=%s vnum=%u ok=%d map=%ld",
-				ch->GetPlayerID(), ch->GetName(), vnum, ok ? 1 : 0, ch->GetMapIndex());
+		nextAt = dwNow + (ok ? PLAYERBOT_TOWER_KEY_RETRY_MS : PLAYERBOT_TOWER_KEY_REFUSED_MS);
+		if (ok)
+		{
+			sys_log(0, "PLAYERBOT_TOWER: key used pid=%u name=%s vnum=%u map=%ld",
+					ch->GetPlayerID(), ch->GetName(), vnum, ch->GetMapIndex());
+		}
+		else
+		{
+			quest::PC* pc = quest::CQuestManager::instance().GetPCForce(ch->GetPlayerID());
+			sys_log(0, "PLAYERBOT_TOWER: key refused pid=%u name=%s vnum=%u map=%ld quest_running=%d can_handle=%d",
+					ch->GetPlayerID(), ch->GetName(), vnum, ch->GetMapIndex(),
+					(pc && pc->IsRunning()) ? 1 : 0, ch->CanHandleItem() ? 1 : 0);
+		}
 		return true;
 	}
 

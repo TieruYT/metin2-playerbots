@@ -8157,6 +8157,23 @@ not in `data/`) reworked these point by point. What each hangs on:
   then no candidate, a held one is let go (`PLAYERBOT_TOWER: stone waits`),
   and the fight is ranked from the bot rather than from the stone. Compiled
   and not watched: m2zip has no guild to take a raid that far.
+- **The seventh floor's demons come once, and its keys are used between
+  blows.** `deviltower7_regen.txt` brought all 34 of its groups back every
+  minute until a Metin of Murder's chest held the map, one chest in ten.
+  The pack never thinned, and the dead stood up in the middle of it. The
+  respawn was there for Cor Draconis, which this world does not have
+  ("usuwajac kolejne respy mobow", prodnathin; Tieru, 24 September). Our
+  `deviltower_zone.quest` spawns the file once (`d.regen_file`, not
+  `d.set_regen_file`). The stone is the file's one line that has to come
+  back: the server timer `devil_7_stone` spawns it again nine seconds after
+  each kill, until a chest has given the map (`7_map_dropped`). Separately,
+  `UsePlayerBotTowerKey` took the tick for as long as a bot held a chest or
+  the map, the three seconds between two uses included. A bot with a chest
+  never fought, and one the engine refused stood for good. Only the use takes
+  the tick now. A refusal waits `PLAYERBOT_TOWER_KEY_REFUSED_MS` and logs
+  `key refused ... quest_running= can_handle=`. Nobody knows yet whether
+  that is why the pack stood still on the seventh floor in prodnathin's
+  screenshots: m2zip has no guild to take a raid there.
 - **"Co 5 Malz" is every fifth shell, not every shell five at a time.**
   Iwakura's Rybak "otwiera co 5 Malz w celu zdobycia perly"; the code read
   it as batches of five and opened every shell over the anvil's reserve, so

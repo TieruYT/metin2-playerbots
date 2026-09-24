@@ -492,7 +492,15 @@ quest deviltower_zone begin
             if cont >= 4 then
                 d.setf("7_stone_kill", 0)
                 local sixth_location = deviltower_zone.get_level_location(6)
-                d.set_regen_file(sixth_location.regen)
+                -- The seventh floor's demons come once. deviltower7_regen.txt
+                -- respawned all 34 of its groups every minute for as long as the
+                -- floor lasted, and the floor lasts until a Metin of Murder's
+                -- chest holds the map, one in ten: the pack never thinned, the
+                -- dead stood up in the middle of it and every area skill hit the
+                -- same crowd. The respawn was there for Cor Draconis, which this
+                -- world does not have (prodnathin, 24 September). The stone in
+                -- that file still has to come back - see devil_7_stone.
+                d.regen_file(sixth_location.regen)
                 
                 local start_loop_time = 15*60
                 if is_test_server() then
@@ -523,6 +531,18 @@ quest deviltower_zone begin
 
         when 8019.kill with in_dungeon(66) and d.get_level() == 5 begin
             game.drop_item(30300, 1)
+            server_timer('devil_7_stone', 9, d.get_map_index())
+        end
+
+        -- The Metin of Murder is the one line of deviltower7_regen.txt that
+        -- keeps coming back, nine seconds after a kill as its line said, until
+        -- a chest has given the map.
+        when devil_7_stone.server_timer begin
+            if d.select(get_server_timer_arg()) then
+                if d.get_level() == 5 and d.getf("7_map_dropped") == 0 then
+                    d.spawn_mob(8019, 617, 676)
+                end
+            end
         end
 
         when 30300.use with in_dungeon(66) and d.get_level() == 5 begin
@@ -532,6 +552,7 @@ quest deviltower_zone begin
 
             if pct == 1 then
                 game.drop_item(30302, 1)
+                d.setf("7_map_dropped", 1)
                 d.clear_regen()
             else
                 syschat(translate.deviltower_zone.chest_no_key)
