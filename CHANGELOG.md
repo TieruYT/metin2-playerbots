@@ -17,6 +17,52 @@ every version here.
 
 ---
 
+## 2.2.8 — 2026-09-24
+
+Serwer 2.2.8, klient bez zmian (2.0.29). Launcher zaproponuje aktualizację
+przy starcie albo po kliknięciu SPRAWDŹ AKTUALIZACJE. Zawiera wszystko z 2.2.7.
+
+### Hazardzista znowu trzyma swoje bazy (Iwakura, Tieru)
+
+W 2.2.7 przedmioty bez plusa (+0..+3) bez cennego bonusu przestały zalegać
+w magazynach. Listę przydatnych przedmiotów trzyma jednak tylko hazardzista,
+więc ta zmiana zabrała zapas właśnie jemu, czyli bazy, które ulepsza na
+sprzedaż. Teraz:
+
+- Hazardzista trzyma po 2 sztuki każdego przedmiotu z listy, także bez plusa,
+  liczone razem w torbie i w magazynie. Przedmiotów innej klasy trzyma po
+  jednej sztuce, jak w liście.
+- Sztuki bez plusa ponad ten limit (albo takie, z których bot już wyrósł) idą
+  do handlarza. Nadwyżka od +4 w górę nadal trafia na stragan.
+- Przedmiot, który hazardzista już ulepszył (+7 albo po swojej sesji
+  u kowala), jest towarem na sprzedaż i nie zajmuje miejsca jednej z tych
+  2 baz.
+- Po restarcie serwera bot przy pierwszej wizycie u magazyniera najpierw
+  przelicza, co ma w magazynie, a dopiero potem coś tam chowa. Wcześniej
+  traktował go jak pusty, chował za dużo i przy następnej wizycie oddawał
+  nadwyżkę.
+- Boty, które nie są hazardzistami (około 80%), dalej opróżniają magazyny ze
+  zbroi i biżuterii bez plusa, tak jak w 2.2.7.
+
+### Próba konia bojowego: boty idą do łuczników (zgłosił rakso7064)
+
+Próba to 100 zabitych łuczników na pustyni: Skorpion Łucznik (poziom 47)
+i Wężowy Łucznik (poziom 51). Boty na próbie wybierały miejsca na pustyni tak
+jak do zwykłego expienia i trafiały między pająki, a łucznicy stoją głównie
+w środkowej części mapy. Na świecie testowym 38 botów na próbie zabijało
+łącznie 10–40 łuczników na godzinę. Teraz:
+
+- Bot na próbie szuka na pustyni najbliższego łucznika, którego może bić sam
+  (najwyżej 15 poziomów nad sobą), i idzie do niego.
+- W trakcie próby nie expi na zwykłych potworach. Broni się, gdy coś go
+  zaatakuje, i nadal bije Metiny.
+- Nie zaczyna też łowienia ryb, dopóki próby nie skończy.
+- Nad głową ma „Zdobywam konia bojowego na pustyni (x/100)”.
+
+Na świecie testowym w 20 minut po zmianie 9 botów poszło 21 razy do
+łuczników, liczniki próby urosły łącznie o 109 zabójstw, a jeden bot próbę
+skończył.
+
 ## 2.2.7 — 2026-09-24
 
 Serwer 2.2.7 i klient 2.0.29. Zaktualizuj oba („AKTUALIZUJ wszystko”
