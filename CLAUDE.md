@@ -8271,6 +8271,29 @@ not in `data/`) reworked these point by point. What each hangs on:
   book to be read with. `read skill book ... advice=1` is a read the Rada
   made certain.
 
+- **UseSkill takes the mana before it looks at the cooldown.** Both engines:
+  `CHARACTER::UseSkill` charges the SP (`PointChange(POINT_SP, -cost)`) and
+  only then asks `m_SkillUseInfo[vnum].UseSkill`, which refuses a skill still
+  cooling down and returns false with the mana gone. A player never meets it -
+  the client greys the slot out - but the bots' rotation tried every attack
+  skill in turn until one went, paying for each that was still cooling, and
+  the buff pass tried a missing buff every few seconds the same way. On m2zip
+  on 24 September game1 drank some 3 500 blue potions a minute, the mental
+  warrior PoteznyKoxu96 fought at 6 to 113 of 1 100 SP, and a rider climbed
+  off its battle horse for a Strong Body it could not pay for and got back on
+  six seconds later ("woj schodzi z konia i na niego wlazi i nie odpala
+  aury", Drip) - 622 of 2 285 climb-downs for a buff that day cast nothing.
+  A buff whose cooldown outlasts it made it worse: Enchanted Armour's is
+  33+140k seconds against 30+120k, Terror's a flat hundred. The AI keeps the
+  cooldown itself now (`mapSkillReadyAt`, `NotePlayerBotSkillCast`: the
+  engine's own k, `kCooldownPoly` and `ComputeCooltime`), asks nothing before
+  it is due (`PlayerBotUseSkill`, every one of the seven call sites), and
+  climbs down only for a buff that is due and paid for
+  (`CanPlayerBotAffordSkill`, the SP cost worked out as UseSkill works it).
+  Twelve minutes after the deploy: 723-753 blue potions a minute, PoteznyKoxu96
+  at 218-297 SP, and 2 of 50 climb-downs casting nothing. Any new place that
+  casts for a bot goes through `PlayerBotUseSkill`, or it pays for refusals.
+
 
 ## Engine facts worth not re-deriving
 

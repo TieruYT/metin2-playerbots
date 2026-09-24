@@ -1409,6 +1409,10 @@ namespace
 				SetPlayerBotAction(state, BOT_ACTION_TRAVEL, dwNow);
 				return true;
 			}
+			// Due and paid for, or the engine takes the mana for a refusal
+			// (PlayerBotUseSkill) - and the saddle is not left for it.
+			if (!CanPlayerBotAffordSkill(ch, state, vnum, dwNow))
+				continue;
 			// From any saddle: a battle horse casts no skill of a class
 			// either (PLAYERBOT_SADDLE_SKILL_LEVEL), and the cast below would
 			// be refused without a word.
@@ -1418,7 +1422,7 @@ namespace
 				next = dwNow + PLAYERBOT_BUFF_RECHECK_FAST;
 				return true;
 			}
-			if (!ch->UseSkill(vnum, leader))
+			if (!PlayerBotUseSkill(ch, state, vnum, leader, dwNow))
 				continue;
 			SendPlayerBotSkillPacket(ch, vnum);
 			state.dwLastBotSkillTime = dwNow;

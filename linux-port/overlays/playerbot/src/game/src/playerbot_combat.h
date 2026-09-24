@@ -126,6 +126,82 @@ namespace
 				ch->GetSkillMasterType(skillVnum));
 	}
 
+	// The engine takes a skill's mana before it looks at the cooldown:
+	// CHARACTER::UseSkill charges the SP (PointChange) and only then asks
+	// m_SkillUseInfo whether the skill is ready, returning false with the mana
+	// gone. A player never meets it, because the client greys the slot out; a
+	// bot has no client. The rotation tried every attack skill in turn until
+	// one went, paying for each that was still cooling down, and the buff pass
+	// tried a missing buff every few seconds the same way - so a warrior fought
+	// at a tenth of its mana, drank a blue potion every few seconds, and
+	// climbed off its battle horse for a Strong Body it could not pay for
+	// ("woj schodzi z konia i na niego wlazi i nie odpala aury", Drip, 24
+	// September; PoteznyKoxu96 on m2zip at 6 to 113 of 1100 SP). The AI keeps
+	// the cooldown itself - the engine's formula, evaluated when a cast goes
+	// through - and asks the engine for nothing before it is due.
+	bool IsPlayerBotSkillReady(const TPlayerBotAIState& state, DWORD vnum, DWORD dwNow)
+	{
+		std::map<DWORD, DWORD>::const_iterator it = state.mapSkillReadyAt.find(vnum);
+		return it == state.mapSkillReadyAt.end() || (int)(dwNow - it->second) >= 0;
+	}
+
+	void NotePlayerBotSkillCast(LPCHARACTER ch, TPlayerBotAIState& state, DWORD vnum, DWORD dwNow)
+	{
+		CSkillProto* pkSk = CSkillManager::instance().Get(vnum);
+		if (!ch || !pkSk)
+			return;
+		// UseSkill's own lines: k from the skill's power, the cooldown poly at
+		// it, the casting speed through ComputeCooltime. The poly's variable is
+		// set again by the engine before each of its own evaluations.
+		const float k = 1.0 * ch->GetSkillPower(vnum) * pkSk->bMaxLevel / 100;
+		pkSk->kCooldownPoly.SetVar("k", k);
+		const int cooltime = (int)pkSk->kCooldownPoly.Eval();
+		if (cooltime <= 0)
+		{
+			state.mapSkillReadyAt.erase(vnum);
+			return;
+		}
+		state.mapSkillReadyAt[vnum] = dwNow + (DWORD)std::max(0, ch->ComputeCooltime(cooltime * 1000)) +
+				PLAYERBOT_SKILL_READY_MARGIN_MS;
+	}
+
+	// What a cast of this skill would cost now, as UseSkill works it out (the
+	// same variables, the Grand Master's poly from G1); nothing for a skill
+	// paid in health.
+	int GetPlayerBotSkillSPCost(LPCHARACTER ch, DWORD vnum)
+	{
+		CSkillProto* pkSk = CSkillManager::instance().Get(vnum);
+		if (!ch || !pkSk || IS_SET(pkSk->dwFlag, SKILL_FLAG_USE_HP_AS_COST))
+			return 0;
+		const float k = 1.0 * ch->GetSkillPower(vnum) * pkSk->bMaxLevel / 100;
+		pkSk->SetSPCostVar("k", k);
+		pkSk->SetSPCostVar("maxhp", ch->GetMaxHP());
+		pkSk->SetSPCostVar("maxv", ch->GetMaxSP());
+		pkSk->SetSPCostVar("v", ch->GetSP());
+		pkSk->SetSPCostVar("lv", ch->GetLevel());
+		if (ch->GetSkillMasterType(vnum) >= SKILL_GRAND_MASTER)
+			return (int)pkSk->kGrandMasterAddSPCostPoly.Eval();
+		return (int)pkSk->kSPCostPoly.Eval();
+	}
+
+	// Whether the skill could go now: off its cooldown and paid for.
+	bool CanPlayerBotAffordSkill(LPCHARACTER ch, const TPlayerBotAIState& state, DWORD vnum, DWORD dwNow)
+	{
+		return IsPlayerBotSkillReady(state, vnum, dwNow) && ch->GetSP() >= GetPlayerBotSkillSPCost(ch, vnum);
+	}
+
+	// UseSkill through the AI's cooldown: false without asking the engine while
+	// the skill is cooling, and the cooldown noted when a cast goes through.
+	bool PlayerBotUseSkill(LPCHARACTER ch, TPlayerBotAIState& state, DWORD vnum, LPCHARACTER victim, DWORD dwNow)
+	{
+		if (!ch || !IsPlayerBotSkillReady(state, vnum, dwNow))
+			return false;
+		if (!ch->UseSkill(vnum, victim))
+			return false;
+		NotePlayerBotSkillCast(ch, state, vnum, dwNow);
+		return true;
+	}
+
 	// Not everything in a build's buff list is for fighting. Feather Walk and
 	// Swiftness make a bot move faster, and moving is what it spends most of its
 	// time doing - it walks a kilometre to its hunting ground. Cure is not a buff
@@ -226,6 +302,15 @@ namespace
 					continue;
 			}
 
+			// Not while it is cooling down, and not without the mana for it: the
+			// engine would take the mana and refuse the cast (PlayerBotUseSkill).
+			// A buff whose cooldown outlasts it - Enchanted Armour's is 33+140k
+			// seconds against 30+120k, Terror's a flat hundred - is missing for a
+			// while every time, and the rider used to climb down for it anyway,
+			// cast nothing and ride on six seconds later.
+			if (!CanPlayerBotAffordSkill(ch, state, buffVnum, dwNow))
+				continue;
+
 			// No skill of a class is cast from a saddle, a battle horse's
 			// included: UseSkill refuses it without a word, and a warrior that
 			// fought from one went without its aura and its berserk for good.
@@ -247,7 +332,7 @@ namespace
 			}
 
 			// Self-buff if not active
-			if (ch->UseSkill(buffVnum, ch))
+			if (PlayerBotUseSkill(ch, state, buffVnum, ch, dwNow))
 			{
 				SendPlayerBotSkillPacket(ch, buffVnum);
 				state.dwLastBotSkillTime = dwNow;
@@ -302,7 +387,7 @@ namespace
 						{
 							if (member->GetMaxHP() > 0 && (member->GetHP() * 100) / member->GetMaxHP() <= 60)
 							{
-								if (m_shaman->UseSkill(m_buffVnum, member))
+								if (PlayerBotUseSkill(m_shaman, m_state, m_buffVnum, member, m_dwNow))
 								{
 									SendPlayerBotSkillPacket(m_shaman, m_buffVnum);
 									m_state.dwLastBotSkillTime = m_dwNow;
@@ -315,7 +400,7 @@ namespace
 						}
 						else if (member->FindAffect(m_buffVnum) == NULL)
 						{
-							if (m_shaman->UseSkill(m_buffVnum, member))
+							if (PlayerBotUseSkill(m_shaman, m_state, m_buffVnum, member, m_dwNow))
 							{
 								SendPlayerBotSkillPacket(m_shaman, m_buffVnum);
 								m_state.dwLastBotSkillTime = m_dwNow;
@@ -384,6 +469,10 @@ namespace
 			}
 			if (!target)
 				continue;
+			// Nothing the engine would refuse with the mana taken, and no
+			// climb-down for it either.
+			if (!CanPlayerBotAffordSkill(ch, state, vnum, dwNow))
+				continue;
 			// From any saddle: a battle horse casts no skill of a class either
 			// (PLAYERBOT_SADDLE_SKILL_LEVEL), and the cast below would be
 			// refused without a word.
@@ -392,7 +481,7 @@ namespace
 				SetPlayerBotRidingForTravel(ch, state, false, dwNow, dismountReason);
 				return 1;
 			}
-			if (!ch->UseSkill(vnum, target))
+			if (!PlayerBotUseSkill(ch, state, vnum, target, dwNow))
 				continue;
 			SendPlayerBotSkillPacket(ch, vnum);
 			state.dwLastBotSkillTime = dwNow;
@@ -644,8 +733,12 @@ namespace
 				continue;
 			if (IsPlayerBotSplashSkill(skillVnum) && IsPlayerBotSplashNearTriggerStone(ch, target, skillVnum))
 				continue;
+			// The rotation takes the first skill that is due, not the first
+			// the engine happens to accept after charging for the others.
+			if (!IsPlayerBotSkillReady(state, skillVnum, dwNow))
+				continue;
 
-			if (ch->UseSkill(skillVnum, target))
+			if (PlayerBotUseSkill(ch, state, skillVnum, target, dwNow))
 			{
 				if (ch->GetJob() == JOB_ASSASSIN && ch->GetSkillGroup() == 2)
 					SendPlayerBotFlyTargetPacket(ch, target);
@@ -714,12 +807,12 @@ namespace
 				distance > PLAYERBOT_DUEL_CHARGE_RANGE || ch->GetSkillLevel(skill) == 0 ||
 				ch->IsRiding() || ch->IsPolymorphed() ||
 				dwNow < state.dwNextSkillCastTime || dwNow < state.dwNextAttackTime ||
-				!CanPlayerBotStrikeCharacter(ch, foe))
+				!IsPlayerBotSkillReady(state, skill, dwNow) || !CanPlayerBotStrikeCharacter(ch, foe))
 			return false;
 		if (ch->IsStateMove())
 			ch->Stop();
 		ch->SetRotationToXY(foe->GetX(), foe->GetY());
-		if (!ch->UseSkill(skill, foe))
+		if (!PlayerBotUseSkill(ch, state, skill, foe, dwNow))
 			return false;
 		ch->ComputeSkill(skill, foe);
 		SendPlayerBotSkillPacket(ch, skill);

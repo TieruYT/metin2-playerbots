@@ -897,6 +897,10 @@ namespace
 	// for its three enchantments - longer than most of the fights they were
 	// buffing for, which is why they were usually seen without them.
 	const DWORD PLAYERBOT_BUFF_RECHECK_FAST = 1200;
+	// A skill is asked for again this long after the cooldown the AI worked
+	// out for it (NotePlayerBotSkillCast), so a tick's rounding never lands a
+	// cast a moment early - which the engine refuses with the mana taken.
+	const DWORD PLAYERBOT_SKILL_READY_MARGIN_MS = 100;
 	// A rider of a battle horse climbs down for a buff, and its buffs run out
 	// one at a time: a Shaman on a Metin measured on m2zip on 24 September
 	// climbed down for Reflect, was back in the saddle six seconds later and
@@ -6570,6 +6574,10 @@ namespace
 		std::map<DWORD, DWORD> mapFailedStones;
 		std::map<DWORD, DWORD> mapFailedTargets;
 		std::map<DWORD, DWORD> mapBuffActiveUntil;
+		// When each skill the AI cast comes off its cooldown, by the engine's
+		// own formula (NotePlayerBotSkillCast): UseSkill takes the mana before
+		// it looks at the cooldown, so nothing is tried before this.
+		std::map<DWORD, DWORD> mapSkillReadyAt;
 		std::vector<PIXEL_POSITION> vecMultiPullCenters;
 		// Not in the initialiser list: it default-constructs empty, which is what
 		// a bot that has not met anybody yet is.
