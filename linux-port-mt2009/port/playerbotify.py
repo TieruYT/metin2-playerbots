@@ -814,7 +814,10 @@ def main(root):
          '// guaranteed skill book (the top-up in CreateDropItem below).\n'
          'static const int PLAYERBOT_METIN_BOOK_LEVEL_DELTA = 15;\n'
          '\n'
-         'bool ITEM_MANAGER::CreateDropItem(LPCHARACTER pkChr, LPCHARACTER pkKiller, std::vector<LPITEM> & vec_item)\n')
+         'bool ITEM_MANAGER::CreateDropItem(LPCHARACTER pkChr, LPCHARACTER pkKiller, std::vector<LPITEM> & vec_item)\n',
+         # apply_blessing_scroll_from_stones writes right under the constant, so
+         # the whole text is no marker (it would be inserted again).
+         marker='// guaranteed skill book (the top-up in CreateDropItem below).')
     # ======================================================================
     # 2.0.13 item.use for quests (gm_profile.quest switches an elixir on by
     # the engine's own use path) and a full elixir at creation.
@@ -1115,7 +1118,10 @@ def main(root):
          '\t\t\tcontinue;\n'
          '\t\t}\n'
          '\n'
-         '\t\tTOKEN("test_server")\n')
+         '\t\tTOKEN("test_server")\n',
+         # apply_blessing_scroll_from_stones writes its token inside this text,
+         # so the whole text is no marker (every run would add these again).
+         marker='TOKEN("moonlight_chest_permille")')
     p = os.path.join(game, 'item_manager.cpp')
     edit(p,
          '#include "item_manager.h"\n',

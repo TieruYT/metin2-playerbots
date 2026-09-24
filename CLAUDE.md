@@ -4111,7 +4111,14 @@ not in `data/`) reworked these point by point. What each hangs on:
   older edit whose marker was its entire new text, so the next run on the
   staged tree found neither that text nor the stock anchor and stopped before
   `apply_costume_block`. Give an edit a `marker=` of one sentence no later edit
-  will split.
+  will split. And when the stock anchor survives the split, the second run
+  does not stop - it inserts the whole block again: 2.2.11's Blessing Scroll
+  edits wrote inside the Moonlight/Dragon Coin CONFIG tokens and under the
+  Metin book's constant, both of which had their whole text as the marker,
+  and the next run on the staged tree put four TOKEN blocks and the constant
+  in a second time (a redefinition the compiler would have refused). Both
+  carry a one-line marker now. After any change to playerbotify, run it twice
+  on the staged tree and expect no `edited:` line the second time.
 - **A client package can carry the executable, under the name the launchers
   run.** Client 2.0.6 (ĹŌŞƬĒĶ's animated login screen and Discord Rich
   Presence) came as `pack/{root,locale}.{index,data}` and `Metin2
