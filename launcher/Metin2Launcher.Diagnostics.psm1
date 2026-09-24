@@ -48,8 +48,59 @@ function Invoke-M2DiagnosticProcess {
     }
 }
 
+function Get-M2OneDriveRootFor {
+    # The OneDrive folder a path lies in, or nothing. OneDrive moves the
+    # Desktop and the Documents into itself (Known Folder Move), so a server
+    # unpacked on the Desktop can end up there one day without anybody touching
+    # it: Avalach's did between 14:57 and 18:41 on 24 September, and every
+    # build after that died on a boost header the build context no longer
+    # carried ("forward1_256.hpp: No such file or directory"), five updates in
+    # a row, while the diagnostics said the server could start. Docker reads a
+    # OneDrive tree through its cloud placeholders, and files go missing from
+    # what it sends to the build.
+    param([Parameter(Mandatory = $true)][AllowEmptyString()][string]$Path)
+
+    if (-not $Path) { return '' }
+    $full = ''
+    try { $full = [IO.Path]::GetFullPath($Path).TrimEnd('\') + '\' } catch { return '' }
+    $roots = [Collections.Generic.List[string]]::new()
+    foreach ($name in @('OneDrive', 'OneDriveConsumer', 'OneDriveCommercial')) {
+        $value = [Environment]::GetEnvironmentVariable($name)
+        if ($value) { $roots.Add([string]$value) }
+    }
+    try {
+        foreach ($account in @(Get-ChildItem -LiteralPath 'HKCU:\Software\Microsoft\OneDrive\Accounts' -ErrorAction Stop)) {
+            $props = Get-ItemProperty -LiteralPath $account.PSPath -ErrorAction SilentlyContinue
+            if ($props -and ($props.PSObject.Properties.Name -contains 'UserFolder') -and $props.UserFolder) {
+                $roots.Add([string]$props.UserFolder)
+            }
+        }
+    }
+    catch {}
+    foreach ($root in $roots) {
+        $prefix = ''
+        try { $prefix = [IO.Path]::GetFullPath($root).TrimEnd('\') + '\' } catch { continue }
+        if ($prefix.Length -gt 3 -and $full.StartsWith($prefix, [StringComparison]::OrdinalIgnoreCase)) {
+            return $prefix.TrimEnd('\')
+        }
+    }
+    return ''
+}
+
+function Get-M2OneDriveRemedy {
+    param([AllowEmptyString()][string]$OneDriveRoot = '')
+
+    # Single quotes and -f: PowerShell takes the typographic quotes of the
+    # Polish text for string delimiters.
+    $where = if ($OneDriveRoot) { ' (' + $OneDriveRoot + ')' } else { '' }
+    return ('Folder serwera leży w OneDrive{0}. Docker nie widzi części plików z folderów OneDrive, więc budowa serwera zatrzymuje się na pliku, którego „nie ma”, choć leży na dysku. Zamknij launcher i przenieś cały folder gry - ten, w którym są foldery Serwer i Klient - poza OneDrive, np. do C:\Metin2 Singleplayer. Potem uruchom Metin2-Launcher-GUI.bat z nowego miejsca (stary skrót na pulpicie wskazuje starą ścieżkę) i kliknij GRAJ. Świat, postacie i boty są w Dockerze i nic z nich nie zginie. Jeśli po przeniesieniu budowa dalej zgłasza brakujący plik, rozpakuj na folder Serwer pełną paczkę serwera, zostawiając swój plik .env.' -f $where)
+}
+
 function Get-M2LauncherErrorGuidance {
-    param([AllowEmptyString()][string]$Text)
+    param(
+        [AllowEmptyString()][string]$Text,
+        [AllowEmptyString()][string]$ServerRoot = ''
+    )
 
     $value = [string]$Text
     $port = '7788'
@@ -58,6 +109,22 @@ function Get-M2LauncherErrorGuidance {
     }
     elseif ($value -match '(?i)(?<port>\d{2,5}).{0,80}(?:port is already allocated|address already in use)') {
         $port = $Matches.port
+    }
+
+    # A file the build could not find, in a server folder OneDrive holds
+    # (Get-M2OneDriveRootFor): the file is on the disk and not in what Docker
+    # was sent, so no reinstall of the same folder helps. Asked first, because
+    # the compiler's missing header reads like a broken package.
+    if ($ServerRoot -and $value -match '(?i)fatal error: [^\r\n]+: No such file or directory|failed to compute cache key|not found in build context') {
+        $oneDrive = Get-M2OneDriveRootFor -Path $ServerRoot
+        if ($oneDrive) {
+            return [pscustomobject]@{
+                Code = 'ONEDRIVE_BUILD_CONTEXT'
+                Title = 'Folder serwera jest w OneDrive'
+                Message = 'Budowa serwera zatrzymała się na pliku, którego Docker nie dostał, choć jest w folderze serwera. Folder leży w OneDrive (zwykle dlatego, że OneDrive przeniósł do siebie Pulpit), a Docker nie widzi części plików z takich folderów. Baza i postęp są w porządku.'
+                Remedy = (Get-M2OneDriveRemedy -OneDriveRoot $oneDrive)
+            }
+        }
     }
 
     # An engine file a mod rewrote to call into the bot manager for something
@@ -988,6 +1055,17 @@ function Get-M2DockerPreflight {
             [void]$checks.Add('OK: dysk Dockera przyjmuje zapis.')
         }
     }
+    # A server folder OneDrive holds builds with files missing
+    # (Get-M2OneDriveRootFor). Only a warning: a tree OneDrive has not turned
+    # into placeholders yet still builds, and the move is the player's to make.
+    $oneDrive = Get-M2OneDriveRootFor -Path $root
+    if ($oneDrive) {
+        [void]$checks.Add("UWAGA: folder serwera leży w OneDrive ($oneDrive).")
+        [void]$warnings.Add((Get-M2OneDriveRemedy -OneDriveRoot $oneDrive))
+    }
+    else {
+        [void]$checks.Add('OK: folder serwera nie leży w OneDrive.')
+    }
     $dockerData = Get-M2DockerDataLocation
     if ($dockerData -and $null -ne $dockerData.FreeBytes) {
         $where = if ($dockerData.Drive) { $dockerData.Drive } else { $dockerData.Directory }
@@ -1039,6 +1117,8 @@ function Format-M2DockerPreflightReport {
 
 Export-ModuleMember -Function @(
     'Get-M2LauncherErrorGuidance',
+    'Get-M2OneDriveRootFor',
+    'Get-M2OneDriveRemedy',
     'Get-M2DockerDiskRemedy',
     'Get-M2DockerDataLocation',
     'Get-M2DockerDiskFault',

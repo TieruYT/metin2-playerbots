@@ -777,7 +777,7 @@ function Complete-LauncherAction {
     Refresh-Status
 
     if ($exitCode -ne 0) {
-        $guidance = Get-M2LauncherErrorGuidance -Text $output
+        $guidance = Get-M2LauncherErrorGuidance -Text $output -ServerRoot $ServerRoot
         $message = $guidance.Message + [Environment]::NewLine + [Environment]::NewLine + 'Jak naprawić:' + [Environment]::NewLine + $guidance.Remedy
         [Windows.Forms.MessageBox]::Show(
             $message,

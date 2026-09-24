@@ -1466,6 +1466,23 @@ not in `data/`) reworked these point by point. What each hangs on:
   reported that as "OK: Docker Engine odpowiada (wersja Error response...)",
   which also suppressed the WSL remedy - it is only raised when the engine is
   known to be down. A version is digits and dots.
+- **A server folder in OneDrive builds with files missing.** OneDrive moves
+  the Desktop into itself (Known Folder Move), so a server unpacked on the
+  Desktop can end up there without anybody touching it. Avalach's did
+  between 14:57 and 18:41 on 24 September (the backups' path in his
+  launcher log changes from `C:\Users\...\Desktop` to `...\OneDrive\Desktop`),
+  and every build after that - 2.2.9, 2.2.10, 2.2.11, six clicks - died on
+  the same boost header, `forward1_256.hpp: No such file or directory`,
+  while the diagnostics said "mozna uruchomic serwer". Docker reads a
+  OneDrive tree through its cloud placeholders (reparse points), and files
+  go missing from what it sends to the build; the 318 000 files of an
+  installation are the worst case for it. `Get-M2OneDriveRootFor` (the
+  `OneDrive*` variables and HKCU `...\OneDrive\Accounts\*\UserFolder`) puts
+  a warning in the preflight, and `Get-M2LauncherErrorGuidance -ServerRoot`
+  answers a missing file in such a folder with ONEDRIVE_BUILD_CONTEXT: move
+  the whole game folder out and start the launcher from there. The world
+  moves with it, because the project name lives in `.m2install.json` and
+  `.env`, not in the path.
 - **An engine that answers is not an engine that can build.** Docker Desktop
   keeps images, the build cache and every volume on one ext4 disk inside
   `docker_data.vhdx`, ext4 answers its first I/O error by remounting itself

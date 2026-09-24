@@ -95,6 +95,37 @@ if ((Get-M2LauncherErrorGuidance -Text (Get-M2DockerDiskRemedy)).Code -eq 'WSL_B
     throw 'Rada dla dysku Dockera nie może wyglądać jak zepsuty WSL.'
 }
 
+# A server folder OneDrive holds (Avalach, 24 September): found by the
+# OneDrive variable, named by the guidance only for a build that lost a file,
+# and nothing for a folder outside it or a prefix that only looks alike.
+$savedOneDrive = [Environment]::GetEnvironmentVariable('OneDrive')
+$fakeOneDrive = Join-Path ([IO.Path]::GetTempPath()) 'm2-onedrive-test\OneDrive'
+try {
+    [Environment]::SetEnvironmentVariable('OneDrive', $fakeOneDrive, 'Process')
+    $inside = Join-Path $fakeOneDrive 'Desktop\Metin2 Singleplayer\Serwer'
+    $outside = Join-Path ([IO.Path]::GetTempPath()) 'm2-onedrive-test\Metin2 Singleplayer\Serwer'
+    $lookalike = $fakeOneDrive + ' - Firma\Serwer'
+    if ((Get-M2OneDriveRootFor -Path $inside) -ne $fakeOneDrive) {
+        throw 'Folder w OneDrive nie został rozpoznany.'
+    }
+    if ((Get-M2OneDriveRootFor -Path $outside) -or (Get-M2OneDriveRootFor -Path $lookalike)) {
+        throw 'Folder poza OneDrive został wzięty za folder OneDrive.'
+    }
+    $missingHeader = '#82 2.006 ../../../Extern/include/boost/preprocessor/iteration/detail/iter/forward1.hpp:1343:14: fatal error: boost/preprocessor/iteration/detail/iter/limits/forward1_256.hpp: No such file or directory'
+    if ((Get-M2LauncherErrorGuidance -Text $missingHeader -ServerRoot $inside).Code -ne 'ONEDRIVE_BUILD_CONTEXT') {
+        throw 'Brakujący plik przy budowie w OneDrive powinien dać ONEDRIVE_BUILD_CONTEXT.'
+    }
+    if ((Get-M2LauncherErrorGuidance -Text $missingHeader -ServerRoot $outside).Code -eq 'ONEDRIVE_BUILD_CONTEXT') {
+        throw 'Folder poza OneDrive nie może dostać rady o OneDrive.'
+    }
+    if ((Get-M2LauncherErrorGuidance -Text 'unexpected test failure' -ServerRoot $inside).Code -ne 'UNKNOWN') {
+        throw 'Rada o OneDrive tylko dla budowy, która zgubiła plik.'
+    }
+}
+finally {
+    [Environment]::SetEnvironmentVariable('OneDrive', $savedOneDrive, 'Process')
+}
+
 # Where Docker keeps its disk: a folder always, a drive and its free space when
 # Windows answers. A bundle's disk report never carries the profile path.
 $dockerData = Get-M2DockerDataLocation
