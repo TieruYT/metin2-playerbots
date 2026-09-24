@@ -2530,8 +2530,9 @@ function Show-CoopDialog {
             $state = Read-M2CoopState -ServerRoot $root
             $bindings = Get-M2CoopGameBindings -ServerRoot $root
             $lines = @()
+            $ruleText = $(if (Test-M2CoopFirewallRule) { 'reguła zapory jest' } else { 'BRAK reguły zapory - HOSTUJ ŚWIAT o nią poprosi' })
             if (-not $bindings.Running) { $lines += 'Serwer gry: nie działa - najpierw GRAJ.' }
-            elseif ($bindings.Public) { $lines += 'Hostowanie: WŁĄCZONE - porty gry są otwarte dla sieci.' }
+            elseif ($bindings.Public) { $lines += ('Hostowanie: WŁĄCZONE - porty gry są otwarte dla sieci ({0}).' -f $ruleText) }
             else { $lines += 'Hostowanie: wyłączone - porty gry słuchają tylko na tym komputerze.' }
             $public = ''; $viaName = ''
             if ($state.hosting) {
@@ -2609,7 +2610,7 @@ function Show-CoopDialog {
             [Windows.Forms.MessageBox]::Show($why, 'COOP', 'OK', 'Warning') | Out-Null
             return
         }
-        $code = Get-M2CoopFriendInvite -ServerRoot $root -Friend $friend -HostAddress $target.Address -Vpn $target.Vpn
+        $code = Get-M2CoopFriendInvite -ServerRoot $root -Friend $friend -HostAddress $target.Address -Vpn $target.Vpn -Lan $target.Lan
         try { [Windows.Forms.Clipboard]::SetText($code) } catch { }
         Write-LocalLog ("COOP: skopiowano kod zaproszenia dla loginu {0}." -f $friend.login)
         $intro = 'Kod jest już w schowku. Wyślij go znajomemu w prywatnej wiadomości - zawiera jego hasło. Znajomy wkleja go w swoim launcherze (przycisk COOP) albo w pliku Dolacz.bat w folderze klienta.'
@@ -2673,11 +2674,22 @@ function Show-CoopDialog {
         }
         $answer = [Windows.Forms.MessageBox]::Show(
             ("Hostowanie:`r`n- uruchomi ponownie serwer gry (około minuty) - wyloguj się z gry,`r`n" +
-             "- poprosi Windows o zgodę na regułę zapory dla portów gry,`r`n" +
+             "- poprosi Windows o zgodę na regułę zapory dla portów gry (wybierz Tak),`r`n" +
              $routerLine + "`r`n`r`nKontynuować?"), 'Hostuj świat', 'YesNo', 'Question')
         if ($answer -ne [Windows.Forms.DialogResult]::Yes) { return }
+        # The rule is asked for here, by the window the player just clicked:
+        # Windows puts the question of a process in front on the screen, and
+        # the question of the hidden action only on the taskbar, where
+        # xXxDaronxXx's went unanswered twice (24 September).
+        if (-not (Test-M2CoopFirewallRule)) {
+            $dialog.Cursor = [Windows.Forms.Cursors]::WaitCursor
+            $ruleAdded = $false
+            try { $ruleAdded = [bool](Add-M2CoopFirewallRule -Ports (Get-M2CoopGamePorts -ServerRoot $root)) } catch { $ruleAdded = $false }
+            $dialog.Cursor = [Windows.Forms.Cursors]::Default
+            Write-LocalLog ("COOP: regula zapory {0}." -f $(if ($ruleAdded) { 'dodana z okna' } else { 'nie dodana (odmowa zgody)' }))
+        }
         $dialog.Close()
-        Start-LauncherAction -Action 'CoopHost' -Yes -ExtraArgs @('-CoopVia', $via)
+        Start-LauncherAction -Action 'CoopHost' -Yes -ExtraArgs @('-CoopVia', $via, '-CoopFirewallAsked')
     })
 
     $stopButtonCoop.Add_Click({
@@ -2699,23 +2711,23 @@ function Show-CoopDialog {
             $invite = Read-M2CoopInvite -Code $codeBox.Text
             $client = Get-CoopClientFolder
             if (-not $client) { throw 'Nie wiem, gdzie jest klient - wskaż go przyciskiem WYBIERZ KLIENTA w oknie launchera.' }
-            $path = Write-M2CoopClientConfig -ClientFolder $client -Invite $invite
-            Write-LocalLog ("COOP: zapisano swiat znajomego w {0}." -f $path)
+            # What this machine can tell before the client is started: the
+            # host's home address answers here (the same house), a VPN world
+            # needs that VPN here, and the world's auth either answers from
+            # here or it does not (not hosting right now, or no path).
+            $dialog.Cursor = [Windows.Forms.Cursors]::WaitCursor
+            $choice = Resolve-M2CoopJoinHost -Invite $invite
+            $advice = $(if ($choice.Lan) { '' } else { Get-M2CoopJoinAdvice -Invite $invite })
+            $dialog.Cursor = [Windows.Forms.Cursors]::Default
+            $path = Write-M2CoopClientConfig -ClientFolder $client -Invite $invite -HostAddress $choice.Host
+            Write-LocalLog ("COOP: zapisano swiat znajomego w {0} (adres {1}{2})." -f $path, $choice.Host, $(if ($choice.Lan) { ', siec domowa' } else { '' }))
             try { [Windows.Forms.Clipboard]::SetText([string]$invite.password) } catch { }
             $codeBox.Text = ''
             & $refresh
-            # What this machine can tell before the client is started: a VPN
-            # world needs that VPN here, and the world's auth either answers
-            # from here or it does not (not hosting right now, or no path).
-            $dialog.Cursor = [Windows.Forms.Cursors]::WaitCursor
-            $advice = Get-M2CoopJoinAdvice -Invite $invite
-            $answers = Test-M2CoopHostAnswers -HostAddress ([string]$invite.host) -Port ([int]$invite.auth)
-            $dialog.Cursor = [Windows.Forms.Cursors]::Default
-            Write-LocalLog ("COOP: serwer znajomego {0}." -f $(if ($answers) { 'odpowiada' } else { 'nie odpowiada' }))
+            Write-LocalLog ("COOP: serwer znajomego {0}." -f $(if ($choice.Answers) { 'odpowiada' } else { 'nie odpowiada' }))
             $intro = ("Uruchom klienta i wybierz serwer 'Online: {0}'. Hasło jest w schowku." -f $invite.name)
             if ($advice) { $intro = $advice + ' ' + $intro }
-            elseif ($answers) { $intro += ' Serwer znajomego odpowiada.' }
-            else { $intro += ' Serwer znajomego teraz nie odpowiada - sprawdź, czy ma włączone hostowanie.' }
+            else { $intro += ' ' + (@(Get-M2CoopJoinNotes -Choice $choice) -join ' ') }
             Show-CoopSecretDialog -Title 'Świat znajomego dodany' -Intro $intro `
                 -Secret ("Login: {0}`r`nHasło: {1}" -f $invite.login, $invite.password)
         }

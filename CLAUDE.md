@@ -8700,6 +8700,27 @@ change to that FAQ as well (Uriel's messages, edited through the API).
   at the `return @($found)` that wrote it; `List[int]` is fine, which is why
   `Get-M2CoopGamePorts` never showed it. Return `$found.ToArray()` and wrap
   at the call site as everywhere else.
+- **A friend in the same house is sent to the host's home address.**
+  xXxDaronxXx (24 September) tested with his own laptop: the router answered
+  no UPnP, the Windows prompt for the firewall rule went unanswered twice
+  (the second time for two minutes), CoopHost still ended "Hostowanie
+  włączone" in green, and in the half hour of his tries not one connection
+  reached the auth core (the only outside ones were the launcher's own
+  probes). From a laptop in the same network the Internet address works
+  only through a router that forwards the ports and loops a connection to
+  its own address back in. Since 2.2.11 every invite carries `lan`, the
+  host's address in its network (`Get-M2CoopInviteTarget`, a private IPv4
+  only; an Internet code without it is still 2.0.80's), and the joining side
+  - the launcher's join and `Dolacz.ps1` alike - takes it when this machine
+  shares the host's /24 and the world answers there
+  (`Select-M2CoopJoinHost`, pure but for the probe; `tests/coop_vpn_test.ps1`).
+  It asks the home address only in that /24, because a friend's own network
+  is 192.168.1.x as often as not. The window asks Windows for the firewall
+  rule itself before it starts CoopHost (`-CoopFirewallAsked`): a hidden
+  process's UAC question only blinks on the taskbar. A router that does not
+  answer the search now ends like one that refused every port: the VPN
+  fallback, or a red UWAGA with the router's help and "bez portów w
+  routerze".
 - **A handshake over a hotspot needs time and slack, and gets neither from
   the package.** The login handshake is accepted only when one exchange's
   round trip is within 50 ms of the previous one, and

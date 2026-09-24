@@ -11,7 +11,9 @@
 # samo jak launcher\Metin2Launcher.Coop.psm1 (Read-M2CoopInvite) i zapisuje
 # coop.cfg tak samo jak Write-M2CoopClientConfig; świat w sieci VPN (Radmin VPN,
 # Tailscale, ZeroTier, Hamachi) rozpoznaje jak Get-M2CoopJoinAdvice, a to, czy
-# serwer znajomego odpowiada, sprawdza jak Test-M2CoopHostAnswers.
+# serwer znajomego odpowiada, sprawdza jak Test-M2CoopHostAnswers. W tej samej
+# sieci domowej co host (kod z launchera od 2.2.11 niesie jego adres w tej
+# sieci) wybiera ten adres, jak Select-M2CoopJoinHost.
 param([string]$Invite = '', [switch]$NoWindow)
 $ErrorActionPreference = 'Stop'
 $clientDir = $PSScriptRoot
@@ -35,7 +37,9 @@ function Read-CoopInvite {
 }
 
 function Write-CoopConfig {
-    param([Parameter(Mandatory = $true)]$Invite)
+    # HostAddress: where the client goes when it is not the invite's own
+    # address - the host's home one (Select-CoopJoinHost).
+    param([Parameter(Mandatory = $true)]$Invite, [string]$HostAddress = '')
     # The client reads coop.cfg as ASCII; a Polish letter becomes its plain
     # one rather than vanishing ("Swiat", not "wiat").
     $plain = [string]$Invite.name
@@ -47,10 +51,11 @@ function Write-CoopConfig {
     if (-not $name) { $name = [string]$Invite.host }
     $channels = [int]$Invite.channels
     if ($channels -lt 1) { $channels = 1 }
+    $target = $(if ($HostAddress) { $HostAddress } else { [string]$Invite.host })
     $lines = @(
         '# Metin2 SinglePlayer - swiat znajomego (zapisal Dolacz.ps1, kod zaproszenia)',
         ('name=' + $name),
-        ('host=' + [string]$Invite.host),
+        ('host=' + $target),
         ('auth=' + [int]$Invite.auth),
         ('channel=' + [int]$Invite.channel),
         ('channels=' + $channels)
@@ -116,14 +121,61 @@ function Test-CoopHostAnswers {
     finally { $client.Close() }
 }
 
-function Get-CoopJoinNotes {
+function Get-CoopInviteLan {
+    # The host's address in its own network (a launcher from 2.2.11 writes
+    # it): a private IPv4, or nothing.
     param([Parameter(Mandatory = $true)]$Invite)
+    if (-not ($Invite.PSObject.Properties.Name -contains 'lan')) { return '' }
+    $address = [string]$Invite.lan
+    if ($address -notmatch '^(\d+)\.(\d+)\.\d+\.\d+$' -or $address -match '^127\.') { return '' }
+    $a = [int]$Matches[1]; $b = [int]$Matches[2]
+    if (($a -eq 10) -or ($a -eq 172 -and $b -ge 16 -and $b -le 31) -or ($a -eq 192 -and $b -eq 168)) { return $address }
+    return ''
+}
+
+function Test-CoopSameNetwork {
+    # This machine in the network the address belongs to, as a home network
+    # is laid out: the first three numbers the same.
+    param([string]$Address)
+    if ($Address -notmatch '^(\d{1,3}\.\d{1,3}\.\d{1,3})\.\d{1,3}$') { return $false }
+    $prefix = $Matches[1] + '.'
+    try {
+        foreach ($a in @(Get-NetIPAddress -AddressFamily IPv4 -ErrorAction Stop)) {
+            if (([string]$a.IPAddress).StartsWith($prefix)) { return $true }
+        }
+    }
+    catch { }
+    return $false
+}
+
+function Select-CoopJoinHost {
+    # The host's home address when this machine is in that network and the
+    # world answers there - the laptop in the same house, whose way to the
+    # host's Internet address goes through a router that may not bring it
+    # back in (xXxDaronxXx, 24 September) - and the invite's own otherwise.
+    # The same choice as the launcher's Select-M2CoopJoinHost.
+    param([Parameter(Mandatory = $true)]$Invite)
+    $lan = Get-CoopInviteLan -Invite $Invite
+    $same = [bool]($lan -and (Test-CoopSameNetwork -Address $lan))
+    if ($same -and (Test-CoopHostAnswers -HostAddress $lan -Port ([int]$Invite.auth))) {
+        return [pscustomobject]@{ Host = $lan; Lan = $true; SameNetwork = $true; Answers = $true; LanAddress = $lan }
+    }
+    $answers = Test-CoopHostAnswers -HostAddress ([string]$Invite.host) -Port ([int]$Invite.auth)
+    return [pscustomobject]@{ Host = [string]$Invite.host; Lan = $false; SameNetwork = $same; Answers = [bool]$answers; LanAddress = $lan }
+}
+
+function Get-CoopJoinNotes {
+    param([Parameter(Mandatory = $true)]$Invite, [Parameter(Mandatory = $true)]$Choice)
     $notes = @()
     $kind = Get-CoopInviteVpn -Invite $Invite
-    if ($kind -and -not (Test-CoopVpnHere -Kind $kind)) {
+    if ($Choice.Lan) { $notes += ('Jesteś w tej samej sieci domowej co znajomy - gra połączy się przez jego adres w tej sieci ({0}).' -f $Choice.Host) }
+    elseif ($kind -and -not (Test-CoopVpnHere -Kind $kind)) {
         $notes += ("Świat znajomego jest dostępny przez {0}. Zainstaluj {0} i dołącz do sieci znajomego (jak się nazywa i jakie ma hasło, powie Ci znajomy) - bez tego gra się nie połączy." -f $vpnNames[$kind])
     }
-    elseif (Test-CoopHostAnswers -HostAddress ([string]$Invite.host) -Port ([int]$Invite.auth)) { $notes += 'Serwer znajomego odpowiada.' }
+    elseif ($Choice.Answers) { $notes += 'Serwer znajomego odpowiada.' }
+    elseif ($Choice.SameNetwork) {
+        $notes += ('Jesteś w tej samej sieci domowej co znajomy ({0}), ale jego serwer tu nie odpowiada. Znajomy musi mieć włączone hostowanie i pozwolić Windows na regułę zapory (HOSTUJ ŚWIAT, w okienku Windows "Tak"). Potem kliknij Dołącz jeszcze raz.' -f $Choice.LanAddress)
+    }
     else { $notes += 'Serwer znajomego teraz nie odpowiada - poproś, żeby uruchomił serwer (GRAJ) i włączył hostowanie.' }
     return $notes
 }
@@ -131,10 +183,11 @@ function Get-CoopJoinNotes {
 if ($NoWindow) {
     if (-not $Invite) { $Invite = Read-Host 'Wklej kod zaproszenia' }
     $inv = Read-CoopInvite -Code $Invite
-    $path = Write-CoopConfig -Invite $inv
-    Write-Host ("Zapisano {0}" -f $path)
+    $choice = Select-CoopJoinHost -Invite $inv
+    $path = Write-CoopConfig -Invite $inv -HostAddress $choice.Host
+    Write-Host ("Zapisano {0} (adres {1})" -f $path, $choice.Host)
     Write-Host ("W kliencie wybierz serwer 'Online: {0}'. Login: {1}, hasło: {2}" -f $inv.name, $inv.login, $inv.password)
-    foreach ($note in @(Get-CoopJoinNotes -Invite $inv)) { Write-Host $note }
+    foreach ($note in @(Get-CoopJoinNotes -Invite $inv -Choice $choice)) { Write-Host $note }
     return
 }
 
@@ -220,10 +273,11 @@ if (Test-Path -LiteralPath $existing -PathType Leaf) {
 $joinButton.Add_Click({
     try {
         $inv = Read-CoopInvite -Code $codeBox.Text
-        [void](Write-CoopConfig -Invite $inv)
-        try { [Windows.Forms.Clipboard]::SetText([string]$inv.password) } catch { }
         $form.Cursor = [Windows.Forms.Cursors]::WaitCursor
-        $notes = @(Get-CoopJoinNotes -Invite $inv)
+        $choice = Select-CoopJoinHost -Invite $inv
+        [void](Write-CoopConfig -Invite $inv -HostAddress $choice.Host)
+        try { [Windows.Forms.Clipboard]::SetText([string]$inv.password) } catch { }
+        $notes = @(Get-CoopJoinNotes -Invite $inv -Choice $choice)
         $form.Cursor = [Windows.Forms.Cursors]::Default
         $result.Text = ("Gotowe. W grze wybierz serwer 'Online: {0}'.`r`n`r`nLogin: {1}`r`nHasło: {2}`r`n(hasło jest też w schowku)`r`n`r`n{3}" -f $inv.name, $inv.login, $inv.password, ($notes -join "`r`n"))
         $playButton.Enabled = $true

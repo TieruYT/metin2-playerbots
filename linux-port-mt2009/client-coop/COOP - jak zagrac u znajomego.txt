@@ -16,6 +16,13 @@ tylko tego folderu z klientem - bez serwera, bez Dockera, bez instalacji.
 Serwer 1 na liście ("Metin2 SinglePlayer") to świat na własnym komputerze -
 bez własnego serwera się nie połączy i tak ma być.
 
+W tym samym domu (drugi komputer, laptop na tym samym Wi-Fi)
+-------------------------------------------------------------
+Kod zaproszenia z nowego launchera ma też adres komputera znajomego w sieci
+domowej. Dolacz.bat sam go wybierze, gdy jesteś w tej samej sieci - wtedy
+router nie jest potrzebny. Komputer, który hostuje, musi tylko pozwolić
+Windows na regułę zapory: po kliknięciu HOSTUJ ŚWIAT wybrać "Tak".
+
 Gdy znajomy hostuje przez VPN
 -----------------------------
 Jeśli operator internetu znajomego nie daje publicznego adresu (CGNAT -
@@ -29,8 +36,11 @@ Dolacz.bat powie, jeśli świat jest w sieci VPN, a na tym komputerze jej nie ma
 Gdy nie działa
 --------------
 - "Nie można połączyć się z serwerem": znajomy musi mieć uruchomiony serwer
-  (GRAJ) i włączone hostowanie (launcher: COOP -> HOSTUJ ŚWIAT). Przy VPN
-  obaj musicie być w tej samej sieci, z włączonym programem VPN.
+  (GRAJ) i włączone hostowanie (launcher: COOP -> HOSTUJ ŚWIAT), a Windows
+  u niego musi dostać zgodę na regułę zapory ("Tak"). Gdy launcher znajomego
+  pisze, że router nie odpowiada na UPnP albo nie otworzył portów, porty
+  trzeba przekierować w routerze ręcznie albo grać przez VPN. Przy VPN obaj
+  musicie być w tej samej sieci, z włączonym programem VPN.
 - Działało, a przestało: adres znajomego w internecie mógł się zmienić
   (np. po restarcie routera). Poproś o nowy kod i wklej go w Dolacz.bat.
 - Kod zawiera Twoje hasło - nie wklejaj go na publicznym kanale.

@@ -128,5 +128,56 @@ Check 'an Internet invite reads with an empty vpn' ((Read-M2CoopInvite -Code $in
 $unknown = New-M2CoopInvite -HostAddress '10.0.0.1' -Ports $ports -Login 'a' -Password 'b' -Vpn 'nordvpn'
 Check 'an unknown VPN reads as none' ((Read-M2CoopInvite -Code $unknown).vpn -eq '')
 
+# ---- the host's home address in the code, and where a friend's client goes
+Check 'an old code reads with an empty lan' ((Read-M2CoopInvite -Code $internet).lan -eq '')
+$homeCode = New-M2CoopInvite -HostAddress '209.198.140.24' -Ports $ports -WorldName 'Swiat' -Login 'daro' -Password 'x1y2z3' -Lan '192.168.1.210'
+Check 'a code carries the home address' ((Decode $homeCode) -match '"lan":"192\.168\.1\.210"') (Decode $homeCode)
+Check 'and reads it back' ((Read-M2CoopInvite -Code $homeCode).lan -eq '192.168.1.210')
+foreach ($bad in @('83.10.20.30', '127.0.0.1', '', '100.64.1.1', 'router.local')) {
+    $code = New-M2CoopInvite -HostAddress '209.198.140.24' -Ports $ports -Login 'a' -Password 'b' -Lan $bad
+    Check ("no lan field for '{0}'" -f $bad) (-not ((Decode $code) -match '"lan"')) (Decode $code)
+}
+$sameAsHost = New-M2CoopInvite -HostAddress '192.168.1.210' -Ports $ports -Login 'a' -Password 'b' -Lan '192.168.1.210'
+Check 'no lan field when it is the host address itself' (-not ((Decode $sameAsHost) -match '"lan"'))
+
+Check 'same /24' (Test-M2CoopSameNetwork -Address '192.168.1.210' -LocalAddresses @('10.5.0.2', '192.168.1.33'))
+Check 'another /24' (-not (Test-M2CoopSameNetwork -Address '192.168.1.210' -LocalAddresses @('192.168.0.33', '26.1.1.1')))
+Check 'no local addresses' (-not (Test-M2CoopSameNetwork -Address '192.168.1.210' -LocalAddresses @()))
+Check 'not an address' (-not (Test-M2CoopSameNetwork -Address 'example.com' -LocalAddresses @('192.168.1.2')))
+
+$script:asked = New-Object System.Collections.Generic.List[string]
+# A closure runs in a module of its own, where $script: is not this file's:
+# the list goes in as a captured local.
+function Probe { param([string[]]$Answering) $log = $script:asked; return { param($address, $port) $log.Add(('{0}:{1}' -f $address, $port)); return ($Answering -contains $address) }.GetNewClosure() }
+$invite = Read-M2CoopInvite -Code $homeCode
+$script:asked.Clear()
+$c = Select-M2CoopJoinHost -Invite $invite -LocalAddresses @('192.168.1.50') -Probe (Probe @('192.168.1.210'))
+Check 'same house, home address answers: taken' ($c.Host -eq '192.168.1.210' -and $c.Lan -and $c.Answers) ($c | Out-String)
+Check 'and the Internet one is not asked' ($script:asked.Count -eq 1 -and $script:asked[0] -eq '192.168.1.210:11000') ($script:asked -join ',')
+$script:asked.Clear()
+$c = Select-M2CoopJoinHost -Invite $invite -LocalAddresses @('192.168.1.50') -Probe (Probe @('209.198.140.24'))
+Check 'same house, home address silent: the Internet one' ($c.Host -eq '209.198.140.24' -and -not $c.Lan -and $c.SameNetwork -and $c.Answers) ($c | Out-String)
+$script:asked.Clear()
+$c = Select-M2CoopJoinHost -Invite $invite -LocalAddresses @('192.168.0.7') -Probe (Probe @('192.168.1.210', '209.198.140.24'))
+Check 'another network: the home address is never asked' ($c.Host -eq '209.198.140.24' -and -not $c.SameNetwork -and $script:asked.Count -eq 1) ($script:asked -join ',')
+$script:asked.Clear()
+$c = Select-M2CoopJoinHost -Invite (Read-M2CoopInvite -Code $internet) -LocalAddresses @('192.168.1.50') -Probe (Probe @())
+Check 'an old code: the invite address, nothing answering' ($c.Host -eq '83.10.20.30' -and -not $c.Answers -and -not $c.SameNetwork) ($c | Out-String)
+$notes = @(Get-M2CoopJoinNotes -Choice ([pscustomobject]@{ Host = '209.198.140.24'; Lan = $false; SameNetwork = $true; Answers = $false; LanAddress = '192.168.1.210' }))
+Check 'same house, nothing answering: asks for the firewall' ($notes[0] -match 'zapory' -and $notes[0] -match '192\.168\.1\.210') ($notes -join ' | ')
+$notes = @(Get-M2CoopJoinNotes -Choice ([pscustomobject]@{ Host = '192.168.1.210'; Lan = $true; SameNetwork = $true; Answers = $true; LanAddress = '192.168.1.210' }))
+Check 'home address taken: says so' ($notes[0] -match 'sieci domowej' -and $notes[0] -match '192\.168\.1\.210') ($notes -join ' | ')
+
+$folder = Join-Path ([IO.Path]::GetTempPath()) ('coop_test_' + [Guid]::NewGuid().ToString('N'))
+New-Item -ItemType Directory -Path $folder | Out-Null
+try {
+    $cfg = Write-M2CoopClientConfig -ClientFolder $folder -Invite $invite -HostAddress '192.168.1.210'
+    $text = [IO.File]::ReadAllText($cfg)
+    Check 'coop.cfg takes the chosen address' ($text -match '(?m)^host=192\.168\.1\.210\r?$') $text
+    $cfg = Write-M2CoopClientConfig -ClientFolder $folder -Invite $invite
+    Check 'coop.cfg keeps the invite address by default' ([IO.File]::ReadAllText($cfg) -match '(?m)^host=209\.198\.140\.24\r?$')
+}
+finally { Remove-Item -LiteralPath $folder -Recurse -Force }
+
 Write-Host ("coop_vpn_test: {0} passed, {1} failed" -f $script:passed, $script:failed)
 if ($script:failed) { exit 1 }

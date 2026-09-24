@@ -47,6 +47,11 @@ param(
     # VPN by name (vpn = the first one found).
     [ValidateSet('auto', 'internet', 'vpn', 'radmin', 'tailscale', 'zerotier', 'hamachi')]
     [string]$CoopVia = 'auto',
+    # CoopHost from the window: it has asked Windows for the firewall rule
+    # itself (in front, where the question is seen), so the action does not
+    # ask again from a hidden process whose question only blinks on the
+    # taskbar.
+    [switch]$CoopFirewallAsked,
     # ResetWorld only: bring the server up on the fresh world right away, so
     # "wyzeruj swiat i zacznij od nowa" is one click and not a reset followed
     # by GRAJ.
@@ -1701,7 +1706,7 @@ function Add-CoopFriendAction {
     $target = Get-M2CoopInviteTarget -ServerRoot $serverRoot
     if ($target.Address) {
         Write-Host 'Kod zaproszenia (skopiuj i wyślij znajomemu):'
-        Write-Host (Get-M2CoopFriendInvite -ServerRoot $serverRoot -Friend $friend -HostAddress $target.Address -Vpn $target.Vpn) -ForegroundColor Cyan
+        Write-Host (Get-M2CoopFriendInvite -ServerRoot $serverRoot -Friend $friend -HostAddress $target.Address -Vpn $target.Vpn -Lan $target.Lan) -ForegroundColor Cyan
         if ($target.Vpn) { Write-Host ("Znajomy musi być w Twojej sieci {0} - kod prowadzi na adres {1}." -f $target.VpnName, $target.Address) -ForegroundColor Yellow }
     }
 }
@@ -1730,7 +1735,7 @@ function Show-CoopInviteAction {
         if ($FriendLogin -and [string]$f.login -ne $FriendLogin) { continue }
         if ($f.blocked) { continue }
         Write-Host ("{0} (login {1}, hasło {2}):" -f $f.name, $f.login, $f.password)
-        Write-Host (Get-M2CoopFriendInvite -ServerRoot $serverRoot -Friend $f -HostAddress $target.Address -Vpn $target.Vpn) -ForegroundColor Cyan
+        Write-Host (Get-M2CoopFriendInvite -ServerRoot $serverRoot -Friend $f -HostAddress $target.Address -Vpn $target.Vpn -Lan $target.Lan) -ForegroundColor Cyan
         $shown++
     }
     if ($shown -eq 0) { Write-Host 'Brak znajomych - dodaj ich najpierw.' -ForegroundColor Yellow }
@@ -1833,11 +1838,22 @@ function Start-CoopHostingAction {
     }
     Write-Host ("Opublikowane: {0}" -f ((Get-M2CoopGameBindings -ServerRoot $serverRoot).Lines -join '; '))
     Write-Phase 'zapora Windows'
-    if (Test-M2CoopFirewallRule) { Write-Host 'Reguła zapory dla portów gry już jest.' }
+    # The window asks for the rule itself before it starts this action
+    # (-CoopFirewallAsked): from here, a hidden process, Windows only blinks
+    # its question on the taskbar, and xXxDaronxXx's (24 September) went
+    # unanswered twice - the second time for two minutes - so nothing outside
+    # his PC could reach the world.
+    $firewallOk = [bool](Test-M2CoopFirewallRule)
+    if ($firewallOk) { Write-Host 'Reguła zapory dla portów gry już jest.' }
+    elseif ($CoopFirewallAsked) { Write-Host 'Reguły zapory nie dodano - okno launchera zapytało o nią Windows i nie dostało zgody.' -ForegroundColor Red }
     else {
-        Write-Host 'Windows zapyta o zgodę administratora na regułę zapory dla portów gry - potwierdź.' -ForegroundColor Yellow
-        if (Add-M2CoopFirewallRule -Ports $ports) { Write-Host 'Reguła zapory dodana.' -ForegroundColor Green }
-        else { Write-Host 'Reguły zapory nie dodano (odmowa zgody?) - zapora może nie wpuścić znajomych.' -ForegroundColor Yellow }
+        Write-Host 'Windows zapyta o zgodę administratora na regułę zapory dla portów gry - potwierdź (okienko Windows może tylko migać na pasku zadań).' -ForegroundColor Yellow
+        $firewallOk = [bool](Add-M2CoopFirewallRule -Ports $ports)
+        if ($firewallOk) { Write-Host 'Reguła zapory dodana.' -ForegroundColor Green }
+        else { Write-Host 'Reguły zapory nie dodano (odmowa zgody albo brak odpowiedzi).' -ForegroundColor Red }
+    }
+    if (-not $firewallOk) {
+        Write-Host 'UWAGA: bez tej reguły zapora Windows może nie wpuścić nikogo spoza tego komputera - ani znajomych z internetu, ani laptopa w tym samym domu. Kliknij HOSTUJ ŚWIAT jeszcze raz i w okienku Windows wybierz "Tak".' -ForegroundColor Red
     }
     foreach ($block in @(Get-M2CoopFirewallBlocks)) {
         Write-Host ("UWAGA: zapora blokuje program {0} (reguła '{1}') - usuń tę regułę w Zaporze Windows, inaczej znajomi się nie połączą." -f $block.Program, $block.Name) -ForegroundColor Yellow
@@ -1886,9 +1902,22 @@ function Start-CoopHostingAction {
         }
     }
     else {
-        Write-Host ("Router nie odpowiada na UPnP: przekieruj w nim ręcznie TCP {0} na {1}." -f ($ports -join ', '), $report.LanAddress) -ForegroundColor Yellow
-        if ($vpns.Count -gt 0 -and $via.Mode -ne 'vpn') {
-            Write-Host ("Albo wybierz w oknie COOP połączenie {0} i hostuj jeszcze raz - wtedy router nie jest potrzebny." -f $vpns[0].Name) -ForegroundColor Yellow
+        # A router that does not answer the search opens nothing either: the
+        # same way out as one that refused every port - a VPN here when the
+        # way was left to the launcher, and otherwise said out loud, not
+        # "Hostowanie włączone" in green (xXxDaronxXx, 24 September).
+        $fallback = Resolve-M2CoopRouterFallback -Via $via -Requested $requested -Vpns $vpns -Mapped 0 -Ports @($ports).Count
+        if ($fallback.Mode -eq 'vpn' -and $via.Mode -ne 'vpn') {
+            $via = $fallback
+            Write-Host ("Router nie odpowiada na UPnP - hostuję przez {0}, adres {1}." -f $via.Vpn.Name, $via.Vpn.Address) -ForegroundColor Yellow
+        }
+        else {
+            $routerRefused = $true
+            Write-Host 'UWAGA: router nie odpowiada na UPnP, więc launcher nie otworzył w nim żadnego portu - znajomi z internetu się nie połączą, dopóki nie przekierujesz portów ręcznie.' -ForegroundColor Red
+            foreach ($line in @(Get-M2CoopRouterHelp -Router '' -LanAddress $report.LanAddress -Ports $ports)) { Write-Host $line -ForegroundColor Yellow }
+            if ($vpns.Count -gt 0) {
+                Write-Host ("Albo wybierz w oknie COOP połączenie {0} i hostuj jeszcze raz - wtedy router nie jest potrzebny." -f $vpns[0].Name) -ForegroundColor Yellow
+            }
         }
     }
     $friendAddress = $(if ($via.Mode -eq 'vpn') { $via.Vpn.Address } else { $report.PublicAddress })
@@ -1908,6 +1937,9 @@ function Start-CoopHostingAction {
         Write-Host ("Hostowanie włączone, ale bez portów w routerze (UWAGA wyżej). Adres dla znajomych: {0}" -f $friendAddress) -ForegroundColor Yellow
     }
     else { Write-Host ("Hostowanie włączone. Adres dla znajomych: {0}" -f $friendAddress) -ForegroundColor Green }
+    if ($report.LanAddress) {
+        Write-Host ("W tej samej sieci domowej (drugi komputer, laptop na tym samym Wi-Fi) gra łączy się przez {0}, bez routera: kod zaproszenia ma też ten adres, a Dolacz.bat i launcher same go wybiorą." -f $report.LanAddress)
+    }
     Write-Host 'Ty grasz dalej na serwerze 1 (Metin2 SinglePlayer). Kody zaproszeń dla znajomych są w oknie COOP.'
     if (@($state.friends).Count -eq 0) { Write-Host 'Nie masz jeszcze znajomych - dodaj ich w oknie COOP.' -ForegroundColor Yellow }
     if ($mapped.Count -gt 0 -and $mapped.Count -lt $ports.Count) {
@@ -1969,13 +2001,17 @@ function Join-CoopAction {
     $inv = Read-M2CoopInvite -Code $code
     $client = Get-M2CoopClientFolder -ServerRoot $serverRoot
     if (-not $client) { throw 'Nie znaleziono folderu klienta (wskaż go przyciskiem WYBIERZ KLIENTA).' }
-    $path = Write-M2CoopClientConfig -ClientFolder $client -Invite $inv
-    Write-Host ("Zapisano {0}" -f $path) -ForegroundColor Green
+    # The host's home address when this machine is in that network and the
+    # world answers there (Select-M2CoopJoinHost), the invite's own otherwise.
+    $choice = Resolve-M2CoopJoinHost -Invite $inv
+    $path = Write-M2CoopClientConfig -ClientFolder $client -Invite $inv -HostAddress $choice.Host
+    Write-Host ("Zapisano {0} (adres {1})" -f $path, $choice.Host) -ForegroundColor Green
     Write-Host ("W kliencie wybierz serwer 'Online: {0}' i zaloguj się: login {1}, hasło {2}" -f $inv.name, $inv.login, $inv.password) -ForegroundColor Cyan
-    $advice = Get-M2CoopJoinAdvice -Invite $inv
+    $advice = $(if ($choice.Lan) { '' } else { Get-M2CoopJoinAdvice -Invite $inv })
     if ($advice) { Write-Host $advice -ForegroundColor Yellow }
-    if (Test-M2CoopHostAnswers -HostAddress ([string]$inv.host) -Port ([int]$inv.auth)) { Write-Host 'Serwer znajomego odpowiada z tego komputera.' -ForegroundColor Green }
-    else { Write-Host 'Serwer znajomego teraz nie odpowiada - sprawdź, czy ma uruchomiony serwer i włączone hostowanie.' -ForegroundColor Yellow }
+    foreach ($note in @(Get-M2CoopJoinNotes -Choice $choice)) {
+        Write-Host $note -ForegroundColor $(if ($choice.Answers) { 'Green' } else { 'Yellow' })
+    }
 }
 
 function Invoke-Action {

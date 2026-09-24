@@ -758,10 +758,11 @@ function Get-M2CoopWorldName {
 
 function Get-M2CoopFriendInvite {
     param([Parameter(Mandatory = $true)][string]$ServerRoot, [Parameter(Mandatory = $true)]$Friend,
-        [Parameter(Mandatory = $true)][string]$HostAddress, [AllowEmptyString()][string]$Vpn = '')
+        [Parameter(Mandatory = $true)][string]$HostAddress, [AllowEmptyString()][string]$Vpn = '',
+        [AllowEmptyString()][string]$Lan = '')
     $ports = Get-M2CoopGamePorts -ServerRoot $ServerRoot
     return (New-M2CoopInvite -HostAddress $HostAddress -Ports $ports -WorldName (Get-M2CoopWorldName -ServerRoot $ServerRoot) `
-            -Login ([string]$Friend.login) -Password ([string]$Friend.password) -Vpn $Vpn)
+            -Login ([string]$Friend.login) -Password ([string]$Friend.password) -Vpn $Vpn -Lan $Lan)
 }
 
 function Get-M2CoopInviteTarget {
@@ -776,15 +777,23 @@ function Get-M2CoopInviteTarget {
     $hosting = $state.hosting
     $names = @()
     if ($hosting) { $names = @($hosting.PSObject.Properties.Name) }
+    # The host's address in its own network goes with every code: a friend
+    # in the same house - the second PC, the laptop on the same Wi-Fi - is
+    # sent there instead (Select-M2CoopJoinHost). Read afresh, the stored one
+    # standing in only while no adapter answers.
+    $lan = ''
+    $lanNow = Get-M2CoopLanAddress
+    if ($lanNow) { $lan = [string]$lanNow.Address }
+    if (-not $lan -and ($names -contains 'lanAddress')) { $lan = [string]$hosting.lanAddress }
     if (($names -contains 'mode') -and [string]$hosting.mode -eq 'vpn' -and ($names -contains 'vpn')) {
         $kind = [string]$hosting.vpn
         $address = ''
         foreach ($vpn in @(Get-M2CoopVpnAdapters)) { if ($vpn.Kind -eq $kind) { $address = $vpn.Address; break } }
         if (-not $address -and ($names -contains 'friendAddress')) { $address = [string]$hosting.friendAddress }
         $product = Get-M2CoopVpnProduct -Kind $kind
-        return [pscustomobject]@{ Address = $address; Vpn = $kind; VpnName = $(if ($product) { $product.Name } else { $kind }) }
+        return [pscustomobject]@{ Address = $address; Vpn = $kind; VpnName = $(if ($product) { $product.Name } else { $kind }); Lan = $lan }
     }
-    return [pscustomobject]@{ Address = (Get-M2CoopPublicAddress); Vpn = ''; VpnName = '' }
+    return [pscustomobject]@{ Address = (Get-M2CoopPublicAddress); Vpn = ''; VpnName = ''; Lan = $lan }
 }
 
 function Get-M2CoopJoinAdvice {
@@ -804,9 +813,17 @@ function Get-M2CoopJoinAdvice {
 
 # ---------------------------------------------------------------- invite
 
+function Test-M2CoopLanInviteAddress {
+    # An address worth sending a friend in the host's own network to: a
+    # private IPv4 of 10/8, 172.16/12 or 192.168/16, not the loopback.
+    param([AllowEmptyString()][string]$Address)
+    return ($Address -and $Address -notmatch '^127\.' -and (Test-M2CoopPrivateAddress $Address))
+}
+
 function New-M2CoopInvite {
     param([Parameter(Mandatory = $true)][string]$HostAddress, [Parameter(Mandatory = $true)][int[]]$Ports,
-        [string]$WorldName = '', [string]$Login = '', [string]$Password = '', [AllowEmptyString()][string]$Vpn = '')
+        [string]$WorldName = '', [string]$Login = '', [string]$Password = '', [AllowEmptyString()][string]$Vpn = '',
+        [AllowEmptyString()][string]$Lan = '')
     $auth = $Ports[0]
     $game = @($Ports | Select-Object -Skip 1)
     $channels = [Math]::Max(1, [int][Math]::Ceiling(($game | Measure-Object).Count / 3.0))
@@ -819,6 +836,13 @@ function New-M2CoopInvite {
     # code it was in 2.0.80, and a reader that does not know the field - the
     # client's Dolacz.ps1 of client 2.0.17 - skips it.
     if ($Vpn) { $payload['vpn'] = $Vpn }
+    # The host's address in its own network, for a friend in the same house.
+    # The Internet address reaches the host from there only through a router
+    # that forwards the ports and loops a connection to its own address back
+    # in, and many do neither: xXxDaronxXx (24 September) tested with his own
+    # laptop, the router answered no UPnP, and not one connection reached the
+    # auth core in half an hour. Readers older than the field skip it.
+    if ((Test-M2CoopLanInviteAddress $Lan) -and $Lan -ne $HostAddress) { $payload['lan'] = $Lan }
     $json = $payload | ConvertTo-Json -Compress
     $b64 = [Convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes($json)).TrimEnd('=').Replace('+', '-').Replace('/', '_')
     return $script:CoopInvitePrefix + $b64
@@ -846,7 +870,76 @@ function Read-M2CoopInvite {
         $invite.vpn = $vpn
     }
     else { $invite | Add-Member -NotePropertyName vpn -NotePropertyValue $vpn }
+    # And a lan field, empty unless it holds a private IPv4.
+    $lan = ''
+    if ($invite.PSObject.Properties.Name -contains 'lan') {
+        $lan = [string]$invite.lan
+        if (-not (Test-M2CoopLanInviteAddress $lan)) { $lan = '' }
+        $invite.lan = $lan
+    }
+    else { $invite | Add-Member -NotePropertyName lan -NotePropertyValue $lan }
     return $invite
+}
+
+function Test-M2CoopSameNetwork {
+    # Whether this machine stands in the network an address belongs to, as a
+    # home network is laid out: the first three numbers the same (a /24).
+    # Pure, so it can be tried on addresses of machines it never ran on.
+    param([AllowEmptyString()][string]$Address, [string[]]$LocalAddresses = @())
+    if ($Address -notmatch '^(\d{1,3}\.\d{1,3}\.\d{1,3})\.\d{1,3}$') { return $false }
+    $prefix = $Matches[1] + '.'
+    foreach ($local in @($LocalAddresses)) { if (([string]$local).StartsWith($prefix)) { return $true } }
+    return $false
+}
+
+function Select-M2CoopJoinHost {
+    # Where a friend's client is sent: the host's address in its own network
+    # when the invite carries one, this machine stands in that network and
+    # the world answers there; the invite's own address otherwise. Pure but
+    # for the probe, a scriptblock of (address, port) answering whether the
+    # world's auth speaks there. The home address is asked only in the same
+    # network: plenty of home networks are 192.168.1.x, and a friend's own
+    # would be asked about a machine that is not there.
+    param([Parameter(Mandatory = $true)]$Invite, [string[]]$LocalAddresses = @(),
+        [Parameter(Mandatory = $true)][scriptblock]$Probe)
+    $lan = ''
+    if ($Invite.PSObject.Properties.Name -contains 'lan') { $lan = [string]$Invite.lan }
+    $auth = [int]$Invite.auth
+    $same = [bool]((Test-M2CoopLanInviteAddress $lan) -and (Test-M2CoopSameNetwork -Address $lan -LocalAddresses $LocalAddresses))
+    if ($same -and [bool](& $Probe $lan $auth)) {
+        return [pscustomobject]@{ Host = $lan; Lan = $true; SameNetwork = $true; Answers = $true; LanAddress = $lan }
+    }
+    $answers = [bool](& $Probe ([string]$Invite.host) $auth)
+    return [pscustomobject]@{ Host = [string]$Invite.host; Lan = $false; SameNetwork = $same; Answers = $answers; LanAddress = $lan }
+}
+
+function Get-M2CoopLocalAddresses {
+    # This machine's IPv4 addresses, the loopback and link-local left out.
+    try {
+        return @(Get-NetIPAddress -AddressFamily IPv4 -ErrorAction Stop | ForEach-Object { [string]$_.IPAddress } |
+            Where-Object { $_ -and $_ -notmatch '^(127\.|169\.254\.)' })
+    }
+    catch { return @() }
+}
+
+function Resolve-M2CoopJoinHost {
+    param([Parameter(Mandatory = $true)]$Invite)
+    $probe = { param($address, $port) Test-M2CoopHostAnswers -HostAddress $address -Port $port -TimeoutMs 2500 }
+    return (Select-M2CoopJoinHost -Invite $Invite -LocalAddresses @(Get-M2CoopLocalAddresses) -Probe $probe)
+}
+
+function Get-M2CoopJoinNotes {
+    # What the joining side says after the join, in its own words: the home
+    # network taken, the world answering, or what to ask the host for.
+    param([Parameter(Mandatory = $true)]$Choice)
+    $notes = @()
+    if ($Choice.Lan) { $notes += ('Jesteś w tej samej sieci domowej co host - gra połączy się przez jego adres w tej sieci ({0}), bez routera.' -f $Choice.Host) }
+    elseif ($Choice.Answers) { $notes += 'Serwer znajomego odpowiada.' }
+    elseif ($Choice.SameNetwork) {
+        $notes += ('Jesteś w tej samej sieci domowej co host ({0}), ale jego serwer tu nie odpowiada. Host musi mieć włączone hostowanie i pozwolić Windows na regułę zapory (HOSTUJ ŚWIAT, w okienku Windows "Tak"). Potem wklej kod jeszcze raz.' -f $Choice.LanAddress)
+    }
+    else { $notes += 'Serwer znajomego teraz nie odpowiada - poproś, żeby uruchomił serwer (GRAJ) i włączył hostowanie.' }
+    return $notes
 }
 
 function Get-M2CoopClientFolder {
@@ -871,7 +964,10 @@ function Get-M2CoopClientFolder {
 }
 
 function Write-M2CoopClientConfig {
-    param([Parameter(Mandatory = $true)][string]$ClientFolder, [Parameter(Mandatory = $true)]$Invite)
+    # HostAddress is where the client goes when it is not the invite's own
+    # address: the host's home one (Select-M2CoopJoinHost).
+    param([Parameter(Mandatory = $true)][string]$ClientFolder, [Parameter(Mandatory = $true)]$Invite,
+        [AllowEmptyString()][string]$HostAddress = '')
     # The client reads coop.cfg as ASCII; a Polish letter becomes its plain
     # one rather than vanishing ("Swiat", not "wiat").
     $plain = [string]$Invite.name
@@ -881,10 +977,11 @@ function Write-M2CoopClientConfig {
     foreach ($k in $pairs.Keys) { $plain = $plain.Replace([string]$k, $pairs[$k]) }
     $name = ($plain -replace '[^\x20-\x7e]', '')
     if (-not $name) { $name = [string]$Invite.host }
+    $target = $(if ($HostAddress) { $HostAddress } else { [string]$Invite.host })
     $lines = @(
         '# Metin2 SinglePlayer - swiat znajomego (zapisal launcher, kod zaproszenia)',
         ('name=' + $name),
-        ('host=' + [string]$Invite.host),
+        ('host=' + $target),
         ('auth=' + [int]$Invite.auth),
         ('channel=' + [int]$Invite.channel),
         ('channels=' + [int]$Invite.channels)
@@ -904,4 +1001,6 @@ Export-ModuleMember -Function Get-M2CoopStatePath, Read-M2CoopState, Save-M2Coop
     Get-M2CoopWorldName, Get-M2CoopFriendInvite, Get-M2CoopAccessDigest, Test-M2CoopAccess, Grant-M2CoopAccess,
     Get-M2CoopVpnProduct, Select-M2CoopVpnAdapters, Get-M2CoopVpnAdapters, Get-M2CoopVpnKindForAddress, Resolve-M2CoopHostingVia,
     Test-M2CoopHostAnswers, Get-M2CoopInviteTarget, Get-M2CoopJoinAdvice,
-    Get-M2CoopUpnpRefusal, Resolve-M2CoopRouterFallback, Get-M2CoopRouterHelp
+    Get-M2CoopUpnpRefusal, Resolve-M2CoopRouterFallback, Get-M2CoopRouterHelp,
+    Test-M2CoopLanInviteAddress, Test-M2CoopSameNetwork, Select-M2CoopJoinHost, Get-M2CoopLocalAddresses,
+    Resolve-M2CoopJoinHost, Get-M2CoopJoinNotes
