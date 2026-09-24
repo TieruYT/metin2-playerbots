@@ -17,6 +17,74 @@ every version here.
 
 ---
 
+## 2.2.11 — 2026-09-24
+
+Serwer 2.2.11 i klient 2.0.32. Zaktualizuj oba („AKTUALIZUJ wszystko”
+w launcherze). Nowy klient zmienia tylko Dolacz.bat dla znajomych w COOP
+(i opis obok niego), więc klient 2.0.31 też działa z nowym serwerem.
+Zawiera wszystko z 2.2.10.
+
+### Zwoje Błogosławieństwa z Metinów (Iwakura)
+
+- Metiny od 15 do 90 poziomu dają Zwój Błogosławieństwa z szansą 5%, graczom
+  i botom. Dotąd na poziomach 25-50 zwojów prawie nie było: ze zwykłych
+  potworów wypadały dopiero postaciom od 50 poziomu, poza tym z niektórych
+  potworów i Metinów od ok. 70 poziomu, ze skrzyń bossów i ze Szkatułki
+  Blasku Księżyca w czasie eventu. Cały świat testowy miał 39 zwojów.
+- Postać wyższa od kamienia o więcej niż 15 poziomów zwoju nie dostanie,
+  tak jak księgi z Metina.
+- Szansę ustawia `M2_BLESSING_SCROLL_STONE_PERMILLE` w `.env` (w promilach:
+  50 to 5%, 0 wyłącza). Launcher sam dopisze ten klucz przy następnym
+  uruchomieniu.
+
+### Ulepszanie po 25 poziomie (zgłosił Iwakura)
+
+- Boty ryzykują więcej: połowa kroków, na których bot użyłby zwoju albo na
+  niego czekał, idzie do zwykłego kowala. Losowanie jest osobne dla każdego
+  przedmiotu i każdego plusa i powtarza się co 3 godziny, więc przedmiot nie
+  czeka na zwój bez końca. Dotyczy to broni na 30 poziom powyżej jej progu
+  (np. po +6), przedmiotów z cennymi bonusami i zwojów w torbie, które
+  zostają wtedy na inny krok albo na sprzedaż.
+- Bez zmian zostaje ochrona tego, czego bot nie może stracić: broń z bardzo
+  dobrą średnią (od 37% albo od 15% obrażeń umiejętności) dalej idzie tylko
+  pod zwojem, a noszona zbroja i noszona broń lepsza od tej u handlarza nie
+  idą bez zapasowej sztuki do zwykłego kowala na krok, który może je spalić.
+- Bot trzyma w torbie zapasową zbroję tak jak zapasową broń: nie sprzedaje
+  jej, nie wystawia i nie odkłada do magazynu. Gdy jej nie ma, a noszona
+  zbroja przez to czeka na zwój, kupuje u handlarza zbrojami najlepszą
+  zbroję, jaką ten ma dla jego klasy. Na świecie testowym 37% botów od 25
+  poziomu nosiło zbroję, którą następny krok mógł spalić, bez żadnej innej
+  w torbie.
+- Ochrona jedynej zbroi działa przez całą wizytę u kowala. Dotąd działała
+  tylko przy pierwszym kroku, bo potem zbroja leży w torbie do końca wizyty.
+- Blokada Hazardzisty po Perfekcjoniście trwa już tylko do końca tej samej
+  wizyty w mieście, a nie pół godziny. Hazardzista dalej rusza rzadko:
+  Perfekcjonistą bot jest prawie w każdej wizycie z kowalem, a po nim,
+  według opisu Iwakury, Hazardzista ruszyć nie może.
+
+### COOP w testach u patronów (zgłosił xXxDaronxXx)
+
+- Kod zaproszenia ma też adres komputera hosta w sieci domowej. Gdy znajomy
+  jest w tej samej sieci (np. laptop na tym samym Wi-Fi), Dolacz.bat
+  i launcher same wybierają ten adres i router nie jest potrzebny.
+- Okno COOP samo prosi Windows o regułę zapory, zanim uruchomi hostowanie,
+  więc okienko Windows jest widoczne na ekranie. Dotąd tylko migało na
+  pasku zadań.
+- Gdy router nie odpowiada na UPnP, launcher mówi to na czerwono
+  i podpowiada, co zrobić, zamiast kończyć „Hostowanie włączone”. Gdy na
+  komputerze jest VPN, a sposób hostowania wybiera launcher, hostuje przez
+  VPN.
+
+### Aktualizacja na VPS (recenzja narzędzia Tyriona)
+
+- `linux-port/tools/update.sh run` przyjmuje gotowy manifest i sprawdzony
+  zip (`M2_UPDATE_MANIFEST_FILE`, `M2_UPDATE_ZIP`) i wtedy niczego nie
+  pobiera drugi raz. Przy każdej aktualizacji sprawdza też, czy wersja
+  w zipie zgadza się z manifestem, i przerywa, zanim cokolwiek rozpakuje.
+- `.env.example`: po zmianie hasła panelu trzeba
+  `docker compose up -d --force-recreate panel`, nie `restart` (restart
+  zostawia stare hasło).
+
 ## 2.2.10 — 2026-09-24
 
 Serwer 2.2.10 i klient 2.0.31. Zaktualizuj oba („AKTUALIZUJ wszystko”
