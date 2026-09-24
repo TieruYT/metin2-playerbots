@@ -1427,6 +1427,7 @@ def main(root):
     apply_auto_hunt_offsets(game)
     apply_hwang_curse_removed(game)
     apply_playerbot_guild_invites(game)
+    apply_player_war_on_bot_guilds(game)
     apply_bot_warpset(game)
     apply_quest_item_use_log(game)
     apply_quest_item_event_log(game)
@@ -1482,6 +1483,57 @@ def apply_playerbot_guild_invites(game):
          '\tif (pchInvitee->GetDesc()->IsBot())\n'
          '\t\tCPlayerBotManager::instance().OnGuildInvite(this, pchInviter, pchInvitee);\n',
          marker='CPlayerBotManager::instance().OnGuildInvite(')
+
+
+def apply_player_war_on_bot_guilds(game):
+    """A guild master's war on a bot guild is a field war the bots answer.
+
+    do_war refuses a player every field war (CGuild::CanStartWar is false for
+    GUILD_WAR_TYPE_FIELD), and an arena war needs the arena's map on the
+    player's own core (GuildWar_IsWarMap), which 110 and 111 never are on this
+    world's village cores - so a player's guild could not war on the bots at
+    all ("Mozliwosc rozpoczecia wojny gildii na gildie botow", Remigiusz, 18
+    September). A declaration on a bot guild goes to the manager, which
+    declares a field war past both rules (HandlePlayerWarOnBotGuild in
+    playerbot_guild_war.h). And every declaration the db core hands a core
+    goes to the manager too, so the core that fights the bot guild's
+    kingdom's wars can answer it (NotePlayerBotGuildWarDeclared).
+    """
+    cmd = os.path.join(game, 'cmd_general.cpp')
+    edit(cmd,
+         '#include "war_map.h"\n',
+         '#include "war_map.h"\n#include "playerbot_manager.h"\n',
+         marker='#include "playerbot_manager.h"\n')
+    edit(cmd,
+         '\tCGuild * opp_g = CGuildManager::instance().FindGuildByName(arg1);\n'
+         '\n'
+         '\tif (!opp_g)\n'
+         '\t{\n'
+         '\t\tch->ChatPacket(CHAT_TYPE_INFO, LC_TEXT("[Guild] No guild with this name exists."));\n'
+         '\t\treturn;\n'
+         '\t}\n',
+         '\tCGuild * opp_g = CGuildManager::instance().FindGuildByName(arg1);\n'
+         '\n'
+         '\tif (!opp_g)\n'
+         '\t{\n'
+         '\t\tch->ChatPacket(CHAT_TYPE_INFO, LC_TEXT("[Guild] No guild with this name exists."));\n'
+         '\t\treturn;\n'
+         '\t}\n'
+         '\n'
+         '\t// Playerbot: a war on a bot guild is a field war the bots answer\n'
+         '\t// themselves (playerbotify.py, apply_player_war_on_bot_guilds).\n'
+         '\tif (CPlayerBotManager::instance().OnPlayerWarRequest(ch, g, opp_g))\n'
+         '\t\treturn;\n',
+         marker='CPlayerBotManager::instance().OnPlayerWarRequest(')
+    edit(os.path.join(game, 'input_db.cpp'),
+         '\t\t\tCGuildManager::instance().DeclareWar(p->dwGuildFrom, p->dwGuildTo, p->bType);\n'
+         '\t\t\tbreak;\n',
+         '\t\t\tCGuildManager::instance().DeclareWar(p->dwGuildFrom, p->dwGuildTo, p->bType);\n'
+         '\t\t\t// Playerbot: a player\'s declaration on a bot guild waits for the\n'
+         '\t\t\t// bots\' answer (playerbotify.py, apply_player_war_on_bot_guilds).\n'
+         '\t\t\tCPlayerBotManager::instance().OnGuildWarDeclared(p->dwGuildFrom, p->dwGuildTo, p->bType);\n'
+         '\t\t\tbreak;\n',
+         marker='CPlayerBotManager::instance().OnGuildWarDeclared(')
 
 
 def apply_hwang_curse_removed(game):

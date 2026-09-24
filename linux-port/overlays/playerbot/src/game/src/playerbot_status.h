@@ -369,7 +369,15 @@ namespace
 		if (state.dwGuildWarEnemyGID != 0)
 		{
 			CGuild* enemy = CGuildManager::instance().FindGuild(state.dwGuildWarEnemyGID);
-			snprintf(status, statusSize, PBT(en, "%sWojna gildii z %s", "%sGuild war with %s"), prefix, enemy ? enemy->GetName() : "?");
+			// The war's first seconds are the muster at the camp
+			// (PLAYERBOT_GUILD_WAR_MUSTER_SECONDS, playerbot_guild_war.h).
+			CGuild* mine = ch ? ch->GetGuild() : NULL;
+			const DWORD startedAt = (mine && enemy) ? mine->GetWarStartTime(enemy->GetID()) : 0;
+			if (startedAt != 0 && (DWORD)get_global_time() < startedAt + PLAYERBOT_GUILD_WAR_MUSTER_SECONDS)
+				snprintf(status, statusSize, PBT(en, "%sZbiorka przed wojna gildii z %s", "%sMustering for the guild war with %s"),
+						prefix, enemy ? enemy->GetName() : "?");
+			else
+				snprintf(status, statusSize, PBT(en, "%sWojna gildii z %s", "%sGuild war with %s"), prefix, enemy ? enemy->GetName() : "?");
 			return;
 		}
 		if (state.bVisitingShop)

@@ -1317,14 +1317,43 @@ namespace
 	const DWORD PLAYERBOT_GUILD_WAR_RETRY_MS = 10 * 60 * 1000;
 	const DWORD PLAYERBOT_GUILD_WAR_DECLARE_TIMEOUT = 3 * 60 * 1000;
 	const int PLAYERBOT_GUILD_WAR_MIN_ONLINE = 8;
-	// The sides stand this far apart on the battlefield, on open ground found
-	// within this radius of the map's Town.txt point (playerbot_guild_war.h).
-	// Both sides rally on the same ground, the open middle nearest the map's
-	// Town.txt point, and fight from the first minute: a spread of 700 made
-	// two columns standing apart ("niech ida od poczatku na srodek strefy
-	// sie bic", Tieru, 17 September).
-	const int PLAYERBOT_GUILD_WAR_RALLY_SPREAD = 0;
+	// The battlefield's middle is the open ground nearest the map's Town.txt
+	// point, found within this radius (playerbot_guild_war.h).
 	const long PLAYERBOT_GUILD_WAR_GROUND_SEARCH = 6000;
+	// Each side has a camp of its own, one of CAMP_DISTANCES from the middle
+	// on opposite sides of it, and fights in the middle. Both sides on one
+	// ground fought from the first second, the side that cast the first area
+	// skill won, and the dead stood up among their killers to be killed again:
+	// "fajnie jakby gildie mialy 2 oddzielne teleporty, mialy jakies pare
+	// sekund na zbuffowanie sie i dopiero wtedy ogien" (prodnathin, 24
+	// September), "zeby boty dobiegaly na srodek sie bic" (Tieru). A spread of
+	// 700 in September left two columns standing apart ("niech ida od
+	// poczatku na srodek", Tieru, 17 September), which the muster answers:
+	// once it is over a bot goes for a foe or for the middle, never back to
+	// its camp. The first distance the map's ground allows is taken - both
+	// camps open, CAMP_SAFE_MARGIN clear of the safe zone and joined to the
+	// middle; where none is, both sides share the middle as before.
+	const long PLAYERBOT_GUILD_WAR_CAMP_DISTANCES[] = { 1500, 1200, 900, 600 };
+	const long PLAYERBOT_GUILD_WAR_CAMP_SAFE_MARGIN = 400;
+	const long PLAYERBOT_GUILD_WAR_CAMP_SNAP = 300;
+	// And the middle may move up to MIDDLE_SHIFT from that ground, in steps of
+	// MIDDLE_SHIFT_STEP, where the camps get more room. The ground nearest the
+	// Town.txt point sits on the safe zone's own margin, so camps across it
+	// stood 1019 apart on Jinno's guild map and 1763 on Shinsoo's, against
+	// 2807 on Chunjo's; moved 800 and 894 units they are 2707 and 2716
+	// (measured on the three maps' server_attr, 24 September).
+	const long PLAYERBOT_GUILD_WAR_MIDDLE_SHIFT = 800;
+	const long PLAYERBOT_GUILD_WAR_MIDDLE_SHIFT_STEP = 400;
+	// "At the camp", for the muster, the buffs and the grace below.
+	const long PLAYERBOT_GUILD_WAR_CAMP_RADIUS = 500;
+	// The muster: for this long after the war's start each side stands at its
+	// camp and buffs, and fights only a foe who comes within DEFEND_RANGE.
+	const DWORD PLAYERBOT_GUILD_WAR_MUSTER_SECONDS = 20;
+	const long PLAYERBOT_GUILD_WAR_CAMP_DEFEND_RANGE = 900;
+	// A bot that fell stands up at its own camp, and once healed nobody picks
+	// it as a foe there for this long while it buffs - the other side does not
+	// take the dead one by one as they rise.
+	const DWORD PLAYERBOT_GUILD_WAR_CAMP_GRACE_MS = 12 * 1000;
 	// And the ground keeps this far from the map's safe zone. The nearest open
 	// cell to the Town.txt point is the zone's own edge - fifty units from
 	// ATTR_BANPK on metin2_map_guild_02 and a hundred on _03, measured on
@@ -1337,7 +1366,24 @@ namespace
 	// beyond it is not chased, and a bot beyond it walks back to its spot
 	// (IsPlayerBotOnWarField). A spot is the ground and 400 of pid, so the
 	// crowd stands well inside; the rest is room for a charge and a chase.
+	// With the camps apart the field also takes in CAMP_RADIUS plus
+	// FIELD_BEYOND_CAMP round each camp - along the camps' axis, not sideways.
 	const long PLAYERBOT_GUILD_WAR_FIELD_RADIUS = 1800;
+	const long PLAYERBOT_GUILD_WAR_FIELD_BEYOND_CAMP = 600;
+	// A player's guild against a bot guild (playerbot_guild_war.h). The bots
+	// answer the master's declaration on the guild chat after THINK_MS. A bot
+	// guild takes a player's war BOT_REST_SECONDS after its own last war, and a
+	// player's guild gets one PLAYER_REST_SECONDS after its last against bots:
+	// the rest Remigiusz asked for ("jakis cd jak w przypadku wojen boty vs
+	// boty", 18 September), so no guild farms the ladder on one bot guild
+	// after another. A kingdom's next bot war comes no sooner than
+	// AFTER_PLAYER_WAR_MS after a player's has ended. The enemy's people on
+	// this core are looked for every HUMANS_REFRESH_MS.
+	const DWORD PLAYERBOT_GUILD_WAR_OFFER_THINK_MS = 5 * 1000;
+	const DWORD PLAYERBOT_GUILD_WAR_BOT_REST_SECONDS = 60 * 60;
+	const DWORD PLAYERBOT_GUILD_WAR_PLAYER_REST_SECONDS = 60 * 60;
+	const DWORD PLAYERBOT_GUILD_WAR_AFTER_PLAYER_WAR_MS = 30 * 60 * 1000;
+	const DWORD PLAYERBOT_GUILD_WAR_HUMANS_REFRESH_MS = 2000;
 	// Who a bot takes on at war. It took the nearest enemy and held him to his
 	// death, and the two sides rally on one ground, so the first enemy to
 	// arrive was everybody's nearest and the war was a queue: "wszyscy sie
@@ -6224,6 +6270,7 @@ namespace
 			dwLastGuildPromotionTime(0),
 			dwGuildWarEnemyGID(0),
 			dwNextGuildWarMoveTime(0),
+			dwGuildWarCampUntil(0),
 			dwTowerRaidGuild(0),
 			bTowerSummoned(false),
 			lTowerInstance(0),
@@ -6606,6 +6653,9 @@ namespace
 		// otherwise), and the clock on its walks to and about the battlefield.
 		DWORD dwGuildWarEnemyGID;
 		DWORD dwNextGuildWarMoveTime;
+		// Until when a bot that stood up at its war camp is left alone there
+		// (PLAYERBOT_GUILD_WAR_CAMP_GRACE_MS); zero once it steps out.
+		DWORD dwGuildWarCampUntil;
 		// The Demon Tower (playerbot_demon_tower.h): the raid this bot answered
 		// (its guild's id, zero otherwise), whether its human master called it
 		// to the ground floor, the instance it is in, the clock on its walks

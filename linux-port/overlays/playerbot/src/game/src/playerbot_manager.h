@@ -68,6 +68,14 @@ class CPlayerBotManager : public singleton<CPlayerBotManager>
 		// A player invited a bot into a guild (CGuild::Invite, mt2009 via
 		// playerbotify.py): answered on the spot, while the invitation lives.
 		void	OnGuildInvite(CGuild* guild, LPCHARACTER inviter, LPCHARACTER invitee);
+		// A guild master's /war (cmd_general.cpp, mt2009 via playerbotify.py):
+		// on a bot guild it is a field war the bots answer themselves, declared
+		// here past the engine's rules for players; true when it was one.
+		bool	OnPlayerWarRequest(LPCHARACTER ch, CGuild* mine, CGuild* opponent);
+		// Every war declaration the db core hands a core (CInputDB::GuildWar,
+		// mt2009 via playerbotify.py): a player's on a bot guild waits for the
+		// bots' answer (playerbot_guild_war.h).
+		void	OnGuildWarDeclared(DWORD dwGuildFrom, DWORD dwGuildTo, BYTE bType);
 		// A player struck a bot, or a person in a party (CHARACTER::Damage,
 		// mt2009 via playerbotify.py): the Anti-PK protocol's only source of
 		// who is attacking a bot - the engine keeps no record of it.

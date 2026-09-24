@@ -114,7 +114,7 @@ dependency order at the top of `playerbot_manager.cpp`:
 | `playerbot_wandering.h` | What a bot does on a hunting map when nothing is asking for its attention. |
 | `playerbot_status.h` | What a bot shows above its head, and the words for it. |
 | `playerbot_targeting.h` | Choosing what to hit and hitting it, including the claim that keeps hundreds of bots off the same monster. |
-| `playerbot_guild_war.h` | The bots' guild wars: the pair picked per kingdom, the engine's field war declared and accepted, the rally on the guild map and the fight there. After targeting.h because the blows are its. |
+| `playerbot_guild_war.h` | Guild wars: the pair of bot guilds picked per kingdom, a player's declaration on a bot guild answered, the engine's field war declared and accepted, the two camps and the middle on the guild map, the muster and the fight there. After targeting.h because the blows are its. |
 | `playerbot_demon_tower.h` | The bots' Demon Tower: one guild's raid at a time (the call, the gathering by the stone, the stone broken together), and the floors for whoever the jump takes - the scan of the floor, the duel-shaped fight, the keys used and handed in, the smith passed. After guild_war.h because the fight and the kingdom names are its. |
 | `playerbot_persona_rules.h` | Iwakura's personality system as pure policy: the moods, the Grinder's tiers and the Law of Advancement, the gambler's ambitions, the Anti-PK window, the companion's draw, the mercenary's terms and the Useful Items List. No engine types, unit-tested (`tests/playerbot_persona_rules_test.cpp`). Included first, with the other rules headers. |
 | `playerbot_persona_tables.h` | Rendered from his document by `tools/generate_iwakura_persona.py`: the valuables whose drop lifts a mood, and the LPP's weapons by level band, target shields and target armours. |
@@ -3240,13 +3240,14 @@ not in `data/`) reworked these point by point. What each hangs on:
   open ground, ran to 17074:14107; the sides 1500 units off were blocked
   cells on two maps besides. `FindPlayerBotWarGround` walks the sectree's
   attributes in rings from the point and refuses BLOCK, OBJECT and BANPK;
-  `GetPlayerBotWarRally` keeps the two sides per map. Any other "meet here"
+  `GetPlayerBotWarSides` keeps the middle and the two camps per map. Any other "meet here"
   point on a guild map wants the same test. The fight is the
   duel's shape (buffs, the caster's range, the gap closer, the basic blow);
   the foe in hand is kept while it stands and the roster searched only when
   it is lost, because that search is every bot in the world on every tick.
   The WARS key of the weights file switches new declarations off; a war
-  under way is fought out. No bot master accepts a player's declaration.
+  under way is fought out. A player's declaration on a bot guild is answered
+  since 2.2.10 (the note "A player's guild can war on the bots" below).
 - **The 2.x line's ItemShop is in the game, and a bot buys there as a client
   would.** Not the PHP shop of `linux-port/docker/itemshop` (that one writes
   `player.item_award`): mt2009 has `CItemShopManager` (`/itemshop open`,
@@ -5810,8 +5811,64 @@ not in `data/`) reworked these point by point. What each hangs on:
 - **A war is fought on foot, in the middle.** `CanPlayerBotEverFightOnHorse`
   kept a battle-horse rider in the saddle on the guild map and the two sides
   rallied 700 units apart (NerrVoVy's video, 17 September); the operator's
-  rule is horses dismissed and both sides on the same open ground
-  (`PLAYERBOT_GUILD_WAR_RALLY_SPREAD` 0).
+  rule is horses dismissed and both sides on the same open ground. Since
+  2.2.10 each side has a camp again, and the muster is what keeps that from
+  being two columns standing apart ("Each side musters at its camp" below).
+- **Each side musters at its camp, and the dead stand up there (2.2.10).**
+  Both sides on one ground fought from the first second, the side that cast
+  the first area skill won, and the dead stood up among their killers to be
+  killed again ("fajnie jakby gildie mialy 2 oddzielne teleporty, mialy
+  jakies pare sekund na zbuffowanie sie i dopiero wtedy ogien", prodnathin;
+  "zeby boty dobiegaly na srodek sie bic", Tieru, 24 September).
+  `GetPlayerBotWarSides` finds once a map the middle - the open ground nearest
+  the Town.txt point clear of the safe zone, moved up to
+  `PLAYERBOT_GUILD_WAR_MIDDLE_SHIFT` where the camps get more room - and two
+  camps on opposite sides of it, the first of 1500/1200/900/600 at which both
+  ends are open, `CAMP_SAFE_MARGIN` clear of the safe zone and joined to the
+  middle. On the three guild maps the camps stand 2716 (Shinsoo, map 4), 2807
+  (Chunjo, 24) and 2707 (Jinno, 44) apart; round the unmoved ground Jinno's
+  were 1019 and Shinsoo's 1763, because that ground sits on the safe zone's
+  margin. `tools`-less check: `scratchpad/war_camps_offline.py` of session
+  82d3ab90 reproduces the core's search on the maps' server_attr to the unit.
+  The war opens with `PLAYERBOT_GUILD_WAR_MUSTER_SECONDS` at the camps -
+  buffs, and only a foe who comes up to the camp is fought - then every bot
+  goes for a foe or holds the middle and never goes back to its camp, which is
+  what the two columns of 17 September lacked. The muster's clock is the
+  engine's (`CGuild::GetWarStartTime`), so the second channel keeps it too. A
+  bot that dies is put back at its camp with `Show`
+  (`PlacePlayerBotAtWarCamp` - `TransitionPlayerBotMap`'s party, stall and
+  travel clocks belong to a map change), heals there invisible, and nobody
+  picks it as a foe while it buffs (`dwGuildWarCampUntil`, read by
+  `IsPlayerBotWarFoeRecovering` and ended by the bot's own first foe). The
+  field is the old 1800 round the middle plus 1100 round each camp - along the
+  camps' axis, not sideways, which is where the fight once strung out into the
+  rock faces.
+- **A player's guild can war on the bots, and the engine had to be told how
+  (2.2.10).** `do_war` refuses a player every field war (`CanStartWar` is
+  false for GUILD_WAR_TYPE_FIELD), and an arena declaration dies on the
+  player's own core unless it hosts the arena's map (`GuildWar_IsWarMap`) -
+  110 and 111 are on `first`, so from a village core a player could declare
+  no war at all, while the client hides the field ("Normal") button and ticks
+  the arena. `apply_player_war_on_bot_guilds` (playerbotify.py) hands a
+  `/war` on a bot guild to the manager (`HandlePlayerWarOnBotGuild`: the same
+  kingdom and the WARS switch, then a field war declared past both rules),
+  and every declaration the db core delivers (`CInputDB::GuildWar`) to
+  `NotePlayerBotGuildWarDeclared` on every core. The channel-1 core hosting
+  the bot guild's kingdom's guild map answers within
+  `PLAYERBOT_GUILD_WAR_OFFER_THINK_MS` on the player guild's chat
+  (`CGuild::Chat` reaches every core): accepted, or refused with the reason -
+  the switch, another kingdom, a war or the Tower already, the kingdom's
+  battlefield taken, fewer than eight bots online, the bot guild's hour of
+  rest after its last war, the player guild's hour after its last war on bots
+  (Remigiusz: "jakis cd jak w przypadku wojen boty vs boty"). The war takes
+  the kingdom's slot in `s_mapPlayerBotGuildWars` (`bPlayerWar`, the player's
+  guild as dwGuild1), is fought on channel 1 only, and the bots find the
+  enemy's people through `CHARACTER_MANAGER::GetPCMap` every two seconds
+  (`GetPlayerBotWarHumans`) besides the bot roster; the bots in the player's
+  own guild fight on its side from its camp. War blows were already
+  consensual to the Anti-PK protocol (`IsPlayerBotBlowConsensual`). Compiled
+  on both engines, the two hooks on mt2009; never run end to end, because
+  m2zip has had no bot guild since its reset and guilds come at level forty.
 - **The armour on the bot's back has the hand weapon's burn rule.**
   `IsPlayerBotWornArmourAtRisk`: worn body armour at a step that can burn
   (`PLAYERBOT_WORN_SCROLL_MAX_PROB`) with no other wearable body armour in the

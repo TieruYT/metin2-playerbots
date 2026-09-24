@@ -6001,6 +6001,16 @@ void CPlayerBotManager::OnGuildInvite(CGuild* guild, LPCHARACTER inviter, LPCHAR
 	AcceptPlayerBotGuildInvite(invitee, guild, inviter);
 }
 
+bool CPlayerBotManager::OnPlayerWarRequest(LPCHARACTER ch, CGuild* mine, CGuild* opponent)
+{
+	return HandlePlayerWarOnBotGuild(ch, mine, opponent);
+}
+
+void CPlayerBotManager::OnGuildWarDeclared(DWORD dwGuildFrom, DWORD dwGuildTo, BYTE bType)
+{
+	NotePlayerBotGuildWarDeclared(dwGuildFrom, dwGuildTo, bType);
+}
+
 // A player's blow at a bot, or at a person in a party (CHARACTER::Damage,
 // mt2009 via playerbotify.py): the one thing the engine does not remember
 // about a fight, and the one the Anti-PK protocol needs (playerbot_anti_pk.h).
