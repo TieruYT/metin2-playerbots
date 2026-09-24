@@ -8508,6 +8508,22 @@ not in `data/`) reworked these point by point. What each hangs on:
   was 0.8 million against bases of several (`GetPlayerBotAddictBudgetLeft` in
   `CanPlayerBotPayForOffer`), and it starts on its box's pieces as the town
   trigger does.
+- **A tool that has checked the package hands it to update.sh.** Tyrion's
+  m2-vps-update (1.1.0, reviewed 24 September) reads the manifest, downloads
+  the server zip and checks it, and then ran update.sh, which read the
+  manifest and downloaded the zip again - a second copy nobody had checked,
+  from a manifest that may have moved on meanwhile. `run` takes
+  `M2_UPDATE_MANIFEST_FILE` and `M2_UPDATE_ZIP` now and fetches neither;
+  `watch` ignores both. On every path the SHA-256 is checked against the
+  manifest and the zip's own root VERSION has to be the manifest's version,
+  or nothing is unpacked (`zip_version`, python or busybox `unzip -p`).
+  Checked in a mock server on python:3-slim and on alpine without python:
+  both variables with the network blocked, a wrong sum, a zip of another
+  version, the old path. A tool finds out whether a package supports it by
+  grepping the unpacked update.sh for `M2_UPDATE_ZIP`. The same review
+  found `docker compose restart panel` in both `.env.example` files after a
+  password change: a restarted container keeps the environment it was created
+  with, so it is `up -d --force-recreate panel`.
 
 
 ## Engine facts worth not re-deriving

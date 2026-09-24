@@ -32,6 +32,18 @@
 #  the sequence above on each one. `sh update.sh check' only prints what is
 #  installed and what is published.
 #
+#  A tool that has read the manifest and fetched and checked the package
+#  itself (Tyrion's m2-vps-update) hands both over instead of letting this
+#  script fetch them a second time, when the manifest may have moved on:
+#
+#      M2_UPDATE_MANIFEST_FILE=/path/manifest.json \
+#      M2_UPDATE_ZIP=/path/metin2-server-update-X.Y.Z.zip \
+#          sh linux-port/tools/update.sh run
+#
+#  The update then runs on exactly the bytes that tool checked. The SHA-256 is
+#  still checked against the manifest, and the zip's own VERSION has to be the
+#  manifest's. `run' only: `watch' always reads what is published.
+#
 #  Needs: docker with compose, and either python3 or curl + unzip + sha256sum.
 # =============================================================================
 set -u
@@ -116,6 +128,24 @@ sha256_of() {
     elif have shasum; then shasum -a 256 "$1" | cut -d' ' -f1
     elif have python3; then python3 -c 'import hashlib,sys; print(hashlib.sha256(open(sys.argv[1],"rb").read()).hexdigest())' "$1"
     else die "no sha256sum, shasum or python3 to check the download with"
+    fi
+}
+
+# The VERSION at the root of a package zip, or nothing when it cannot be read
+# (no tool, or a zip without one): a manifest naming one version and a zip
+# carrying another is refused before anything is unpacked.
+zip_version() {
+    if have python3; then
+        python3 - "$1" 2>/dev/null <<'EOF'
+import sys, zipfile
+z = zipfile.ZipFile(sys.argv[1])
+for info in z.infolist():
+    if info.filename.replace('\\', '/') == 'VERSION':
+        print(z.read(info).decode('ascii', 'replace').strip())
+        break
+EOF
+    elif have unzip; then
+        unzip -p "$1" VERSION 2>/dev/null | tr -d '\r\n '
     fi
 }
 
@@ -411,7 +441,18 @@ run_update() {
     STEP=0
     rm -rf "$WORK"; mkdir -p "$WORK" || { fail "cannot create $WORK"; return 1; }
     step "reading what is published"
-    fetch_manifest > "$WORK/manifest.json" 2>"$WORK/fetch.err" || { fail "the manifest could not be read: $(head -c 200 "$WORK/fetch.err")"; return 1; }
+    # What a tool hands over (the header): `run' only, never the panel's watch.
+    _given_manifest=""; _given_zip=""
+    if [ "$WATCHING" != 1 ]; then
+        _given_manifest=${M2_UPDATE_MANIFEST_FILE:-}
+        _given_zip=${M2_UPDATE_ZIP:-}
+    fi
+    if [ -n "$_given_manifest" ]; then
+        cp "$_given_manifest" "$WORK/manifest.json" 2>"$WORK/fetch.err" || { fail "the manifest $_given_manifest could not be read: $(head -c 200 "$WORK/fetch.err")"; return 1; }
+        note "   the manifest is $_given_manifest (M2_UPDATE_MANIFEST_FILE)"
+    else
+        fetch_manifest > "$WORK/manifest.json" 2>"$WORK/fetch.err" || { fail "the manifest could not be read: $(head -c 200 "$WORK/fetch.err")"; return 1; }
+    fi
     _ver=$(manifest_field "$WORK/manifest.json" version)
     _url=$(manifest_field "$WORK/manifest.json" url)
     _sha=$(manifest_field "$WORK/manifest.json" sha256 | tr 'A-F' 'a-f')
@@ -422,10 +463,20 @@ run_update() {
         set_status ok "the server is running version $_ver"
         return 0
     fi
-    step "downloading $(basename "$_url")"
-    download "$_url" "$WORK/update.zip" || { fail "the download failed"; return 1; }
+    if [ -n "$_given_zip" ]; then
+        step "taking the package $_given_zip (M2_UPDATE_ZIP)"
+        cp "$_given_zip" "$WORK/update.zip" || { fail "the package $_given_zip could not be copied"; return 1; }
+    else
+        step "downloading $(basename "$_url")"
+        download "$_url" "$WORK/update.zip" || { fail "the download failed"; return 1; }
+    fi
     _got=$(sha256_of "$WORK/update.zip" | tr 'A-F' 'a-f')
-    [ "$_got" = "$_sha" ] || { fail "the download's SHA-256 ($_got) is not the manifest's ($_sha)"; return 1; }
+    [ "$_got" = "$_sha" ] || { fail "the package's SHA-256 ($_got) is not the manifest's ($_sha)"; return 1; }
+    _zipver=$(zip_version "$WORK/update.zip")
+    if [ -n "$_zipver" ] && [ "$_zipver" != "$_ver" ]; then
+        fail "the package says version $_zipver and the manifest $_ver -- nothing was unpacked"
+        return 1
+    fi
     step "unpacking $_ver over $ROOT"
     unpack_over "$WORK/update.zip" "$ROOT" || { fail "the zip could not be unpacked"; return 1; }
     note "   the folder now says version $(installed_version)"
