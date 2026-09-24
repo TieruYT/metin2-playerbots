@@ -1,20 +1,20 @@
 {
   "schema": 1,
   "channel": "stable",
-  "publishedAt": "2026-09-24T16:46:05Z",
-  "statusMessage": "2.2.10 (serwer 2.2.10, klient 2.0.31 - zaktualizuj oba): wojna gildii graczy z gildia botow i obozy na wojnach gildii; boty czytaja receptury od razu i nie traca many na umiejetnosci w odnowieniu; Patch 3 Iwakury z rzadkimi osobowosciami (tytuly od klienta 2.0.31). Zawiera wszystko z 2.2.9.",
+  "publishedAt": "2026-09-24T19:07:02Z",
+  "statusMessage": "2.2.11 (serwer 2.2.11, klient 2.0.32 - zaktualizuj oba): Zwoje Blogoslawienstwa z Metinow 15-90 (5%, M2_BLESSING_SCROLL_STONE_PERMILLE); boty czesciej ulepszaja u zwyklego kowala zamiast czekac na zwoj i trzymaja zapasowa zbroje; COOP w sieci domowej; update.sh z gotowym zipem. Zawiera wszystko z 2.2.10.",
   "server": {
-    "version": "2.2.10",
-    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.10/metin2-server-update-2.2.10.zip",
-    "sha256": "46D74809B69518FD8A0F1B4B45211A7C4130A9E5C968D631FAD06946C22B505E"
+    "version": "2.2.11",
+    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.11/metin2-server-update-2.2.11.zip",
+    "sha256": "22D9705AD952617B3E8881ADE76B8457FB39E2F10F82BE74CEE13D55AC8632A1"
   },
   "support": {
     "contactUrl": "https://discord.gg/pt5tvnrN6",
     "uploadUrl": ""
   },
   "client": {
-    "version": "2.0.31",
-    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.10/metin2-client-update-2.0.31.zip",
-    "sha256": "F88FCE31A91C47F567B32FC4E83A11E74F2ABEF4B23243DC90CF13DC97809019"
+    "version": "2.0.32",
+    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.11/metin2-client-update-2.0.32.zip",
+    "sha256": "F89D1ABD7B99E192F38F911159AB461B55CB23B9647A9D0D8C4A602822F1E3DB"
   }
 }
