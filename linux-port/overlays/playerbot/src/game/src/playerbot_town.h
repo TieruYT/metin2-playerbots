@@ -96,7 +96,7 @@ namespace
 	int GetPlayerBotHeldFamilyLimit(LPCHARACTER ch, LPITEM item);
 	bool IsPlayerBotLppHerb(LPITEM item);
 	void CollectPlayerBotSafeboxLpp(LPCHARACTER ch, const TPlayerBotAIState& state, std::vector<WORD>& cells);
-	void RefreshPlayerBotLppStored(LPCHARACTER ch, TPlayerBotPersona& p, CSafebox* box);
+	void RefreshPlayerBotLppStored(LPCHARACTER ch, TPlayerBotPersona& p, CSafebox* box, bool countVisit);
 	void NotePlayerBotLppReleased(TPlayerBotPersona& p, DWORD itemId);
 	bool IsPlayerBotLppReleased(LPCHARACTER ch, DWORD itemId);
 	void NotePlayerBotLppDeposit();
@@ -4506,6 +4506,16 @@ namespace
 			}
 			if (box)
 			{
+				// A box this start has not looked into yet is counted before
+				// anything goes down. The deposit asks the list what it keeps,
+				// and the list counted such a box as empty, so the first visit
+				// after every restart put down what the release took straight
+				// back out at the next one: on m2zip a bot put seven armours
+				// of +4 in at 10:36 and took six out again at 10:43 (24
+				// September), and a gambler that keeps its plain pieces too
+				// would do it with its whole bag after every update.
+				if (!state.persona.bLppStoredKnown)
+					RefreshPlayerBotLppStored(ch, state.persona, box, false);
 				int toppedUp = 0;
 				// What went down in this visit, so the withdrawal below cannot
 				// ask for it back in the same breath.
@@ -4535,7 +4545,7 @@ namespace
 #endif
 				// What the box now holds of the list's families, for the choices
 				// made away from it (playerbot_lpp.h).
-				RefreshPlayerBotLppStored(ch, state.persona, box);
+				RefreshPlayerBotLppStored(ch, state.persona, box, true);
 				ch->CloseSafebox();
 				sys_log(0, "PLAYERBOT_TOWN: safebox deposit pid=%u name=%s deposited=%d taken=%d books_left=%d free_cells=%d topped_up=%d stacked=%d arranged=%d arrange_code=%d",
 						ch->GetPlayerID(), ch->GetName(), deposited, taken, CountPlayerBotSkillBooks(ch),

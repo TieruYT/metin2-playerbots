@@ -38,16 +38,24 @@
 // (CollectPlayerBotLppBoxRelease). The soul stones and the herbs are the
 // document's other modules, not point 9, and stay every bot's.
 //
-// And a gambler keeps its gear from +4 up (PLAYERBOT_LPP_KEEP_MIN_PLUS, what
-// the Demon Tower's smith takes) or with a line of his tier 5-6: the boxes
-// were thirteen thousand plain armours and jewels, and "zbroje na 34 czy 42
-// lv tez sa malo warte jesli nie sa ulepszone ... to juz lepiej jak laduja u
-// handlarza" (Tieru, 24 September).
+// A gambler keeps a plain piece too, two of a family like any other: a
+// plain piece is what its anvil works. Plain means under the grade the
+// Demon Tower's smith takes (PLAYERBOT_LPP_KEEP_MIN_PLUS), with no line of
+// his tier 5-6. What the floor decides is where a gambler's plain piece
+// goes when the list lets it go - past its family's two, outgrown, or from
+// a box with no room: to the merchant by the ordinary rules, where the
+// list's other surplus goes to the counter. 2.2.7 let every plain piece go
+// ("zbroje na 34 czy 42 lv tez sa malo warte jesli nie sa ulepszone ... to
+// juz lepiej jak laduja u handlarza", Tieru), and since only a gambler
+// keeps the list, that took the gamblers' stock and nobody else's: "czesc
+// musi zostac (po 2 sztuki danego typu) pod Hazardziste" (Iwakura, 24
+// September).
 //
 // The box is only seen when it is open, so what it holds is remembered from
 // the last visit (TPlayerBotPersona::mapLppStored). Until a visit has looked,
-// it counts as empty - which keeps more rather than less, and the visit that
-// follows puts it right.
+// it counts as empty away from the box, which keeps more rather than less;
+// at the box, the first visit of a start counts it before it deposits
+// anything, so nothing goes down that the release would take straight back.
 //
 // An implementation fragment in the sense playerbot_types.h describes. Include
 // it exactly once, after playerbot_gambler.h: the deposit leaves a gambler's
@@ -263,10 +271,10 @@ namespace
 
 	// Under the list's floor (PLAYERBOT_LPP_KEEP_MIN_PLUS): a piece of its
 	// gear below the grade the Demon Tower's smith takes, with no line of his
-	// tier 5 or 6 rolled half-way up. Such a piece is not the list's at all -
-	// not kept, not the gamblers' counter stock, and given back by the box -
-	// so the ordinary rules have it, and they take a plain piece to the
-	// merchant.
+	// tier 5 or 6 rolled half-way up. The list keeps such a piece within its
+	// family's two like any other - it is the gambler's stock for the anvil -
+	// but one it lets go is not counter goods: the ordinary rules have it,
+	// and they take a plain piece to the merchant.
 	bool IsPlayerBotLppUnderKeepFloor(LPCHARACTER ch, LPITEM item, const playerbot_persona::TLppPiece& piece)
 	{
 		if (!ch || !item || piece.kind == playerbot_persona::LPP_VALUE ||
@@ -298,10 +306,24 @@ namespace
 		return item ? std::max(0, item->GetRefineLevel()) * 16 + lines : 0;
 	}
 
+	// A piece the list holds as stock no longer: at the gambler's first target
+	// (+7) or past it, or worked by a session (setGambleForSale). The rank that
+	// chooses which copies of a family stay puts the plus first, so without
+	// this the best a session made was the one copy the list kept, and it went
+	// back down to the storekeeper while the plain ones went on the counter.
+	bool IsPlayerBotLppFinished(const TPlayerBotPersona& p, LPITEM item)
+	{
+		return item && (item->GetRefineLevel() >= (int)playerbot_persona::GAMBLE_SAFE_PLUS ||
+				p.setGambleForSale.find(item->GetID()) != p.setGambleForSale.end());
+	}
+
 	// The better copies of its family kept already: what the box holds, then
 	// the bag's copies that rank above it (or level with it, in an earlier
 	// cell). A piece that is not in the bag - a line on a counter - has every
-	// bag copy of its rank or better ahead of it.
+	// bag copy of its rank or better ahead of it. A finished copy is goods and
+	// holds no place among them, as the box's plan gives it none
+	// (CollectPlayerBotLppBoxRelease): a +7 waiting for the counter used to
+	// leave a gambler one plain copy of its family to work instead of two.
 	int CountPlayerBotLppKeptAhead(LPCHARACTER ch, const TPlayerBotPersona& p, LPITEM item, DWORD family)
 	{
 		int ahead = 0;
@@ -314,7 +336,8 @@ namespace
 		{
 			LPITEM other = ch->GetInventoryItem(cell);
 			if (!other || other == item || other->GetCell() != cell || other->IsEquipped() ||
-					other->GetType() != item->GetType() || GetPlayerBotLppFamily(other) != family)
+					other->GetType() != item->GetType() || GetPlayerBotLppFamily(other) != family ||
+					IsPlayerBotLppFinished(p, other))
 				continue;
 			const int otherRank = GetPlayerBotLppRank(other);
 			if (otherRank > rank || (otherRank == rank && (!inBag || cell < item->GetCell())))
@@ -330,17 +353,6 @@ namespace
 		LPITEM worn = cell >= 0 ? ch->GetWear((WORD)cell) : NULL;
 		return worn && worn != item && GetPlayerBotLppFamily(worn) == family &&
 				worn->GetRefineLevel() >= (int)playerbot_persona::LPP_PERFECT_PLUS;
-	}
-
-	// A piece the list holds as stock no longer: at the gambler's first target
-	// (+7) or past it, or worked by a session (setGambleForSale). The rank that
-	// chooses which copies of a family stay puts the plus first, so without
-	// this the best a session made was the one copy the list kept, and it went
-	// back down to the storekeeper while the plain ones went on the counter.
-	bool IsPlayerBotLppFinished(const TPlayerBotPersona& p, LPITEM item)
-	{
-		return item && (item->GetRefineLevel() >= (int)playerbot_persona::GAMBLE_SAFE_PLUS ||
-				p.setGambleForSale.find(item->GetID()) != p.setGambleForSale.end());
 	}
 
 	bool IsPlayerBotLppHerb(LPITEM item)
@@ -380,10 +392,11 @@ namespace
 		// (IsPlayerBotLppFinished).
 		if (IsPlayerBotLppFinished(p, item))
 			return false;
+		// A plain piece included: it is what the gambler's anvil works, two of
+		// a family like the rest.
 		playerbot_persona::TLppPiece piece;
 		DWORD family = 0;
-		if (!ClassifyPlayerBotLppItem(ch, item, piece, family) ||
-				IsPlayerBotLppUnderKeepFloor(ch, item, piece))
+		if (!ClassifyPlayerBotLppItem(ch, item, piece, family))
 			return false;
 		return playerbot_persona::LppKeeps(piece, (int)ch->GetLevel(),
 				IsPlayerBotLppFamilyPerfect(ch, item, family),
@@ -394,7 +407,9 @@ namespace
 	// outgrown, or kept by a box with no room - is counter goods, never the
 	// merchant's: "wszystko ponad ten limit musi natychmiast trafic na sklep,
 	// aby inni Hazardzisci mogli je odkupic i ulepszac" (community patch 2,
-	// point 9). Another bot's is whatever the ordinary rules make of it.
+	// point 9). Not a plain one (IsPlayerBotLppUnderKeepFloor), which goes to
+	// the merchant, and not another bot's: those are whatever the ordinary
+	// rules make of them.
 	bool IsPlayerBotLppSurplusGoods(LPCHARACTER ch, LPITEM item)
 	{
 		if (!ch || !item || item->IsEquipped() || !IsPlayerBotPersonaEnabled())
@@ -411,9 +426,9 @@ namespace
 
 	// The pieces of gear in the box it lets go of, by item id: for a gambler
 	// the list's pieces it has outgrown, a plain copy of a family it now wears
-	// at +9, every copy past a family's limit (the best stay) and every piece
-	// under the list's floor (IsPlayerBotLppUnderKeepFloor); for any other bot
-	// every piece of the list. The gear the list does not name - the
+	// at +9, what a session finished and every copy past a family's limit (the
+	// best stay, a plain one among them if the family has no better); for any
+	// other bot every piece of the list. The gear the list does not name - the
 	// dead stock of the unsold-stands rule, a level-30 weapon - is held two of
 	// a family (GetPlayerBotHeldFamilyLimit) like everything else, the rule
 	// applying "zawsze", always.
@@ -442,8 +457,7 @@ namespace
 			DWORD family = 0;
 			if (ClassifyPlayerBotLppItem(ch, item, piece, family))
 			{
-				held.limit = keeper && !IsPlayerBotLppFinished(st->second.persona, item) &&
-						!IsPlayerBotLppUnderKeepFloor(ch, item, piece)
+				held.limit = keeper && !IsPlayerBotLppFinished(st->second.persona, item)
 						? playerbot_persona::LppLimit(piece, IsPlayerBotLppFamilyPerfect(ch, item, family)) : 0;
 				held.obsolete = playerbot_persona::LppObsolete(piece, (int)ch->GetLevel());
 			}
@@ -508,7 +522,10 @@ namespace
 	}
 
 	// What the box holds of each kept family, counted while it is open.
-	void RefreshPlayerBotLppStored(LPCHARACTER ch, TPlayerBotPersona& p, CSafebox* box)
+	// `countVisit` is false for the look a visit takes before its deposit when
+	// this start has not seen the box yet: the census counts the visit once,
+	// after it.
+	void RefreshPlayerBotLppStored(LPCHARACTER ch, TPlayerBotPersona& p, CSafebox* box, bool countVisit)
 	{
 		if (!ch || !box)
 			return;
@@ -550,7 +567,8 @@ namespace
 				++n;
 		}
 		p.bLppStoredKnown = true;
-		++s_uPlayerBotLppVisits;
+		if (countVisit)
+			++s_uPlayerBotLppVisits;
 		{
 			std::set<DWORD> release;
 			CollectPlayerBotLppBoxRelease(ch, box, release);
@@ -559,7 +577,7 @@ namespace
 		}
 		const bool wasFull = p.bLppBoxFull;
 		p.bLppBoxFull = freeCells < PLAYERBOT_LPP_BOX_MIN_FREE_CELLS;
-		if (p.bLppBoxFull)
+		if (p.bLppBoxFull && countVisit)
 			++s_uPlayerBotLppBoxesFull;
 		if (p.bLppBoxFull != wasFull)
 			sys_log(0, "PLAYERBOT_LPP: box %s pid=%u name=%s free_cells=%d families=%u",

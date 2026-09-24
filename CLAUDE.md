@@ -8059,12 +8059,29 @@ not in `data/`) reworked these point by point. What each hangs on:
   had three quarters of his first page full ("Boty zbieraja nadmiar itemow,
   ktore do niczego sie im nie przydadza", GoracyDelfin; "zbroje na 34 czy 42
   lv tez sa malo warte jesli nie sa ulepszone ... to juz lepiej jak laduja u
-  handlarza", Tieru, 24 September). The list keeps its gear from
+  handlarza", Tieru, 24 September). 2.2.7 then let go of every piece under
   `PLAYERBOT_LPP_KEEP_MIN_PLUS` (+4, what the tower's smith takes as goods)
-  or with a line of his tier 5-6 rolled half-way up
-  (`IsPlayerBotLppUnderKeepFloor`); what falls under that is neither kept nor
-  the gamblers' counter stock, the box gives it back and the merchant buys
-  it. A gambler's session still works any base in the bag that is not junk.
+  with no line of his tier 5-6 rolled half-way up
+  (`IsPlayerBotLppUnderKeepFloor`). But only a gambler keeps the list at all,
+  so the floor took the gamblers' stock and nothing else: a plain piece is the
+  base its anvil works ("czesc musi zostac (po 2 sztuki danego typu) pod
+  Hazardziste", Iwakura, the same morning), and the other bots' boxes were
+  being emptied by the release anyway. So a gambler keeps its plain pieces
+  within a family's two like the rest. The floor decides only where a plain
+  piece the list lets go ends up: at the merchant, never on the counter where
+  the list's other surplus goes. A finished copy (+7, or worked by a session)
+  no longer takes one of a family's two places in the bag, just as the box's
+  plan never gave it one. And the first visit of a start counts the box
+  before its deposit (`RefreshPlayerBotLppStored(..., false)`). The list
+  counts an unseen box as empty, so the first visit after every restart put
+  down what the release took back out at the next one. On m2zip a gambler put
+  seven +4 armours in at 10:36 and six came out at 10:43. With its plain
+  pieces kept, a gambler would have done the same with its whole bag after
+  every update. Measured on m2zip in the fourteen minutes after the change:
+  65 gamblers put 99 pieces of the list down, 97 of them plain, none past a
+  family's two, and not one came back out. In the hour before there were
+  65 deposits, seven of them plain. A gambler's session still works any base
+  in the bag that is not junk.
   And the books of another build go to the counter, not the box: one is
   enough to open a counter (`PLAYERBOT_SHOP_OTHER_CLASS_BOOK_MIN`),
   `CollectPlayerBotSafeboxBooks` leaves them in the bag of a bot that can keep

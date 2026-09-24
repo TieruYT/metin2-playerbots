@@ -5758,20 +5758,21 @@ namespace
 	// a visit that takes six pieces out sends it to the merchants for them
 	// and the next one comes back for six more.
 	const DWORD PLAYERBOT_LPP_RELEASE_VISIT_GAP_MS = 4 * 60 * 1000;
-	// And the list keeps its gear from this grade up only - what the Demon
-	// Tower's smith takes as goods (PLAYERBOT_TOWER_SMITH_GOODS_MIN_PLUS) -
-	// unless a line on it is of his tier 5 or 6 (a "Wysoka Wartosc" line).
-	// Measured on m2zip on 24 September: the bots' boxes held 13 800 pieces of
-	// gear, 3 225 body armours at +0 and 8 800 earrings, boots and necklaces
-	// nearly all at +0 to +2, and a warrior of forty-five had three quarters
-	// of his first page full ("Boty zbieraja nadmiar itemow, ktore do niczego
-	// sie im nie przydadza", GoracyDelfin). The operator's word: "zbroje na
-	// 34 czy 42 lv tez sa malo warte jesli nie sa ulepszone przykladowo do
-	// +5/6 i nie sa przeznaczone do ulepszania dalej u kowala w DT, to juz
-	// lepiej jak laduja u handlarza" (Tieru). What falls under the floor is
-	// neither kept nor the gamblers' counter stock: the ordinary rules have
-	// it, which take a plain piece to the merchant, and the box gives back
-	// what it already holds of it (CollectPlayerBotLppBoxRelease).
+	// A piece of the list under this grade - what the Demon Tower's smith
+	// takes as goods (PLAYERBOT_TOWER_SMITH_GOODS_MIN_PLUS) - with no line of
+	// his tier 5 or 6 (a "Wysoka Wartosc" line) is plain. The gambler keeps
+	// it within its family's two like any other piece, since it is what the
+	// anvil works; one the list lets go goes to the merchant by the ordinary
+	// rules, never to the counter as the rest of the list's surplus does.
+	// 2.2.7 let every plain piece go: on m2zip on 24 September the boxes held
+	// 13 800 pieces of gear, 3 225 of them body armours at +0 and 8 800
+	// earrings, boots and necklaces nearly all at +0 to +2 ("Boty zbieraja
+	// nadmiar itemow, ktore do niczego sie im nie przydadza", GoracyDelfin;
+	// "zbroje na 34 czy 42 lv tez sa malo warte jesli nie sa ulepszone ... to
+	// juz lepiej jak laduja u handlarza", Tieru). But only a gambler keeps the
+	// list, so what that took was the gamblers' stock, and the boxes of every
+	// other bot were emptied by the list's own release: "czesc musi zostac
+	// (po 2 sztuki danego typu) pod Hazardziste" (Iwakura, the same day).
 	const int PLAYERBOT_LPP_KEEP_MIN_PLUS = PLAYERBOT_TOWER_SMITH_GOODS_MIN_PLUS;
 
 	// Why a bot is fighting a player (playerbot_anti_pk.h): the status line
