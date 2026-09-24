@@ -292,6 +292,17 @@ class HelpersTest(unittest.TestCase):
 			degree = uiautohunt.FacingDegree(0, 0, target[0], target[1])
 			self.assertTrue(0.0 <= degree <= 360.0, (target, degree))
 
+	def test_what_is_cast_at_an_enemy(self):
+		# The class skills that need a target, the moving and charging ones
+		# among them, and the horse's.
+		for index in (1, 2, 5, 16, 20, 31, 32, 33, 35, 46, 51, 61, 66, 76, 91, 106, 137, 140):
+			self.assertTrue(uiautohunt.NeedsTarget(index), index)
+		# Standing skills, Stealth, the Shaman's buffs, a support and a guild skill.
+		for index in (3, 4, 18, 19, 34, 47, 49, 62, 63, 79, 93, 94, 96, 109, 111, 121, 152):
+			self.assertFalse(uiautohunt.NeedsTarget(index), index)
+		STATE['toggles'].add(33)
+		self.assertFalse(uiautohunt.NeedsTarget(33))
+
 	def test_config_paths_keep_names_to_letters(self):
 		self.assertEqual(uiautohunt.ConfigPath('Ab c/1'), os.path.join('autohunt', 'postacie', 'Ab_c_1.cfg'))
 		self.assertEqual(uiautohunt.OldConfigPath('Ab c/1'), os.path.join('autohunt', 'Ab_c_1.cfg'))
@@ -441,6 +452,116 @@ class HuntTest(unittest.TestCase):
 		self.assertEqual(self.hunter.targetVid, 0)
 		self.assertEqual(STATE['attack'], [])
 		self.assertEqual(STATE['cast'], [1])
+
+	def test_an_attack_skill_waits_for_the_fight(self):
+		# Clicked on its clock from anywhere, Fast Attack took the monster
+		# under the mouse cursor or the far one being walked to, and put the
+		# Ninja 270 units before it through whatever lay between (Buby,
+		# 23 September). It goes once its monster is marked and in reach.
+		self.hunter.config['skill0_slot'] = 1
+		STATE['skills'][1] = 32
+		STATE['where'][55] = (1500, 1000, 0)
+		STATE['distance'][55] = 500
+		self.hunter.OnServerTarget('55')
+		step(self.hunter)
+		self.assertEqual(STATE['cast'], [])
+		self.assertEqual(STATE['walks'], [(1380, 1000)])
+		step(self.hunter, 1.6)
+		self.assertEqual(STATE['cast'], [])
+		STATE['distance'][55] = 150
+		step(self.hunter, 0.1)
+		# Marked on this pass, after the skills: not yet in the client's hand.
+		self.assertEqual(STATE['targets'], [55])
+		self.assertEqual(STATE['cast'], [])
+		step(self.hunter, 0.1)
+		self.assertEqual(STATE['cast'], [1])
+
+	def test_an_attack_skill_is_never_cast_at_nothing_and_a_buff_still_goes(self):
+		self.hunter.config['skill0_slot'] = 1
+		STATE['skills'][1] = 32
+		self.hunter.config['skill1_slot'] = 2
+		STATE['skills'][2] = 3
+		# What the player clicked is not the hunter's fight.
+		STATE['target'] = 77
+		STATE['distance'][77] = 100
+		step(self.hunter)
+		self.assertEqual(STATE['cast'], [2])
+		for _ in range(10):
+			step(self.hunter, 0.5)
+		self.assertNotIn(1, STATE['cast'])
+		self.assertTrue(STATE['cast'].count(2) >= 3)
+
+	def test_a_corpse_takes_no_skill(self):
+		with_new_exe(self)
+		self.hunter.config['skill0_slot'] = 1
+		STATE['skills'][1] = 32
+		STATE['where'][55] = (1100, 1000, 0)
+		STATE['distance'][55] = 100
+		self.hunter.OnServerTarget('55')
+		step(self.hunter)
+		self.assertEqual(STATE['target'], 55)
+		STATE['dead'].add(55)
+		step(self.hunter, 0.1)
+		self.assertEqual(STATE['cast'], [])
+
+	def test_fast_attack_waits_for_melee_reach_whatever_the_reach(self):
+		# An exe older than 2.0.25 takes an archery-school Ninja for a bow in
+		# the hand: the hunter stands 700 away, where a bow skill may go and
+		# Fast Attack may not.
+		STATE['race'] = 5
+		STATE['group'] = 2
+		self.hunter.config['skill0_slot'] = 1
+		STATE['skills'][1] = 32
+		self.hunter.config['skill1_slot'] = 2
+		STATE['skills'][2] = 46
+		STATE['where'][55] = (1700, 1000, 0)
+		STATE['distance'][55] = 700
+		self.hunter.OnServerTarget('55')
+		step(self.hunter)
+		step(self.hunter, 0.1)
+		self.assertEqual(STATE['cast'], [2])
+		STATE['distance'][55] = 150
+		step(self.hunter, 0.1)
+		self.assertEqual(STATE['cast'], [2, 1])
+
+	def test_with_the_attack_off_no_skill_is_cast_at_an_enemy(self):
+		self.hunter.config['attack'] = 0
+		self.hunter.config['skill0_slot'] = 1
+		STATE['skills'][1] = 32
+		STATE['target'] = 55
+		STATE['distance'][55] = 100
+		step(self.hunter)
+		self.assertEqual(STATE['cast'], [])
+
+	def test_stealth_the_shamans_buffs_and_a_guild_skill_need_no_target(self):
+		for slot, index in ((1, 34), (2, 94), (3, 111), (4, 152)):
+			self.hunter.config['skill%d_slot' % (slot - 1)] = slot
+			STATE['skills'][slot] = index
+		for _ in range(4):
+			step(self.hunter, 0.1)
+		self.assertEqual(STATE['cast'], [1, 2, 3, 4])
+
+	def test_the_client_says_what_is_standing(self):
+		stub = sys.modules['skill']
+		stub.IsStandingSkill = lambda index: index == 36
+		self.addCleanup(delattr, stub, 'IsStandingSkill')
+		self.hunter.config['skill0_slot'] = 1
+		STATE['skills'][1] = 36
+		step(self.hunter)
+		self.assertEqual(STATE['cast'], [1])
+
+	def test_a_skill_the_client_does_not_know_is_no_crash(self):
+		def unknown(index):
+			raise RuntimeError('skill.IsStandingSkill - Failed to find skill by %d' % index)
+		stub = sys.modules['skill']
+		stub.IsStandingSkill = unknown
+		self.addCleanup(delattr, stub, 'IsStandingSkill')
+		self.hunter.config['skill0_slot'] = 1
+		STATE['skills'][1] = 32
+		self.hunter.config['skill1_slot'] = 2
+		STATE['skills'][2] = 4
+		step(self.hunter)
+		self.assertEqual(STATE['cast'], [2])
 
 	def test_a_new_target_in_reach_releases_the_attack_key(self):
 		STATE['where'][55] = (1100, 1000, 0)

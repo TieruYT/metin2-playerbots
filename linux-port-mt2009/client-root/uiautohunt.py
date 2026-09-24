@@ -3,7 +3,8 @@
 # Modernized by Colide
 #
 # Auto Lowy 2.0 (Colide, 22 September). The official system's features for
-# free (pl-wiki, "System - Auto Lowy"): twelve skills on their own clocks,
+# free (pl-wiki, "System - Auto Lowy"): twelve skills on their own clocks
+# (one cast at an enemy waits for the fight - see SELF_SKILLS below),
 # six potions each under its own share of health or mana, twelve items on a
 # clock, stones, standing up after death and walking back, and a pick-up
 # by kind in a window of its own. New in 2.0: three switches for what is
@@ -96,6 +97,38 @@ STUCK_SECONDS = 8.0
 CHASE_SWITCH_MARGIN = 300
 STUCK_PAUSE = 2.0
 STUCK_SKIP_SECONDS = 60.0
+
+# A skill cast at an enemy goes only at the monster the hunter is fighting:
+# alive, in the client's own hand (player.GetTargetVID) and within reach.
+# Anything less the client settles by itself, and badly for a character
+# nobody steers. With no live target __UseSkill takes whatever stands under
+# the mouse cursor (PythonPlayerSkill.cpp, __ChangeTargetToPickedInstance);
+# out of the skill's range it walks there in a straight line, fighting the
+# hunter's own walk (__ReserveUseSkill, MODE_USE_SKILL); and Fast Attack then
+# puts the character 270 units before that monster's middle, along the
+# straight line in three dimensions, with one IsBlock test at the landing and
+# no look at what lies between (ActorInstanceMotionEvent.cpp,
+# ProcessMotionEventWarp) - over a cliff, through a wall, into a hillside.
+# Clicked on its clock from anywhere, that is the likeliest way Buby's Ninja
+# came to hang in a night sky with no world round it (23 September).
+# What needs no enemy still goes on its own clock, fight or no fight: a
+# standing skill and a toggle, which the client casts where the character
+# stands, and SELF_SKILLS - the Ninja's Stealth and the Shaman's buffs,
+# which the client turns on the caster when the target is a monster.
+SELF_SKILLS = (34, 94, 95, 96, 109, 110, 111)
+# What skill.IsStandingSkill says of this client's own skills, for an exe or
+# a stub that cannot be asked.
+STANDING_SKILLS = (3, 4, 18, 19, 47, 49, 62, 63, 64, 65, 77, 78, 79, 93)
+# Only a class's skills and the horse's are ever cast at an enemy; a guild
+# or a support skill is nobody's.
+TARGET_SKILL_RANGES = ((1, 111), (137, 140))
+# Fast Attack moves the character by its distance to the target less 270.
+# From melee reach that is a short step back onto the ground it has just
+# walked over; from the skill's own range of 800 it was a jump of 530 over
+# whatever stood between. So it waits for melee reach even when the hunter
+# reaches further - an exe older than 2.0.25 takes an archery-school Ninja
+# for a bow in the hand whatever it holds.
+WARP_SKILLS = (32,)
 
 CONFIG_BASE_DIR = 'autohunt'
 CONFIG_CHAR_DIR = os.path.join(CONFIG_BASE_DIR, 'postacie')
@@ -306,6 +339,29 @@ def IsManaItem(vnum):
             mana = False
     _manaItems[vnum] = mana
     return mana
+
+def NeedsTarget(skillIndex):
+    """Whether a skill is cast at an enemy: a skill of a class or of the horse
+    that is neither standing nor a toggle nor one of SELF_SKILLS. The client
+    says what is standing and what is a toggle (skill.IsStandingSkill and
+    skill.IsToggleSkill, both raising for a skill they do not know);
+    STANDING_SKILLS answers where it cannot."""
+    inRange = False
+    for low, high in TARGET_SKILL_RANGES:
+        if low <= skillIndex <= high:
+            inRange = True
+    if not inRange or skillIndex in SELF_SKILLS or skillIndex in STANDING_SKILLS:
+        return False
+    for name in ('IsToggleSkill', 'IsStandingSkill'):
+        ask = getattr(skill, name, None)
+        if ask is None:
+            continue
+        try:
+            if ask(skillIndex):
+                return False
+        except Exception:
+            pass
+    return True
 
 def YesNo(value):
     return 'tak' if value else 'nie'
@@ -630,7 +686,8 @@ class Hunter(object):
     def CastSkills(self, now):
         if not self.config['use_skills']:
             return
-            
+
+        fightDistance = None
         for index in xrange(SKILL_SLOTS):
             slot = self.config['skill%d_slot' % index]
             if not slot or now < self.skillNext[index]:
@@ -640,9 +697,32 @@ class Hunter(object):
                 continue
             if skill.IsToggleSkill(skillIndex) and player.IsSkillActive(slot):
                 continue
+            if NeedsTarget(skillIndex):
+                # The slot's clock is left alone, so the skill goes on the
+                # first frame the fight is there, and a buff further down
+                # still goes on this one.
+                if fightDistance is None:
+                    fightDistance = self.FightDistance()
+                limit = MELEE_REACH if skillIndex in WARP_SKILLS else self.Reach()
+                if fightDistance < 0 or fightDistance > limit:
+                    continue
             player.ClickSkillSlot(slot)
             self.skillNext[index] = now + max(SKILL_MIN_INTERVAL, float(self.config['skill%d_interval' % index]))
             return
+
+    def FightDistance(self):
+        """How far stands the monster a skill would be cast at, or -1 when the
+        client would have to find one itself: the hunter's own target, alive,
+        and in the client's hand - Chase marks it only within reach, and a
+        mark not taken yet or held by a corpse sends the client to the mouse
+        cursor. With the attack switched off nothing is fought (and Chase
+        clears whatever the client holds), so nothing is cast at an enemy."""
+        vid = self.targetVid if self.config['attack'] else 0
+        if not vid or player.GetTargetVID() != vid:
+            return -1
+        if hasattr(player, 'IsTargetDead') and player.IsTargetDead(vid):
+            return -1
+        return player.GetCharacterDistance(vid)
 
     def PickNearLoot(self, now):
         if not self.lootVid or now < self.nextLootPick:
