@@ -5096,7 +5096,12 @@ not in `data/`) reworked these point by point. What each hangs on:
   `ExecutePlayerBotBasicAttack` asked `GetArrowAndBow` and gave up; only the
   skill path nocked arrows from the bag. Seven of 127 archers of the test
   world stood with a bow, nothing in the arrow slot and a thousand arrows in
-  the bag (16 September). It nocks first now. No bot shoots without arrows -
+  the bag (16 September). It nocks first now - since 24 September for
+  real: the 16 September nock went into `AttackPlayerBotMeleeGroup`, which
+  the shot reaches only after its own `GetArrowAndBow` test has passed, so
+  an emptied quiver still stopped every plain shot until a skill nocked
+  ("archer podczas PVP stoi w miejscu i nie auto atakuje", prodnathin).
+  A fix is only in place once the path that fails reaches it. No bot shoots without arrows -
   the engine's `GetArrowAndBow` is the rule for a bot as for a player, and
   the one archer with none anywhere was walking to the weapon merchant; a
   report of "shooting without arrows" is worth checking against the arrow

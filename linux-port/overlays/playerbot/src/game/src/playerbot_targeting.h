@@ -2046,7 +2046,13 @@ namespace
 		{
 			LPITEM bow = NULL;
 			LPITEM arrow = NULL;
-			if (ch->GetArrowAndBow(&bow, &arrow, 1) != 1)
+			// Nocked from the bag before the shot is refused. The blow itself
+			// nocks too (AttackPlayerBotMeleeGroup, 16 September), but it is
+			// only reached once this test has passed, so an emptied quiver
+			// stopped every plain shot until a skill - whose path nocks - came
+			// off its cooldown ("archer podczas PVP stoi w miejscu i nie auto
+			// atakuje", prodnathin, 24 September).
+			if (!EnsurePlayerBotArrowsEquipped(ch) || ch->GetArrowAndBow(&bow, &arrow, 1) != 1)
 				return false;
 		}
 		const int combatRange = isBow ? GetPlayerBotBowRange(ch->GetMapIndex()) : 280;
