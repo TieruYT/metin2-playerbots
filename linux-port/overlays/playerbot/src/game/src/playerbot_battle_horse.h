@@ -109,6 +109,21 @@ namespace
 				vnum == PLAYERBOT_BATTLE_HORSE_MOB_SCORPION_ARCHER;
 	}
 
+	// What a bot on the battle trial hunts out in the desert, as the hunt the
+	// material errand walks to (StartPlayerBotMaterialHunt): the scorpion
+	// archer, whose family takes the snake archer too
+	// (IsPlayerBotBiologistHuntRace). The archers are a quest target once in
+	// sight, but the hub choice goes by density and sent the trial's bots of
+	// thirty-five to forty among the desert's spiders. The archers stand in the
+	// middle of the map, 0 to 3 of them within reach of nine of its twelve
+	// hubs, and 38 bots on the trial made one kill an hour each between them
+	// (m2zip, 24 September; "boty nie wykonuja misji", rakso7064).
+	DWORD GetPlayerBotHorseTrialHuntMob(LPCHARACTER ch)
+	{
+		return ch && ch->GetMapIndex() == PLAYERBOT_MAP_DESERT && IsPlayerBotOnBattleHorseTrial(ch)
+				? PLAYERBOT_BATTLE_HORSE_MOB_SCORPION_ARCHER : 0;
+	}
+
 	// The military horse: the same shape one step up.
 	//
 	// Medals carry a horse to twenty and stop there; the twenty-first level is a

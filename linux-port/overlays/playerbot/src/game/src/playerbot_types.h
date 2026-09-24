@@ -4732,8 +4732,10 @@ namespace
 	// its key from the hook on 701-707 and 731-737; the Demon Souvenir from
 	// 1001 (etc, 1.26) and its key from the hook on 1001-1004. Naming one vnum
 	// made every other carrier worthless experience to a bot past its level,
-	// and 129 bots stood in the valley in parties looking for a target. Any
-	// other hunt means the monster it names.
+	// and 129 bots stood in the valley in parties looking for a target. The
+	// battle horse's trial is a hunt of the same shape: either of the desert's
+	// two archers counts (GetPlayerBotHorseTrialHuntMob). Any other hunt means
+	// the monster it names.
 	bool IsPlayerBotBiologistHuntRace(DWORD huntMob, DWORD race)
 	{
 		if (huntMob == 0)
@@ -4747,6 +4749,7 @@ namespace
 			case 706: return race == 756;
 			case 701: return (race >= 702 && race <= 707) || (race >= 731 && race <= 737);
 			case 1002: return race == 1001 || race == 1003 || race == 1004;
+			case PLAYERBOT_BATTLE_HORSE_MOB_SCORPION_ARCHER: return race == PLAYERBOT_BATTLE_HORSE_MOB_SNAKE_ARCHER;
 		}
 		return false;
 	}

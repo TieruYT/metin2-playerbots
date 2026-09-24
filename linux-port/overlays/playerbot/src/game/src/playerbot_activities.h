@@ -330,6 +330,13 @@ namespace
 		// village, away from the one thing it farms.
 		if (IsPlayerBotDropper(state.bPersonality) || !CanPlayerBotUseFishingRod(ch))
 			return false;
+		// A bot on a horse trial has one errand with one end, and a session is
+		// up to an hour on a bank in the first village: only the desert's own
+		// branch of the travel stood back for the trial, so a trial bot in town
+		// for its potions started a session there - three of the sixteen trial
+		// bots in the world were fishing in Joan (m2zip, 24 September).
+		if (IsPlayerBotOnBattleHorseTrial(ch) || IsPlayerBotOnMilitaryHorseTrial(ch))
+			return false;
 		if (IsPlayerBotPersonaEnabled() && state.persona.bRestored)
 			return IsPlayerBotRybakNow(ch, state, get_dword_time());
 		const DWORD roll = PlayerBotNavHash(ch->GetPlayerID() ^ 0x46495348U) % 100U;

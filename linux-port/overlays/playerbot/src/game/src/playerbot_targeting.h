@@ -724,6 +724,12 @@ namespace
 	{
 		if (!ch)
 			return 0;
+		// The battle horse's trial first, in the desert: the Biologist yields
+		// to it anyway (GetPlayerBotBiologistHuntMob), and its two archers are
+		// what the walk below has to find.
+		const DWORD trialMob = GetPlayerBotHorseTrialHuntMob(ch);
+		if (trialMob != 0)
+			return trialMob;
 		DWORD desiredBiologistMobVnum = 0;
 		size_t biologistIndex = 0;
 		const TPlayerBotBiologistMission* biologistMission =
@@ -811,6 +817,16 @@ namespace
 		// second later, and the merchant never reached.
 		else if (state.bServicePending)
 			context.mode = playerbot_combat_value::COMMITTED_TRAVEL;
+		// The battle horse's trial in the desert is the same shape as the
+		// residence rule below: the trial's archers are a quest target and
+		// count, defence and a wanted drop count, and plain experience does
+		// not. A bot of thirty-five to forty always had a spider or a scorpion
+		// king in reach, so it never reached the map scan that walks it to the
+		// archers (StartPlayerBotMaterialHunt runs on a tick with nothing to
+		// fight): one walk in twenty minutes on m2zip for 38 bots on the trial
+		// (24 September).
+		else if (GetPlayerBotHorseTrialHuntMob(ch) != 0)
+			context.mode = playerbot_combat_value::SERVICE_ONLY;
 		// And the residence rule: on a map this bot has outgrown, a named
 		// errand still counts and plain experience does not.
 		else if (!IsPlayerBotGrindAllowedHere(ch))
@@ -1393,7 +1409,13 @@ namespace
 				LPCHARACTER mob = static_cast<LPCHARACTER>(entity);
 				if (!mob->IsMonster() || mob->IsDead() || mob->IsStone())
 					return;
-				if (m_huntMob != 0 && IsPlayerBotBiologistHuntRace(m_huntMob, mob->GetRaceNum()))
+				// Not an archer of the trial the bot may not walk up to on its
+				// own: the snake archer is fifty-one, sixteen levels over a bot
+				// of thirty-five, and the walk would end beside a monster the
+				// target search refuses.
+				if (m_huntMob != 0 && IsPlayerBotBiologistHuntRace(m_huntMob, mob->GetRaceNum()) &&
+						!(IsPlayerBotBattleHorseTrialMob(mob->GetRaceNum()) &&
+							mob->GetLevel() > m_seeker->GetLevel() + PLAYERBOT_MAX_TARGET_LEVEL_DELTA))
 				{
 					const int huntDistance = DISTANCE_APPROX(m_seeker->GetX() - mob->GetX(),
 							m_seeker->GetY() - mob->GetY());
@@ -1507,9 +1529,12 @@ namespace
 		const int inScan = ch->GetParty() ? PLAYERBOT_PARTY_COHESION_RADIUS : PLAYERBOT_SEARCH_RANGE;
 		if (finder.m_bestHunt && finder.m_bestHuntDistance > inScan)
 		{
-			// "Zbieram dla Biologa", not a party looking for something to do.
-			SetPlayerBotAction(state, BOT_ACTION_BIOLOGIST, dwNow);
-			sys_log(0, "PLAYERBOT_HUNT: biologist errand pid=%u name=%s map=%ld hunt=%u mob=%s distance=%d pos=(%ld,%ld)",
+			// "Zbieram dla Biologa", not a party looking for something to do -
+			// or, on the battle trial, the travel whose status is the trial's.
+			const bool trial = IsPlayerBotBattleHorseTrialMob(huntMob);
+			SetPlayerBotAction(state, trial ? BOT_ACTION_TRAVEL : BOT_ACTION_BIOLOGIST, dwNow);
+			sys_log(0, "PLAYERBOT_HUNT: %s errand pid=%u name=%s map=%ld hunt=%u mob=%s distance=%d pos=(%ld,%ld)",
+					trial ? "horse trial" : "biologist",
 					ch->GetPlayerID(), ch->GetName(), ch->GetMapIndex(), huntMob,
 					finder.m_bestHunt->GetName(), finder.m_bestHuntDistance,
 					finder.m_bestHunt->GetX(), finder.m_bestHunt->GetY());

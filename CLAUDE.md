@@ -5870,6 +5870,30 @@ not in `data/`) reworked these point by point. What each hangs on:
   "over" lines in two minutes. A place is taken for the row picked
   (`PlayerBotTakeHerbErrand`), and the loop only asks whether one is held
   or free. A gate consulted inside a loop must not have a side effect.
+- **A trial's monster has to be walked to, and a bot with anything else to
+  hit never walks.** The battle trial is a hundred of the desert's two archers
+  (2105 at 47, 2107 at 51). They stand mostly in the middle of the map: resolved
+  through regen.txt and both group files, about 180 stand at a time, and nine
+  of the desert's twelve hubs have 0 to 3 within reach. The hub choice goes by
+  density, so the trial's bots of thirty-five to forty hunted spiders. On m2zip
+  on 24 September 38 bots on the trial made 10 to 40 trial kills an hour
+  between them ("boty nie wykonuja misji", rakso7064).
+  `GetPlayerBotHorseTrialHuntMob` makes the scorpion archer the bot's hunt
+  (`GetPlayerBotDesiredQuestMobVnum`), and `IsPlayerBotBiologistHuntRace`
+  counts the snake archer as the same family. The Biologist's map scan
+  (`StartPlayerBotMaterialHunt`) then walks the bot to the nearest archer it
+  may hit alone (the finder skips one over `PLAYERBOT_MAX_TARGET_LEVEL_DELTA`),
+  and the kept walk takes the trial's hunt as well as the Biologist's. The
+  scan alone gave one walk in twenty minutes, because it runs only on a tick
+  with nothing to fight, and a bot of thirty-five on the desert always has
+  something. So a bot on the trial there is `SERVICE_ONLY` in the value policy:
+  the archers (a quest target), defence, a wanted drop and stones still count,
+  plain experience does not. The next twenty minutes had 21 walks by 9 bots,
+  five tens of trial kills logged (against one to four an hour before), 109
+  kills in the database across 20 bots, and a trial finished.
+  `IsPlayerBotAngler` refuses a bot on either trial as well: only the
+  desert's own branch of the travel stood back for it, and three of sixteen
+  trial bots seen that morning were fishing in Joan.
 - **A counter line is sized by what the goods are worth, and the offline
   stand has to cut it.** The service visit added the best-scored cell as the
   stack it was: a refine material that was not a hoard went up whole, the

@@ -536,10 +536,12 @@ namespace
 		// A kept walk to the collect row's monsters is the Biologist's errand for
 		// its whole length, the route continuation below included - stamped only
 		// where the walk is taken up, it read "Szukam celu dla grupy" or "Ide do
-		// Biologa" on most of the way.
-		SetPlayerBotAction(state, state.dwBiologistWalkUntil != 0 && dwNow < state.dwBiologistWalkUntil &&
-					state.lBiologistWalkMap == ch->GetMapIndex()
-				? BOT_ACTION_BIOLOGIST
+		// Biologa" on most of the way. The same walk to the battle trial's
+		// archers is travel, whose status is the trial's.
+		const bool bHuntWalk = state.dwBiologistWalkUntil != 0 && dwNow < state.dwBiologistWalkUntil &&
+				state.lBiologistWalkMap == ch->GetMapIndex();
+		SetPlayerBotAction(state, bHuntWalk
+				? (GetPlayerBotHorseTrialHuntMob(ch) != 0 ? BOT_ACTION_TRAVEL : BOT_ACTION_BIOLOGIST)
 				: (ch->GetParty() ? BOT_ACTION_PARTY_ASSEMBLE : BOT_ACTION_TRAVEL), dwNow);
 
 		// Party following is an active movement intent, not a new wander decision.
@@ -1171,7 +1173,10 @@ namespace
 			// and a band hub by turns (17 September).
 			if (state.dwBiologistWalkUntil != 0)
 			{
-				const DWORD huntMob = GetPlayerBotBiologistHuntMob(ch);
+				// The battle trial's archers keep the walk too: the Biologist's
+				// hunt answers nothing while a horse trial is open.
+				const DWORD trialMob = GetPlayerBotHorseTrialHuntMob(ch);
+				const DWORD huntMob = trialMob != 0 ? trialMob : GetPlayerBotBiologistHuntMob(ch);
 				const bool arrived = DISTANCE_APPROX(ch->GetX() - state.lBiologistWalkX,
 						ch->GetY() - state.lBiologistWalkY) <= PLAYERBOT_BIOLOGIST_WALK_ARRIVED;
 				if (dwNow >= state.dwBiologistWalkUntil || arrived || huntMob < 500 ||
@@ -1182,7 +1187,7 @@ namespace
 					// The top of this function stamped PARTY_ASSEMBLE on a party
 					// bot: 56 of 90 bots in the valley read "Szukam celu dla grupy"
 					// while walking here.
-					SetPlayerBotAction(state, BOT_ACTION_BIOLOGIST, dwNow);
+					SetPlayerBotAction(state, trialMob != 0 ? BOT_ACTION_TRAVEL : BOT_ACTION_BIOLOGIST, dwNow);
 					state.dwNextWanderTime = dwNow + 1200;
 					if (!MovePlayerBot(ch, state.lBiologistWalkX, state.lBiologistWalkY, dwNow, 24, true, true) &&
 							state.bStuckCounter >= 3)
