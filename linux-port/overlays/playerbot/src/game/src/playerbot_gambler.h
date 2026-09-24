@@ -168,7 +168,8 @@ namespace
 				item->GetOwner() != ch || item->GetWindow() != INVENTORY ||
 				item->GetCell() >= PLAYERBOT_BAG_CELLS || ch->GetInventoryItem(item->GetCell()) != item)
 			return false;
-		if (item == backup || IsPlayerBotWearableUpgrade(ch, item, item->GetCell()) ||
+		if (item == backup || IsPlayerBotKeptBackupArmour(ch, item) ||
+				IsPlayerBotWearableUpgrade(ch, item, item->GetCell()) ||
 				IsPlayerBotHigherTierSpare(ch, item) || IsPlayerBotLevel30Project(ch, item) ||
 				IsPlayerBotArcherStoneWeapon(ch, item) || IsPlayerBotRefineBagCandidate(ch, item))
 			return false;

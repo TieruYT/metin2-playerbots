@@ -475,6 +475,14 @@ namespace
 	// How long the backup weapon's id is trusted by the passes that ask about
 	// every weapon in the bag (IsPlayerBotKeptBackupWeapon).
 	const DWORD PLAYERBOT_BACKUP_WEAPON_CACHE_MS = 3000;
+	// "Niech boty troche bardziej ryzykuja ... tylko w 50% uzywaja bodzi"
+	// (Iwakura, 24 September): this share of the steps that would go under a
+	// Blessing Scroll, or wait for one, goes to the plain anvil instead
+	// (PlayerBotRisksPlainAnvil). The coin is tossed per piece and plus, and
+	// again every PLAYERBOT_SCROLL_SKIP_BUCKET_SECONDS, so a piece the coin
+	// keeps waiting for a scroll is not kept waiting for good.
+	const int PLAYERBOT_SCROLL_SKIP_PERCENT = 50;
+	const DWORD PLAYERBOT_SCROLL_SKIP_BUCKET_SECONDS = 3 * 3600;
 	// What a Mental Warrior on a battle horse adds to a two-handed weapon's
 	// score, as a share of its own blow (GetPlayerBotEquipmentScore).
 	const int PLAYERBOT_TWO_HANDED_PREFERENCE_PERCENT = 20;

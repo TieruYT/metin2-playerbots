@@ -5876,6 +5876,87 @@ not in `data/`) reworked these point by point. What each hangs on:
   bag goes under a scroll or waits, in `CanPlayerBotAttemptRefineItem` and the
   refine pass both ("potrafia spalic jedyna zbroje ... ida farmic bez zbroi",
   THC, 16 September).
+- **A rule that waits for a scroll waits for ever where no scroll drops.**
+  Iwakura (24 September): "do 25 lvla ladnie ulepszaja itemy na +9 a potem
+  nic", and his test world at drop and yang 5000 had 222 pieces at +9, all
+  under level 18. m2zip said the same that day: every +9 and nearly every +8
+  a bot held was a piece under level 20, none of level 30 or more reached
+  +8, bots of 30-39 wore weapons and armour of level ~21, and the refine
+  lines of five hours had 31 scroll refines in about 22 000. The cause is
+  structural. The Blessing Scroll drops here from monsters and Metins of
+  about 70 and up (`mob_drop_item.txt`; `common_drop_item.txt` has it on
+  pawns for a killer of 50 to 120, at 0.04 - the window is the killer's
+  level, `pkKiller->GetLevel()` in `CreateDropItem`),
+  from the boss caskets (6-8 per cent a casket) and from the Moonlight chest
+  (6 per cent, and only while a chest event runs since 2.0.74): the whole
+  world held 39 of them, in 29 bags. So every "under a scroll or not at all"
+  - the armour and the hand weapon above (`refine held, the only weapon or
+  armour and no scroll` logged some twelve thousand times a minute), the
+  level-30 weapon from +6 (`level-30 weapon waits for a scroll`), the
+  scroll-only weapons - is "not at all", and a merchant's low-level piece,
+  which no hold touches (`GetPlayerBotMerchantWeaponCeiling`), is the only
+  thing ground to +9. Since 2.2.11 the body armour is kept as the weapon is
+  (`FindPlayerBotBackupArmour`, `IsPlayerBotKeptBackupArmour`: never scrap,
+  counter goods, the storekeeper's or the gambler's) and the armour
+  merchant sells the best piece it stocks for the class as the spare when
+  the hold is all that stands in the way (`NeedsPlayerBotBackupArmour`,
+  `bought progression backup armor`). The scroll supply and the risk were
+  Iwakura's calls, and his answer the same evening was "testowo bodzie do
+  metinow + ulepszanie bardziej agresywne":
+  - **A Blessing Scroll from every Metin of level 15-90** at
+    `BLESSING_SCROLL_STONE_PERMILLE` (CONFIG, from
+    `M2_BLESSING_SCROLL_STONE_PERMILLE`, 50 by default - his "nie wiem ile %"
+    left the number to us), not for a killer more than the book's fifteen
+    levels over the stone (`apply_blessing_scroll_from_stones` in
+    playerbotify.py, the Dragon Coin voucher's shape). m2zip broke about 300
+    stones an hour at 1 100 bots (counted as the stone's book picked up,
+    `log.log` GET of 50300), so 5% is some fifteen scrolls an hour for the
+    world. The drop rate of the panel does not touch it, as it does not
+    touch the chest's roll. The Demon Tower's 8015-8019 are inside the
+    band, so a raid's stones give scrolls too.
+  - **"Tylko w 50% uzywaja bodzi"** is `PlayerBotRisksPlainAnvil`: half the
+    steps a scroll would take, or wait for, go to the plain anvil. The coin
+    is the piece's id (a refine makes a new item), its plus and a
+    three-hour bucket (`PLAYERBOT_SCROLL_SKIP_BUCKET_SECONDS`), so the
+    planner and the act read one coin and a piece the coin keeps waiting is
+    tossed again later - a per-call roll would have sent every piece to the
+    anvil within two ticks. It reaches the level-30 weapon above its anvil
+    ceiling, the prize-line hold and a scroll in the bag (kept for another
+    step or the counter), and `GetPlayerBotRefineTarget`'s ladder to +9 is
+    the ambition again on a step the coin sends to the anvil. It never
+    reaches the scroll-only weapons (the operator's line) or the hand
+    weapon and the body armour with no spare - his own document says the
+    main weapon is never risked without a replacement. The gambler keeps
+    his scroll-only +8/+9. `PLAYERBOT_AI: refine at the plain anvil, the
+    coin said so ... why=level30|prize|scroll_kept` is the measurement.
+  - The armour's protection had a hole the weapon's did not: a blacksmith
+    session keeps the piece in the bag from its first step to its last,
+    and `IsPlayerBotWornArmourAtRisk` asked the slot, so only the first step
+    was protected. `GetPlayerBotBodyArmour` is the weapon's
+    `GetPlayerBotHandWeapon` for the body: worn, or with the slot empty the
+    best body armour in the bag, and the backup is the best other one.
+  The +8/+9 share of the big three and the gambler after a Perfectionist
+  were asked in the same message and not answered; both stand as they were.
+- **The gambler may not follow a Perfectionist inside one visit, not for
+  half an hour.** "Nastepnie wybiera kolejna osobowosc lecz nie moze to byc
+  Hazardzista" was a thirty-minute window after any Perfectionist, and every
+  market trip is one (`s.perfecting` in `DecidePlayerBotPersona`), so the
+  window was nearly always open: the census read after_perfect=356-415 of
+  about 500 visits in ten minutes and started=0-1 ("hazardzista dziala tak
+  jakby nie mogl", Iwakura). `StartPlayerBotTownVisit` clears
+  `dwPerfectEndedAt` unless the bot is a Perfectionist right then, so only
+  this visit's counts. **Measured, that changed nothing**: the four censuses
+  after it read after_perfect=186-394 and started=0-4, against 166-415 and
+  0-6 in the two hours before. The half hour was never what blocked it: a
+  bot is the Perfectionist in every visit that needs the anvil or makes a
+  market trip, which is nearly every visit, and his rule forbids the gambler
+  after it in the same visit. The rest of the gates stop 30-80 visits in ten
+  minutes (not in a village, in a party), 50-130 (the purse) and 10-50 (no
+  base his Patch 3 floor admits). The `own_gear` gate already keeps the
+  gambler off while the bot has work for its own gear, so letting the gambler
+  follow a Perfectionist that ran out of work is the obvious change - but it
+  is his rule, and he was asked (Uriel's DM of 24 September) together with
+  the scroll supply, +8/+9 for the big three and the level-30 weapon past +6.
 - **Respawn speed was already an event flag; it only lacked a world-wide
   name.** `regen_event` scales the next spawn by `fastBossSpawn<map>` /
   `fastMobSpawn<map>` (a percent of the line's delay, 0 = untouched), which is

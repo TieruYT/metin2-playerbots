@@ -812,7 +812,7 @@ namespace
 				NeedsPlayerBotProgressionWeapon(ch) || NeedsPlayerBotArrows(ch);
 		state.bTownNeedArmorMerchant = HasPlayerBotJunkForMerchant(ch, BOT_MERCHANT_ARMOR) ||
 				NeedsPlayerBotProgressionArmor(ch) || NeedsPlayerBotProgressionShield(ch) ||
-				NeedsPlayerBotProgressionHelmet(ch);
+				NeedsPlayerBotProgressionHelmet(ch) || NeedsPlayerBotBackupArmour(ch);
 		state.bTownNeedBlacksmith = HasPlayerBotRefineOpportunity(ch) ||
 				IsPlayerBotGambling(state, dwNow);
 		// The gambler's first stop is the storekeeper, once a session.
@@ -828,6 +828,16 @@ namespace
 		}
 
 		state.bVisitingShop = true;
+		// "Nastepnie wybiera kolejna osobowosc lecz nie moze to byc
+		// Hazardzista": the gambler may not follow a Perfectionist inside one
+		// visit. A Perfectionist that ended before this visit began does not
+		// count - every market trip is one (DecidePlayerBotPersona), so thirty
+		// minutes after the last of them was nearly always now, and the gambler
+		// census on m2zip read after_perfect=356 of some five hundred visits
+		// and started=0 (24 September; "hazardzista dziala tak jakby nie mogl",
+		// Iwakura).
+		if (state.persona.bPersona != playerbot_persona::PERSONA_PERFEKCJONISTA)
+			state.persona.dwPerfectEndedAt = 0;
 		// The purse the Perfectionist's share is measured against
 		// (ManagePlayerBotRefining).
 		state.persona.llVisitGoldStart = (long long)ch->GetGold();
@@ -1446,8 +1456,9 @@ namespace
 				continue;
 			if (item->GetRefineLevel() < PLAYERBOT_SHOP_SPARE_MIN_REFINE)
 				continue;
-			// Nor the weapon kept for the day the one in the hand burns.
-			if (IsPlayerBotKeptBackupWeapon(ch, item))
+			// Nor the weapon kept for the day the one in the hand burns, nor
+			// the armour kept for the day the one on the back does.
+			if (IsPlayerBotKeptBackupWeapon(ch, item) || IsPlayerBotKeptBackupArmour(ch, item))
 				continue;
 			// Gear under level thirty ranks under the prize score and is capped
 			// on a counter, so it cannot carry a stall on its own - a reason to
@@ -2811,6 +2822,7 @@ namespace
 		const bool report = ShouldReportPlayerBotMarketDecisions(
 				ch->GetPlayerID(), get_dword_time());
 		const DWORD backupWeaponID = GetPlayerBotBackupWeaponID(ch, false);
+		const DWORD backupArmourID = GetPlayerBotBackupArmourID(ch, false);
 		for (WORD cell = 0; cell < PLAYERBOT_BAG_CELLS; ++cell)
 		{
 			LPITEM item = ch->GetInventoryItem(cell);
@@ -2851,8 +2863,11 @@ namespace
 				if (IsPlayerBotArcherBuild(ch) && IsPlayerBotStoneMeleeWeapon(ch, item) &&
 						FindPlayerBotStoneWeapon(ch, false) == item)
 					continue;
-				// Nor the weapon kept for the day the one in the hand burns.
+				// Nor the weapon kept for the day the one in the hand burns, nor
+				// the armour kept for the day the one on the back does.
 				if (type == ITEM_WEAPON && backupWeaponID != 0 && item->GetID() == backupWeaponID)
+					continue;
+				if (type == ITEM_ARMOR && backupArmourID != 0 && item->GetID() == backupArmourID)
 					continue;
 				const int wearCell = item->FindEquipCell(ch);
 				if (wearCell < 0 || ch->GetWear((BYTE)wearCell) == NULL)

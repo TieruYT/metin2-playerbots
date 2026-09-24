@@ -185,13 +185,15 @@ services:
       PLAYERBOT_CH2_SHARE: "${PLAYERBOT_CH2_SHARE:-40}"
       M2_PLAYERBOT_CH2_SET_AT: "${M2_PLAYERBOT_CH2_SET_AT:-0}"
       M2_GAME_CONTAINER_PORT_RANGE: "${M2_GAME_CONTAINER_PORT_RANGE:-13000-13002}"
-      # m2-render-config writes these four into CONFIG. Without a line here the
+      # m2-render-config writes these into CONFIG. Without a line here the
       # value in .env never reaches the container and the defaults stand, which
       # is what every 2.x world had until 2.0.52 (the 1.x compose passes them).
       M2_MOONLIGHT_CHEST_PERMILLE: "${M2_MOONLIGHT_CHEST_PERMILLE:-10}"
       M2_MOONLIGHT_CHEST_STONE_PERMILLE: "${M2_MOONLIGHT_CHEST_STONE_PERMILLE:-300}"
       M2_DRAGON_COIN_STONE_PERMILLE: "${M2_DRAGON_COIN_STONE_PERMILLE:-3}"
       M2_DRAGON_COIN_BOSS_PERMILLE: "${M2_DRAGON_COIN_BOSS_PERMILLE:-50}"
+      # A Blessing Scroll from a Metin stone of level 15-90, in thousandths.
+      M2_BLESSING_SCROLL_STONE_PERMILLE: "${M2_BLESSING_SCROLL_STONE_PERMILLE:-50}"
       # 0 keeps Shinsoo and Jinno from being started even when the seed once
       # registered them (the migrate service reads the same switch for the
       # seed itself).

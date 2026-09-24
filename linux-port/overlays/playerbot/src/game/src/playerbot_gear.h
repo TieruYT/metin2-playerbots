@@ -2334,6 +2334,8 @@ namespace
 
 	// Defined in playerbot_economy.h, after the junk rule it stands beside.
 	bool PlayerBotRefinesLowArmourForSale(LPCHARACTER ch, LPITEM item);
+	// Defined in playerbot_economy.h, after the backup rules it gives way to.
+	bool PlayerBotRisksPlainAnvil(LPCHARACTER ch, LPITEM item);
 
 	BYTE GetPlayerBotRefineTarget(LPCHARACTER ch, LPITEM item)
 	{
@@ -2369,6 +2371,11 @@ namespace
 		// which is about not burning what was earned - does not apply while
 		// one is there. See PLAYERBOT_SCROLL_REFINE_MAX_PLUS.
 		if (CountPlayerBotSafeRefineScrolls(ch) == 0)
+			return GetPlayerBotRefineAmbition(ch, item);
+		// Nor for a step the coin sends to the plain anvil (Iwakura's "tylko w
+		// 50% uzywaja bodzi"): the scroll is not the way this time, so it is
+		// no reason to climb past what the bot would risk without one.
+		if (PlayerBotRisksPlainAnvil(ch, item))
 			return GetPlayerBotRefineAmbition(ch, item);
 		// The operator's SCROLL_FROM can put the ladder's first rung above
 		// where a piece would climb by itself, and the steps under that rung
@@ -2459,6 +2466,94 @@ namespace
 			return false;
 		return !IS_SET(proto->dwAntiFlags,
 				GET_SEX(ch) == SEX_MALE ? ITEM_ANTIFLAG_MALE : ITEM_ANTIFLAG_FEMALE);
+	}
+
+	// The body armour a bot keeps for the day the one on its back burns: the
+	// best other body armour in the bag it can put on now, which is the set
+	// IsPlayerBotWornArmourAtRisk counts. That rule holds the armour on the
+	// back off every step of the plain anvil that can burn it while there is
+	// none (THC, 16 September), and nothing kept one - the old armour went to
+	// the merchant at the first visit after an upgrade, as scrap. On m2zip on
+	// 24 September 377 of the 1027 bots of 25 and up wore a body armour whose
+	// next step could burn it and had no other in the bag, the hold logged
+	// some twelve thousand times a minute, and the whole world held 39
+	// Blessing Scrolls to take the step instead ("do 25 lvla ladnie ulepszaja
+	// itemy na +9 a potem nic", Iwakura). Like the backup
+	// weapon it is neither scrap nor counter goods nor the storekeeper's nor
+	// the gambler's, and the armour merchant sells one when there is none
+	// (NeedsPlayerBotBackupArmour).
+	bool IsPlayerBotBackupArmourCandidate(LPCHARACTER ch, LPITEM spare)
+	{
+		return ch && spare && spare->GetType() == ITEM_ARMOR && spare->GetSubType() == ARMOR_BODY &&
+				!spare->IsEquipped() && spare->GetLevelLimit() <= (int)ch->GetLevel() &&
+				IsPlayerBotProtoForCharacter(ch, spare->GetProto());
+	}
+
+	// The best body armour in the bag this bot can put on now, leaving one out.
+	LPITEM FindPlayerBotBestBagArmour(LPCHARACTER ch, LPITEM exclude)
+	{
+		if (!ch || !ch->IsItemLoaded())
+			return NULL;
+		LPITEM best = NULL;
+		long long bestScore = 0;
+		for (WORD cell = 0; cell < PLAYERBOT_BAG_CELLS; ++cell)
+		{
+			LPITEM spare = ch->GetInventoryItem(cell);
+			if (!spare || spare == exclude || spare->GetCell() != cell ||
+					!IsPlayerBotBackupArmourCandidate(ch, spare))
+				continue;
+			const long long score = GetPlayerBotEquipmentScore(spare, ch);
+			if (!best || score > bestScore)
+			{
+				best = spare;
+				bestScore = score;
+			}
+		}
+		return best;
+	}
+
+	// The armour on the back, or - with the slot empty - the one that goes
+	// back on: the weapon's GetPlayerBotHandWeapon for the other slot. A
+	// blacksmith session keeps the piece in the bag from its first step to its
+	// last, and asking the slot alone protected the worn armour on the first
+	// step and on none after it.
+	LPITEM GetPlayerBotBodyArmour(LPCHARACTER ch)
+	{
+		if (!ch || !ch->IsItemLoaded())
+			return NULL;
+		LPITEM worn = ch->GetWear(WEAR_BODY);
+		return worn ? worn : FindPlayerBotBestBagArmour(ch, NULL);
+	}
+
+	LPITEM FindPlayerBotBackupArmour(LPCHARACTER ch)
+	{
+		LPITEM body = GetPlayerBotBodyArmour(ch);
+		return body ? FindPlayerBotBestBagArmour(ch, body) : NULL;
+	}
+
+	// The junk rule asks this of every body armour in the bag, so the answer
+	// is kept for PLAYERBOT_BACKUP_WEAPON_CACHE_MS, as the weapon's is.
+	std::map<DWORD, TPlayerBotBackupWeaponAnswer> s_mapPlayerBotBackupArmour;
+
+	DWORD GetPlayerBotBackupArmourID(LPCHARACTER ch, bool fresh)
+	{
+		if (!ch)
+			return 0;
+		const DWORD now = get_dword_time();
+		TPlayerBotBackupWeaponAnswer& answer = s_mapPlayerBotBackupArmour[ch->GetPlayerID()];
+		if (fresh || answer.dwTime == 0 || now - answer.dwTime >= PLAYERBOT_BACKUP_WEAPON_CACHE_MS)
+		{
+			LPITEM backup = FindPlayerBotBackupArmour(ch);
+			answer.dwTime = now != 0 ? now : 1;
+			answer.dwItemID = backup ? backup->GetID() : 0;
+		}
+		return answer.dwItemID;
+	}
+
+	bool IsPlayerBotKeptBackupArmour(LPCHARACTER ch, LPITEM item, bool fresh = false)
+	{
+		return ch && item && item->GetType() == ITEM_ARMOR && item->GetSubType() == ARMOR_BODY &&
+				item->GetID() != 0 && GetPlayerBotBackupArmourID(ch, fresh) == item->GetID();
 	}
 
 	// Whether some counter in this world holds a level-30 weapon this bot

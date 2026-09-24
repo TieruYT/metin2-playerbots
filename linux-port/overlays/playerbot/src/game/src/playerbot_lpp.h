@@ -580,7 +580,8 @@ namespace
 					cells.push_back(cell);
 				continue;
 			}
-			if (item == backup || item == stoneWeapon || !IsPlayerBotLppKeptItem(ch, item))
+			if (item == backup || item == stoneWeapon || !IsPlayerBotLppKeptItem(ch, item) ||
+					IsPlayerBotKeptBackupArmour(ch, item))
 				continue;
 			if (IsPlayerBotWearableUpgrade(ch, item, cell) || IsPlayerBotHigherTierSpare(ch, item) ||
 					IsPlayerBotRefineBagCandidate(ch, item))

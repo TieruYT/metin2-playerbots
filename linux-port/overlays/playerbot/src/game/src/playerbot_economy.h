@@ -24,6 +24,8 @@ namespace
 	// before taking a worn piece off for the anvil.
 	bool CanPlayerBotAttemptRefineItem(LPCHARACTER ch, LPITEM item);
 	bool CanPlayerBotPayRefineStep(LPCHARACTER ch, LPITEM item);
+	// Defined beside them too; the armour merchant asks it.
+	bool NeedsPlayerBotBackupArmour(LPCHARACTER ch);
 
 	PIXEL_POSITION GetPlayerBotGeneralStorePos(long mapIndex)
 	{
@@ -1280,7 +1282,8 @@ namespace
 	{
 		return ch && IsPlayerBotCappedLowArmour(item) && !item->IsEquipped() &&
 				IsPlayerBotLowArmourMarketFull(item->GetVnum()) &&
-				!IsPlayerBotLppKeptItem(ch, item) && CanPlayerBotPayRefineStep(ch, item);
+				!IsPlayerBotLppKeptItem(ch, item) && !IsPlayerBotKeptBackupArmour(ch, item) &&
+				CanPlayerBotPayRefineStep(ch, item);
 	}
 
 	bool IsPlayerBotJunkItem(LPCHARACTER ch, LPITEM item)
@@ -1331,7 +1334,8 @@ namespace
 		// itself, takes it to +5 for the counter, or keeps it for the gambler.
 		if (IsPlayerBotCappedLowArmour(item) && IsPlayerBotLowArmourMarketFull(item->GetVnum()) &&
 				!IsPlayerBotUpgradeForSelf(ch, item) && !IsPlayerBotHigherTierSpare(ch, item) &&
-				!PlayerBotRefinesLowArmourForSale(ch, item) && !IsPlayerBotLppKeptItem(ch, item))
+				!PlayerBotRefinesLowArmourForSale(ch, item) && !IsPlayerBotLppKeptItem(ch, item) &&
+				!IsPlayerBotKeptBackupArmour(ch, item))
 			return true;
 		// The goods a player crafts further (IsPlayerBotPickupGoods) wait for a
 		// counter, and reach the merchant only from a bag under pressure that
@@ -1406,8 +1410,9 @@ namespace
 				FindPlayerBotStoneWeapon(ch, false) == item)
 			return false;
 		// So is the weapon kept for the day the one in the hand burns
-		// (FindPlayerBotBackupWeapon).
-		if (IsPlayerBotKeptBackupWeapon(ch, item))
+		// (FindPlayerBotBackupWeapon), and the armour kept for the day the one
+		// on the back does (FindPlayerBotBackupArmour).
+		if (IsPlayerBotKeptBackupWeapon(ch, item) || IsPlayerBotKeptBackupArmour(ch, item))
 			return false;
 
 		// Gear the counter could not sell in six stands is scrap, whatever the
@@ -1947,26 +1952,54 @@ namespace
 	// the anvil, lost it, and went on farming bare with the upgrade
 	// materials it had kept for it (THC, 16 September). Under a scroll or
 	// not at all; the merchant's re-stock is a town visit away, and that is
-	// exactly the bare walk the report was about.
+	// exactly the bare walk the report was about. The spare it asks for is
+	// the one the junk rule keeps (FindPlayerBotBackupArmour) and the armour
+	// merchant sells when there is none (NeedsPlayerBotBackupArmour).
 	bool IsPlayerBotWornArmourAtRisk(LPCHARACTER ch, LPITEM item)
 	{
 		if (!ch || !item || item->GetType() != ITEM_ARMOR || item->GetSubType() != ARMOR_BODY ||
-				item->GetRefinedVnum() == 0 || ch->GetWear(WEAR_BODY) != item)
+				item->GetRefinedVnum() == 0)
 			return false;
 		const TRefineTable* recipe = CRefineManager::instance().GetRefineRecipe(item->GetRefineSet());
 		if (!recipe || recipe->prob > PLAYERBOT_WORN_SCROLL_MAX_PROB)
 			return false;
+		// The armour on the back, or the one going back on: the anvil keeps it
+		// in the bag for the whole session (GetPlayerBotBodyArmour).
+		if (GetPlayerBotBodyArmour(ch) != item)
+			return false;
 		for (WORD cell = 0; cell < PLAYERBOT_BAG_CELLS; ++cell)
 		{
 			LPITEM spare = ch->GetInventoryItem(cell);
-			if (!spare || spare->GetCell() != cell || spare == item ||
-					spare->GetType() != ITEM_ARMOR || spare->GetSubType() != ARMOR_BODY ||
-					spare->GetLevelLimit() > (int)ch->GetLevel() ||
-					!IsPlayerBotProtoForCharacter(ch, spare->GetProto()))
-				continue;
-			return false;
+			if (spare && spare->GetCell() == cell && spare != item &&
+					IsPlayerBotBackupArmourCandidate(ch, spare))
+				return false;
 		}
 		return true;
+	}
+
+	// Iwakura's "tylko w 50% uzywaja bodzi" (24 September): this share of the
+	// steps that would go under a scroll, or wait for one, goes to the plain
+	// anvil - a burn is part of the game, and a world whose scrolls come from
+	// the stones cannot put one on every step. The coin is the piece's own
+	// (its id, which every refine renews, and its plus) and a bucket of
+	// PLAYERBOT_SCROLL_SKIP_BUCKET_SECONDS, so the planner and the pass that
+	// acts read the same coin, and a piece it keeps waiting for a scroll gets
+	// another toss later. Never for what a rule of its own protects: a weapon
+	// on the scroll-only line (the operator's), and the weapon in the hand or
+	// the armour on the back with nothing to fall back on (the backup rule -
+	// "nigdy nie ryzykuje ... jesli nie posiada w ekwipunku broni
+	// zastepczej", Iwakura's own).
+	bool PlayerBotRisksPlainAnvil(LPCHARACTER ch, LPITEM item)
+	{
+		if (!ch || !item || PLAYERBOT_SCROLL_SKIP_PERCENT <= 0)
+			return false;
+		const DWORD bucket = (DWORD)(get_global_time() / PLAYERBOT_SCROLL_SKIP_BUCKET_SECONDS);
+		const DWORD seed = (item->GetID() * 2654435761U) ^ ((DWORD)item->GetRefineLevel() * 0x9e3779b9U) ^
+				(bucket * 0x85ebca6bU) ^ 0x534b4950U;
+		if ((int)(PlayerBotNavHash(seed) % 100U) >= PLAYERBOT_SCROLL_SKIP_PERCENT)
+			return false;
+		return !IsPlayerBotScrollOnlyWeapon(item) && !IsPlayerBotWornWeaponAtRisk(ch, item) &&
+				!IsPlayerBotWornArmourAtRisk(ch, item);
 	}
 
 	// The scroll a refine goes under: from PLAYERBOT_DRAGON_GOD_SCROLL_MIN_PLUS
@@ -2492,6 +2525,11 @@ namespace
 			// above already refused it without a scroll; this is the scroll's half.
 			const bool handAtRisk = IsPlayerBotWornWeaponAtRisk(ch, item, true) ||
 					IsPlayerBotWornArmourAtRisk(ch, item);
+			// Iwakura's coin (PlayerBotRisksPlainAnvil): half the steps a scroll
+			// would take, or wait for, go to the plain anvil. What the backup
+			// rule and the scroll-only line protect never comes up heads.
+			const bool coinAnvil = !scrollOnly && !handAtRisk && PlayerBotRisksPlainAnvil(ch, item);
+			const char* coinWhy = NULL;
 			if (scrollOnly)
 				scrollCell = FindPlayerBotRefineScrollCell(ch, plusLevel, stepProb);
 			else if (level30Grind)
@@ -2511,9 +2549,14 @@ namespace
 				const bool cheapGamble = aboveCeiling &&
 						average <= PLAYERBOT_LEVEL30_ANVIL_AVG_CHEAP &&
 						number(1, 100) <= PLAYERBOT_LEVEL30_CHEAP_ANVIL_PERCENT;
-				if (aboveCeiling && !cheapGamble && scrollStepAllowed)
+				// And Iwakura's coin takes any roll to the anvil above its
+				// ceiling half the time ("ulepszanie bardziej agresywne").
+				if (aboveCeiling && !cheapGamble && coinAnvil)
+					coinWhy = "level30";
+				const bool anvilAnyway = cheapGamble || coinAnvil;
+				if (aboveCeiling && !anvilAnyway && scrollStepAllowed)
 					scrollCell = FindPlayerBotRefineScrollCell(ch, plusLevel, stepProb);
-				if (aboveCeiling && !cheapGamble && scrollCell < 0)
+				if (aboveCeiling && !anvilAnyway && scrollCell < 0)
 				{
 					// Waiting for a scroll is the point of the ceiling: the
 					// anvil here is how a good roll is lost.
@@ -2527,7 +2570,15 @@ namespace
 			else if (scrollStepAllowed &&
 					(plusLevel >= PLAYERBOT_SCROLL_REFINE_MIN_PLUS || IsPlayerBotPrizeItem(item) ||
 						wornStepCanBurn || handAtRisk))
+			{
 				scrollCell = FindPlayerBotRefineScrollCell(ch, plusLevel, stepProb);
+				// The coin keeps the scroll for another step, or for the counter.
+				if (coinAnvil && scrollCell >= 0)
+				{
+					coinWhy = "scroll_kept";
+					scrollCell = -1;
+				}
+			}
 			if (scrollCell < 0 && scrollOnly && !level30Floor)
 			{
 				PlayerBotLogThrottled("refine_scroll_only", dwNow,
@@ -2554,7 +2605,9 @@ namespace
 				// freezing it is what happened: every step of refine_proto is
 				// under a hundred, so "prob < 100" held every prize item at
 				// whatever plus it happened to have.
-				if (prt && prt->prob < PLAYERBOT_PRIZE_SAFE_REFINE_PROB)
+				if (prt && prt->prob < PLAYERBOT_PRIZE_SAFE_REFINE_PROB && coinAnvil)
+					coinWhy = coinWhy ? coinWhy : "prize";
+				else if (prt && prt->prob < PLAYERBOT_PRIZE_SAFE_REFINE_PROB)
 				{
 					PlayerBotLogThrottled("refine_prize_no_scroll", dwNow,
 							"PLAYERBOT_AI: refine held, prize line and no blessing scroll pid=%u name=%s vnum=%u plus=%u prob=%d",
@@ -2562,6 +2615,11 @@ namespace
 					continue;
 				}
 			}
+			// What the coin sent to the plain anvil, once a minute for everybody.
+			if (coinWhy && scrollCell < 0)
+				PlayerBotLogThrottled("refine_coin", dwNow,
+						"PLAYERBOT_AI: refine at the plain anvil, the coin said so pid=%u name=%s vnum=%u plus=%u prob=%d why=%s",
+						ch->GetPlayerID(), ch->GetName(), oldVnum, (unsigned int)plusLevel, stepProb, coinWhy);
 			// Asked before the attempt, which may destroy the item.
 			const bool classLevel30 = IsPlayerBotClassLevel30Weapon(ch, item);
 			bool attempted = false;
@@ -2665,6 +2723,10 @@ namespace
 			const bool scrollOnly = IsPlayerBotScrollOnlyWeapon(item);
 			if ((!scrollOnly && (plus < PLAYERBOT_SCROLL_REFINE_MIN_PLUS || !IsPlayerBotScrollStepAllowed(plus))) ||
 					plus >= GetPlayerBotRefineTarget(ch, item))
+				continue;
+			// A step Iwakura's coin sends to the plain anvil waits for the
+			// blacksmith rather than taking a scroll here.
+			if (PlayerBotRisksPlainAnvil(ch, item))
 				continue;
 			if (!IsPlayerBotWearableAtLevel(ch, item->GetRefinedVnum()))
 				continue;
@@ -2916,6 +2978,28 @@ namespace
 			bought = BuyPlayerBotProgressionGear(ch,
 					GetPlayerBotProgressionHelmetVnum(ch), "helmet") ||
 				BuyPlayerBotBestMerchantSlotGear(ch, WEAR_HEAD, "helmet") || bought;
+		// The armour on the back held off its next step for want of a spare:
+		// the best body armour this merchant stocks for the bot is that spare.
+		// Bought only where the step can still be paid after it, and never the
+		// copy BuyPlayerBotBestMerchantSlotGear refuses as no better than what
+		// the bot wears - that refusal is for an upgrade, and this is not one.
+		if (NeedsPlayerBotBackupArmour(ch))
+		{
+			const DWORD vnum = FindPlayerBotBestMerchantSlotVnum(ch, WEAR_BODY);
+			long long price = 0;
+			LPITEM worn = ch->GetWear(WEAR_BODY);
+			const TRefineTable* recipe = worn ? CRefineManager::instance().GetRefineRecipe(worn->GetRefineSet()) : NULL;
+			if (vnum != 0 && recipe && FindPlayerBotMerchantOffer(vnum, &price) &&
+					ch->GetGold() - GetPlayerBotReservedGold(ch) - std::max<long long>(100, price) >=
+						ch->ComputeRefineFee(recipe->cost) &&
+					BuyPlayerBotProgressionGear(ch, vnum, "backup armor"))
+			{
+				bought = true;
+				// The step waits for the anvil's next visit; the spare is kept
+				// from the merchant from now on (IsPlayerBotKeptBackupArmour).
+				GetPlayerBotBackupArmourID(ch, true);
+			}
+		}
 		// The three slots nothing ever filled. A bot wore a bracelet, a necklace
 		// or an earring only when one happened to drop for it, because no ladder
 		// asked for them - so most of them went their whole lives with three
@@ -2989,6 +3073,24 @@ namespace
 			return false;
 		}
 		return true;
+	}
+
+	// The armour on the back held off a step it is meant to take (below its
+	// refine target, the fee and the materials in hand) only for want of a
+	// spare: no scroll would take the step instead, and the operator's
+	// SCROLL_FROM leaves it the anvil's. What the armour merchant answers with
+	// a spare of its own (ManagePlayerBotArmorMerchant), and what sends a bot
+	// to that merchant (StartPlayerBotTownVisit).
+	bool NeedsPlayerBotBackupArmour(LPCHARACTER ch)
+	{
+		LPITEM worn = ch ? ch->GetWear(WEAR_BODY) : NULL;
+		if (!worn || !IsPlayerBotWornArmourAtRisk(ch, worn) ||
+				worn->GetRefineLevel() >= GetPlayerBotRefineTarget(ch, worn) ||
+				!IsPlayerBotScrollStepAllowed(worn->GetRefineLevel()) ||
+				!CanPlayerBotPayRefineStep(ch, worn))
+			return false;
+		const TRefineTable* recipe = CRefineManager::instance().GetRefineRecipe(worn->GetRefineSet());
+		return recipe && FindPlayerBotRefineScrollCell(ch, worn->GetRefineLevel(), (int)recipe->prob) < 0;
 	}
 
 	bool HasPlayerBotRefineOpportunity(LPCHARACTER ch)
