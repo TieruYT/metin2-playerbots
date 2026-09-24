@@ -17,6 +17,82 @@ every version here.
 
 ---
 
+## 2.2.9 — 2026-09-24
+
+Serwer 2.2.9 i klient 2.0.30. Zaktualizuj oba („AKTUALIZUJ wszystko”
+w launcherze). Nowy klient dodaje autologin w Auto Łowach, a poprzedni działa
+z nowym serwerem tak jak dotąd. Zawiera wszystko z 2.2.8.
+
+### Autologin w Auto Łowach (Tieru, klient 2.0.30)
+
+- W oknie Auto Łowów, w siatce „Ustawienia Walki”, jest nowy przełącznik
+  Autologin. Zapisuje się osobno dla każdej postaci, razem z resztą ustawień.
+- Gdy jest włączony, a gra się rozłączy (restart albo aktualizacja serwera,
+  zerwane połączenie, wyrzucenie z gry), klient sam loguje się ponownie na to
+  samo konto i wchodzi tą samą postacią. Jeśli Auto Łowy były włączone, po
+  kilku sekundach działają dalej.
+- Pierwsza próba jest po 3 sekundach, następne po 5, 10, 20 i 30 sekundach,
+  aż do skutku. Okienko odlicza czas, a przycisk Anuluj przerywa ponowne
+  logowanie. Gdy serwer trzyma jeszcze starą sesję (konto wciąż jest
+  w grze), klient próbuje znowu po 10 sekundach. Złe hasło, blokada konta
+  albo zbyt stary klient kończą próby.
+- Wylogowanie i zmiana postaci z menu nie są rozłączeniem, więc wtedy
+  autologin nic nie robi.
+- Hasło nie jest nigdzie zapisywane. Klient używa loginu i hasła z ostatniego
+  logowania, które trzyma w pamięci do zamknięcia gry.
+- Jeśli autologin nie zadziała, wyślij na Discordzie plik syserr.txt
+  z folderu klienta: gdy autologin przestaje próbować, zapisuje tam powód
+  w linii zaczynającej się od AUTOLOGIN.
+
+### Łucznicy: strzały bez końca (Tieru, zgłosił prodnathin)
+
+- Botom-łucznikom strzały już się nie kończą. Bot kupuje paczkę 100 strzał
+  tylko wtedy, gdy nie ma żadnych, których może użyć, a nie co chwilę jak
+  dotąd. Łucznicy graczy zużywają strzały jak zawsze.
+- Bot zakłada najlepsze strzały, jakie ma w torbie. Dotąd lepsze zakładał
+  dopiero wtedy, gdy skończyły mu się stare. Gorsze strzały sprzedaje
+  handlarzowi.
+- Ognistej, Trującej, Lodowej i Przeklętej Strzały bot nie zakłada: na tych
+  plikach serwera zadają obrażenia tylko z bliska, więc łucznik strzelałby nimi
+  prawie na darmo. Takie strzały bot sprzedaje handlarzowi.
+- Dropiarze i boty na próbie konia bojowego nie noszą już po 1000 strzał.
+- Łucznik w pojedynku i w walce nie stoi już między umiejętnościami. Gdy
+  skończyły mu się strzały w slocie, zwykły strzał był odrzucany, dopóki
+  któraś umiejętność nie założyła nowych.
+
+### Wieża Demonów: 7. piętro (zgłosił prodnathin)
+
+- Demony na 7. piętrze pojawiają się raz, a nie co minutę aż do chwili, gdy
+  Nieznana Stara Skrzynia da mapę. Dotąd tłum na piętrze nigdy nie malał,
+  a polegli wstawali w samym jego środku. Ciągłe odradzanie było tam dla Cor
+  Draconis, którego na tym świecie nie ma. Dotyczy to także graczy.
+- Metin Morderstwa dalej wraca 9 sekund po każdym zniszczeniu, aż któraś
+  skrzynia da mapę.
+- Bot ze skrzynią albo mapą w torbie walczy między ich użyciami. Dotąd stał
+  przez cały ten czas, a bot, któremu gra odmówiła użycia, stał już na stałe.
+
+### Budowanie przy aktualizacji (zgłosił Drip)
+
+Aktualizacja kompiluje serwer, gdy stary serwer z botami jeszcze działa
+i zajmuje kilka GB pamięci Dockera. Liczba równoległych zadań kompilacji
+zależała od całej pamięci, więc na laptopie budowanie potrafiło bardzo długo
+stać na „game builder 2/3 (67%)”. Teraz:
+
+- Kompilacja rdzenia gry dobiera liczbę zadań do wolnej pamięci. Gdy wolnej
+  jest mniej niż 2,6 GB, w logu pojawia się ostrzeżenie, żeby przed
+  aktualizacją zatrzymać serwer (ZATRZYMAJ I ZAPISZ).
+- Launcher pokazuje przy tym kroku „kompilacja rdzenia gry” i jej własny czas,
+  a gdy trwa dłużej niż 10 minut, dopisuje do logu, co zrobić. To zobaczysz od
+  następnej aktualizacji, bo tę prowadzi jeszcze stary launcher.
+
+### COOP w testach u patronów
+
+- Gdy router odpowiada, ale nie otwiera żadnego portu (np. FRITZ!Box bez
+  zgody na samodzielne przekierowania portów), launcher nie pisze już, że
+  hostowanie powinno działać. W trybie automatycznym hostuje wtedy przez VPN
+  zainstalowany na komputerze (np. Radmin VPN), a bez VPN-a mówi na czerwono,
+  że żaden port nie jest otwarty, i podaje, co ustawić w routerze.
+
 ## 2.2.8 — 2026-09-24
 
 Serwer 2.2.8, klient bez zmian (2.0.29). Launcher zaproponuje aktualizację
