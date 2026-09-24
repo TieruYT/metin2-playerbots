@@ -13,9 +13,13 @@ Writes into client-root/ (beside serverinfo.py, which is hand-written):
                     the project's GitHub, the Discord is ours, and the Facebook
                     button - there is no Facebook - opens the buycoffee page;
                     a channel past the first is listed only while it answers;
+                    Auto Lowy's autologin logs in again after a dropped game
+                    (autologin.py, hand-written);
   * uiitemshop.py, itemshop_subscriptionwindow.py - "Doladuj SM!" and the
                     subscription button open the buycoffee page, not mt2009.pl;
-  * uisystem.py   - the system menu's support button opens our Discord.
+  * uisystem.py   - the system menu's support button opens our Discord, and
+                    its logout and change-character buttons tell the
+                    autologin the player left on purpose.
   * uitooltip.py  - the GM branch no longer kills every item tooltip, and the
                     speed potion's asks for no apply name this client lacks.
   * game.py       - the "PlayerBotStatus" server command, handed to
@@ -733,6 +737,17 @@ EDITS = {
          b'\t\tversion_string = uiScriptLocale.SYSTEM_VERSION % (\r\n'),
         (b'\t\tutils.open_url("https://mt2009.pl/Identity/Account/Manage/Support")\r\n',
          b'\t\tutils.open_url("https://discord.gg/pt5tvnrN6")\r\n'),
+        # Auto Lowy's autologin (autologin.py): the player's own logout and
+        # change of character are no drop, so no autologin follows them.
+        (b'\tdef __ClickChangeCharacterButton(self):\r\n\t\tself.Close()\r\n',
+         b'\tdef __ClickChangeCharacterButton(self):\r\n'
+         b'\t\timport autologin\r\n'
+         b'\t\tautologin.NoteManualExit()\r\n'
+         b'\t\tself.Close()\r\n'),
+        (b'\tdef __ClickLogOutButton(self):\r\n',
+         b'\tdef __ClickLogOutButton(self):\r\n'
+         b'\t\timport autologin\r\n'
+         b'\t\tautologin.NoteManualExit()\r\n'),
     ],
     'intrologin.py': [
         # The second channel (serverinfo.py lists two) is the server's to
@@ -766,6 +781,46 @@ EDITS = {
          b'\t\tself.facebookButton.SAFE_SetEvent(self.OpenURL, "https://buycoffee.to/metin2-playerbots")\r\n'),
         (b'\t\tself.discordButton.SAFE_SetEvent(self.OpenURL, "https://discord.gg/RhUaGRYZG7")\r\n',
          b'\t\tself.discordButton.SAFE_SetEvent(self.OpenURL, "https://discord.gg/pt5tvnrN6")\r\n'),
+        # Auto Lowy's autologin (autologin.py, 24 September): after a dropped
+        # game this window logs the same account in again. It starts from
+        # the end of Open, is driven from OnUpdate, and takes the two
+        # failures of its own tries - a refused connection and a login the
+        # server turned away - before the stock messages would show.
+        (b'import eventManager\r\n', b'import eventManager\r\nimport autologin\r\n'),
+        (b'\t\teventManager.EventManager().add_observer(EVENT_TRY_CONNECT, self.TryConnect)\r\n'
+         b'\t\teventManager.EventManager().add_observer(EVENT_REQUEST_STATE_CHECK, self.__OnRequestStateCheck)\r\n'
+         b'\t\tself.stream.SetupEvents()\r\n',
+         b'\t\teventManager.EventManager().add_observer(EVENT_TRY_CONNECT, self.TryConnect)\r\n'
+         b'\t\teventManager.EventManager().add_observer(EVENT_REQUEST_STATE_CHECK, self.__OnRequestStateCheck)\r\n'
+         b'\t\tself.stream.SetupEvents()\r\n'
+         b'\t\tautologin.OnLoginOpen(self)\r\n'),
+        (b'\tdef OnUpdate(self):\r\n'
+         b'\t\teventManager.EventManager().Update()\r\n'
+         b'\t\tServerStateChecker.Update()\r\n',
+         b'\tdef OnUpdate(self):\r\n'
+         b'\t\teventManager.EventManager().Update()\r\n'
+         b'\t\tServerStateChecker.Update()\r\n'
+         b'\t\tautologin.PumpLogin(self)\r\n'),
+        (b'\tdef OnConnectFailure(self):\r\n'
+         b'\r\n'
+         b'\t\tif self.isNowCountDown:\r\n'
+         b'\t\t\treturn\r\n'
+         b'\r\n',
+         b'\tdef OnConnectFailure(self):\r\n'
+         b'\r\n'
+         b'\t\tif self.isNowCountDown:\r\n'
+         b'\t\t\treturn\r\n'
+         b'\r\n'
+         b'\t\tif autologin.OnConnectFailure(self):\r\n'
+         b'\t\t\treturn\r\n'
+         b'\r\n'),
+        (b'\tdef OnLoginFailure(self, error):\r\n'
+         b'\t\tif self.connectingDialog:\r\n',
+         b'\tdef OnLoginFailure(self, error):\r\n'
+         b'\t\tif autologin.OnLoginFailure(self, error):\r\n'
+         b'\t\t\treturn\r\n'
+         b'\r\n'
+         b'\t\tif self.connectingDialog:\r\n'),
     ],
     # The game options get a "Tytuly botow" row under the floating text one:
     # a bot's personality title (playerbot_status_tail.py, 2.0.53) or the

@@ -30,11 +30,19 @@
 # every warp, and a skill's or an item's next moment taken on the map
 # before would have held it for as long as the character played there.
 #
+# Autologin (autologin.py): a switch in the "Ustawienia Walki" grid, saved
+# per character. With it on, a game that drops is logged in again with the
+# same account and character, and a hunt that was running goes on. The
+# Hunter's CanUpdate is the one hook every frame of the game passes, so the
+# autologin learns there that the game is open again, and Destroy - the game
+# window closing - is where it hears that the game has gone.
+#
 # game.py registers the Hunter with its updateables, K opens the windows.
 # Python 2.7 as the client has it, and 3 for tests/uiautohunt_test.py.
 # Player-visible strings are CP1250 escapes, so the file itself is ASCII.
 
 import app
+import autologin
 import chat
 import chr
 import clientclock
@@ -137,7 +145,7 @@ DEFAULTS = [
     ('range', 2000), ('stones', 1), ('mobs', 1), ('bosses', 0), ('pickup', 1), 
     ('revive', 1), ('revive_after', 15), ('return', 1),
     ('attack', 1), ('use_potions', 1), ('use_buffs', 1), ('use_skills', 1),
-    ('revive_hp_percent', 60),
+    ('revive_hp_percent', 60), ('autologin', 0),
 ]
 for i in xrange(USE_ITEM_SLOTS):
     DEFAULTS.append(('item%d_vnum' % i, 0))
@@ -379,6 +387,9 @@ class Hunter(object):
         self.mainWindow = None
         self.lootWindow = None
         self.isLoaded = False
+        # The first frame of a game phase waits here until the character has
+        # a name (OnGameSession): True after an autologin, False otherwise.
+        self.pendingSession = None
         self.LoadGlobalConfig()
         self.ResetState()
 
@@ -407,7 +418,46 @@ class Hunter(object):
         self.nextBuffGlobal = 0.0
 
     def CanUpdate(self):
+        # Asked on every frame of the game, running or not: the autologin
+        # learns here that the game is open again and says when a hunt it
+        # paused is due (autologin.GameFrame).
+        event = autologin.GameFrame()
+        if event == autologin.NEW_SESSION:
+            self.pendingSession = False
+        elif event == autologin.RECONNECTED:
+            self.pendingSession = True
+        elif event == autologin.RESUME:
+            self.ResumeAfterAutoLogin()
+        if self.pendingSession is not None:
+            self.OnGameSession(self.pendingSession)
         return self.running
+
+    def OnGameSession(self, reconnected):
+        """The first frame of a game phase with a named character. Back after
+        a dropped connection with the same character, the settings in memory
+        are the ones it hunted with, saved or not; any other entry reads the
+        character's file, and with it the autologin switch."""
+        name = player.GetMainCharacterName()
+        if not name:
+            return
+        self.pendingSession = None
+        if reconnected and name == self.configName:
+            self.isLoaded = True
+            autologin.SetArmed(self.config.get('autologin', 0))
+            chat.AppendChat(chat.CHAT_TYPE_INFO, 'Auto \xa3owy: zalogowano ponownie po zerwaniu po\xb3\xb9czenia.')
+            return
+        self.configName = name
+        self.LoadConfig()
+        self.isLoaded = True
+
+    def ResumeAfterAutoLogin(self):
+        if self.running:
+            return
+        if not self.isLoaded:
+            autologin.DelayResume(2.0)
+            return
+        self.Start()
+        chat.AppendChat(chat.CHAT_TYPE_INFO, 'Auto \xa3owy: wznowione po ponownym zalogowaniu.')
 
     def OnUpdate(self):
         now = clientclock.Now()
@@ -447,6 +497,9 @@ class Hunter(object):
                 pass
 
     def Destroy(self):
+        # The game window is closing: whether the hunt ran is what the
+        # autologin resumes after a drop, so it is told before the Stop.
+        autologin.NoteGameClosed(self.running)
         self.Stop(quiet=True)
         if self.mainWindow:
             self.mainWindow.Hide()
@@ -830,6 +883,7 @@ class Hunter(object):
                 self.config = ConfigFromText(handle.read())
         except (IOError, OSError):
             pass
+        autologin.SetArmed(self.config.get('autologin', 0))
 
     def SaveGlobalConfig(self):
         if not os.path.exists(CONFIG_BASE_DIR):
@@ -1036,6 +1090,9 @@ class AutoHuntWindow(ui.BoardWithTitleBar):
             ('Mikstury',       'use_potions',       'toggle'),
             ('Odpa\xb3y',      'use_buffs',         'toggle'),
             ('Wracaj',         'return',            'toggle'),
+            # The grid's eighth place, empty until then: the window keeps its
+            # size and the switch looks like its neighbours (autologin.py).
+            ('Autologin',      'autologin',         'toggle'),
         ]
         st_h = st_row_start + 4 * ROW_H + 4
 
@@ -1323,6 +1380,12 @@ class AutoHuntWindow(ui.BoardWithTitleBar):
     def OnToggle(self, key):
         self.ReadEdits()
         self.hunter.config[key] = 0 if self.hunter.config[key] else 1
+        if key == 'autologin':
+            autologin.SetArmed(self.hunter.config[key])
+            if self.hunter.config[key]:
+                chat.AppendChat(chat.CHAT_TYPE_INFO, 'Auto \xa3owy: autologin w\xb3\xb9czony - po zerwaniu po\xb3\xb9czenia gra sama zaloguje si\xea ponownie i wznowi \xb3owy. Zapisz, \xbfeby zapami\xeata\xe6 to na nast\xeapny raz.')
+            else:
+                chat.AppendChat(chat.CHAT_TYPE_INFO, 'Auto \xa3owy: autologin wy\xb3\xb9czony.')
         self.Refresh()
 
     def OnSave(self):

@@ -26,6 +26,7 @@ import gameSettings
 import configMain
 import uiToolTip
 import eventManager
+import autologin
 
 LOGIN_DELAY_SEC = 0.0
 SKIP_LOGIN_PHASE = False
@@ -394,6 +395,7 @@ class LoginWindow(ui.ScriptWindow):
 		eventManager.EventManager().add_observer(EVENT_TRY_CONNECT, self.TryConnect)
 		eventManager.EventManager().add_observer(EVENT_REQUEST_STATE_CHECK, self.__OnRequestStateCheck)
 		self.stream.SetupEvents()
+		autologin.OnLoginOpen(self)
 
 	def Close(self):
 
@@ -514,6 +516,9 @@ class LoginWindow(ui.ScriptWindow):
 		if self.isNowCountDown:
 			return
 
+		if autologin.OnConnectFailure(self):
+			return
+
 		snd.PlaySound("sound/ui/loginfail.wav")
 
 		if self.connectingDialog:
@@ -535,6 +540,9 @@ class LoginWindow(ui.ScriptWindow):
 			self.PopupDisplayMessage(localeInfo.LOGIN_PROCESSING)
 
 	def OnLoginFailure(self, error):
+		if autologin.OnLoginFailure(self, error):
+			return
+
 		if self.connectingDialog:
 			self.connectingDialog.Close()
 		self.connectingDialog = None
@@ -1028,6 +1036,7 @@ class LoginWindow(ui.ScriptWindow):
 	def OnUpdate(self):
 		eventManager.EventManager().Update()
 		ServerStateChecker.Update()
+		autologin.PumpLogin(self)
 
 		if self.animatedBackground and not self.backgroundPreloadDone:
 			self.__UpdateAnimatedBackgroundPreload()

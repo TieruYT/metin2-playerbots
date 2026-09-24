@@ -110,6 +110,8 @@ class SystemDialog(ui.ScriptWindow):
 		self.Show()
 
 	def __ClickChangeCharacterButton(self):
+		import autologin
+		autologin.NoteManualExit()
 		self.Close()
 
 		net.ExitGame()
@@ -118,6 +120,8 @@ class SystemDialog(ui.ScriptWindow):
 		self.popup = None
 
 	def __ClickLogOutButton(self):
+		import autologin
+		autologin.NoteManualExit()
 		if SYSTEM_MENU_FOR_PORTAL:
 			if app.loggined:
 				self.Close()

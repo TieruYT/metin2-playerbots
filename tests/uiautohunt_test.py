@@ -178,6 +178,7 @@ reset_state()
 install_stubs()
 sys.path.insert(0, CLIENT_ROOT)
 import uiautohunt  # noqa: E402
+import autologin  # noqa: E402
 
 
 def step(hunter, seconds=0.0):
@@ -1018,6 +1019,100 @@ class WindowTest(unittest.TestCase):
 		hunter.Destroy()
 		self.assertIsNone(hunter.mainWindow)
 		self.assertIsNone(hunter.lootWindow)
+
+	def test_the_autologin_switch_fills_the_grids_empty_place(self):
+		autologin.Reset()
+		hunter = uiautohunt.Hunter()
+		hunter.ToggleWindow()
+		main = hunter.mainWindow
+		self.assertIn('autologin', main.toggles)
+		self.assertEqual(hunter.config['autologin'], 0)
+		self.assertEqual(main.toggles['autologin'][0].text, 'WY\xa3')
+		# The eighth place of the four-row grid: the second column's last row,
+		# beside Mikstury and Wracaj, and inside the board they share.
+		(ax, ay) = main.toggles['autologin'][0].position
+		(rx, ry) = main.toggles['return'][0].position
+		self.assertEqual(ax, rx)
+		self.assertEqual(ay - ry, 19)
+		main.OnToggle('autologin')
+		self.assertEqual(hunter.config['autologin'], 1)
+		self.assertTrue(autologin.IsArmed())
+		self.assertEqual(main.toggles['autologin'][0].text, 'W\xa3')
+		self.assertIn('autologin w\xb3\xb9czony', STATE['chat'][-1])
+		main.OnToggle('autologin')
+		self.assertFalse(autologin.IsArmed())
+		self.assertIn('autologin wy\xb3\xb9czony', STATE['chat'][-1])
+		self.assertTrue(hunter.SaveConfig())
+		self.assertIn('autologin=0', open(uiautohunt.ConfigPath('Tester')).read())
+
+
+class AutologinHuntTest(unittest.TestCase):
+	# The Hunter's side of the autologin (autologin.py has its own test).
+	def setUp(self):
+		import shutil
+		import tempfile
+		reset_state()
+		uiautohunt._manaItems.clear()
+		autologin.Reset()
+		sys.modules['clientclock'].Reset()
+		self.here = os.getcwd()
+		self.folder = tempfile.mkdtemp()
+		os.chdir(self.folder)
+		self.addCleanup(shutil.rmtree, self.folder, True)
+		self.addCleanup(os.chdir, self.here)
+
+	def test_a_new_game_reads_the_characters_switch(self):
+		hunter = uiautohunt.Hunter()
+		config = uiautohunt.DefaultConfig()
+		config['autologin'] = 1
+		os.makedirs(uiautohunt.CONFIG_CHAR_DIR)
+		with open(uiautohunt.ConfigPath('Tester'), 'w') as handle:
+			handle.write(uiautohunt.ConfigText(config))
+		self.assertFalse(hunter.CanUpdate())
+		self.assertTrue(hunter.isLoaded)
+		self.assertTrue(autologin.IsArmed())
+
+	def test_destroy_tells_whether_the_hunt_ran_and_the_hunt_comes_back(self):
+		hunter = uiautohunt.Hunter()
+		hunter.CanUpdate()
+		hunter.config['autologin'] = 1
+		hunter.config['range'] = 3000
+		autologin.SetArmed(True)
+		hunter.Start()
+		# The game drops: the window closes, the login opens and logs in.
+		hunter.Destroy()
+		self.assertFalse(hunter.running)
+
+		class Stream(object):
+			id = 'konto'
+			pwd = 'haslo'
+			isAutoSelect = 0
+			popupWindow = None
+
+		class Login(object):
+			stream = Stream()
+			connectingDialog = None
+
+			def Connect(self, id, pwd):
+				pass
+		login = Login()
+		autologin.OnLoginOpen(login)
+		self.assertTrue(autologin.IsReconnecting())
+		STATE['now'] += 3.0
+		autologin.PumpLogin(login)
+		self.assertEqual(login.stream.isAutoSelect, 1)
+		STATE['now'] += 4.0
+		# The first frame of the game again: the same character, its unsaved
+		# settings kept, and the hunt going on five seconds later.
+		hunter.CanUpdate()
+		self.assertTrue(hunter.isLoaded)
+		self.assertEqual(hunter.config['range'], 3000)
+		self.assertIn('zalogowano ponownie', STATE['chat'][-1])
+		self.assertFalse(hunter.running)
+		STATE['now'] += 5.1
+		self.assertTrue(hunter.CanUpdate())
+		self.assertTrue(hunter.running)
+		self.assertIn('wznowione', STATE['chat'][-1])
 
 
 if __name__ == '__main__':

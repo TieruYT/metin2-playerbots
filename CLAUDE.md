@@ -7555,6 +7555,30 @@ not in `data/`) reworked these point by point. What each hangs on:
   anyway, because `Chase` marks one only in reach. Why the world disappears
   is still a guess (the camera under the terrain, whose underside is
   culled); 69 tests on 2.7 and 3, never run in a client.
+- **Auto Lowy's autologin keeps no password (24 September).** Tieru asked for
+  it "jako checkbox albo zmiesc przycisk estetycznie", against a mod's PDF
+  whose button stood in a row of its own under Zapisz/Start. It is the
+  eighth place of the "Ustawienia Walki" grid, empty until then, and it is
+  saved per character like the grid's other switches (`autologin`, default
+  0). `client-root/autologin.py` needs no copy of the login: the stream
+  keeps `id`, `pwd`, the address and the slot of the last login in memory
+  (`networkModule.MainStream`, and nothing clears them), and the exe opens the
+  login window for every disconnect in the game
+  (`CPythonNetworkStream::OnRemoteDisconnect` calls `SetLoginPhase`). A drop
+  is told apart from a logout by `NoteManualExit`, which clientrootify puts in
+  uisystem's logout and change-character buttons. The first frame of the
+  game ends it through the Hunter's `CanUpdate`, the one hook every frame
+  passes, and the game closing is `Hunter.Destroy`. A drop within thirty
+  seconds of the game closing starts tries at 3 s and then 5/10/20/30 s,
+  shown in the stock popup (whose close event is Cancel, so every close for
+  the next try clears the event first). "ALREADY" is retried in 10 s, a wrong
+  password or an old client stops it, and a try the account connector never
+  answers is dropped after 40 s. The character is entered by the stock
+  `stream.isAutoSelect`, cleared on the first game frame, and a hunt that was
+  running resumes 5 s in, with the settings in memory (saved or not) when it
+  is the same character. `tests/autologin_test.py` and
+  `tests/uiautohunt_test.py`, 14 + 72 tests on 2.7 and 3. Never run in a
+  client, and needs a client release (root repack) to reach anybody.
 - **The launcher's window is a layout file over the old controls.**
   `Metin2-Launcher-GUI.Layout.ps1` (22 September, prepared outside this
   repository as a UI test and brought in here) is dot-sourced by the GUI
