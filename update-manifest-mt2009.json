@@ -1,12 +1,12 @@
 {
   "schema": 1,
   "channel": "stable",
-  "publishedAt": "2026-09-24T19:07:02Z",
-  "statusMessage": "2.2.11 (serwer 2.2.11, klient 2.0.32 - zaktualizuj oba): Zwoje Blogoslawienstwa z Metinow 15-90 (5%, M2_BLESSING_SCROLL_STONE_PERMILLE); boty czesciej ulepszaja u zwyklego kowala zamiast czekac na zwoj i trzymaja zapasowa zbroje; COOP w sieci domowej; update.sh z gotowym zipem. Zawiera wszystko z 2.2.10.",
+  "publishedAt": "2026-09-24T19:55:22Z",
+  "statusMessage": "2.2.12 (serwer; klient bez zmian, 2.0.32): odpowiedzi Iwakury - Zwoje Blogoslawienstwa z Metinow 15-99 po 1% (50 z 2.2.11 w .env zmienia sie raz na 10), bron 30 lvl do +7 u zwyklego kowala i +8/+9 pod zwojami, Hazardzista moze ruszyc po Perfekcjoniscie. Zawiera wszystko z 2.2.11.",
   "server": {
-    "version": "2.2.11",
-    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.11/metin2-server-update-2.2.11.zip",
-    "sha256": "22D9705AD952617B3E8881ADE76B8457FB39E2F10F82BE74CEE13D55AC8632A1"
+    "version": "2.2.12",
+    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.12/metin2-server-update-2.2.12.zip",
+    "sha256": "F6A5A5A84956DC5DCBC7A8D371F333E2B00B88C27503B2CB7E2575BABD34EE9E"
   },
   "support": {
     "contactUrl": "https://discord.gg/pt5tvnrN6",
