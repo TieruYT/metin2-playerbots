@@ -62,6 +62,7 @@ FROM deps AS libs
 # thrashed until the build looked stuck at "game builder 2/3 67%"
 # (.unright, 12 September). MAKE_JOBS (M2_MAKE_JOBS in .env) still wins;
 # the default is the smaller of the cores and the memory divided by 1400 MB.
+# The game core's own step, below, sizes itself by the memory that is free.
 ARG MAKE_JOBS=
 
 RUN apt-get update \
@@ -142,12 +143,26 @@ FROM libs AS builder
 ARG MAKE_JOBS=
 ARG STRIP_BINARIES=1
 
-# Layer 3: the game core.
+# Layer 3: the game core. Its job count is sized by what is free, not by the
+# VM's total, for two reasons measured on 24 September. playerbot_manager.cpp
+# is the whole bot AI in one translation unit and takes about 2.3 GB at
+# -O2 -g, where an engine file takes 0.5-0.7 GB (the whole core from nothing:
+# 98 s and 3 GB at -j4). And an update builds while the old server still runs
+# - `up --build` recreates the containers only once the images are built - so
+# the bots and the database hold gigabytes of the same VM while this compiles
+# (4.5 GB at 1100 bots). Sized by MemTotal, a laptop swapped until the build
+# looked stuck at "game builder 2/3 (67%)" again (Drip, 24 September). So:
+# room for the heavy file and 700 MB a job after it, out of MemAvailable, and
+# a line in the log when even the heavy file does not fit.
 COPY src/server/game game
 RUN --mount=type=cache,target=/root/.ccache set -eux; \
     sed -i 's/\r$//' game/src/Makefile; \
     rm -rf game/src/.obj game/src/Depend; \
-    J="${MAKE_JOBS:-}"; if [ -z "$J" ]; then J="$(nproc)"; M="$(awk '/MemTotal/ { print int($2 / 1024 / 1400) }' /proc/meminfo)"; [ "$M" -ge 1 ] || M=1; [ "$M" -ge "$J" ] || J="$M"; fi; echo "make -j$J (cores $(nproc), memory $(awk '/MemTotal/ { print int($2 / 1024) }' /proc/meminfo) MB)"; \
+    T="$(awk '/^MemTotal:/ { print int($2 / 1024) }' /proc/meminfo)"; \
+    A="$(awk '/^MemAvailable:/ { print int($2 / 1024) }' /proc/meminfo)"; [ -n "$A" ] && [ "$A" -gt 0 ] || A="$T"; \
+    J="${MAKE_JOBS:-}"; if [ -z "$J" ]; then J="$(nproc)"; M=$(( 1 + (A - 2600) / 700 )); [ "$M" -ge 1 ] || M=1; [ "$M" -ge "$J" ] || J="$M"; fi; \
+    echo "make -j$J (cores $(nproc), memory $T MB, free $A MB)"; \
+    if [ "$A" -lt 2600 ]; then echo "UWAGA: w maszynie Dockera wolne jest tylko $A MB pamieci, a najciezszy plik rdzenia potrzebuje okolo 2300 MB. Kompilacja moze trwac bardzo dlugo. Zatrzymaj serwer przed aktualizacja (w launcherze: ZATRZYMAJ I ZAPISZ, potem GRAJ albo SPRAWDZ AKTUALIZACJE)."; fi; \
     make -C game/src -j"$J" ${M2_MAKE}; \
     mkdir -p /out; cp "game/game_r$(cat __REVISION__)" /out/game
 

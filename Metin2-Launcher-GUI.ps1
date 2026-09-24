@@ -582,13 +582,36 @@ function Set-ActionPhase {
     # looked exactly like a start that was working: the line read
     # "m2zip-db: Healthy" for eight minutes while the migration behind it
     # could not reach the database at all, and nothing said which it was.
-    param([Parameter(Mandatory = $true)][string]$Phase, [int]$Step = 0, [int]$Total = 0)
-    if ($script:activePhase -ne $Phase) {
+    # A build step is a phase of its own for the clock: "game builder" is the
+    # same name for its three steps, and the one that takes the time is the
+    # compile in the middle.
+    param([Parameter(Mandatory = $true)][string]$Phase, [int]$Step = 0, [int]$Total = 0, [string]$Label = '')
+    if ($script:activePhase -ne $Phase -or $script:activePhaseStep -ne $Step) {
         $script:activePhase = $Phase
         $script:activePhaseSince = Get-Date
     }
     $script:activePhaseStep = $Step
     $script:activePhaseTotal = $Total
+    $script:activePhaseLabel = $Label
+}
+
+function Get-BuildStepLabel {
+    # What a BuildKit step is doing, read out of its RUN line. The game core's
+    # compile shows as "game builder 2/3 (67%)" for as long as it runs, and
+    # nothing on that line said it was a compile or how long it had been going,
+    # so a slow one read as a hang ("wiecznie zatrzymuje sie na 67 procentach",
+    # Drip, 24 September).
+    param([Parameter(Mandatory = $true)][string]$Line)
+    if ($Line -match 'make -C game/src') { return 'kompilacja rdzenia gry' }
+    if ($Line -match 'make -C db/src') { return 'kompilacja rdzenia bazy' }
+    if ($Line -match 'make -C liblua') { return 'kompilacja bibliotek' }
+    return ''
+}
+
+function Format-StepClock {
+    # m:ss with the whole minutes, so a step past an hour does not wrap to 00.
+    param([Parameter(Mandatory = $true)][TimeSpan]$Span)
+    return ('{0}:{1:00}' -f [int][Math]::Floor($Span.TotalMinutes), $Span.Seconds)
 }
 
 function Update-ActionPhase {
@@ -598,11 +621,18 @@ function Update-ActionPhase {
     param([Parameter(Mandatory = $true)][string]$Line)
     $step = [Regex]::Match($Line, '^\s*#\d+\s+\[([^\]]+?)\s+(\d+)/(\d+)\]')
     if ($step.Success) {
-        Set-ActionPhase $step.Groups[1].Value ([int]$step.Groups[2].Value) ([int]$step.Groups[3].Value)
+        Set-ActionPhase $step.Groups[1].Value ([int]$step.Groups[2].Value) ([int]$step.Groups[3].Value) (Get-BuildStepLabel -Line $Line)
         if (-not $script:activeBuildNoticed) {
             $script:activeBuildNoticed = $true
             Write-LocalLog 'Trwa budowanie obrazów serwera. Przy pierwszym uruchomieniu to normalnie kilkanaście–kilkadziesiąt minut — nie przerywaj.'
         }
+        return
+    }
+    # The game core's build step says this when the Docker VM has less memory
+    # free than its heaviest file needs (see the game Dockerfile). Its RUN line
+    # carries the same words, but that line is a step and returned above.
+    if ($Line -match 'UWAGA: w maszynie Dockera wolne jest tylko') {
+        $script:activeLowMemory = $true
         return
     }
     if ($Line -match '^\[faza\]\s*(.+?)\s*(\(|$)') {
@@ -642,6 +672,21 @@ function Update-ActionStatusText {
         $pct = [int](100 * $script:activePhaseStep / $script:activePhaseTotal)
         $pct = [Math]::Max(0, [Math]::Min(100, $pct))
         $text += '   —   {0} {1}/{2} ({3}%)' -f $script:activePhase, $script:activePhaseStep, $script:activePhaseTotal, $pct
+        # The step's own clock: the action's timer includes the download and
+        # every image built before this one, so it cannot say whether the
+        # compile has been going for one minute or for ten.
+        $inStep = if ($script:activePhaseSince) { (Get-Date) - $script:activePhaseSince } else { [TimeSpan]::Zero }
+        if ($script:activePhaseLabel) { $text += ' — {0} {1}' -f $script:activePhaseLabel, (Format-StepClock -Span $inStep) }
+        else { $text += ' {0}' -f (Format-StepClock -Span $inStep) }
+        if ($script:activePhaseLabel -eq 'kompilacja rdzenia gry') {
+            $long = $inStep.TotalSeconds -ge $script:activeCompileHintSeconds
+            if ($script:activeLowMemory) { $text += '  ⚠ mało wolnej pamięci w Dockerze' }
+            elseif ($long) { $text += '  ⚠ dłużej niż zwykle' }
+            if ($long -and -not $script:activeCompileHintNoticed) {
+                $script:activeCompileHintNoticed = $true
+                Write-LocalLog ('Kompilacja rdzenia gry trwa już {0:N0} min, a zwykle zajmuje 1–5 min. Tak długo trwa najczęściej wtedy, gdy maszynie Dockera brakuje pamięci: aktualizacja kompiluje, kiedy stary serwer z botami wciąż działa. Nie przerywaj — restart zaczyna kompilację od nowa. Przy następnej aktualizacji kliknij najpierw ZATRZYMAJ I ZAPISZ.' -f $inStep.TotalMinutes)
+            }
+        }
         if ($script:progress.Style -ne 'Blocks') { $script:progress.Style = 'Blocks' }
         $script:progress.Value = $pct
     }
@@ -1679,6 +1724,12 @@ function Start-LauncherAction {
     # which carry their own step counter anyway.
     $script:activeStallSeconds = 240
     $script:activeStallNoticed = $false
+    # The game core's compile: its label, the minute a slow one gets a word in
+    # the log, and whether the build said the Docker VM is short of memory.
+    $script:activePhaseLabel = ''
+    $script:activeCompileHintSeconds = 600
+    $script:activeCompileHintNoticed = $false
+    $script:activeLowMemory = $false
     $script:actionStatus.Text = "Trwa: $Action..."
     $script:actionStatus.ForeColor = [Drawing.Color]::Gold
     $script:progress.Style = 'Marquee'

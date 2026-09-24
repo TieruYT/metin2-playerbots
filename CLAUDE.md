@@ -3328,7 +3328,21 @@ not in `data/`) reworked these point by point. What each hangs on:
   over a gigabyte each at -O2 -g; `make -j$(nproc)` on an 8 GB machine
   thrashed at "game builder 2/3 67%" and read as a hang. Both game
   Dockerfiles take the smaller of `nproc` and MemTotal/1400 MB unless
-  `MAKE_JOBS` (`M2_MAKE_JOBS`) is set, and print the choice.
+  `MAKE_JOBS` (`M2_MAKE_JOBS`) is set, and print the choice. It came back
+  on 24 September from the other side (Drip: "wiecznie zatrzymuje sie na
+  tych 67 procentach"). An update builds while the old server still runs,
+  because `up --build` recreates the containers only once the images are
+  built, and that server holds 4.5 GB of the same VM at 1100 bots.
+  `playerbot_manager.cpp` alone takes 2.3 GB at -O2 -g, against 0.5-0.7 GB
+  for an engine file; the whole core from nothing is 98 s and 3 GB at -j4.
+  So the 2.x game core's step sizes its jobs from MemAvailable: room for the
+  heavy file, then 700 MB a job. Under 2.6 GB free it prints a `UWAGA:` line
+  telling the player to stop the server first. The libs and db steps keep
+  MemTotal, so their cache stays. The launcher shows a clock for the build
+  step itself and labels the compile. After ten minutes it adds one line
+  to the log, and it marks the status line when the build reported low
+  memory. Before this, "game builder 2/3 (67%)" showed no sign of whether
+  the compile had run one minute or twenty.
 - **mt2009 fishing is four gates and a minigame, and the pass was the one
   nobody could pass.** `CHARACTER::fishing()` there wants level 50, maps
   1/21/41, `fishing_onboarding.completed`, bait in the rod's socket 2 and
