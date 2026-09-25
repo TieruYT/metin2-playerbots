@@ -550,7 +550,7 @@ namespace
 				continue;
 			if (candidate->GetEmpire() != info.bEmpire)
 				continue;
-			if (IsPlayerBotDropper(it->second.bPersonality))
+			if (IsPlayerBotDropper(it->second.bPersonality) || IsPlayerBotSidekickPID(it->first))
 				continue;
 			const int strength = GetPlayerBotStrengthCached(it->first);
 			if (floor > 0 && strength < floor)
@@ -863,8 +863,13 @@ namespace
 				number(0, 30000);
 
 		CGuild* guild = ch->GetGuild();
+		// A player's companion (playerbot_sidekick.h) is in its owner's guild
+		// or none: it founds no bot guild and leaves one it was in before.
+		const bool sidekick = IsPlayerBotSidekickPID(ch->GetPlayerID());
 		if (!guild)
 		{
+			if (sidekick)
+				return;
 			// Guilds are founded on the first channel, where the census is.
 			int tier = GUILD_TIER_ORDINARY;
 			if (g_bChannel == 1 && ShouldPlayerBotFoundGuild(ch, state, tier))
@@ -886,7 +891,7 @@ namespace
 			}
 			return;
 		}
-		if (IsPlayerBotDropper(state.bPersonality))
+		if (IsPlayerBotDropper(state.bPersonality) || sidekick)
 		{
 			LeavePlayerBotGuildAsDropper(ch, guild);
 			return;

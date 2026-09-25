@@ -207,6 +207,8 @@ namespace
 			return "dead";
 		if (!client->GetDesc() || !client->GetDesc()->IsBot())
 			return "person";
+		if (IsPlayerBotSidekickPID(client->GetPlayerID()))
+			return "companion";
 		if (client->GetParty() || IsPlayerBotOnMercContract(client->GetPlayerID()))
 			return "party";
 		if (IsPlayerBotSummoned(client->GetPlayerID()))
@@ -812,7 +814,8 @@ namespace
 	// to a client chosen on the last look round, and the look round itself.
 	bool ManagePlayerBotMercenary(LPCHARACTER ch, TPlayerBotAIState& state, DWORD dwNow)
 	{
-		if (!ch)
+		// A player's companion carries its owner and nobody else.
+		if (!ch || IsPlayerBotSidekickPID(ch->GetPlayerID()))
 			return false;
 		const DWORD pid = ch->GetPlayerID();
 		TPlayerBotMercContractMap::iterator own = s_mapPlayerBotMercContracts.find(pid);
@@ -868,6 +871,9 @@ namespace
 		// its own stand and the world travel all ask this, and any of them
 		// would take the bot off the map the person called it on.
 		if (IsPlayerBotHiredClient(pid) || IsPlayerBotSummoned(pid))
+			return true;
+		// A player's companion at its owner's side (playerbot_sidekick.h).
+		if (IsPlayerBotSidekickLeashed(ch))
 			return true;
 		TPlayerBotMercContractMap::const_iterator own = s_mapPlayerBotMercContracts.find(pid);
 		if (own != s_mapPlayerBotMercContracts.end())

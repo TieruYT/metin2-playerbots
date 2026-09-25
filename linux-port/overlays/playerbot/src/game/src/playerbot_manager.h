@@ -85,6 +85,12 @@ class CPlayerBotManager : public singleton<CPlayerBotManager>
 		// mt2009 via playerbotify.py): the Anti-PK protocol's only source of
 		// who is attacking a bot - the engine keeps no record of it.
 		void	OnPlayerStruck(LPCHARACTER victim, LPCHARACTER attacker);
+		// The player's own companion (playerbot_sidekick.h): its load on the
+		// core its owner stands on, past this channel's partition, and the
+		// /towarzysz command the Towarzysz quest sends (cmd_general.cpp, mt2009
+		// via playerbotify.py).
+		bool	SpawnSidekick(DWORD dwPlayerID);
+		void	OnSidekickCommand(LPCHARACTER ch, const char* szArgument);
 
 		// The operator's spawn plan (input_db.cpp through playerbotify.py): the
 		// window the cohort arrives over, and a second cohort that joins one at
@@ -252,6 +258,9 @@ class CPlayerBotManager : public singleton<CPlayerBotManager>
 		// The life schedule: when each live bot's session ends, until when a
 		// logged-out bot rests (kept out of the world and out of the top-up),
 		// and who is on the way back from a rest.
+		// The companion SpawnSidekick is loading, which Spawn lets past the
+		// population's rules and nothing else does.
+		DWORD			m_dwSpawningSidekick = 0;
 		std::map<DWORD, DWORD>	m_mapLifeSessionEnd;
 		std::map<DWORD, DWORD>	m_mapLifeRestEnd;
 		std::set<DWORD>		m_setLifeReturning;

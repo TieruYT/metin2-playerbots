@@ -380,6 +380,24 @@ namespace
 				snprintf(status, statusSize, PBT(en, "%sWojna gildii z %s", "%sGuild war with %s"), prefix, enemy ? enemy->GetName() : "?");
 			return;
 		}
+		// A player's companion at its owner's side says whose it is
+		// (playerbot_sidekick.h), and what it is doing for the owner.
+		if (const char* owner = GetPlayerBotSidekickOwnerName(ch))
+		{
+			if (state.bCurrentAction == BOT_ACTION_FIGHT)
+				snprintf(status, statusSize, PBT(en, "Towarzysz %s - walcze", "%s's companion - fighting"), owner);
+			else if (state.bCurrentAction == BOT_ACTION_LOOT)
+				snprintf(status, statusSize, PBT(en, "Towarzysz %s - zbieram drop", "%s's companion - picking up"), owner);
+			else if (state.bCurrentAction == BOT_ACTION_REFINE)
+				snprintf(status, statusSize, PBT(en, "Towarzysz %s - u kowala", "%s's companion - at the blacksmith"), owner);
+			else if (state.bCurrentAction == BOT_ACTION_SHOP)
+				snprintf(status, statusSize, PBT(en, "Towarzysz %s - u handlarza", "%s's companion - at the merchant"), owner);
+			else if (state.bRecoveringAfterDeath)
+				snprintf(status, statusSize, PBT(en, "Towarzysz %s - wracam do sil", "%s's companion - recovering"), owner);
+			else
+				snprintf(status, statusSize, PBT(en, "Towarzysz %s", "%s's companion"), owner);
+			return;
+		}
 		if (state.bVisitingShop)
 		{
 			// "Handluje bronia (cel: zapasy)" says what the bot is standing at

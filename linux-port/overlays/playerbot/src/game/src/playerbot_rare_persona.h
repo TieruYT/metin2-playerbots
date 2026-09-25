@@ -52,7 +52,7 @@ namespace
 	bool IsPlayerBotRareCandidate(LPCHARACTER ch, const TPlayerBotAIState& state, DWORD dwNow)
 	{
 		if (!ch || ch->IsDead() || !ch->IsItemLoaded() || !state.persona.bRestored ||
-				ch->GetParty() || IsPlayerBotDropper(state.bPersonality) ||
+				ch->GetParty() || IsPlayerBotDropper(state.bPersonality) || IsPlayerBotSidekickPID(ch->GetPlayerID()) ||
 				IsPlayerBotMercenaryOnContract(ch->GetPlayerID()) || IsPlayerBotHiredClient(ch->GetPlayerID()))
 			return false;
 		return GetPlayerBotRareNow(state.persona, dwNow) == 0;

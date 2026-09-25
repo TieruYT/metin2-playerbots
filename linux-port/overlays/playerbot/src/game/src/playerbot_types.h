@@ -5621,6 +5621,14 @@ namespace
 
 	BYTE GetPlayerBotPersonalityByPID(DWORD dwPID);
 
+	// The player's own companion (playerbot_sidekick.h, included after every
+	// fragment that asks these): whose it is, whether it stands at its
+	// owner's side, and what its owner handed it.
+	bool IsPlayerBotSidekickPID(DWORD pid);
+	bool IsPlayerBotSidekickLeashed(LPCHARACTER ch);
+	bool IsPlayerBotSidekickGift(LPCHARACTER ch, LPITEM item);
+	const char* GetPlayerBotSidekickOwnerName(LPCHARACTER ch);
+
 	// Iwakura's personality system ("SYSTEM OSOBOWOSCI v2.0", 19 September):
 	// playerbot_persona_rules.h is the policy, playerbot_mood.h and
 	// playerbot_persona.h the engine's half. The PERSONA key of the weights

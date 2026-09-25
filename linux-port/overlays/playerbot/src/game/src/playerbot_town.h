@@ -3560,6 +3560,10 @@ namespace
 		// the summon it was called for.
 		if (IsPlayerBotSummoned(ch->GetPlayerID()))
 			return false;
+		// Nor a player's companion: it stands at its owner's side, or plays
+		// while its owner is online, and a stand would outlive both.
+		if (IsPlayerBotSidekickPID(ch->GetPlayerID()))
+			return false;
 		// Every shop in the world stands on the first channel (the operator's
 		// rule for the second one, playerbot_channel_rules.h). Without the
 		// assignment table a bot on another channel never opens one; with it,

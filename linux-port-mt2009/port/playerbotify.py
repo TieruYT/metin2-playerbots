@@ -1461,7 +1461,41 @@ def main(root):
     apply_shop_edit_burst(game)
     apply_shop_search_picked_item(game)
     apply_blessing_scroll_from_stones(game)
+    apply_sidekick_command(game)
     print('playerbotify: done')
+
+
+SIDEKICK_COMMAND = r'''// "Towarzysz", the player's own companion (playerbot_sidekick.h): the
+// Towarzysz quest's letter sends these - stworz, przywolaj, wolny, stan,
+// odprawa - and a player may type them too. The manager answers in the chat.
+ACMD(do_towarzysz)
+{
+	if (!ch || !ch->GetDesc())
+		return;
+	CPlayerBotManager::instance().OnSidekickCommand(ch, argument);
+}
+'''
+
+
+def apply_sidekick_command(game):
+    # Towarzysz (Tieru, 24 wrzesnia): staly towarzysz gracza - bot w jego
+    # grupie, ktory za nim chodzi, walczy, buffuje, zbiera drop i przyjmuje
+    # handel. Quest "Towarzysz" pyta o klase, sciezke i nick i wysyla
+    # "/towarzysz stworz ..."; reszta menu to te same polecenia.
+    edit(os.path.join(game, 'cmd_general.cpp'),
+         "//martysama0134's 4e4e75d8b719b9240e033009cf4d7b0f\n",
+         SIDEKICK_COMMAND + "\n//martysama0134's 4e4e75d8b719b9240e033009cf4d7b0f\n",
+         marker='ACMD(do_towarzysz)\n')
+    edit(os.path.join(game, 'cmd.cpp'),
+         'ACMD(do_check_mob);\n',
+         'ACMD(do_check_mob);\n'
+         'ACMD(do_towarzysz);\n',
+         marker='ACMD(do_towarzysz);\n')
+    edit(os.path.join(game, 'cmd.cpp'),
+         '\t{ "check_mob", do_check_mob, \t0, POS_DEAD,\t\tGM_IMPLEMENTOR },\n',
+         '\t{ "check_mob", do_check_mob, \t0, POS_DEAD,\t\tGM_IMPLEMENTOR },\n'
+         '\t{ "towarzysz",\tdo_towarzysz,\t0,\t\t\tPOS_DEAD,\tGM_PLAYER\t},\n',
+         marker='{ "towarzysz",')
 
 
 def apply_playerbot_guild_invites(game):

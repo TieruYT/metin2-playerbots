@@ -123,7 +123,9 @@ namespace
 	// merchant scrap under +8 whatever the anvil makes of it.
 	bool IsPlayerBotGambleStock(LPCHARACTER ch, LPITEM item)
 	{
-		if (!ch || !item)
+		// What a player handed a companion is not stock to gamble with
+		// (playerbot_sidekick.h).
+		if (!ch || !item || IsPlayerBotSidekickGift(ch, item))
 			return false;
 		const BYTE type = item->GetType();
 		if (type != ITEM_WEAPON && type != ITEM_ARMOR)

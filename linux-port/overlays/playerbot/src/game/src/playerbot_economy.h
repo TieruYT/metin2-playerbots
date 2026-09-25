@@ -1290,6 +1290,10 @@ namespace
 	{
 		if (!ch || !item || item->IsEquipped() || item->isLocked())
 			return false;
+		// What a player handed a companion is the player's choice, not the
+		// merchant's (playerbot_sidekick.h).
+		if (IsPlayerBotSidekickGift(ch, item))
+			return false;
 
 		// The operator's word first: merchant is scrap whatever the rules
 		// below would keep it for; keep, stall and drop are never scrap (drop

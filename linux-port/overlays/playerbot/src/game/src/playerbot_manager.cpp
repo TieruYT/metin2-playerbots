@@ -36,6 +36,8 @@
 #include "questmanager.h"
 #include "safebox.h"
 #include "questpc.h"
+#include "banword.h"
+#include "exchange.h"
 #include "refine.h"
 #include "sectree.h"
 #include "shop.h"
@@ -149,6 +151,10 @@ namespace { bool HandlePlayerBotConversation(LPCHARACTER player, LPCHARACTER bot
 #include "playerbot_anti_pk.h"
 #include "playerbot_rare_persona.h"
 #include "playerbot_demon_tower.h"
+// The player's own companion, "Towarzysz": the owner's party, the owner's
+// fights, the owner's drops, the owner's trades. Before companions.h, whose
+// IsPlayerBotHeldForCompany asks whether a bot is one.
+#include "playerbot_sidekick.h"
 // Iwakura's social personalities: the companion's phase and its invitations
 // to people, a companion Shaman's party buffs, and the mercenary's contracts.
 #include "playerbot_companions.h"
@@ -404,6 +410,14 @@ namespace
 		LPCHARACTER leader = CHARACTER_MANAGER::instance().FindByPID(leaderPid);
 		if (!leader || leader->IsDead())
 			return;
+		// A player's companion is in its owner's party and nobody else's.
+		if (IsPlayerBotSidekickPID(ch->GetPlayerID()) && !IsPlayerBotSidekickInviteFromOwner(ch, leader))
+		{
+			if (leader->GetDesc() && !leader->GetDesc()->IsBot())
+				leader->ChatPacket(CHAT_TYPE_INFO, "%s jest czyims towarzyszem i nie dolaczy do twojej grupy.",
+						ch->GetName());
+			return;
+		}
 		// Joining is a thing the bot is now doing: an errand it was walking to
 		// keeps its own state, but the party check must not run in the same
 		// second and weigh a party the bot has not joined yet.
@@ -440,15 +454,21 @@ namespace
 		if (!ch)
 			return;
 		BYTE lockLevel = GetPlayerBotExpLockLevel(state.bPersonality);
+		// A player's companion levels with its owner, whatever the persona
+		// system would lock a bot of its level at; a lock it carried from its
+		// life before is lifted.
+		const bool sidekick = IsPlayerBotSidekickPID(ch->GetPlayerID());
 		// The operator's medal droppers stop where the operator said.
-		const bool cohort = CPlayerBotManager::instance().IsMedalDropperCohortPID(ch->GetPlayerID());
+		const bool cohort = !sidekick && CPlayerBotManager::instance().IsMedalDropperCohortPID(ch->GetPlayerID());
 		// Under Iwakura's personalities everybody else holds where its Grinder
 		// holds (GetPlayerBotPersonaLockLevel) - and nothing is decided before
 		// the bot's quest flags have said where that is, or every spawn would
 		// lift a lock and put it back a few seconds later.
-		const bool persona = !cohort && IsPlayerBotPersonaEnabled();
+		const bool persona = !cohort && !sidekick && IsPlayerBotPersonaEnabled();
 		if (persona && !state.persona.bRestored)
 			return;
+		if (sidekick)
+			lockLevel = 0;
 		if (cohort)
 			lockLevel = CPlayerBotManager::instance().GetMedalDropperCohortLevel();
 		else if (persona && state.bPersonality == BOT_PERSONALITY_MEDAL_DROPPER)
@@ -610,6 +630,8 @@ namespace
 		const char* unready = GetPlayerBotDuelUnreadiness(ch, dwNow);
 		if (unready)
 			return unready;
+		if (ch && IsPlayerBotSidekickPID(ch->GetPlayerID()))
+			return "companion";
 		return ch && IsPlayerBotSummoned(ch->GetPlayerID()) ? "summoned" : NULL;
 	}
 
@@ -672,6 +694,8 @@ namespace
 					challenger->ChatPacket(CHAT_TYPE_INFO, "%s lowi ryby i nie przyjmie teraz pojedynku.", ch->GetName());
 				else if (!strcmp(refusal, "mining"))
 					challenger->ChatPacket(CHAT_TYPE_INFO, "%s kopie rude i nie przyjmie teraz pojedynku.", ch->GetName());
+				else if (!strcmp(refusal, "companion"))
+					challenger->ChatPacket(CHAT_TYPE_INFO, "%s jest czyims towarzyszem i nie bierze udzialu w pojedynkach.", ch->GetName());
 				else
 					challenger->ChatPacket(CHAT_TYPE_INFO, "%s nie ma broni w reku i nie przyjmie pojedynku.", ch->GetName());
 			}
@@ -1355,13 +1379,14 @@ namespace
 	// the engine refuses every other skill from that saddle. "Nigdy zaden
 	// szaman nie uzyl swoich buffow na mnie gdy bylismy w PT" (sizowski,
 	// 14 September).
-	bool ManagePlayerBotBuffHumanLeader(LPCHARACTER ch, TPlayerBotAIState& state, DWORD dwNow)
+	// The person may be the leader of the bot's party (the wrapper below) or a
+	// companion's owner, whose party it may not lead (playerbot_sidekick.h).
+	bool ManagePlayerBotBuffPerson(LPCHARACTER ch, TPlayerBotAIState& state, LPCHARACTER leader, DWORD dwNow)
 	{
 		static std::map<DWORD, DWORD> s_mapPlayerBotLeaderBuffNext;
 		if (!ch || ch->IsDead() || ch->GetJob() != JOB_SHAMAN || ch->GetSkillGroup() == 0)
 			return false;
-		LPPARTY party = ch->GetParty();
-		if (!party || !IsPlayerBotHumanLedParty(party))
+		if (!leader || leader == ch || leader->IsDead() || leader->GetMapIndex() != ch->GetMapIndex())
 			return false;
 		DWORD& next = s_mapPlayerBotLeaderBuffNext[ch->GetPlayerID()];
 		if (dwNow < next)
@@ -1372,9 +1397,6 @@ namespace
 		// party), so its flags stay set and must not stop the buffs.
 		if (state.bRecoveringAfterDeath || state.bTacticalRetreat ||
 				state.bMultiPullActive || state.bFishingSession || ch->GetMyShop())
-			return false;
-		LPCHARACTER leader = party->GetLeaderCharacter();
-		if (!leader || leader == ch || leader->IsDead() || leader->GetMapIndex() != ch->GetMapIndex())
 			return false;
 		const bool fighting = ch->GetVictim() && !ch->GetVictim()->IsDead();
 		const bool hunting = fighting || state.dwTargetVID != 0 ||
@@ -1429,16 +1451,29 @@ namespace
 			state.dwLastBotSkillTime = dwNow;
 			state.dwNextAttackTime = dwNow + PLAYERBOT_SKILL_ANIMATION_LOCK;
 			next = dwNow + PLAYERBOT_BUFF_RECHECK_FAST;
-			sys_log(0, "PLAYERBOT_AI: buffed party leader pid=%u name=%s leader=%s vnum=%u",
+			sys_log(0, "PLAYERBOT_AI: buffed a person pid=%u name=%s person=%s vnum=%u",
 					ch->GetPlayerID(), ch->GetName(), leader->GetName(), vnum);
 			return true;
 		}
 		return false;
 	}
 
+	bool ManagePlayerBotBuffHumanLeader(LPCHARACTER ch, TPlayerBotAIState& state, DWORD dwNow)
+	{
+		LPPARTY party = ch ? ch->GetParty() : NULL;
+		if (!party || !IsPlayerBotHumanLedParty(party))
+			return false;
+		return ManagePlayerBotBuffPerson(ch, state, party->GetLeaderCharacter(), dwNow);
+	}
+
 	void ManagePlayerBotParty(LPCHARACTER ch, TPlayerBotAIState& state, DWORD dwNow)
 	{
 		if (!ch || !ch->GetSectree() || dwNow < state.dwNextPartyCheckTime)
+			return;
+		// A player's companion is in its owner's party, which its own pass
+		// keeps (playerbot_sidekick.h), or in none; and a bot that owns one
+		// under the self-test keeps the party the companion is in.
+		if (IsPlayerBotSidekickPID(ch->GetPlayerID()) || IsPlayerBotSidekickOwnerPID(ch->GetPlayerID()))
 			return;
 
 		state.dwNextPartyCheckTime = dwNow + PLAYERBOT_PARTY_CHECK_INTERVAL + number(0, 3000);
@@ -2412,6 +2447,7 @@ namespace
 		if (moved || foughtRecently || castRecently || state.bFishingSession ||
 				IsPlayerBotMiningNow(ch->GetPlayerID(), dwNow) ||
 				state.dwTownLingerUntil != 0 || IsPlayerBotBesideHumanLeader(ch) ||
+				IsPlayerBotSidekickBesideOwner(ch) ||
 				// waiting for a floor's script in the Demon Tower, or for the
 				// raid to gather on its ground floor (playerbot_demon_tower.h)
 				state.lTowerInstance != 0 || state.dwTowerRaidGuild != 0 || state.bTowerSummoned ||
@@ -2540,6 +2576,9 @@ namespace
 		const DWORD dwNow = get_dword_time();
 		RefreshPlayerBotWeights(dwNow);
 		ManagePlayerBotEvents(dwNow);
+		// A player's companion, on a core no bot has woken yet: the first of
+		// them starts Update and ends this clock (playerbot_sidekick.h).
+		ManagePlayerBotSidekicks(dwNow);
 #if defined(PLAYERBOT_ENGINE_MT2009)
 		// A channel that starts with nobody still learns who is moved to it,
 		// and spawns them; the first of them starts Update and ends this.
@@ -2594,12 +2633,18 @@ bool CPlayerBotManager::Spawn(DWORD dwPlayerID, BYTE bEmpire)
 {
 	if (dwPlayerID == 0)
 		return false;
+	// A player's companion (playerbot_sidekick.h) is its owner's alone: only
+	// SpawnSidekick starts one, on the core its owner stands on, whatever this
+	// channel's partition says - and nothing of the population's does.
+	const bool bSidekick = m_dwSpawningSidekick != 0 && m_dwSpawningSidekick == dwPlayerID;
+	if (!bSidekick && IsPlayerBotSidekickPID(dwPlayerID))
+		return false;
 
 	// The kingdom comes from the registry, never from the caller. A PID whose
 	// seeded character is Jinno starts as Jinno or does not start at all -
 	// this is the guard that stops a bad call turning a character into a bot
 	// of somebody else's empire, and it is why the argument is only checked.
-	const BYTE bRegisteredEmpire = GetRegisteredEmpire(dwPlayerID);
+	const BYTE bRegisteredEmpire = bSidekick ? bEmpire : GetRegisteredEmpire(dwPlayerID);
 	if (bRegisteredEmpire == 0)
 		bEmpire = 0;
 	else if (bEmpire != 0 && bEmpire != bRegisteredEmpire)
@@ -2614,7 +2659,7 @@ bool CPlayerBotManager::Spawn(DWORD dwPlayerID, BYTE bEmpire)
 	// A bot descriptor has no authenticated account session.  Never let a raw
 	// PID turn an ordinary player into a server-controlled character: only the
 	// immutable cohort written by playerbots_seed.sql may use this load path.
-	if (!IsRegistered(dwPlayerID))
+	if (!bSidekick && !IsRegistered(dwPlayerID))
 	{
 		// Expected, not exceptional: every start walks the whole pid range and most
 		// of it is not seeded. Writing a SYSERR per pid put 170 lines into every
@@ -2635,7 +2680,7 @@ bool CPlayerBotManager::Spawn(DWORD dwPlayerID, BYTE bEmpire)
 	// The two channels with moves: an identity plays on the channel its row
 	// gives it, and only from the row's ready time - a bot that has just been
 	// moved must be out of its old channel before it is loaded on the new one.
-	if (m_bChannelTable)
+	if (m_bChannelTable && !bSidekick)
 	{
 		TPlayerBotAccountMap::const_iterator owner = m_mapBotAccounts.find(dwPlayerID);
 		if (owner == m_mapBotAccounts.end() || owner->second.bChannel != g_bChannel ||
@@ -2753,6 +2798,11 @@ bool CPlayerBotManager::LoadRegisteredBots()
 	m_setRegisteredBots.clear();
 	m_setAllRegisteredBots.clear();
 	m_mapBotAccounts.clear();
+	// The players' companions before any spawn: the first batch goes out from
+	// SpawnRegistered, before Update has ever run, and a companion must not
+	// be started as the population's bot (playerbot_sidekick.h).
+	LoadPlayerBotSidekicks();
+	s_dwPlayerBotSidekickNextLoad = get_dword_time() + PLAYERBOT_SIDEKICK_RELOAD_MS;
 
 	// The second channel's plan (playerbot_channel_rules.h): the switch and the
 	// share from the container's environment, which every core of this world
@@ -3238,8 +3288,9 @@ void CPlayerBotManager::SpawnPendingBatch(DWORD dwNow)
 		// scheduled, so removing the ban lets a later top-up bring it back.
 		if (m_setBannedBots.find(pid) != m_setBannedBots.end())
 			continue;
-		// A resting one likewise: its rest ends in ManageLifeSchedule.
-		if (IsRestingBot(pid))
+		// A resting one likewise: its rest ends in ManageLifeSchedule. And a
+		// player's companion, which logs in with its owner (SpawnSidekick).
+		if (IsRestingBot(pid) || IsPlayerBotSidekickPID(pid))
 			continue;
 		Spawn(pid, GetRegisteredEmpire(pid));
 		++sent;
@@ -3326,7 +3377,8 @@ void CPlayerBotManager::SpawnLateJoiners(DWORD dwNow)
 		m_setScheduledBots.insert(pid);
 		// A banned or resting one is scheduled and not spawned: the top-up
 		// brings it in when the ban lifts or the rest ends, like anybody's.
-		if (m_setBannedBots.find(pid) != m_setBannedBots.end() || IsRestingBot(pid))
+		if (m_setBannedBots.find(pid) != m_setBannedBots.end() || IsRestingBot(pid) ||
+				IsPlayerBotSidekickPID(pid))
 			continue;
 		Spawn(pid, GetRegisteredEmpire(pid));
 		sys_log(0, "PLAYERBOT: late joiner pid=%u empire=%u left=%u of %u",
@@ -3370,7 +3422,8 @@ void CPlayerBotManager::TopUpMissingBots(DWORD dwNow)
 		// A banned bot is missing on purpose; leaving it out of the queue keeps
 		// the top-up from asking for it every minute only for SpawnPendingBatch
 		// to drop it again.
-		else if (m_setBannedBots.find(*it) == m_setBannedBots.end() && !IsRestingBot(*it))
+		else if (m_setBannedBots.find(*it) == m_setBannedBots.end() && !IsRestingBot(*it) &&
+				!IsPlayerBotSidekickPID(*it))
 			missing.push_back(*it);
 	}
 	if (missing.empty())
@@ -3468,6 +3521,72 @@ bool CPlayerBotManager::Despawn(DWORD dwPlayerID)
 	return true;
 }
 
+// A player's companion (playerbot_sidekick.h). Every core knows every
+// channel's identities (m_setAllRegisteredBots) and a companion logs in
+// wherever its owner stands, so the identity is made this channel's for the
+// load: its account record (read here when this core never kept one), this
+// channel, no wait. Spawn refuses a companion to anybody else, and the
+// population's queues step over it.
+bool CPlayerBotManager::SpawnSidekick(DWORD dwPlayerID)
+{
+	if (dwPlayerID == 0)
+		return false;
+	LoadRegisteredBots();
+	if (m_setAllRegisteredBots.find(dwPlayerID) == m_setAllRegisteredBots.end())
+	{
+		sys_err("PLAYERBOT_SIDEKICK: pid=%u is not a registered identity", dwPlayerID);
+		return false;
+	}
+	if (m_setBannedBots.find(dwPlayerID) != m_setBannedBots.end())
+		return false;
+	TPlayerBotAccountMap::iterator account = m_mapBotAccounts.find(dwPlayerID);
+	if (account == m_mapBotAccounts.end())
+	{
+		char query[512];
+		snprintf(query, sizeof(query),
+				"SELECT a.id, a.login, pi.empire, p.level FROM player.player AS p "
+				"JOIN account.account AS a ON a.id=p.account_id "
+				"JOIN player.player_index AS pi ON pi.id=a.id WHERE p.id=%u", dwPlayerID);
+		std::unique_ptr<SQLMsg> msg(AccountDB::instance().DirectQuery(query));
+		MYSQL_ROW row = NULL;
+		if (!msg.get() || msg->uiSQLErrno != 0 || !msg->Get() || !msg->Get()->pSQLResult ||
+				!(row = mysql_fetch_row(msg->Get()->pSQLResult)))
+		{
+			sys_err("PLAYERBOT_SIDEKICK: no account for pid=%u", dwPlayerID);
+			return false;
+		}
+		TPlayerBotAccount record;
+		record.dwID = 0;
+		unsigned int empire = 0, level = 0;
+		if (row[0])
+			str_to_number(record.dwID, row[0]);
+		if (row[1])
+			record.strLogin = row[1];
+		if (row[2])
+			str_to_number(empire, row[2]);
+		if (row[3])
+			str_to_number(level, row[3]);
+		record.bEmpire = (BYTE)empire;
+		record.bLevel = (BYTE)std::min<unsigned int>(level, 255);
+		account = m_mapBotAccounts.insert(TPlayerBotAccountMap::value_type(dwPlayerID, record)).first;
+	}
+	if (account->second.bEmpire < 1 || account->second.bEmpire > 3)
+		return false;
+	account->second.bChannel = g_bChannel;
+	account->second.dwReadyAt = 0;
+	m_dwSpawningSidekick = dwPlayerID;
+	const bool sent = Spawn(dwPlayerID, account->second.bEmpire);
+	m_dwSpawningSidekick = 0;
+	sys_log(0, "PLAYERBOT_SIDEKICK: spawn pid=%u empire=%u channel=%u sent=%d",
+			dwPlayerID, (unsigned int)account->second.bEmpire, (unsigned int)g_bChannel, sent ? 1 : 0);
+	return sent;
+}
+
+void CPlayerBotManager::OnSidekickCommand(LPCHARACTER ch, const char* szArgument)
+{
+	HandlePlayerBotSidekickCommand(ch, szArgument);
+}
+
 bool CPlayerBotManager::IsRestingBot(DWORD dwPlayerID) const
 {
 	return m_mapLifeRestEnd.find(dwPlayerID) != m_mapLifeRestEnd.end();
@@ -3517,6 +3636,9 @@ void CPlayerBotManager::ManageLifeSchedule(DWORD dwNow)
 	for (TPlayerBotMap::const_iterator it = m_mapBots.begin(); it != m_mapBots.end(); ++it)
 	{
 		const DWORD pid = it->first;
+		// A player's companion keeps its owner's hours, not a schedule.
+		if (IsPlayerBotSidekickPID(pid))
+			continue;
 		std::map<DWORD, DWORD>::iterator session = m_mapLifeSessionEnd.find(pid);
 		if (session == m_mapLifeSessionEnd.end())
 		{
@@ -3675,6 +3797,9 @@ void CPlayerBotManager::OnPlayerLoaded(LPDESC d)
 			state.bPersonality = BOT_PERSONALITY_MEDAL_DROPPER;
 			state.persona.bDrawnPersonality = BOT_PERSONALITY_MEDAL_DROPPER;
 		}
+		// A player's companion: its role and character, its first setup, and
+		// its owner's side (playerbot_sidekick.h).
+		OnPlayerBotSidekickLoaded(d->GetCharacter(), state, now);
 		state.bAmbition = GetPlayerBotStableAmbition(
 				d->GetCharacter(), state.bPersonality);
 
@@ -4140,7 +4265,7 @@ void CPlayerBotManager::PublishChannelPresence(DWORD dwNow)
 		// (SpawnMedalDropperCohort): the second channel's core does not know
 		// it, so a dropper moved there would become an ordinary bot and the
 		// top-up here would never bring it back.
-		bool pinned = IsMedalDropperCohortPID(pid) || ch->GetMyShop() != NULL ||
+		bool pinned = IsMedalDropperCohortPID(pid) || IsPlayerBotSidekickPID(pid) || ch->GetMyShop() != NULL ||
 				(ch->GetParty() && IsPlayerBotHumanLedParty(ch->GetParty())) || IsPlayerBotSummoned(pid) ||
 				ch->GetMapIndex() >= PLAYERBOT_INSTANCE_MAP_INDEX_MIN ||
 				playerbot_pvp::GetDuelOpponent(pid, dwNow) != 0 ||
@@ -4478,7 +4603,8 @@ void CPlayerBotManager::OnChannelAssignments(void* pvMsg)
 	for (TPlayerBotMap::const_iterator i = m_mapBots.begin(); i != m_mapBots.end(); ++i)
 	{
 		TPlayerBotAccountMap::const_iterator a = m_mapBotAccounts.find(i->first);
-		if (a != m_mapBotAccounts.end() && a->second.bChannel != g_bChannel)
+		// A player's companion stands where its owner is, whatever its row says.
+		if (a != m_mapBotAccounts.end() && a->second.bChannel != g_bChannel && !IsPlayerBotSidekickPID(i->first))
 			leave.push_back(i->first);
 	}
 	for (size_t i = 0; i < leave.size(); ++i)
@@ -4575,6 +4701,9 @@ void CPlayerBotManager::Update()
 	RefreshBannedBots(dwNow);
 	ManageLifeSchedule(dwNow);
 	TopUpMissingBots(dwNow);
+	// The players' companions: in the world while their owners are here
+	// (playerbot_sidekick.h).
+	ManagePlayerBotSidekicks(dwNow);
 
 	// Once for the whole population: the panel may have moved a weight since
 	// the last tick, and every bot planned below must see the same numbers.
@@ -4971,7 +5100,8 @@ void CPlayerBotManager::Update()
 		UpdatePlayerBotMonkeyChamber(ch, state, dwNow);
 		// And, on the way into a dungeon, which room to hunt in - before the
 		// target section can pin the bot to the entrance's handful of monkeys.
-		if (ManagePlayerBotMonkeySpread(ch, state, dwNow))
+		// Not a companion: its room is its owner's.
+		if (!IsPlayerBotSidekickLeashed(ch) && ManagePlayerBotMonkeySpread(ch, state, dwNow))
 			continue;
 
 		if (s_bPlayerBotM2CensusPass)
@@ -5133,6 +5263,12 @@ void CPlayerBotManager::Update()
 		// Except for the town visit in a village the person stands in: there
 		// it runs (IsPlayerBotBesidePersonInVillage).
 		const bool bTownVisitAllowed = !bServingPerson || IsPlayerBotBesidePersonInVillage(ch);
+		// The player's own companion (playerbot_sidekick.h): at its owner's side
+		// it owns the tick from here - the trade, the party, the fight for the
+		// owner, the owner's drops and the owner's blacksmith. Below the upkeep,
+		// which it needs like any bot, and above every errand.
+		if (ManagePlayerBotSidekick(ch, state, dwNow))
+			continue;
 		// Keeping up with the player comes before the bot's own plans for the
 		// tick, or the wander pass walks it out of the party it just joined.
 		if (ManagePlayerBotFollowHumanLeader(ch, state, dwNow))
@@ -6091,6 +6227,9 @@ void CPlayerBotManager::OnPlayerShout(LPCHARACTER ch, const char* szText)
 
 void CPlayerBotManager::OnPlayerWhisper(LPCHARACTER from, LPCHARACTER bot, const char* szText)
 {
+	// A companion's owner gives its orders by whisper too (playerbot_sidekick.h).
+	if (HandlePlayerBotSidekickWhisper(from, bot, szText))
+		return;
 	HandlePlayerWhisperToBot(from, bot, szText);
 }
 
