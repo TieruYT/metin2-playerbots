@@ -110,6 +110,7 @@ dependency order at the top of `playerbot_manager.cpp`:
 | `playerbot_chat_conversation.h` | The conversation's engine side: the snapshot of the bot it answers from, the whisper packet, the short timer while replies wait, a Shaman's buffs evaluated from `skill_proto`, and the summon ("chodz do mnie") with its pass in the tick. After status.h. |
 | `playerbot_loot.h` | Picking things up, in and out of a fight, without sweeping the floor. |
 | `playerbot_lure_order_rules.h` | What a person's whisper to a bot means: "luruj" and "przestan lurowac". No engine types, unit-tested. Included first, with the other rules headers. |
+| `playerbot_truce_rules.h` | A person's truce with the bots: which whispers are a surrender, the truce's clock and the deaths that grant one. No engine types, unit-tested (`tests/playerbot_truce_rules_test.cpp`). Included first, with the other rules headers; the engine side is in `playerbot_anti_pk.h`. |
 | `playerbot_survival.h` | Saving progress, breaking off a losing fight, and the walk back after dying. |
 | `playerbot_wandering.h` | What a bot does on a hunting map when nothing is asking for its attention. |
 | `playerbot_status.h` | What a bot shows above its head, and the words for it. |
@@ -479,6 +480,36 @@ not in `data/`) reworked these point by point. What each hangs on:
   fights, for `PLAYERBOT_ANTIPK_GUILD_MEMORY_MS` after the last blow
   (`BOT_FOE_GUILD`, `PLAYERBOT_ANTIPK: guild called`). Only a person is an
   aggressor. Never watched: the test world has no person to strike a bot.
+- **A person can make peace (the truce, since 2.2.16).** A person fighting a
+  boss beside bots grazes them with every area skill, and every graze counts
+  as a blow and renews the guild's call, which reaches twelve kilometres -
+  the likely cause, not confirmed in a log, of "zrob cos z tym
+  zeby one se odpuszczaly po jakims czasie" (Mur4s, 25 September, under
+  "Bronie gildii przed Muras" at the Ezot. chief). Two roads to a truce of
+  `PLAYERBOT_ANTIPK_TRUCE_MS`: a whisper to any bot (`playerbot_truce_rules.h`
+  - "poddaje sie", "rozejm", "odpusc", "litosci", "mam dosc", taken from
+  anybody; "dosc", "stop", "przepraszam", "sorry" only from somebody the bots
+  are at, and "dosc" stays the lure order's stop for the bot luring for that
+  person; "nie poddaje sie", "poddaj sie" and any line about luring are not a
+  surrender), and the person's `PLAYERBOT_ANTIPK_TRUCE_DEATHS`th death inside
+  `PLAYERBOT_ANTIPK_TRUCE_DEATH_WINDOW_MS` while a bot held them as its foe
+  (Tieru: "jak gracz padnie z 2/3 razy"; the deaths are seen where the bot
+  lets go of a foe that is down, and one death seen by several bots is one).
+  A truce clears the person's guild calls, the parties' memory of the
+  person's blows and every grudge, and `IsPlayerBotFoeFightable` - every road
+  to a fight - says no to a truced person, so each holder lets go on its next
+  pass (`why=truce`). Only an aimed blow ends it: the struck bot must be the
+  person's own selected target (`CHARACTER::GetTarget`, set by the client's
+  click), and a graze during a truce is nobody's blow at all - otherwise the
+  first splash at the boss would have ended the truce it was granted for. A
+  whispered surrender is refused for `PLAYERBOT_ANTIPK_TRUCE_REFUSE_MS` after
+  the person's own blow broke the last truce; the one after deaths is not.
+  Per core and per process, like the calls. Wars and duels are consensual and
+  untouched. `PLAYERBOT_ANTIPK: truce`, `truce broken`, `truce refused`.
+  Compiled on both engines and unit-tested; never watched, because the test
+  world has no person for bots to fight. Outside a truce every graze still
+  counts, which is Iwakura's design; whether only an aimed blow should count
+  there too was put to him on 25 September, and until he answers it stays.
 
 ### Traps this file has already sprung
 
@@ -5323,6 +5354,28 @@ not in `data/`) reworked these point by point. What each hangs on:
   next tick. A stone only a player is hitting is left to the player
   (`PLAYERBOT_STONE_JOIN_PLAYERS`), because the drop goes to whoever dealt the
   most damage. `PLAYERBOT_METIN: joined a stone` says who joined whom.
+  **The join is its own kingdom's since 2.2.16.** It counted every
+  kingdom's attackers, and under Iwakura's rule the bot that was at a stone
+  first fights a newcomer of another kingdom (`FindPlayerBotStoneRival`,
+  `BOT_FOE_STONE_RIVAL` - his "Pogromca", taken word for word by the
+  operator's decision): the join bonus walked bots into other kingdoms'
+  stones and each walk was a fight. On m2zip on 25 September 4 085 stone
+  rivalries and 51 212 blows between bots of the three kingdoms in the
+  fights that followed, on a world whose operator had the kingdom
+  hostility at 0% ("Ja mam 0% wiec dlaczego zaczepiaja sie?", DUDU).
+  `CCountPlayerBotStoneAttackers` counts by the asking bot's kingdom,
+  `IsPlayerBotStoneUnderJoinableAttack` joins its own kingdom's bots (and
+  players, under `PLAYERBOT_STONE_JOIN_PLAYERS`), and the collector skips a
+  stone another kingdom's bots are breaking
+  (`IsPlayerBotStoneTakenByAnotherKingdom`). That left the rivalry itself,
+  which with the own-kingdom join in place still started 120 fights
+  between the kingdoms' bots in twenty minutes on m2zip at 0%: a bot of
+  another kingdom reaches a stone by more roads than the join. The operator's answer the same
+  afternoon was that the slider decides: another kingdom's bot is a rival
+  only to a bot of the KINGDOMPVP share
+  (`IsPlayerBotHostileToOtherKingdoms`, the same pid draw the kingdom
+  quarrel uses), so at 0% no bot fights another kingdom's bot at a stone.
+  A person breaking the stone is still a rival, as his rule says.
 - **A boss's fall opens the loot window a broken stone gets.** The raid's next
   step after a kill is "boss down, going back to work", and the killer walked
   off with the Umarly Rozpruwacz's casket (50082, a giftbox of level-75
@@ -5598,6 +5651,33 @@ not in `data/`) reworked these point by point. What each hangs on:
   its kind rates 3 or more at +3 or +4 - Witalnosci's item name carries no
   "Duszy", which is why the generator matches the stem. The rest of the sheet
   only lost its "(Lvl N)" labels and spelled Miecz Zadlowy (an alias).
+- **The stones his list bans go to the Alchemist, eighty-five in a hundred.**
+  DUDU (25 September): the bots of the Metin top did nothing with their +0 to
+  +2 but stand them on a counter - 2 720 such lines on m2zip's counters and 783
+  stones in the bags, every one scored 700 to 900, so a +2 went up level with
+  the horse medal and first onto every counter. Iwakura's answer was "Moglyby
+  85% zamieniac w pyl a 15% na market". The package's own exchange is
+  `libs/crafting/item_exchange.lua` behind the Alchemist (20001, one in each
+  first village and nowhere else, `GetAlchemist`): a soul stone of +0 to +3
+  (`grade = vnum / 100 - 280`) becomes grade + 1 Magiczny Pyl (30360) at 500
+  yang each, chance 100; the dust is what the smelting rows (50621-50633) and
+  Zaczarowany Klejnot (30364) consume in `world.crafting_proto`, and nothing
+  a bot does. `IsPlayerBotSoulStoneForDust` is a 28xyy stone (kinds 30-43) of
+  `PLAYERBOT_SOUL_STONE_DUST_MAX_GRADE` or under, not one of the
+  `PLAYERBOT_SOUL_STONE_MARKET_PERCENT` drawn by item id for the market, not
+  one the operator's weak piece would take now, and not one with an item
+  policy of its own. Such a stone is not counter goods, a counter line of one
+  comes home a visit (`soul_stone_dust`), and `ManagePlayerBotAlchemist`
+  (town.h, above the travel pass in the tick - the stones' owners are the
+  frontier's Metin hunters, in the first village for their stand) walks a bot
+  holding `PLAYERBOT_ALCHEMIST_MIN_STONES` to him and does the exchange the
+  quest does, the stones first, the fee, then the dust. The fifteen in a
+  hundred score `PLAYERBOT_SHOP_LOW_SOUL_STONE_SCORE`, under the books. The
+  dust is counter goods in packs, never the merchant's, at
+  `PLAYERBOT_PRIOR_MAGIC_DUST` - ours, a +1 stone off his sheet and two fees
+  per dust, until he prices it. The item exchange exists on mt2009 only;
+  r40250 keeps its stones as they were. `PLAYERBOT_ALCHEMIST` is in the
+  support bundle's grep list.
 - **Cennik 1.2 has two rows for one item, and the generator now says which it
   skips.** "Waleczna Dusza Zaprzys" (1.1) and "Waleczna dusza" (1.2) both bind
   to 30356, "Wyuszone Oczy" is a typo beside "Wysuszone Oczy"; `SKIPPED_ROWS`
@@ -7531,6 +7611,29 @@ not in `data/`) reworked these point by point. What each hangs on:
   (`PLAYERBOT_OFFLINE: renewal went unanswered`): it carries no goods, so
   nothing can be doubled, where a create is still never retried.
   Any duration the two cores both count wants one owner.
+- **An expired shop was stood on the map at every start, and its own ghost
+  refused its renewal.** `IkarusShopLoadTables` hands every shop the db core
+  holds to `PutsNewShop`, which called `CreateShopEntity` for the expired
+  ones too - an entity nobody could click, and one that
+  `CCheckShopPosition` (inside `CanOpenOnMap`) found within sixty units of
+  the owner standing at its own stand, so a renewal in place was refused
+  in silence: `EndCall` false, no packet. That is SIZOWSKI's "stragany
+  dropperow nie odnawiaja sie" (25 September): 130 of 146 medal droppers'
+  stands expired on m2zip, and the diagnosis line the renewal gained
+  (`PLAYERBOT_OFFLINE: stand left expired ... map_ok=0`, beside `wanted`,
+  `handle`, `busy`, `name_ok`, `slots_ok`, `riding`, `since_open_s`) named
+  it at once. `apply_expired_shop_no_entity` (playerbotify) creates the
+  entity only for a shop with time left (`info.duration > 0`); one that
+  expires during a session was already destroyed by
+  `RecvShopExpiredDBPacket`. Ten minutes after the deploy: no refusal (ten
+  before, every one `map_ok=0`) and 21 renewals against 3.
+  `ikarus_shop_manager.cpp` ships staged. And a service visit that
+  something interrupted - a fight, the town visit, the ninety-second
+  bound - comes back in `PLAYERBOT_OFFLINE_INTERRUPTED_RETRY_MS` rather than
+  the ten to fifteen minutes of a visit done, `PLAYERBOT_OFFLINE_INTERRUPTED_TRIES`
+  times (`BotOfflineInterruptVisit`, the why from `BotOfflineBusyReason`):
+  a dropper's round is forty-five to seventy-five minutes, and one fight at
+  the wrong moment cost its stand an hour.
 - **`AFFECT_EXP_BLOCK` takes an attacker out of the whole kill, not just its
   own share.** `CHARACTER::DistributeExp` skips a blocked attacker in the
   damage map altogether, so its blows count for nobody - and the Grinder's
@@ -8852,7 +8955,12 @@ not in `data/`) reworked these point by point. What each hangs on:
   quarrel, the bots' own duel and a person's challenge all ask it, and a
   person is told why - and the Egzekutor neither hunts on a raid nor takes a
   raider for prey. Compiled on both engines; not watched, because the test
-  world runs with KINGDOMPVP at 0.
+  world runs with KINGDOMPVP at 0. Two roads were left open and walked a
+  raider off the Orc Chief all the same: the call to defend the kingdom
+  from an Egzekutor (`BOT_FOE_DEFEND`) and a grudge from before the raid.
+  `PickPlayerBotPersonaFoe` skips both for a bot on tower business since
+  2.2.16; what strikes the raider, its party and its guild is still
+  answered.
 - **A normal skill stops at seventeen at every level, as the operator's rule
   always said.** mt2009's `SkillLevelUp` waived the stop for a character of
   thirty or under (`&& GetLevel() > 30`), so each point past seventeen was
@@ -8937,6 +9045,86 @@ not in `data/`) reworked these point by point. What each hangs on:
   go.** Auto Lowy's revive wait cast its whole rotation, so a Shaman's
   Dragon's Roar woke the pack that had just killed her and she fell again,
   for good (prodnathin, 25 September). `BUFF_SKILLS` is what the wait casts.
+- **A companion buffs its owner before its next blow, not after the hunt.**
+  `ManagePlayerBotBuffPerson` was asked only on a tick with nothing to
+  fight, and in the default stance a companion beside a hunting owner always
+  has a monster; the fight (`FightPlayerBotTowerObjective`) puts the
+  companion's buffs on itself, so the owner went without them for the whole
+  hunt ("zaczela stawiac wylacznie na siebie", Teivos, 25 September) - and
+  a buff cast on itself first also started that skill's cooldown for the
+  owner (`NotePlayerBotSkillCast`). `BuffPlayerBotSidekickOwner` asks before
+  every blow, at its side and at a spot it keeps, with `mayWalk` false: a
+  buff out of reach waits for the fight's end instead of walking the
+  companion off its foe.
+- **The companion's bag is a window, and the owner's hand there outranks
+  the AI.** `client-root/uisidekickinventory.py` asks `/towarzysz eq` (and
+  `eq 1` for the whole picture) and draws `SidekickEqBegin/Item/Empty/End`;
+  `/towarzysz eq ruch|daj|wez|odepnij` and `/towarzysz umiejetnosci
+  [dodaj|reczne]` are answered by one `SidekickEqResult` each (Tieru, 25
+  September: "wprowadze dzis widoczny jej ekwipunek, ze mozesz itemy
+  przenosic normalnie dowoli"). Positions are a bag cell or 1000 + WEAR_*.
+  A poll with nothing changed gets no answer at all (`mapEqSent`, a hash a
+  position). What the owner does is a mark on the item id, in
+  `player.playerbot_sidekick_pin` (made by the core, like the gift table):
+  a piece the owner put on is pinned to its slot - the equipment pass never
+  takes it off, ranks nothing against it and puts it back first when
+  anything took it off, the refine pass and the soul stone seating leave it
+  alone, and `GetPlayerBotBonusStep` adds a line to it but never changes one
+  (the bell with +12 INT the equipment pass kept leaving in the bag for a
+  heavier one, GoracyDelfin) - and a piece the owner took off is
+  `PLAYERBOT_SIDEKICK_PIN_UNWANTED`, which `IsPlayerBotEquipmentCandidate`,
+  the weapon fallback and the unique-slot pass all refuse, or the next
+  equipment pass would undo the owner's hand. "Odepnij" clears either.
+  Three engine facts decided the shape. `EquipItem` refuses within 1.5 s of
+  a blow or a skill, and a companion at its owner's side is always
+  fighting, so a refused equip is pinned anyway and the sidekick pass holds
+  the fight off for `PLAYERBOT_SIDEKICK_EQUIP_WAIT_MS` while the equipment
+  pass puts it on. `CItem::FindEquipCell` gives a unique the first free
+  unique slot whatever it is asked, so the slot the owner dropped on is
+  emptied first. And `CItem::RemoveFromCharacter` on a worn piece calls
+  `Unequip` and keeps its owner, so a worn piece crosses to the owner only
+  after `UnequipItem` put it in the companion's bag; between the bags a
+  piece moves as `CExchange::Done` moves it (quickslot, remove, add,
+  `FlushDelayedSave`), with a trade's refusals (ITEM_ANTIFLAG_GIVE, locked,
+  in a trade, a dragon soul) and both sides' `CanHandleItem`. What the owner
+  gives is its gift. The engine's refusals of a wear go to the companion's
+  chat, which nobody reads, so `GetPlayerBotSidekickWearRefusal` says the
+  class, sex, level, stat or unique group in the owner's words, and a piece
+  the companion could never wear stays in the owner's bag. The skills: the
+  six of the path (`GetPlayerBotSidekickSkillBase`: 1/31/61/91 by class, +15
+  for the second path); the first point the owner spends makes the points
+  the owner's (`manual_skills`), and `ManagePlayerBotSkills` then spends
+  nothing and moves nothing, `ShouldPlayerBotResetSkills` says no - and the
+  purge of skills outside the bots' build never runs for a companion, which
+  would have zeroed a point its owner put in the sixth skill.
+  The client half (client 2.0.34) is two windows opened from the companion's
+  own ("Ekwipunek", "Umiejetnosci"). The companion's item on the cursor is
+  mouseModule's attached object of a slot type no stock script uses (101):
+  the stock `AttachObject` finds an icon only for the types it lists, so the
+  module hands it the icon before the call and tells wndMgr the real size
+  after, and deletes the icon itself once the cursor lets go, because
+  `DeattachObject` deletes only its own types'. Every other window reads the
+  type and ignores one it does not know; the player's inventory takes it
+  through two lines clientrootify puts in front of its first branch
+  (`DropIntoPlayerBag`: a cell outside the four pages is "the first free").
+  All three windows send through one queue in uisidekick.py, 0.3 s apart,
+  because the server's limit is per character, and the companion window's
+  keeper sends what is left queued after a window closed.
+  `tests/uisidekickinventory_test.py` (43, on 2.7 and 3). Measured on m2zip
+  with the self-test's `eq` mode (the file's first line "eq", fifteen steps,
+  one a pass, three runs): the whole picture (76 places), a move to an empty
+  bag cell, two pieces trading places, a stack poured on another (units
+  765 -> 765), a potion given from the owner's bag and taken back, the body
+  armour taken off - the equipment pass wore another in its place and left
+  the taken-off one in the bag - and put back on by the owner, pinned; a
+  helmet taken off onto a chosen cell; earrings taken to the owner and
+  dropped straight back on the ear slot mid-fight ("Zalozy to, jak tylko
+  skonczy cios" - worn by the next pass), then taken off the slot into the
+  owner's bag and given back; a skill point spent (`dodaj`, manual on, off);
+  the unpins. The owner of a self-test is a bot, so a piece that goes round
+  goes round in one pass: given half a minute, the owner's own equipment
+  pass wore the necklace of the second run. Not exercised: the windows
+  themselves in a client.
 
 
 ## Engine facts worth not re-deriving
