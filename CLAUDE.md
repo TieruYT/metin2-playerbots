@@ -7643,7 +7643,12 @@ not in `data/`) reworked these point by point. What each hangs on:
   `starter_chest.quest` gives nothing while it is raised. A character that
   logs in meanwhile is not marked, so it gets its chest on a later login if
   the chest is switched back on before it passes level five. A change is live
-  from the next start, like the difficulty.
+  from the next start, like the difficulty. Since 2.2.15 the difficulty window
+  and its text-menu entry carry it too, beside Auto Lowy and the companion:
+  asked only where a fresh world is made, it had no way in on a world already
+  standing, and the operator's own answer to "gdzie te skrzynie ucznia do
+  wylaczenia ... w launcherze szukam, ni ma" (Drip, 25 September) was that
+  window.
 - **During a rate event the base flag is the operator's number.** The event
   keeps the live flag at the boost of the base; a rate saved from a panel
   during an event wrote the live flag, the core put the old boost straight
@@ -8837,7 +8842,17 @@ not in `data/`) reworked these point by point. What each hangs on:
   hour on m2zip: the Bestial Captains of all three second villages raided
   and killed in 41-138 s by two bots each; the rest could not be watched,
   because the test world's bots stop at 48 (`PLAYERBOT_RAID: nobody to call
-  ... in_band=0` for everything past the Orc Chief).
+  ... in_band=0` for everything past the Orc Chief). A raider takes no part
+  in the fights between kingdoms either: the kingdom quarrel (the KINGDOMPVP
+  weight, 0 by default and on at some operators') and the Egzekutor picked a
+  raider or were started by one, and at the Orc Chief the bots of two
+  kingdoms set about each other while he finished them both ("bija sie
+  nawzajem + do tego wodz bije ich", DUDU, 25 September). Since 2.2.15
+  `GetPlayerBotDuelRefusal` answers `raid` for a bot on tower business - the
+  quarrel, the bots' own duel and a person's challenge all ask it, and a
+  person is told why - and the Egzekutor neither hunts on a raid nor takes a
+  raider for prey. Compiled on both engines; not watched, because the test
+  world runs with KINGDOMPVP at 0.
 - **A normal skill stops at seventeen at every level, as the operator's rule
   always said.** mt2009's `SkillLevelUp` waived the stop for a character of
   thirty or under (`&& GetLevel() > 30`), so each point past seventeen was
