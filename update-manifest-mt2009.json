@@ -1,20 +1,20 @@
 {
   "schema": 1,
   "channel": "stable",
-  "publishedAt": "2026-09-25T09:35:52Z",
-  "statusMessage": "2.2.15 (serwer; klient bez zmian, 2.0.33): boty idace z rajdem na bossa albo do Wiezy Demonow nie biora udzialu w bojkach miedzy krolestwami, a Skrzynie Ucznia mozna wlaczyc lub wylaczyc w oknie POZIOM TRUDNOSCI w launcherze. Zawiera wszystko z 2.2.14: boty bija bossow grupami, umiejetnosci staja na 17, Wieza od 55 lvl, okno towarzysza pod P, przyciski na pasku.",
+  "publishedAt": "2026-09-25T13:36:44Z",
+  "statusMessage": "2.2.16 (serwer i klient 2.0.34 - zaktualizuj oba): ekwipunek i umiejetnosci Towarzysza w jego oknie (klawisz P), szept 'poddaje sie' daje 30 minut spokoju od botow, Towarzysz buffuje wlasciciela w trakcie walki, slabe kamienie duszy boty wymieniaja u Alchemika na pyl, stragany dropperow znow sie odnawiaja, boty roznych krolestw nie bija sie o Metiny przy suwaku wrogosci 0%. Zawiera wszystko z 2.2.15.",
   "server": {
-    "version": "2.2.15",
-    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.15/metin2-server-update-2.2.15.zip",
-    "sha256": "520AAB11FE507A041E7FC5D85D21B4A3684A2018609CAEAF64A17C336C5CF3BB"
+    "version": "2.2.16",
+    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.16/metin2-server-update-2.2.16.zip",
+    "sha256": "6AD6A267AC49AB0178A44CE6ED0B1E6123B96EA888DEAA0FF9222F32EA6B6054"
   },
   "support": {
     "contactUrl": "https://discord.gg/pt5tvnrN6",
     "uploadUrl": ""
   },
   "client": {
-    "version": "2.0.33",
-    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.14/metin2-client-update-2.0.33.zip",
-    "sha256": "79F800E9E6FDDDE1FBE8CBC78FBB5B8845783997A321E8EFA3182DD64C077256"
+    "version": "2.0.34",
+    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.16/metin2-client-update-2.0.34.zip",
+    "sha256": "EBDB2D03A07E935C6F94ADB8A6B06C4C07E3316C819CE8F8EBA62EBEF3820620"
   }
 }
