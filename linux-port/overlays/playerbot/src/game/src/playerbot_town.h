@@ -2330,7 +2330,9 @@ namespace
 		return decision;
 	}
 
-	// Is any worn piece still short of what a scroll can take it to?
+	// Is any worn piece still short of what a scroll can take it to? Not one
+	// no scroll goes on (IsPlayerBotScrollFreeGear): a bot in such gear keeps
+	// none back, and its scrolls go to a counter for a bot that can use them.
 	bool PlayerBotWearsScrollWork(LPCHARACTER ch)
 	{
 		if (!ch)
@@ -2342,7 +2344,7 @@ namespace
 		for (size_t i = 0; i < sizeof(wearSlots) / sizeof(wearSlots[0]); ++i)
 		{
 			LPITEM worn = ch->GetWear(wearSlots[i]);
-			if (worn && worn->GetRefinedVnum() != 0 &&
+			if (worn && worn->GetRefinedVnum() != 0 && !IsPlayerBotScrollFreeGear(worn) &&
 					worn->GetRefineLevel() < PLAYERBOT_SCROLL_REFINE_MAX_PLUS)
 				return true;
 		}

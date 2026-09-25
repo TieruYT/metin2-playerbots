@@ -1734,10 +1734,29 @@ namespace
 		return avg >= PLAYERBOT_WEAPON_SCROLL_ONLY_AVERAGE || skill >= PLAYERBOT_WEAPON_SCROLL_ONLY_SKILL;
 	}
 
-	// The operator's anvil ceiling for a level-30 weapon, by its average line.
-	// Below it the bot grinds at the blacksmith and takes the risk; at or above
-	// it the step belongs to a scroll. A weapon over the scroll-only line never
-	// reaches this at all - IsPlayerBotScrollOnlyWeapon answers first.
+	// A piece no scroll is put on (PLAYERBOT_SCROLL_FREE_GEAR_MAX_LEVEL). The
+	// blacksmith pass, the scroll pass in the field, the planner, the refine
+	// target and the scroll purchase all ask it, through
+	// FindPlayerBotRefineScrollCellFor where they look for the scroll itself.
+	bool IsPlayerBotScrollFreeGear(LPITEM item)
+	{
+		return item && item->GetLevelLimit() <= PLAYERBOT_SCROLL_FREE_GEAR_MAX_LEVEL;
+	}
+
+	// The weapons the operator's anvil table reaches: the level-30 family and
+	// every weapon from PLAYERBOT_ANVIL_TABLE_WEAPON_MIN_LEVEL.
+	bool IsPlayerBotAnvilTableWeapon(LPITEM item)
+	{
+		if (!item || item->GetType() != ITEM_WEAPON || item->GetSubType() == WEAPON_ARROW)
+			return false;
+		return IsPlayerBotSpecialLevel30Weapon(item) ||
+				item->GetLevelLimit() >= PLAYERBOT_ANVIL_TABLE_WEAPON_MIN_LEVEL;
+	}
+
+	// The operator's anvil ceiling for a weapon of the table, by its average
+	// line. Below it the bot grinds at the blacksmith and takes the risk; at or
+	// above it the step belongs to a scroll. A weapon over the scroll-only line
+	// never reaches this at all - IsPlayerBotScrollOnlyWeapon answers first.
 	int GetPlayerBotLevel30AnvilCeiling(long average)
 	{
 		if (average <= PLAYERBOT_LEVEL30_ANVIL_AVG_CHEAP)
@@ -1822,6 +1841,31 @@ namespace
 	{
 		return ch && item && IsPlayerBotSpecialLevel30Weapon(item) && IsPlayerBotWeapon(ch, item) &&
 				item->CanUsedBy(ch);
+	}
+
+	// Where the plain anvil stops for a weapon of the table
+	// (IsPlayerBotAnvilTableWeapon): the operator's ceiling for its average
+	// line, and the class's own level-30 weapon never under
+	// PLAYERBOT_LEVEL30_MIN_PLUS. The blacksmith pass, the planner, the scroll
+	// pass, the scroll purchase and the Demon Tower's smith all ask this, so
+	// none of them sends a bot for a step another one holds.
+	int GetPlayerBotWeaponAnvilCeiling(LPCHARACTER ch, LPITEM item)
+	{
+		int ceiling = GetPlayerBotLevel30AnvilCeiling(SumPlayerBotItemLines(item, APPLY_NORMAL_HIT_DAMAGE_BONUS));
+		if (IsPlayerBotClassLevel30Weapon(ch, item))
+			ceiling = std::max<int>(ceiling, PLAYERBOT_LEVEL30_MIN_PLUS);
+		return ceiling;
+	}
+
+	// A level-30 weapon whose roll is cheap enough that the blacksmith pass
+	// still gambles it at the plain anvil over its ceiling
+	// (PLAYERBOT_LEVEL30_CHEAP_ANVIL_PERCENT): the family is everywhere and the
+	// scroll is not. The planner counts such a step as an errand, since the
+	// pass may take it.
+	bool IsPlayerBotCheapLevel30Roll(LPITEM item)
+	{
+		return IsPlayerBotSpecialLevel30Weapon(item) &&
+				SumPlayerBotItemLines(item, APPLY_NORMAL_HIT_DAMAGE_BONUS) <= PLAYERBOT_LEVEL30_ANVIL_AVG_CHEAP;
 	}
 
 	// The class's own level-30 weapon, wearable now and under
@@ -2369,8 +2413,10 @@ namespace
 		// A scroll in the bag is a ladder to +9 for everybody: under it a
 		// failure costs a level or nothing, never the piece, so the ambition -
 		// which is about not burning what was earned - does not apply while
-		// one is there. See PLAYERBOT_SCROLL_REFINE_MAX_PLUS.
-		if (CountPlayerBotSafeRefineScrolls(ch) == 0)
+		// one is there. See PLAYERBOT_SCROLL_REFINE_MAX_PLUS. Not for a piece
+		// no scroll goes on (IsPlayerBotScrollFreeGear): the plain anvil takes
+		// that one as far as the bot would risk it without.
+		if (CountPlayerBotSafeRefineScrolls(ch) == 0 || IsPlayerBotScrollFreeGear(item))
 			return GetPlayerBotRefineAmbition(ch, item);
 		// Nor for a step the coin sends to the plain anvil (Iwakura's "tylko w
 		// 50% uzywaja bodzi"): the scroll is not the way this time, so it is

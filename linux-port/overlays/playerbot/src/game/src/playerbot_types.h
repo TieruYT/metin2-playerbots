@@ -483,6 +483,16 @@ namespace
 	// keeps waiting for a scroll is not kept waiting for good.
 	const int PLAYERBOT_SCROLL_SKIP_PERCENT = 50;
 	const DWORD PLAYERBOT_SCROLL_SKIP_BUCKET_SECONDS = 3 * 3600;
+	// No scroll goes on a piece of this level or under: "trzeba bodzie
+	// wylaczyc z eq do 18 poziomu tbh, bo tarcze na 1 lvl ulepszaja od +7
+	// bodziami" (Iwakura, 24 September, over a gear history of a Bojowa
+	// Tarcza - level nought - taken from +6 to +7 under Blessing Scrolls again
+	// and again). Such a piece goes to the plain anvil as far as the bot's
+	// ambition takes it; the armour on its back with no spare waits for the
+	// one the armour merchant sells; a weapon over the scroll-only line stays
+	// as it is; and the scroll is left for a counter and a bot with use for it
+	// (IsPlayerBotScrollFreeGear).
+	const int PLAYERBOT_SCROLL_FREE_GEAR_MAX_LEVEL = 18;
 	// What a Mental Warrior on a battle horse adds to a two-handed weapon's
 	// score, as a share of its own blow (GetPlayerBotEquipmentScore).
 	const int PLAYERBOT_TWO_HANDED_PREFERENCE_PERCENT = 20;
@@ -523,23 +533,27 @@ namespace
 	// of twelve scrolls in twenty minutes on those two steps of an Ostrze z
 	// Czerwonej Stali of one percent.
 	const long PLAYERBOT_LEVEL30_SCROLL_LOW_AVERAGE = 30;
-	// How far a level-30 weapon may be pushed at the plain anvil before the
-	// scrolls take over, by the average-damage line it carries. The operator's
-	// table of 17 September, in his own words: a weak average is ground boldly
-	// to +7, and the better the roll the earlier the risk stops being worth it,
-	// because what is being protected is the roll, not the plus.
+	// How far a weapon may be pushed at the plain anvil before the scrolls
+	// take over, by the average-damage line it carries. The operator's table
+	// as it stands since the evening of 24 September:
 	//
-	//   avg <= 14%      anvil to +7, and still a gamble above it
-	//   avg 15..21%     anvil to +7
+	//   avg <= 14%      anvil to +6, and a level-30 one still gambles above it
+	//   avg 15..21%     anvil to +6
 	//   avg 22..29%     anvil to +6
 	//   avg 30..36%     anvil to +4
 	//   avg >= 37%      scrolls from +0 (PLAYERBOT_WEAPON_SCROLL_ONLY_AVERAGE)
 	//
-	// Iwakura's answer of 24 September moved the two lower rows up to +7 as a
-	// test: "bron zrobmy do +7 u kowala a na +8 i +9 zwojami, raz sie zyje
-	// (testowo)". Every level-30 weapon under the scroll-only line now goes to
-	// +7 at the plain anvil, and +8 and +9 are a scroll's; the rows stay
-	// apart so the operator's own numbers are one edit away.
+	// His table of 17 September took the two lowest rows to +7: a weak average
+	// ground boldly, and the better the roll the earlier the risk stops being
+	// worth it, because what is being protected is the roll, not the plus.
+	// Iwakura's test of 24 September put every row at +7 ("bron zrobmy do +7 u
+	// kowala a na +8 i +9 zwojami"), and the operator's answer the same
+	// evening is the table above: the step to +7 is a scroll's, "no chyba ze
+	// sa dobre srednie obrazenia % to wtedy bodzie jeszcze wczesniej uzywane".
+	// Nor is it the level-30 family's alone any more - "ja bym dal ogolnie
+	// bronie PO 30 poziomie a nie same 30 lvl tbh pod to" (Iwakura) - so every
+	// weapon from PLAYERBOT_ANVIL_TABLE_WEAPON_MIN_LEVEL answers to it
+	// (IsPlayerBotAnvilTableWeapon, GetPlayerBotWeaponAnvilCeiling).
 	//
 	// Measured on this world's own refine_proto, because the table's last line
 	// says "unless the anvil is certain": the level-30 family runs
@@ -551,10 +565,13 @@ namespace
 	const long PLAYERBOT_LEVEL30_ANVIL_AVG_GOOD = 21;
 	const long PLAYERBOT_LEVEL30_ANVIL_AVG_BETTER = 29;
 	const long PLAYERBOT_LEVEL30_ANVIL_AVG_HIGH = 36;
-	const int PLAYERBOT_LEVEL30_ANVIL_PLUS_CHEAP = 7;
-	const int PLAYERBOT_LEVEL30_ANVIL_PLUS_GOOD = 7;
-	const int PLAYERBOT_LEVEL30_ANVIL_PLUS_BETTER = 7;
-	const int PLAYERBOT_LEVEL30_ANVIL_PLUS_HIGH = 7;
+	const int PLAYERBOT_LEVEL30_ANVIL_PLUS_CHEAP = 6;
+	const int PLAYERBOT_LEVEL30_ANVIL_PLUS_GOOD = 6;
+	const int PLAYERBOT_LEVEL30_ANVIL_PLUS_BETTER = 6;
+	const int PLAYERBOT_LEVEL30_ANVIL_PLUS_HIGH = 4;
+	// The weapons the table reaches besides the level-30 family: every one of
+	// this level or more.
+	const int PLAYERBOT_ANVIL_TABLE_WEAPON_MIN_LEVEL = 30;
 	// Above its ceiling a cheap roll is still worth a gamble now and then: the
 	// weapon is common and the scroll is not ("ewentualnie szansa na to ze bot
 	// pojdzie do kowala ulepszyc (40% zamiast bodziem)").

@@ -141,17 +141,25 @@ namespace
 	}
 
 	// A bot with a weapon that goes to the anvil under scrolls - one it may
-	// refine no other way, a level-30 weapon in its hand, the one it is
-	// grinding, or the only weapon it has at a step that burns - buys a few,
-	// up to PLAYERBOT_LEVEL30_SCROLL_WANT.
+	// refine no other way, a level-30 weapon in its hand, a weapon of the
+	// operator's anvil table standing at its ceiling, the one it is grinding,
+	// or the only weapon it has at a step that burns - buys a few, up to
+	// PLAYERBOT_LEVEL30_SCROLL_WANT. Never for a weapon no scroll goes on
+	// (IsPlayerBotScrollFreeGear).
 	bool PlayerBotNeedsScrollForWeapon(LPCHARACTER ch)
 	{
 		if (!ch || !ch->IsItemLoaded() ||
 				CountPlayerBotSafeRefineScrolls(ch) >= PLAYERBOT_LEVEL30_SCROLL_WANT)
 			return false;
 		LPITEM worn = ch->GetWear(WEAR_WEAPON);
+		if (worn && IsPlayerBotScrollFreeGear(worn))
+			worn = NULL;
 		if (worn && worn->GetRefinedVnum() != 0 &&
 				(IsPlayerBotScrollOnlyWeapon(worn) || IsPlayerBotSpecialLevel30Weapon(worn)))
+			return true;
+		if (worn && worn->GetRefinedVnum() != 0 && IsPlayerBotAnvilTableWeapon(worn) &&
+				(int)worn->GetRefineLevel() >= GetPlayerBotWeaponAnvilCeiling(ch, worn) &&
+				worn->GetRefineLevel() < GetPlayerBotRefineTarget(ch, worn))
 			return true;
 		// The weapon in the hand the anvil would burn with nothing behind it
 		// (IsPlayerBotWornWeaponAtRisk), while it is short of its target: a rich

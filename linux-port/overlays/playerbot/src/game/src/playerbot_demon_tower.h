@@ -837,9 +837,10 @@ namespace
 	// goods of the same grade. Which of the three smiths stands decides what he
 	// takes (IsPlayerBotTowerSmithPiece). What the bot's anvil never risks is
 	// not risked here either: a scroll-only weapon, a prize at odds under
-	// PLAYERBOT_PRIZE_SAFE_REFINE_PROB, a level-30 weapon past its ceiling,
-	// whatever the operator's item policy keeps. A burn costs the bot nothing
-	// it fights with, so no backup is asked for any more.
+	// PLAYERBOT_PRIZE_SAFE_REFINE_PROB (unless no scroll goes on it anyway),
+	// a weapon of the anvil table past its ceiling, whatever the operator's
+	// item policy keeps. A burn costs the bot nothing it fights with, so no
+	// backup is asked for any more.
 	LPITEM PickPlayerBotTowerSmithPiece(LPCHARACTER ch, DWORD smithRace)
 	{
 		LPITEM best = NULL;
@@ -862,13 +863,13 @@ namespace
 				continue;
 			if (IsPlayerBotScrollOnlyWeapon(item))
 				continue;
-			if (IsPlayerBotSpecialLevel30Weapon(item))
+			if (IsPlayerBotAnvilTableWeapon(item))
 			{
-				if ((int)plus >= GetPlayerBotLevel30AnvilCeiling(
-						SumPlayerBotItemLines(item, APPLY_NORMAL_HIT_DAMAGE_BONUS)))
+				if ((int)plus >= GetPlayerBotWeaponAnvilCeiling(ch, item))
 					continue;
 			}
-			else if (IsPlayerBotPrizeItem(item) && recipe->prob < PLAYERBOT_PRIZE_SAFE_REFINE_PROB)
+			else if (!IsPlayerBotScrollFreeGear(item) && IsPlayerBotPrizeItem(item) &&
+					recipe->prob < PLAYERBOT_PRIZE_SAFE_REFINE_PROB)
 				continue;
 			const int rank = (int)plus * 2 + (spareGear ? 1 : 0);
 			if (rank > bestRank)
