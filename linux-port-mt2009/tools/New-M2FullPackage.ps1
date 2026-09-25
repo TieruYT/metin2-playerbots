@@ -49,7 +49,7 @@ try {
     # of them from the test world. The scan below refuses any other shape.
     Invoke-Mirror -From $Deploy -To (Join-Path $stageRoot 'Serwer') `
         -ExcludeFiles @('.env', '.env.last-good', '.env.bak*', '.env.damaged*', '.env.new', '.env.tmp',
-                        '.m2install.json', '.m2coop.json', '.m2launcher.json', '.m2launcher-state.json',
+                        '.m2install.json', '.m2coop.json', '.m2vps.json', '.m2launcher.json', '.m2launcher-state.json',
                         '.m2launcher-offers.json', '.m2launcher-classic-layout', '*.log',
                         'Metin2-Launcher-GUI-UI-Test.*', 'Metin2-Launcher-UI-Test.*') `
         -ExcludeDirs @('launcher-logs', 'backups', 'support-bundles', 'seban-panel.prev')
@@ -79,7 +79,7 @@ try {
     # travelling in it.
     $private = @(Get-ChildItem -LiteralPath $stageRoot -Recurse -Force -File | Where-Object {
         ($_.Name -like '.env*' -and $_.Name -ne '.env.example') -or
-        (@('.m2install.json', '.m2coop.json', 'coop.cfg', 'credentials.json', 'm2panel.conf') -contains $_.Name) -or
+        (@('.m2install.json', '.m2coop.json', '.m2vps.json', 'coop.cfg', 'credentials.json', 'm2panel.conf') -contains $_.Name) -or
         $_.Name -like 'metin2-support-*.zip'
     })
     if ($private.Count -gt 0) {

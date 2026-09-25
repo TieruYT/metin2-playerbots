@@ -248,6 +248,7 @@ $script:Strings = @{
         difficulty   = 'POZIOM TRUDNOSCI'
         difficultyDialog = 'Poziom trudnosci swiata'
         coop         = 'COOP: GRA ZE ZNAJOMYMI'
+        vps          = 'SERWER NA VPS'
         apply        = 'Zastosuj'
         cancel       = 'Anuluj'
         panelDialog  = 'Ktory panel otworzyc?'
@@ -313,6 +314,7 @@ $script:Strings = @{
         difficulty   = 'DIFFICULTY'
         difficultyDialog = 'World difficulty'
         coop         = 'CO-OP: PLAY WITH FRIENDS'
+        vps          = 'SERVER ON A VPS'
         apply        = 'Apply'
         cancel       = 'Cancel'
         panelDialog  = 'Which panel should open?'
@@ -1933,6 +1935,15 @@ if (Test-Path -LiteralPath $coopModulePath -PathType Leaf) {
     Import-Module $coopModulePath -Force
     $coopButton = New-Button (T 'coop') 262 456 218 32 ([Drawing.Color]::FromArgb(40, 120, 150))
 }
+# This world on a rented Linux VPS (Show-VpsDialog): for everybody, the invite
+# codes behind the COOP testers' password. The button exists only when the
+# optional module does - the 1.x line ships the window without it.
+$vpsModulePath = Join-Path $root 'launcher\Metin2Launcher.Vps.psm1'
+$vpsButton = $null
+if (Test-Path -LiteralPath $vpsModulePath -PathType Leaf) {
+    Import-Module $vpsModulePath -Force
+    $vpsButton = New-Button (T 'vps') 496 456 230 32 ([Drawing.Color]::FromArgb(60, 110, 90))
+}
 
 # The language switch sits with the other small buttons rather than in a menu:
 # somebody who cannot read the window needs to find it without reading anything.
@@ -1943,6 +1954,7 @@ foreach ($button in @($installButton, $playButton, $dockerButton, $stopButton, $
     $script:form.Controls.Add($button)
 }
 if ($coopButton) { $script:form.Controls.Add($coopButton) }
+if ($vpsButton) { $script:form.Controls.Add($vpsButton) }
 
 $script:actionStatus = [Windows.Forms.Label]::new()
 $script:actionStatus.Text = (T 'ready')
@@ -2750,6 +2762,297 @@ function Show-CoopDialog {
     $dialog.Dispose()
 }
 
+function Show-VpsDialog {
+    # This world on a rented Linux VPS (launcher\Metin2Launcher.Vps.psm1).
+    # The key, the check, the tunnel, the client entry and anything that shows
+    # a password are quick and in-process; the install, the update, the status
+    # and the logs run as actions in the main window, whose log shows their
+    # progress. No password is written to any log. Installing, updating and
+    # the panels are for everybody; the invite codes ask for the COOP
+    # testers' password, like every invite.
+    if (-not (Get-Command Install-M2Vps -ErrorAction SilentlyContinue)) {
+        [Windows.Forms.MessageBox]::Show('Ta paczka nie ma modułu VPS.', 'VPS', 'OK', 'Information') | Out-Null
+        return
+    }
+    $state = Get-M2VpsState -ServerRoot $root
+    $dialog = [Windows.Forms.Form]::new()
+    $dialog.Text = 'Serwer na VPS - ten świat na wynajętym serwerze Linux'
+    $dialog.Size = [Drawing.Size]::new(700, 640)
+    $dialog.StartPosition = 'CenterParent'
+    $dialog.FormBorderStyle = 'FixedDialog'
+    $dialog.MaximizeBox = $false
+    $dialog.MinimizeBox = $false
+
+    $intro = [Windows.Forms.Label]::new()
+    $intro.Text = ('Launcher wyśle folder serwera na VPS przez SSH i zainstaluje go tam: Docker, plik wymiany, .env z losowymi hasłami, ' +
+        'budowa w tle (pierwszy raz 15-40 minut) i nowe hasła kont admin i test. Potrzebny VPS z Debian 12/13 albo Ubuntu 22.04/24.04, ' +
+        'procesor x86_64 (Intel/AMD - nie ARM), 8 GB RAM (minimum 4 GB, wtedy mniej botów) i 60-80 GB dysku. ' +
+        'Hasło do VPS wpisujesz raz, w oknie ssh - potem launcher łączy się kluczem.')
+    $intro.Location = [Drawing.Point]::new(14, 10)
+    $intro.Size = [Drawing.Size]::new(660, 76)
+    $dialog.Controls.Add($intro)
+
+    $fields = @{}
+    $row = 94
+    foreach ($field in @(
+            @('host', 'Adres VPS (IPv4 albo domena):', [string]$state.host, 250),
+            @('user', 'Użytkownik (root, debian, ubuntu...):', [string]$state.user, 160),
+            @('port', 'Port SSH:', [string]$state.port, 70),
+            @('remoteDir', 'Folder na VPS:', [string]$state.remoteDir, 250))) {
+        $label = [Windows.Forms.Label]::new()
+        $label.Text = $field[1]
+        $label.Location = [Drawing.Point]::new(14, $row + 3)
+        $label.Size = [Drawing.Size]::new(230, 20)
+        $dialog.Controls.Add($label)
+        $box = [Windows.Forms.TextBox]::new()
+        $box.Text = $field[2]
+        $box.Location = [Drawing.Point]::new(250, $row)
+        $box.Size = [Drawing.Size]::new([int]$field[3], 24)
+        $box.Font = [Drawing.Font]::new('Consolas', 10)
+        $dialog.Controls.Add($box)
+        $fields[$field[0]] = $box
+        $row += 30
+    }
+
+    $buttons = @{}
+    $grid = @(
+        @('connect', '1. POŁĄCZ (KLUCZ SSH)', 0, 0, '#2D6EBE'), @('check', 'SPRAWDŹ VPS', 1, 0, ''), @('install', '2. ZAINSTALUJ NA VPS', 2, 0, '#1B9658'),
+        @('update', 'AKTUALIZUJ VPS', 0, 1, ''), @('status', 'STAN VPS', 1, 1, ''), @('logs', 'LOGI VPS', 2, 1, ''),
+        @('panel', 'OTWÓRZ PANEL (TUNEL SSH)', 0, 2, '#B47D23'), @('tunnelClose', 'ZAMKNIJ TUNEL', 1, 2, ''), @('passwords', 'HASŁA KONT', 2, 2, ''),
+        @('client', 'DOPISZ DO KLIENTA GRY', 0, 3, ''), @('invite', 'KOD DLA ZNAJOMEGO (COOP)', 1, 3, '#28788F'))
+    foreach ($spec in $grid) {
+        $button = [Windows.Forms.Button]::new()
+        $button.Text = $spec[1]
+        $button.Location = [Drawing.Point]::new(14 + 222 * [int]$spec[2], 222 + 46 * [int]$spec[3])
+        $button.Size = [Drawing.Size]::new(212, 38)
+        $button.Font = [Drawing.Font]::new('Segoe UI Semibold', 9)
+        if ($spec[4]) {
+            $button.BackColor = [Drawing.ColorTranslator]::FromHtml($spec[4])
+            $button.ForeColor = [Drawing.Color]::White
+            $button.FlatStyle = 'Flat'
+        }
+        $dialog.Controls.Add($button)
+        $buttons[$spec[0]] = $button
+    }
+
+    $help = [Windows.Forms.Label]::new()
+    $help.Text = ('Kolejność: POŁĄCZ, SPRAWDŹ VPS, ZAINSTALUJ. Gracze łączą się z adresem VPS (porty 11000 i 13000-13002 muszą być otwarte ' +
+        'w zaporze dostawcy VPS, jeśli ją ma). Panele WWW słuchają tylko na VPS - otwiera je tunel SSH (przycisk OTWÓRZ PANEL). ' +
+        'DOPISZ DO KLIENTA dodaje VPS jako drugi serwer na liście w Twoim kliencie. Kody dla znajomych są dla patronów (hasło COOP).')
+    $help.Location = [Drawing.Point]::new(14, 412)
+    $help.Size = [Drawing.Size]::new(660, 62)
+    $help.ForeColor = [Drawing.Color]::DimGray
+    $dialog.Controls.Add($help)
+
+    $status = [Windows.Forms.Label]::new()
+    $status.Location = [Drawing.Point]::new(14, 480)
+    $status.Size = [Drawing.Size]::new(660, 64)
+    $status.Font = [Drawing.Font]::new('Segoe UI', 9.5)
+    $dialog.Controls.Add($status)
+
+    $closeButton = [Windows.Forms.Button]::new()
+    $closeButton.Text = 'Zamknij'
+    $closeButton.Location = [Drawing.Point]::new(574, 556)
+    $closeButton.Size = [Drawing.Size]::new(100, 32)
+    $closeButton.DialogResult = [Windows.Forms.DialogResult]::Cancel
+    $dialog.Controls.Add($closeButton)
+    $dialog.CancelButton = $closeButton
+
+    $showStatus = {
+        $lines = @()
+        $current = Get-M2VpsState -ServerRoot $root
+        if ($current.host) { $lines += ('VPS: {0}@{1}, folder {2}.' -f $current.user, $current.host, $current.remoteDir) }
+        else { $lines += 'Wpisz adres VPS i użytkownika, potem POŁĄCZ.' }
+        if ($current.lastInstall) { $lines += ('Ostatnia instalacja z tego launchera: {0} (wersja {1}).' -f $current.lastInstall, $current.lastVersion) }
+        $tunnel = Get-M2VpsTunnelProcess -State $current
+        if ($tunnel -and @($current.tunnelPorts).Count -gt 0) {
+            $lines += ('Tunel do paneli otwarty: http://127.0.0.1:{0}/map' -f @($current.tunnelPorts)[0].local)
+        }
+        $status.Text = ($lines -join [Environment]::NewLine)
+    }
+
+    $saveFields = {
+        # What the fields say, checked and saved; $null and a message when
+        # something is wrong. Only here does the window change the state.
+        $next = Get-M2VpsState -ServerRoot $root
+        $next.host = $fields['host'].Text.Trim()
+        $next.user = $fields['user'].Text.Trim()
+        $next.remoteDir = $fields['remoteDir'].Text.Trim()
+        $portNumber = 0
+        if ([int]::TryParse($fields['port'].Text.Trim(), [ref]$portNumber)) { $next.port = $portNumber } else { $next.port = 0 }
+        try { Assert-M2VpsState -State $next }
+        catch {
+            [Windows.Forms.MessageBox]::Show($_.Exception.Message, 'VPS', 'OK', 'Warning') | Out-Null
+            return $null
+        }
+        Save-M2VpsState -ServerRoot $root -State $next
+        return $next
+    }
+
+    $runQuick = {
+        # A quick in-process call with the wait cursor; its error in a box.
+        param([scriptblock]$Work)
+        $dialog.Cursor = [Windows.Forms.Cursors]::WaitCursor
+        try { & $Work }
+        catch { [Windows.Forms.MessageBox]::Show($_.Exception.Message, 'VPS', 'OK', 'Error') | Out-Null }
+        finally { $dialog.Cursor = [Windows.Forms.Cursors]::Default; try { & $showStatus } catch { } }
+    }
+
+    $buttons['connect'].Add_Click({
+        $vps = & $saveFields
+        if (-not $vps) { return }
+        [Windows.Forms.MessageBox]::Show(("Otworzy się czarne okno ssh. Wpisz w nim hasło do VPS ({0}@{1}) i naciśnij Enter - znaków nie widać.`r`n`r`nTo jedyny raz: ssh doda klucz tego launchera na VPS i potem launcher łączy się bez hasła. Launcher tego hasła nie widzi i nigdzie go nie zapisuje." -f $vps.user, $vps.host),
+            'Połączenie z VPS', 'OK', 'Information') | Out-Null
+        & $runQuick {
+            $works = Install-M2VpsKey -State $vps
+            Write-LocalLog ('VPS: klucz SSH dla {0}@{1} {2}.' -f $vps.user, $vps.host, $(if ($works) { 'dziala' } else { 'NIE dziala' }))
+            if ($works) { [Windows.Forms.MessageBox]::Show('Klucz działa - launcher łączy się z VPS bez hasła. Teraz SPRAWDŹ VPS.', 'VPS', 'OK', 'Information') | Out-Null }
+            else { [Windows.Forms.MessageBox]::Show('Klucz nie działa - sprawdź adres, użytkownika i hasło, i spróbuj jeszcze raz.', 'VPS', 'OK', 'Warning') | Out-Null }
+        }
+    })
+
+    $buttons['check'].Add_Click({
+        $vps = & $saveFields
+        if (-not $vps) { return }
+        & $runQuick {
+            $machine = Test-M2VpsMachine -State $vps
+            $report = (Format-M2VpsMachineReport -Machine $machine) -join "`r`n"
+            Write-LocalLog ('VPS: sprawdzenie {0} - {1}.' -f $vps.host, $(if ($machine.Verdict.Ok) { 'mozna instalowac' } else { 'nie spelnia wymagan' }))
+            [Windows.Forms.MessageBox]::Show($report, 'Sprawdzenie VPS', 'OK', $(if ($machine.Verdict.Ok) { 'Information' } else { 'Warning' })) | Out-Null
+        }
+    })
+
+    $buttons['install'].Add_Click({
+        $vps = & $saveFields
+        if (-not $vps) { return }
+        $answer = [Windows.Forms.MessageBox]::Show(
+            ("Zainstalować ten świat na VPS {0}?`r`n`r`n- folder serwera pójdzie na VPS (około 100 MB, bez .env, kopii, logów i klienta),`r`n- VPS dostanie Dockera, plik wymiany (przy małej pamięci) i swój .env z losowymi hasłami,`r`n- pierwsza budowa trwa tam 15-40 minut - postęp w logu launchera; zamknięcie launchera jej nie przerywa,`r`n- konta admin i test dostaną nowe hasła (przycisk HASŁA KONT).`r`n`r`nKontynuować?" -f $vps.host),
+            'Zainstaluj na VPS', 'YesNo', 'Question')
+        if ($answer -ne [Windows.Forms.DialogResult]::Yes) { return }
+        $dialog.Close()
+        Start-LauncherAction -Action 'VpsInstall' -Yes
+    })
+
+    $buttons['update'].Add_Click({
+        $vps = & $saveFields
+        if (-not $vps) { return }
+        $answer = [Windows.Forms.MessageBox]::Show(
+            ("Zaktualizować serwer na VPS {0} do najnowszej wersji z GitHuba?`r`n`r`nAktualizacja pobiera paczkę na VPS i przebudowuje serwer w tle; postacie i boty zostają. Postęp w logu launchera." -f $vps.host),
+            'Aktualizuj VPS', 'YesNo', 'Question')
+        if ($answer -ne [Windows.Forms.DialogResult]::Yes) { return }
+        $dialog.Close()
+        Start-LauncherAction -Action 'VpsUpdate' -Yes
+    })
+
+    $buttons['status'].Add_Click({
+        if (-not (& $saveFields)) { return }
+        $dialog.Close()
+        Start-LauncherAction -Action 'VpsStatus'
+    })
+
+    $buttons['logs'].Add_Click({
+        if (-not (& $saveFields)) { return }
+        $dialog.Close()
+        Start-LauncherAction -Action 'VpsLogs'
+    })
+
+    $buttons['panel'].Add_Click({
+        $vps = & $saveFields
+        if (-not $vps) { return }
+        $addresses = $null
+        & $runQuick { $script:vpsPanelAddresses = Open-M2VpsPanel -State $vps -ServerRoot $root }
+        $addresses = $script:vpsPanelAddresses
+        $script:vpsPanelAddresses = $null
+        if (-not $addresses) { return }
+        Write-LocalLog ('VPS: tunel do paneli otwarty ({0}).' -f $addresses.ClassicUrl)
+        $url = Show-PanelChoiceDialog -Addresses $addresses
+        if ($url -eq 'panel-password') {
+            [Windows.Forms.MessageBox]::Show('Panele na VPS słuchają tylko na samym VPS i otwierają się bez hasła - dojść do nich można wyłącznie przez ten tunel SSH.', 'VPS', 'OK', 'Information') | Out-Null
+            $url = $addresses.ClassicUrl
+        }
+        if ($url) { Start-Process $url }
+    })
+
+    $buttons['tunnelClose'].Add_Click({
+        $closed = Close-M2VpsPanel -ServerRoot $root
+        Write-LocalLog ('VPS: tunel do paneli {0}.' -f $(if ($closed) { 'zamkniety' } else { 'nie byl otwarty' }))
+        & $showStatus
+    })
+
+    $buttons['passwords'].Add_Click({
+        $vps = & $saveFields
+        if (-not $vps) { return }
+        & $runQuick {
+            $accounts = @(Get-M2VpsAccounts -State $vps)
+            if ($accounts.Count -eq 0) {
+                [Windows.Forms.MessageBox]::Show('Na VPS nie ma jeszcze pliku z hasłami - powstaje, gdy po instalacji wstanie baza.', 'VPS', 'OK', 'Information') | Out-Null
+                return
+            }
+            $text = ($accounts | ForEach-Object { 'login {0}   hasło {1}{2}' -f $_.Login, $_.Password, $(if ($_.Note) { '   (' + $_.Note + ')' } else { '' }) }) -join "`r`n"
+            Show-CoopSecretDialog -Title 'Hasła kont gry na VPS' -Intro 'Tymi loginami i hasłami logujesz się na serwer na VPS. Leżą też na VPS w /root/metin2-accounts.txt (tylko dla roota).' -Secret $text
+        }
+    })
+
+    $buttons['client'].Add_Click({
+        $vps = & $saveFields
+        if (-not $vps) { return }
+        & $runQuick {
+            $result = Write-M2VpsClientEntry -State $vps -ServerRoot $root -ClientFolder (Get-CoopClientFolder)
+            Write-LocalLog ('VPS: zapisano serwer VPS w kliencie ({0}).' -f $result.Path)
+            $text = ("W kliencie wybierz serwer 'Online: {0}' ({1})." -f $result.Name, $result.Host)
+            if ($result.Replaced) { $text += ("`r`n`r`nZastąpił świat znajomego '{0}' - klient ma jedno takie miejsce, a kod zaproszenia wpisze go z powrotem." -f $result.Replaced) }
+            [Windows.Forms.MessageBox]::Show($text, 'VPS w kliencie', 'OK', 'Information') | Out-Null
+        }
+    })
+
+    $buttons['invite'].Add_Click({
+        $vps = & $saveFields
+        if (-not $vps) { return }
+        if (-not (Test-M2VpsInviteAccess -ServerRoot $root)) {
+            if (-not (Get-Command Show-CoopUnlockDialog -ErrorAction SilentlyContinue) -or -not (Get-Command Grant-M2CoopAccess -ErrorAction SilentlyContinue)) {
+                [Windows.Forms.MessageBox]::Show('Ta paczka nie ma modułu COOP, a kody zaproszeń idą przez niego.', 'VPS', 'OK', 'Information') | Out-Null
+                return
+            }
+            if ((Show-CoopUnlockDialog) -ne 'unlocked') { return }
+        }
+        $name = [Microsoft.VisualBasic.Interaction]::InputBox("Imię albo nick znajomego - z niego powstanie jego login na VPS.`r`n`r`nPuste pole pokaże kody dla znajomych, którzy już mają konta.", 'Kod dla znajomego (VPS)', '')
+        # InputBox answers "" for Cancel and for an empty OK alike, and what
+        # the empty one shows is every friend's password: ask which it was.
+        if (-not $name) {
+            $showAll = [Windows.Forms.MessageBox]::Show('Pokazać kody dla znajomych, którzy już mają konta na VPS?', 'Kod dla znajomego (VPS)', 'YesNo', 'Question')
+            if ($showAll -ne [Windows.Forms.DialogResult]::Yes) { return }
+        }
+        & $runQuick {
+            $vpsStatus = Get-M2VpsStatus -State $vps
+            $codes = @()
+            if ($name) {
+                $friend = New-M2VpsFriend -State $vps -ServerRoot $root -Name $name
+                Write-LocalLog ('VPS: konto znajomego na VPS, login {0}.' -f $friend.login)
+                $codes += ('{0} (login {1}, hasło {2}):' -f $friend.name, $friend.login, $friend.password)
+                $codes += (Get-M2VpsFriendInvite -State $vps -ServerRoot $root -Account $friend -Status $vpsStatus)
+            }
+            else {
+                foreach ($account in @(Get-M2VpsAccounts -State $vps | Where-Object { $_.Note -like 'znajomy*' })) {
+                    $codes += ('{0} (login {1}, hasło {2}):' -f $account.Note, $account.Login, $account.Password)
+                    $codes += (Get-M2VpsFriendInvite -State $vps -ServerRoot $root -Account $account -Status $vpsStatus)
+                    $codes += ''
+                }
+            }
+            if ($codes.Count -eq 0) {
+                [Windows.Forms.MessageBox]::Show('Na VPS nie ma jeszcze kont znajomych - wpisz imię, żeby założyć pierwsze.', 'VPS', 'OK', 'Information') | Out-Null
+                return
+            }
+            Show-CoopSecretDialog -Title 'Kod zaproszenia na VPS' `
+                -Intro 'Wyślij kod znajomemu w prywatnej wiadomości - zawiera jego hasło. Znajomy wkleja go w swoim launcherze (COOP > Dołączam do znajomego) albo w Dolacz.bat w folderze klienta.' `
+                -Secret ($codes -join "`r`n")
+        }
+    })
+
+    try { & $showStatus } catch { $status.Text = "Nie udało się odczytać stanu: $($_.Exception.Message)" }
+    [void]$dialog.ShowDialog()
+    $dialog.Dispose()
+}
+
 function Show-PanelChoiceDialog {
     # Two panels look at the same world and neither replaces the other, so the
     # button asks instead of deciding: the classic one is the map and the
@@ -2979,6 +3282,7 @@ $difficultyButton.Add_Click({
     }
 })
 if ($coopButton) { $coopButton.Add_Click({ Open-CoopWindow }) }
+if ($vpsButton) { $vpsButton.Add_Click({ Show-VpsDialog }) }
 $importDbButton.Add_Click({
     if (-not (Confirm-DockerReady)) { return }
     $target = Get-GuiTargetVolume

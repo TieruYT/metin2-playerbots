@@ -526,7 +526,9 @@ function Test-M2ProtectedPath {
         '.m2launcher-state.json',
         '.m2install.json',
         # COOP: the friends' accounts and passwords, the hosting state.
-        '.m2coop.json'
+        '.m2coop.json',
+        # VPS: which server this world was put on, and the tunnel to it.
+        '.m2vps.json'
     )
     foreach ($protectedFile in $protectedFiles) {
         if ($path.Equals($protectedFile, [StringComparison]::OrdinalIgnoreCase)) {

@@ -464,6 +464,9 @@ $ratesButton.Add_Click({
     Start-Process $ratesUrl
 })
 UI-Card 'world' $ratesButton (UI-Text 'Edytuj mnożniki w panelu WWW. Serwer musi działać.' 'Edit multipliers in the web panel. The server must be running.')
+# For everybody, unlike the COOP page: only the invite codes inside the
+# window ask for the supporters' password (Show-VpsDialog).
+UI-Card 'world' $vpsButton (UI-Text 'Postaw ten świat na wynajętym serwerze Linux (VPS).' 'Put this world on a rented Linux server (VPS).')
 UI-Card 'coop' $coopButton (UI-Text 'Zaproś znajomych do wspólnej rozgrywki.' 'Invite friends to play together.')
 $coopInfo = [Windows.Forms.Panel]::new()
 $coopInfo.Dock = 'Fill'; $coopInfo.BackColor = [Drawing.Color]::FromArgb(235, 18, 26, 30)
@@ -585,6 +588,7 @@ function Invoke-LayoutSelfTest([string]$OutputDirectory) {
         $bundleButton, $diagnosticsButton, $openLogButton, $folderButton, $botCountButton, $importDbButton,
         $repairDbButton, $dbAccessButton, $gmPanelButton, $worldBackupButton, $difficultyButton, $languageButton, $ratesButton)
     if ($coopButton) { $expected += $coopButton }
+    if ($vpsButton) { $expected += $vpsButton }
     foreach ($button in $expected) {
         if (@($script:ui.Cards | Where-Object { $_.Button -eq $button }).Count -ne 1) { throw "Missing/duplicate action: $($button.Text)" }
     }

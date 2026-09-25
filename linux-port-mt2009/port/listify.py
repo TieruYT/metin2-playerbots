@@ -108,8 +108,12 @@ Metin2-Launcher.ps1
 Metin2-Launcher.bat
 Metin2-Launcher-GUI.ps1
 Metin2-Launcher-GUI.bat
+Metin2-Launcher-GUI.Layout.ps1
+Metin2-Launcher-GUI.Background.png
 launcher/Metin2Launcher.psm1
 launcher/Metin2Launcher.Diagnostics.psm1
+launcher/Metin2Launcher.Coop.psm1
+launcher/Metin2Launcher.Vps.psm1
 launcher/launcher.config.example.json
 launcher/update-manifest.example.json
 launcher/server-update-files.mt2009.txt
@@ -117,6 +121,7 @@ launcher/client-update-files.example.txt
 docs/LAUNCHER.md
 tools/New-M2UpdatePackage.ps1
 linux-port-mt2009/tools/update.sh
+linux-port-mt2009/tools/vps-install.sh
 
 # ---- engine files the port changed or added (measured against the package) --
 """
