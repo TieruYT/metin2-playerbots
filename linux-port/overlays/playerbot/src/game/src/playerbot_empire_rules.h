@@ -431,6 +431,30 @@ namespace playerbot_empire_rules
 		return false;
 	}
 
+	// The Alchemist, mob 20001: one in each first village and nowhere else,
+	// and the NPC whose item exchange takes a soul stone of +0 to +3 for
+	// Magiczny Pyl (item_exchange.lua). Read off npc.txt the same way - cells
+	// (622,511), (660,734) and (292,812) - and checked on each map's
+	// server_attr to stand on the ground the herbalist and the market pitch
+	// stand on.
+	inline bool GetAlchemist(long mapIndex, TPoint& out)
+	{
+		static const TTownPitchRow rows[] = {
+			{ 1,  { 471800, 947100 } },
+			{ 21, { 66000, 175800 } },
+			{ 41, { 950800, 286000 } },
+		};
+		for (unsigned int i = 0; i < sizeof(rows) / sizeof(rows[0]); ++i)
+		{
+			if (rows[i].mapIndex == mapIndex)
+			{
+				out = rows[i].pitch;
+				return true;
+			}
+		}
+		return false;
+	}
+
 	// The warp NPCs that join a kingdom's own four maps, both ends. `gate` is
 	// where the NPC stands (the bot walks to it), `arrival` is where the engine
 	// puts the character down, read from the NPC's own name.

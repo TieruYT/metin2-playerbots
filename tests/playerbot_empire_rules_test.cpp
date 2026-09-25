@@ -320,6 +320,24 @@ int main()
 			}
 		}
 
+		// The Alchemist (20001), who turns the banned soul stones into dust:
+		// each first village's own npc.txt row, BasePosition + cell * 100, and
+		// nowhere else. Checked the same way as the two above - a row taken
+		// from another village sends the exchange across the world.
+		assert(GetAlchemist(1, p) && p.x == 409600 + 62200 && p.y == 896000 + 51100);
+		assert(GetAlchemist(21, p) && p.x == 0 + 66000 && p.y == 102400 + 73400);
+		assert(GetAlchemist(41, p) && p.x == 921600 + 29200 && p.y == 204800 + 81200);
+		assert(!GetAlchemist(3, p) && !GetAlchemist(23, p) && !GetAlchemist(43, p));
+		{
+			TPoint alch, herb;
+			for (int k = 0; k < 3; ++k)
+			{
+				const long map = k == 0 ? 1 : (k == 1 ? 21 : 41);
+				assert(GetAlchemist(map, alch) && GetHerbalist(map, herb));
+				assert(alch.x != herb.x || alch.y != herb.y);
+			}
+		}
+
 		// Every service point of every village is on that village's own ground:
 		// a table row copied from the wrong kingdom is caught here rather than
 		// by a bot walking eighty kilometres to the wrong anvil.

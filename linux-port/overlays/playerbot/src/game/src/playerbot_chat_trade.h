@@ -732,11 +732,19 @@ namespace
 	// A player's whisper to a bot. A trade line is answered like a shout, by
 	// whichever bot is best placed; anything else gets the bot's own state -
 	// what its counter holds, or that it is out hunting.
+	// Defined in playerbot_anti_pk.h, which comes after this file.
+	bool HandlePlayerBotSurrenderWhisper(LPCHARACTER player, LPCHARACTER bot, const char* text, DWORD dwNow);
+
 	void HandlePlayerWhisperToBot(LPCHARACTER player, LPCHARACTER bot, const char* text)
 	{
 		if (!player || !bot || !text)
 			return;
 		const DWORD dwNow = get_dword_time();
+		// "Poddaje sie" first (the truce, playerbot_anti_pk.h): the lure
+		// order's bare stop words are a surrender's too, and from a person the
+		// bots are fighting "dosc" answered "Nie luruje dla ciebie".
+		if (HandlePlayerBotSurrenderWhisper(player, bot, text, dwNow))
+			return;
 		// Before the trade line, because an order is answered whatever the
 		// reply clock says: a person who asked a bot to pull for them is owed
 		// an answer, and "luruj" is nobody's idea of a trade.

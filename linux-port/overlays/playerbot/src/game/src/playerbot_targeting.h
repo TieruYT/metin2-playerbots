@@ -256,7 +256,8 @@ namespace
 	{
 		public:
 			CCountPlayerBotStoneAttackers(LPCHARACTER stone, LPCHARACTER exclude = NULL) :
-				m_stone(stone), m_exclude(exclude), m_count(0), m_bots(0), m_players(0) {}
+				m_stone(stone), m_exclude(exclude), m_count(0), m_bots(0), m_players(0),
+				m_ownBots(0), m_ownPlayers(0), m_otherBots(0) {}
 
 			bool operator () (LPENTITY entity)
 			{
@@ -280,10 +281,24 @@ namespace
 				if (attacksStone && m_count < 255)
 				{
 					++m_count;
+					// Whose they are, against the asking bot's kingdom: a stone
+					// is joined when its own kingdom breaks it, and left alone
+					// when another's bots do (IsPlayerBotStoneTakenByAnotherKingdom).
+					const bool own = !m_exclude || attacker->GetEmpire() == m_exclude->GetEmpire();
 					if (it != s_mapPlayerBotAIStates.end())
+					{
 						++m_bots;
+						if (own)
+							++m_ownBots;
+						else
+							++m_otherBots;
+					}
 					else
+					{
 						++m_players;
+						if (own)
+							++m_ownPlayers;
+					}
 				}
 				return true;
 			}
@@ -291,6 +306,9 @@ namespace
 			BYTE GetCount() const { return m_count; }
 			int GetBots() const { return m_bots; }
 			int GetPlayers() const { return m_players; }
+			int GetOwnBots() const { return m_ownBots; }
+			int GetOwnPlayers() const { return m_ownPlayers; }
+			int GetOtherBots() const { return m_otherBots; }
 
 		private:
 			LPCHARACTER m_stone;
@@ -298,6 +316,9 @@ namespace
 			BYTE m_count;
 			int m_bots;
 			int m_players;
+			int m_ownBots;
+			int m_ownPlayers;
+			int m_otherBots;
 	};
 
 	BYTE CountPlayerBotStoneAttackers(LPCHARACTER stone, LPCHARACTER exclude = NULL)
@@ -370,14 +391,37 @@ namespace
 		return counter.GetCount();
 	}
 
+	// Whether this bot is one of the operator's hostile share: KINGDOMPVP in
+	// the weights file is the share of bots that pick fights with other
+	// kingdoms, drawn by pid so the same bots do it after every restart. Zero
+	// by default, so by default no bot is. The kingdom quarrel on shared
+	// ground (ManagePlayerBotKingdomHostility) and the stone rivalry with
+	// another kingdom's bot both ask it.
+	bool IsPlayerBotHostileToOtherKingdoms(LPCHARACTER ch)
+	{
+		if (!ch || s_iPlayerBotKingdomPvpPercent <= 0)
+			return false;
+		return (int)(PlayerBotNavHash(ch->GetPlayerID() ^ 0x4B494E47U) % 100U) <
+				s_iPlayerBotKingdomPvpPercent;
+	}
+
 	// And the other half of his rule: somebody of another kingdom breaking the
 	// stone - a bot, or a person ("doslownie z dokumentu", Tieru, 19 September)
 	// - whom this bot's blow can reach. The nearest to the bot.
+	//
+	// Another kingdom's bot is a rival only to a bot of the hostile share
+	// above. Iwakura's rule counted every one, and it was the one fight
+	// between the kingdoms' bots the KINGDOMPVP slider did not reach, so a
+	// world at 0% still had them fighting at the stones ("Ja mam 0% wiec
+	// dlaczego zaczepiaja sie?", DUDU, 25 September; the operator's answer
+	// the same day was that the slider decides). A person breaking the stone
+	// is still a rival by his rule, whatever the slider says.
 	class FFindPlayerBotStoneRival
 	{
 		public:
 			FFindPlayerBotStoneRival(LPCHARACTER ch, LPCHARACTER stone) :
-				m_ch(ch), m_stone(stone), m_found(NULL), m_bestDistance(INT_MAX) {}
+				m_ch(ch), m_stone(stone), m_found(NULL), m_bestDistance(INT_MAX),
+				m_botsToo(IsPlayerBotHostileToOtherKingdoms(ch)) {}
 
 			void operator () (LPENTITY entity)
 			{
@@ -392,14 +436,14 @@ namespace
 						DISTANCE_APPROX(other->GetX() - m_stone->GetX(),
 								other->GetY() - m_stone->GetY()) > PLAYERBOT_STONE_SUPPORT_RANGE)
 					return;
-				bool attacksStone = other->GetVictim() == m_stone;
-				if (!attacksStone)
-				{
-					TPlayerBotAIStateMap::const_iterator it =
-							s_mapPlayerBotAIStates.find(other->GetPlayerID());
-					attacksStone = it != s_mapPlayerBotAIStates.end() &&
-							it->second.dwTargetVID == (DWORD)m_stone->GetVID();
-				}
+				// A bot is one this core runs: the state map says so.
+				TPlayerBotAIStateMap::const_iterator it =
+						s_mapPlayerBotAIStates.find(other->GetPlayerID());
+				const bool isBot = it != s_mapPlayerBotAIStates.end();
+				if (isBot && !m_botsToo)
+					return;
+				const bool attacksStone = other->GetVictim() == m_stone ||
+						(isBot && it->second.dwTargetVID == (DWORD)m_stone->GetVID());
 				if (!attacksStone || !CanPlayerBotStrikeCharacter(m_ch, other) ||
 						IsPlayerBotSafeZone(other->GetMapIndex(), other->GetX(), other->GetY()))
 					return;
@@ -419,6 +463,7 @@ namespace
 			LPCHARACTER m_stone;
 			LPCHARACTER m_found;
 			int m_bestDistance;
+			bool m_botsToo;
 	};
 
 	LPCHARACTER FindPlayerBotStoneRival(LPCHARACTER ch, LPCHARACTER stone)
@@ -431,12 +476,36 @@ namespace
 	}
 
 	// Somebody is already breaking this stone, and it is somebody a bot
-	// joins: another bot always, a player only with PLAYERBOT_STONE_JOIN_PLAYERS.
+	// joins: another bot of its own kingdom always, a player of it only with
+	// PLAYERBOT_STONE_JOIN_PLAYERS. It counted every kingdom's, and under
+	// Iwakura's rule the bot that was at a stone first fights a newcomer of
+	// another kingdom (FindPlayerBotStoneRival): the join bonus walked bots
+	// into other kingdoms' stones and each walk was a fight - 4 085 stone
+	// rivalries on m2zip on 25 September, and 51 212 blows between bots of
+	// the three kingdoms in the fights that followed, with the operator's
+	// kingdom hostility at 0% ("Ja mam 0% wiec dlaczego zaczepiaja sie?",
+	// DUDU).
 	bool IsPlayerBotStoneUnderJoinableAttack(LPCHARACTER ch, LPCHARACTER stone)
 	{
-		int bots = 0, players = 0;
-		CountPlayerBotStoneAttackersByKind(stone, ch, bots, players);
-		return bots > 0 || (PLAYERBOT_STONE_JOIN_PLAYERS && players > 0);
+		if (!ch || !stone || !stone->GetSectree())
+			return false;
+		CCountPlayerBotStoneAttackers counter(stone, ch);
+		stone->GetSectree()->ForEachAround(counter);
+		return counter.GetOwnBots() > 0 || (PLAYERBOT_STONE_JOIN_PLAYERS && counter.GetOwnPlayers() > 0);
+	}
+
+	// Bots of another kingdom are breaking this stone. A bot does not walk up
+	// to it: that is the rivalry above started by the newcomer. A person of
+	// another kingdom at a stone is not counted - the rule answers people as
+	// the document says, and nothing here keeps a bot from a stone a person
+	// happens to be hitting beyond what PLAYERBOT_STONE_JOIN_PLAYERS says.
+	bool IsPlayerBotStoneTakenByAnotherKingdom(LPCHARACTER ch, LPCHARACTER stone)
+	{
+		if (!ch || !stone || !stone->GetSectree())
+			return false;
+		CCountPlayerBotStoneAttackers counter(stone, ch);
+		stone->GetSectree()->ForEachAround(counter);
+		return counter.GetOtherBots() > 0;
 	}
 
 	// A stone above the bot's own band that others are already breaking. "Jesli
@@ -1259,6 +1328,11 @@ namespace
 
 				if (candidate->IsStone())
 				{
+					// Not a stone another kingdom's bots are breaking: walking up
+					// to it is the rivalry (IsPlayerBotStoneTakenByAnotherKingdom).
+					// The stone this bot already holds is not a candidate here.
+					if (IsPlayerBotStoneTakenByAnotherKingdom(m_owner, candidate))
+						return false;
 					// A stone is the game's key fight for every bot, not a hunter's
 					// speciality (Tieru, 16 September): above the sweet-spot monster
 					// for anybody, and one somebody is already on comes first of all.

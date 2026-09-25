@@ -869,6 +869,10 @@ namespace
 		// this far only when no add stone could give it the fourth first.
 		if (count < PLAYERBOT_BONUS_CHANGE_MIN_LINES)
 			return PLAYERBOT_BONUS_STEP_NONE;
+		// What a companion's owner put on keeps the lines the owner chose it
+		// for (playerbot_sidekick.h); a line added above loses nothing.
+		if (IsPlayerBotSidekickPinned(ch, item))
+			return PLAYERBOT_BONUS_STEP_NONE;
 		bool wantChange = false;
 		if (target.kind == PLAYERBOT_BONUS_TARGET_GOODS)
 		{

@@ -101,6 +101,10 @@ struct State {
     // When the keeper last stood at its shop and served it: a shop on
     // another map waits PLAYERBOT_OFFLINE_FAR_SERVICE_MIN_MS from here.
     uint32_t lastServedAt = 0;
+    // When the visit under way began, and how many visits in a row ended
+    // before the keeper stood at its counter (BotOfflineInterruptVisit).
+    uint32_t visitStarted = 0;
+    uint32_t interrupted = 0;
     std::map<uint32_t, ListedLine> listed;
     bool visiting = false;
     bool restockTurn = false;

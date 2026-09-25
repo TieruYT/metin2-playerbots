@@ -524,6 +524,10 @@ namespace
 		// to ask this from Bokjung in order to decide to come here at all.
 		if (!ch)
 			return false;
+		// Nor a companion whose owner spends its points: the reset would take
+		// every one of them back.
+		if (IsPlayerBotSidekickManualSkills(ch))
+			return false;
 		if (ch->GetLevel() < PLAYERBOT_SKILL_RESET_MIN_LEVEL ||
 				ch->GetLevel() > PLAYERBOT_SKILL_RESET_MAX_LEVEL)
 			return false;
@@ -710,8 +714,18 @@ namespace
 		if (build.bSkillCount == 0)
 			return;
 
-		// Purge any skill levels that do not belong to this bot's chosen profession
-		for (DWORD s = 1; s <= 120; ++s)
+		// A companion's points are its owner's once the owner has spent one
+		// (the window, playerbot_sidekick.h): nothing below may move them, and
+		// the purge below would zero a skill the build leaves out.
+		if (IsPlayerBotSidekickManualSkills(ch))
+			return;
+
+		// Purge any skill levels that do not belong to this bot's chosen
+		// profession. Not a companion's: its path is its owner's choice
+		// (KeepPlayerBotSidekickPath clears the skills when it changes), and
+		// a point its owner put anywhere in that path is the owner's.
+		const bool sidekick = IsPlayerBotSidekickPID(ch->GetPlayerID());
+		for (DWORD s = 1; s <= 120 && !sidekick; ++s)
 		{
 			if (ch->GetSkillLevel(s) > 0)
 			{

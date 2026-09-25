@@ -1278,7 +1278,7 @@ namespace
 		// One slot is freed the way the unique-slots pass frees one for a
 		// ring: what pays the bot nothing first, a ring or glove on its clock
 		// last (it comes off at the water anyway), never what the engine
-		// will not let go of.
+		// will not let go of, nor what a companion's owner put on.
 		if (ch->GetWear(WEAR_UNIQUE1) && ch->GetWear(WEAR_UNIQUE2))
 		{
 			LPITEM displaced = NULL;
@@ -1287,7 +1287,7 @@ namespace
 				{
 					LPITEM worn = ch->GetWear(wear);
 					if (!worn || !IsPlayerBotWornItemSound(ch, worn, wear) ||
-							IS_SET(worn->GetFlag(), ITEM_FLAG_IRREMOVABLE))
+							IS_SET(worn->GetFlag(), ITEM_FLAG_IRREMOVABLE) || IsPlayerBotSidekickPinned(ch, worn))
 						continue;
 					if (pass_ == 0 && IsPlayerBotTimedUnique(worn->GetVnum()))
 						continue;

@@ -21,6 +21,11 @@ namespace {
     // others; measure it before moving the budget or the slice.
     DWORD s_botOfflineBudgetMinute = 0;
     unsigned s_botOfflineBudgetGranted = 0, s_botOfflineBudgetRefused = 0;
+    // A visit that ended before the keeper stood at its counter is asked
+    // again this soon, and this many times in a row, before the ordinary
+    // round (BotOfflineInterruptVisit).
+    const DWORD PLAYERBOT_OFFLINE_INTERRUPTED_RETRY_MS = 5000;
+    const uint32_t PLAYERBOT_OFFLINE_INTERRUPTED_TRIES = 4;
 
     bool BotOfflineBudget(DWORD now) {
         if (s_botOfflineBudgetMinute == 0) s_botOfflineBudgetMinute = now;
@@ -44,29 +49,38 @@ namespace {
         ++s_botOfflineBudgetGranted;
         return true;
     }
+    // Why the service cannot run now, or NULL. Named, because a visit ended by
+    // one of these says so in the log (BotOfflineInterruptVisit).
+    const char* BotOfflineBusyReason(LPCHARACTER ch, const TPlayerBotAIState& state) {
+        if (!ch || !ch->IsItemLoaded()) return "loading";
+        if (ch->IsDead() || ch->IsStun()) return "down";
+        if (ch->GetExchange() || ch->GetShop() || ch->GetSafebox() || ch->IsBusy()) return "window";
+        if (ch->GetVictim() && !ch->GetVictim()->IsDead()) return "fight";
+        if (state.bVisitingShop) return "town_visit";
+        if (state.bVisitingBiologist || state.bVisitingStable) return "npc";
+        if (state.bRecoveringAfterDeath || state.bTacticalRetreat) return "recovery";
+        if (state.bMultiPullActive) return "pull";
+        if (state.bFishingSession) return "fishing";
+        // Nor off the desert in the middle of its battle-horse trial: the
+        // service walk every ten to fifteen minutes was 23 of 80 desert
+        // departures an hour, and the trial is a hundred kills on that map.
+        if (IsPlayerBotOnBattleHorseTrial(ch) && ch->GetMapIndex() == PLAYERBOT_MAP_DESERT) return "trial";
+        // A bot in a player's party does not warp off to its counter every
+        // ten minutes; the stand keeps selling until the party ends.
+        if (ch->GetParty() && IsPlayerBotHumanLedParty(ch->GetParty())) return "person_party";
+        // Nor off a mercenary's contract, or away from a person it leads
+        // (playerbot_companions.h).
+        if (IsPlayerBotHeldForCompany(ch)) return "company";
+        // Nor out of the Demon Tower, nor off a raid on its way there.
+        if (IsPlayerBotOnTowerBusiness(ch, state)) return "tower";
+        // Nor out of a Monkey Dungeon: a visit is half an hour in rooms
+        // joined only by their doors, and a keeper warped out of it has the
+        // whole way back in to walk. The service waits for the way out.
+        if (IsPlayerBotMonkeyMap(ch->GetMapIndex())) return "monkey";
+        return NULL;
+    }
     bool BotOfflineBusy(LPCHARACTER ch, const TPlayerBotAIState& state) {
-        return !ch || !ch->IsItemLoaded() || ch->IsDead() || ch->IsStun() ||
-            ch->GetExchange() || ch->GetShop() || ch->GetSafebox() || ch->IsBusy() ||
-            (ch->GetVictim() && !ch->GetVictim()->IsDead()) ||
-            state.bVisitingShop || state.bVisitingBiologist || state.bVisitingStable ||
-            state.bRecoveringAfterDeath || state.bTacticalRetreat || state.bMultiPullActive ||
-            state.bFishingSession ||
-            // Nor off the desert in the middle of its battle-horse trial: the
-            // service walk every ten to fifteen minutes was 23 of 80 desert
-            // departures an hour, and the trial is a hundred kills on that map.
-            (IsPlayerBotOnBattleHorseTrial(ch) && ch->GetMapIndex() == PLAYERBOT_MAP_DESERT) ||
-            // A bot in a player's party does not warp off to its counter every
-            // ten minutes; the stand keeps selling until the party ends.
-            (ch->GetParty() && IsPlayerBotHumanLedParty(ch->GetParty())) ||
-            // Nor off a mercenary's contract, or away from a person it leads
-            // (playerbot_companions.h).
-            IsPlayerBotHeldForCompany(ch) ||
-            // Nor out of the Demon Tower, nor off a raid on its way there.
-            IsPlayerBotOnTowerBusiness(ch, state) ||
-            // Nor out of a Monkey Dungeon: a visit is half an hour in rooms
-            // joined only by their doors, and a keeper warped out of it has the
-            // whole way back in to walk. The service waits for the way out.
-            IsPlayerBotMonkeyMap(ch->GetMapIndex());
+        return BotOfflineBusyReason(ch, state) != NULL;
     }
     // The wait before the next service visit: the long one for a dropper
     // (PLAYERBOT_DROPPER_SHOP_SERVICE_MIN_MS), ten to fifteen minutes for
@@ -86,6 +100,42 @@ namespace {
         o.visiting = false;
         o.visitUntil = 0;
         o.nextService = now + BotOfflineServiceGap(state);
+    }
+    // A visit that ended before the keeper stood at its counter served
+    // nothing, and it used to cost the whole round all the same. A dropper
+    // leaves the Monkey Dungeon with its fight still on it - a retreat, a
+    // pull, the recovery after a death, none of which a map change clears -
+    // so the first tick at its stand found it busy, ended the visit and put
+    // the next one forty to sixty minutes on, by when it was back in the
+    // dungeon, where no service runs. On m2zip on 25 September 133 of 149
+    // medal droppers' stands had expired, 147 of their 164 service walks in
+    // three hours had served nothing, and they held 8 821 horse medals in
+    // their bags against 26 on the counters (SIZOWSKI, from his own world:
+    // "medale konne nie trafiaja na rynek"). So an interrupted visit is asked
+    // again the moment the bot is free - the service runs ahead of the travel
+    // pass in the tick, so the bot is still where the visit brought it -
+    // PLAYERBOT_OFFLINE_INTERRUPTED_TRIES times in a row at most, and the
+    // ordinary round after that.
+    void BotOfflineInterruptVisit(LPCHARACTER ch, TPlayerBotAIState& state, DWORD now, const char* why) {
+        auto& o = state.offlineShop;
+        const bool served = o.lastServedAt != 0 && o.visitStarted != 0 &&
+            int32_t(o.lastServedAt - o.visitStarted) >= 0;
+        BotOfflineFinishVisit(ch, state, now);
+        if (served) return;
+        if (++o.interrupted <= PLAYERBOT_OFFLINE_INTERRUPTED_TRIES) {
+            o.nextService = now + PLAYERBOT_OFFLINE_INTERRUPTED_RETRY_MS;
+            char tag[48];
+            snprintf(tag, sizeof(tag), "offline_interrupted_%s", why ? why : "?");
+            PlayerBotLogThrottled(tag, now,
+                "PLAYERBOT_OFFLINE: visit interrupted pid=%u name=%s why=%s try=%u map=%ld",
+                ch ? ch->GetPlayerID() : 0, ch ? ch->GetName() : "", why ? why : "?",
+                (unsigned int)o.interrupted, ch ? (long)ch->GetMapIndex() : 0L);
+        } else {
+            o.interrupted = 0;
+            PlayerBotLogThrottled("offline_interrupted_out", now,
+                "PLAYERBOT_OFFLINE: visit interrupted too often pid=%u name=%s why=%s, the ordinary round",
+                ch ? ch->GetPlayerID() : 0, ch ? ch->GetName() : "", why ? why : "?");
+        }
     }
     bool BotOfflinePoll(LPCHARACTER ch, DWORD now) {
         auto it = playerbot_offline::requests.find(ch->GetPlayerID());
@@ -338,6 +388,19 @@ namespace {
             // visit, and goes down on the next Trader's visit (playerbot_lpp.h).
             if (IsPlayerBotLppKeptItem(ch, preview)) {
                 if (!unwanted) { unwanted = id; reason = "lpp"; }
+                M2_DELETE(preview);
+                continue;
+            }
+            // A soul stone of a grade Iwakura bans from sockets, one of the
+            // eighty-five in a hundred the Alchemist turns into dust
+            // (IsPlayerBotSoulStoneForDust), comes home a stone a visit: 2 720
+            // lines of +0 to +2 stood on m2zip's counters the morning the rule
+            // came in, against 783 stones in the bags. The line's id is the
+            // stone's, so the fifteen in a hundred kept for the market stay.
+            if (preview->GetType() == ITEM_METIN &&
+                    GetPlayerBotItemPolicy(preview) == PLAYERBOT_ITEM_POLICY_NONE &&
+                    IsPlayerBotSoulStoneForDustOf(ch, preview->GetVnum(), id, (DWORD)preview->GetValue(5))) {
+                if (!unwanted) { unwanted = id; reason = "soul_stone_dust"; }
                 M2_DELETE(preview);
                 continue;
             }
@@ -686,8 +749,10 @@ namespace {
         // kind, up to the line - and a heap is never under its minimum.
         const bool bulk = IsPlayerBotBulkGoods(item);
         // A safe refine scroll is a material too (recipe 501) and keeps its
-        // own branch below, keep and all.
-        if (bulk || (IsPlayerBotTradeableMaterial(item) &&
+        // own branch below, keep and all. The Alchemist's dust is cut the
+        // same way, in packs, with nothing kept back.
+        if (bulk || item->GetVnum() == PLAYERBOT_MAGIC_DUST_VNUM ||
+                (IsPlayerBotTradeableMaterial(item) &&
                 !IsPlayerBotSafeRefineScroll(item->GetVnum()))) {
             const int keep = GetPlayerBotStallBaseKeep(ch, item);
             const int spare = (int)ch->CountSpecifyItem(item->GetVnum()) - keep;
@@ -802,6 +867,22 @@ namespace {
             M2_DELETE(preview);
         return named;
     }
+    // The nearest stand to the bot, as CanOpenOnMap's CCheckShopPosition sees
+    // them (a shop entity within sixty units refuses a renewal); -1 for none in
+    // the sectors round it. Only for the diagnostic line: map_ok alone could not
+    // say whether the map's limit or a neighbour said no.
+    struct FPlayerBotNearestStand {
+        LPCHARACTER me;
+        int best;
+        explicit FPlayerBotNearestStand(LPCHARACTER c) : me(c), best(-1) {}
+        void operator()(LPENTITY ent) {
+            if (!ent->IsType(ENTITY_NEWSHOPS))
+                return;
+            const int d = me->DistanceTo(ent);
+            if (best < 0 || d < best)
+                best = d;
+        }
+    };
     bool ManagePlayerBotOfflineService(LPCHARACTER ch, TPlayerBotAIState& state, DWORD now) {
         using namespace playerbot_offline;
         if (!ch) return false;
@@ -830,8 +911,9 @@ namespace {
         if (o.nextService == 0)
             o.nextService = now + 30000 + PlayerBotNavHash(ch->GetPlayerID() ^ 0x4f534856U) %
                 (IsPlayerBotDropper(state.bPersonality) ? PLAYERBOT_DROPPER_SHOP_SERVICE_MAX_MS : (DWORD)600000);
-        if (BotOfflineBusy(ch, state) || !db_clientdesc || !db_clientdesc->IsPhase(PHASE_DBCLIENT)) {
-            if (o.visiting) BotOfflineFinishVisit(ch, state, now);
+        const char* busy = BotOfflineBusyReason(ch, state);
+        if (busy || !db_clientdesc || !db_clientdesc->IsPhase(PHASE_DBCLIENT)) {
+            if (o.visiting) BotOfflineInterruptVisit(ch, state, now, busy ? busy : "db");
             return false;
         }
         // An empty hand does not wait out the service interval when its own
@@ -950,11 +1032,12 @@ namespace {
         }
         if (!o.visiting) {
             o.visiting = true;
+            o.visitStarted = now;
             o.visitUntil = now + 90000; // absolute upper bound, including travel
             o.nextStep = 0;
         }
         if (Due(now, o.visitUntil)) {
-            BotOfflineFinishVisit(ch, state, now);
+            BotOfflineInterruptVisit(ch, state, now, "timeout");
             return false;
         }
         SetPlayerBotAction(state, BOT_ACTION_TRAVEL, now);
@@ -968,6 +1051,7 @@ namespace {
         o.nextStep = now + 3000;
         if (!BotOfflineBudget(now)) return true;
         o.lastServedAt = now;
+        o.interrupted = 0;
         // A visit that reprices adds nothing - the restock loop below stops at
         // once on the same test - so it cuts no line: the cut would only be
         // poured back by the merge pass, after a whole bag's scoring for it.
@@ -1007,21 +1091,69 @@ namespace {
             // slider never applied to them.
             const bool stillWanted = !IsPlayerBotShopReasonRolled(state.bShopOpenReason) ||
                     ShouldPlayerBotKeepShop(ch, state);
+            bool reopened = false;
+            char sign[SHOP_SIGN_MAX_LEN + 1] = "";
             if (stillWanted && !shop->GetItems().empty() &&
                     ch->GetGold() - aOfflineShopTime[1].price >= GetPlayerBotReservedGold(ch) &&
                     Begin(ch->GetPlayerID(), Create, 0, now)) {
                 // Renamed for what it holds now - eight hours of service visits
                 // have added to it - by the same rules as a new stand. A name
                 // from before those rules is not renewed either.
-                char sign[SHOP_SIGN_MAX_LEN + 1];
                 const char* how = "kept";
                 if (!BotOfflineNameForGoods(ch, shop, sign, sizeof(sign), &how))
                     strlcpy(sign, shop->GetName(), sizeof(sign));
                 manager.RecvShopReopenClientPacket(ch, sign, 1);
-                if (EndCall(ch->GetPlayerID()))
+                reopened = EndCall(ch->GetPlayerID());
+                if (reopened)
                     sys_log(0, "PLAYERBOT_OFFLINE: reopen pid=%u name=%s lines=%u sign=\"%s\" how=%s moved_from=%ld",
                         ch->GetPlayerID(), ch->GetName(), unsigned(shop->GetItems().size()), sign, how,
                         serviceMap != spawn.map ? (long)spawn.map : 0L);
+            }
+            // A stand left expired says why. The renewal refuses silently - a
+            // chat line to a descriptor nobody reads - and the medal droppers'
+            // stands stood expired for hours with nothing in any log: whether
+            // the bot no longer wanted it, or which of the engine's tests
+            // (CheckCharacterActions and the time since the last open) said no.
+            if (!reopened) {
+                quest::PC* pc = quest::CQuestManager::instance().GetPCForce(ch->GetPlayerID());
+                const bool questRunning = pc && pc->IsRunning();
+                const bool handles = ch->CanHandleItem(false, false,
+                    BUSY_CAN_HANDLE_ITEM_EXCLUDE | BUSY_SHOP_MANAGE | BUSY_SHOP);
+                // One sample a minute for each combination, or the commonest
+                // hides every other.
+                char tag[48];
+                snprintf(tag, sizeof(tag), "offline_not_renewed_%d%d%d%d", stillWanted ? 1 : 0,
+                    handles ? 1 : 0, questRunning ? 1 : 0, IsPlayerBotDropper(state.bPersonality) ? 1 : 0);
+                // The rest of the engine's tests, asked the same way it asks
+                // them: the sign (ParseShopName), every line's slot, the map
+                // and its neighbours (CanOpenOnMap - sixty units to the next
+                // stand), and anything else the bot is busy with.
+                int nameOk = -1, slotsOk = 1;
+                if (sign[0]) {
+                    std::string parsed;
+                    nameOk = manager.ParseShopName(sign, parsed) ? 1 : 0;
+                }
+                for (const auto& [lineId, line] : shop->GetItems())
+                    if (line && line->GetTable() &&
+                            !ch->CanPlaceItemOnShopSlot((BYTE)line->GetInfo().pos, (BYTE)line->GetTable()->bSize)) {
+                        slotsOk = 0;
+                        break;
+                    }
+                const int mapOk = manager.CanOpenOnMap(ch) ? 1 : 0;
+                FPlayerBotNearestStand nearest(ch);
+                if (!mapOk && ch->GetSectree())
+                    ch->GetSectree()->ForEachAround(nearest);
+                PlayerBotLogThrottled(tag, now,
+                    "PLAYERBOT_OFFLINE: stand left expired pid=%u name=%s wanted=%d reason=%u lines=%u gold=%d quest=%d handle=%d busy=%d name_ok=%d slots_ok=%d map_ok=%d near_stand=%d map=%ld at=(%ld,%ld) stand_dist=%d riding=%d dropper=%d since_open_s=%d sign=\"%s\"",
+                    ch->GetPlayerID(), ch->GetName(), stillWanted ? 1 : 0, (unsigned int)state.bShopOpenReason,
+                    unsigned(shop->GetItems().size()), (int)(ch->GetGold() / 1000),
+                    questRunning ? 1 : 0, handles ? 1 : 0, ch->IsBusy(BUSY_SHOP_MANAGE) ? 1 : 0,
+                    nameOk, slotsOk, mapOk, nearest.best, ch->GetMapIndex(), ch->GetX(), ch->GetY(),
+                    ch->GetMapIndex() == spawn.map ? (int)DISTANCE_APPROX(ch->GetX() - spawn.x, ch->GetY() - spawn.y) : -1,
+                    ch->IsHorseRiding() ? 1 : 0,
+                    IsPlayerBotDropper(state.bPersonality) ? 1 : 0,
+                    (int)((thecore_pulse() - ch->GetIkarusShopOpenClosedTime()) / std::max(1, passes_per_sec)),
+                    sign);
             }
             BotOfflineFinishVisit(ch, state, now);
             return false;

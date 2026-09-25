@@ -7,6 +7,7 @@
 #include "playerbot_stall_rules.h"
 #include "playerbot_persona_rules.h"
 #include "playerbot_lure_order_rules.h"
+#include "playerbot_truce_rules.h"
 
 #include "char.h"
 #include "skill.h"
@@ -1172,8 +1173,8 @@ namespace
 		// character rather than a mood, the same bots pick the fights after
 		// every restart, and the rest are left alone to hunt - which is what
 		// "some aggressive, some neutral" has to mean to be visible at all.
-		if ((int)(PlayerBotNavHash(ch->GetPlayerID() ^ 0x4B494E47U) % 100U) >=
-				s_iPlayerBotKingdomPvpPercent)
+		// The stone rivalry asks the same share (playerbot_targeting.h).
+		if (!IsPlayerBotHostileToOtherKingdoms(ch))
 			return;
 		// Anything the bot is actually doing outranks picking a fight.
 		if (state.bVisitingShop || state.bVisitingBiologist || state.bVisitingStable ||
@@ -1407,7 +1408,10 @@ namespace
 	// 14 September).
 	// The person may be the leader of the bot's party (the wrapper below) or a
 	// companion's owner, whose party it may not lead (playerbot_sidekick.h).
-	bool ManagePlayerBotBuffPerson(LPCHARACTER ch, TPlayerBotAIState& state, LPCHARACTER leader, DWORD dwNow)
+	// A companion asks between two blows too, and there it may not walk: a
+	// buff out of reach waits for the fight to end (mayWalk false).
+	bool ManagePlayerBotBuffPerson(LPCHARACTER ch, TPlayerBotAIState& state, LPCHARACTER leader, DWORD dwNow,
+			bool mayWalk)
 	{
 		static std::map<DWORD, DWORD> s_mapPlayerBotLeaderBuffNext;
 		if (!ch || ch->IsDead() || ch->GetJob() != JOB_SHAMAN || ch->GetSkillGroup() == 0)
@@ -1450,7 +1454,7 @@ namespace
 				continue;
 			if (proto->dwTargetRange != 0 && dist > (int)proto->dwTargetRange)
 			{
-				if (fighting)
+				if (fighting || !mayWalk)
 					continue;
 				if (!MovePlayerBot(ch, leader->GetX(), leader->GetY(), dwNow, 8, true, false, false, false))
 					continue;
@@ -1489,7 +1493,7 @@ namespace
 		LPPARTY party = ch ? ch->GetParty() : NULL;
 		if (!party || !IsPlayerBotHumanLedParty(party))
 			return false;
-		return ManagePlayerBotBuffPerson(ch, state, party->GetLeaderCharacter(), dwNow);
+		return ManagePlayerBotBuffPerson(ch, state, party->GetLeaderCharacter(), dwNow, true);
 	}
 
 	void ManagePlayerBotParty(LPCHARACTER ch, TPlayerBotAIState& state, DWORD dwNow)
@@ -5429,6 +5433,15 @@ void CPlayerBotManager::Update()
 		// sits in the weapon slot, so no combat or gear pass may run under it.
 		if (!state.bMultiPullActive && !bFightingMetin &&
 				ManagePlayerBotMining(ch, state, dwNow))
+			continue;
+
+		// The Alchemist (playerbot_town.h): the soul stones Iwakura bans from
+		// sockets, for dust, while the bot stands in a first village. Above the
+		// travel pass and the rest in town: the bots that carry these stones
+		// are the Metin hunters of the frontier, in the first village for their
+		// stand, and the travel pass walked them straight back out.
+		if (!bServingPerson && !state.bMultiPullActive && !bFightingMetin &&
+				ManagePlayerBotAlchemist(ch, state, dwNow))
 			continue;
 
 		// Spending time in town once the errand that brought the bot here is

@@ -1464,6 +1464,7 @@ def main(root):
     apply_shop_search_picked_item(game)
     apply_blessing_scroll_from_stones(game)
     apply_sidekick_command(game)
+    apply_expired_shop_no_entity(game)
     print('playerbotify: done')
 
 
@@ -4731,6 +4732,34 @@ def apply_shop_clock(game):
          '\t\t\t\tshop->DecreaseDuration();\n'
          '\t}\n',
          marker='// playerbot: never to zero on this core\'s clock')
+
+
+def apply_expired_shop_no_entity(game):
+    # An expired offline shop stands nowhere: RecvShopExpiredDBPacket destroys
+    # its entity the moment it expires. But the shops a start loads
+    # (IkarusShopLoadTables -> PutsNewShop) each got one whatever their
+    # duration, so every restart put the expired ones back on the map - 918
+    # of them on m2zip on 25 September, a stand in the ring that nobody could
+    # open. And an owner who came back to renew its stand where it had stood
+    # was refused for good: OpenOfflineShop asks CanOpenOnMap, whose
+    # CCheckShopPosition refuses any shop entity within sixty units, its own
+    # expired one included. That is what left 130 of 146 medal droppers'
+    # stands expired, the medals in their bags (SIZOWSKI: "medale konne nie
+    # trafiaja na rynek"): a dropper is warped to the very spot its stand
+    # stood on, and every renewal answered map_ok=0. A shop at zero now gets
+    # its entity when it is renewed (RecvShopCreateNewDBPacket recreates it),
+    # not at the start.
+    edit(os.path.join(game, 'ikarus_shop_manager.cpp'),
+         '\t\tshop->SetSpawn(info.spawn);\n'
+         '\t\tCreateShopEntity(shop);\n'
+         '#endif\n',
+         '\t\tshop->SetSpawn(info.spawn);\n'
+         '\t\t// playerbot: an expired shop stands nowhere, and its entity would\n'
+         '\t\t// refuse its own renewal (playerbotify apply_expired_shop_no_entity).\n'
+         '\t\tif (info.duration > 0)\n'
+         '\t\t\tCreateShopEntity(shop);\n'
+         '#endif\n',
+         marker='// playerbot: an expired shop stands nowhere')
 
 
 def apply_party_exp_of_blocked_members(game):

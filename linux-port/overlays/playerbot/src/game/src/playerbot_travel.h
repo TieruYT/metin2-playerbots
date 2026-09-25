@@ -1034,6 +1034,7 @@ namespace
 		state.bVisitingShop = false;
 		state.bVisitingBiologist = false;
 		state.bVisitingStable = false;
+		state.bVisitingAlchemist = false;
 		if (!ch->Show(targetMap, targetX, targetY, 0))
 		{
 			if (wasRiding && !ch->IsRiding())

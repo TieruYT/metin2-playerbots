@@ -1294,9 +1294,163 @@ namespace
 				ch->GetPlayerID(), ch->GetName(), made, (long long) ch->GetGold());
 		return made > 0;
 	}
+
+	// The stones the Alchemist takes, and what they cost: the fee is 500 yang
+	// a dust and a stone of grade g is g + 1 dust (item_exchange.lua). Only
+	// what the purse pays for and leaves GetPlayerBotReservedGold behind.
+	int CollectPlayerBotDustStones(LPCHARACTER ch, std::vector<LPITEM>* out, int* dust, long long* fee)
+	{
+		int stones = 0, dustSum = 0;
+		long long feeSum = 0;
+		if (ch && ch->IsItemLoaded())
+		{
+			const long long spendable = (long long)ch->GetGold() - (long long)GetPlayerBotReservedGold(ch);
+			for (WORD cell = 0; cell < PLAYERBOT_BAG_CELLS; ++cell)
+			{
+				LPITEM item = ch->GetInventoryItem(cell);
+				if (!item || item->GetCell() != cell || item->IsEquipped() || item->isLocked() ||
+						!IsPlayerBotSoulStoneForDust(ch, item))
+					continue;
+				const int count = std::max<int>(1, (int)item->GetCount());
+				const int gain = (GetPlayerBotSoulStoneGrade(item->GetVnum()) + 1) * count;
+				const long long cost = (long long)gain * PLAYERBOT_MAGIC_DUST_FEE;
+				if (feeSum + cost > spendable)
+					continue;
+				feeSum += cost;
+				dustSum += gain;
+				stones += count;
+				if (out)
+					out->push_back(item);
+			}
+		}
+		if (dust)
+			*dust = dustSum;
+		if (fee)
+			*fee = feeSum;
+		return stones;
+	}
+
+	// The Alchemist (20001), who stands in each first village and turns a
+	// soul stone of +0 to +3 into Magiczny Pyl. Walked to and worked the way
+	// the herbalist above is - the NPC stands at the end of the walk, a few
+	// seconds pass, and the exchange is the package's own item_exchange.lua
+	// done server-side: its window is a client's, and a bot has no hands for
+	// it. The stones are the grades Iwakura bans from sockets, eighty-five in
+	// a hundred of them (IsPlayerBotSoulStoneForDust); the dust is counter
+	// goods. Above the travel pass in the tick: the bots that carry these
+	// stones are the Metin hunters of the frontier, in the first village for
+	// their stand, and the travel pass walked them straight back out.
+	bool ManagePlayerBotAlchemist(LPCHARACTER ch, TPlayerBotAIState& state, DWORD dwNow)
+	{
+		if (!ch || state.bVisitingShop || state.bVisitingBiologist || state.bVisitingHerbalist ||
+				state.bVisitingStable || state.bFishingSession)
+			return false;
+		// A bot in somebody's party is theirs, and the Alchemist is an errand.
+		if (ch->GetParty() && IsPlayerBotHumanLedParty(ch->GetParty()))
+		{
+			state.bVisitingAlchemist = false;
+			return false;
+		}
+		if (!state.bVisitingAlchemist && dwNow < state.dwNextAlchemistCheckTime)
+			return false;
+
+		playerbot_empire_rules::TPoint alchemistPos;
+		if (!playerbot_empire_rules::GetAlchemist(ch->GetMapIndex(), alchemistPos))
+		{
+			state.bVisitingAlchemist = false;
+			return false;
+		}
+
+		// Anything to go there for? Asked before the walk and again at the
+		// counter, not on every step of the way: a handful of stones the purse
+		// pays for, and a cell or two for the dust.
+		int dust = 0;
+		long long fee = 0;
+		if (!state.bVisitingAlchemist)
+		{
+			const int stones = CollectPlayerBotDustStones(ch, NULL, &dust, &fee);
+			if (stones < PLAYERBOT_ALCHEMIST_MIN_STONES ||
+					CountPlayerBotFreeInventoryCells(ch) < (dust + 199) / 200 + 1)
+			{
+				state.dwNextAlchemistCheckTime = dwNow + number(
+						PLAYERBOT_ALCHEMIST_CHECK_MIN_MS, PLAYERBOT_ALCHEMIST_CHECK_MAX_MS);
+				return false;
+			}
+			state.bVisitingAlchemist = true;
+			state.dwNextAlchemistActionTime = 0;
+			state.dwTargetVID = 0;
+			ch->SetVictim(NULL);
+			ch->Stop();
+			ClearPlayerBotRoute(state, true);
+			sys_log(0, "PLAYERBOT_ALCHEMIST: going to the Alchemist pid=%u name=%s stones=%d dust=%d fee=%lld",
+					ch->GetPlayerID(), ch->GetName(), stones, dust, fee);
+		}
+
+		SetPlayerBotAction(state, BOT_ACTION_SHOP, dwNow);
+		state.dwTargetVID = 0;
+		ch->SetVictim(NULL);
+
+		long approachX = 0, approachY = 0;
+		GetPlayerBotNpcApproach(ch->GetPlayerID(), alchemistPos.x, alchemistPos.y,
+				0x414c4348U, approachX, approachY);
+		if (DISTANCE_APPROX(ch->GetX() - approachX, ch->GetY() - approachY) > 650)
+		{
+			if (!MovePlayerBot(ch, approachX, approachY, dwNow, 20, true, true, false, true) &&
+					state.bStuckCounter >= 6)
+			{
+				state.bVisitingAlchemist = false;
+				state.dwNextAlchemistCheckTime = dwNow + number(
+						PLAYERBOT_ALCHEMIST_CHECK_MIN_MS, PLAYERBOT_ALCHEMIST_CHECK_MAX_MS);
+				ClearPlayerBotRoute(state, true);
+				sys_err("PLAYERBOT_ALCHEMIST: route failed pid=%u name=%s from=(%ld,%ld)",
+						ch->GetPlayerID(), ch->GetName(), ch->GetX(), ch->GetY());
+				return false;
+			}
+			return true;
+		}
+
+		ch->Stop();
+		ch->SetPosition(POS_STANDING);
+		if (state.dwNextAlchemistActionTime == 0)
+		{
+			state.dwNextAlchemistActionTime = dwNow + number(3000, 8000);
+			return true;
+		}
+		if (dwNow < state.dwNextAlchemistActionTime)
+			return true;
+
+		// At the counter. The quest takes every stone first, then the fee,
+		// then hands the dust over in stacks; so does this, with the stones
+		// counted again - the bag may have changed on the walk.
+		std::vector<LPITEM> taken;
+		const int count = CollectPlayerBotDustStones(ch, &taken, &dust, &fee);
+		if (count > 0 && CountPlayerBotFreeInventoryCells(ch) >= (dust + 199) / 200 + 1)
+		{
+			for (size_t i = 0; i < taken.size(); ++i)
+				ITEM_MANAGER::instance().RemoveItem(taken[i], "PLAYERBOT_ALCHEMIST");
+			PlayerBotChangeGold(ch, -fee);
+			for (int left = dust; left > 0; )
+			{
+				const int chunk = std::min(left, 200);
+				ch->AutoGiveItem(PLAYERBOT_MAGIC_DUST_VNUM, chunk, -1, false);
+				left -= chunk;
+			}
+			sys_log(0, "PLAYERBOT_ALCHEMIST: exchanged pid=%u name=%s stones=%d dust=%d fee=%lld gold=%lld",
+					ch->GetPlayerID(), ch->GetName(), count, dust, fee, (long long)ch->GetGold());
+		}
+
+		state.bVisitingAlchemist = false;
+		state.dwNextAlchemistActionTime = 0;
+		state.dwNextAlchemistCheckTime = dwNow + number(
+				PLAYERBOT_ALCHEMIST_CHECK_MIN_MS, PLAYERBOT_ALCHEMIST_CHECK_MAX_MS);
+		ClearPlayerBotRoute(state, true);
+		return count > 0;
+	}
 #else
-	// r40250 has no crafting board and no Baek-Go to walk to.
+	// r40250 has no crafting board and no Baek-Go to walk to, and no
+	// Alchemist's exchange either.
 	bool ManagePlayerBotHerbalist(LPCHARACTER, TPlayerBotAIState&, DWORD) { return false; }
+	bool ManagePlayerBotAlchemist(LPCHARACTER, TPlayerBotAIState&, DWORD) { return false; }
 #endif
 
 	void FinishPlayerBotTownVisit(LPCHARACTER ch, TPlayerBotAIState& state, DWORD dwNow,
@@ -2088,6 +2242,12 @@ namespace
 		const bool hairstyle = item->GetType() == ITEM_COSTUME && item->GetSubType() == COSTUME_HAIR;
 		if (hairstyle)
 			unit = ScalePlayerBotIwakuraPrice(PLAYERBOT_PRIOR_ISHOP_HAIRSTYLE);
+		// Magiczny Pyl at what a dust costs to make (PLAYERBOT_PRIOR_MAGIC_DUST),
+		// through the yang curve like the stones it is made of; the merchant's
+		// fifty yang says nothing of it.
+		const bool magicDust = item->GetVnum() == PLAYERBOT_MAGIC_DUST_VNUM;
+		if (magicDust)
+			unit = ScalePlayerBotIwakuraPrice(PLAYERBOT_PRIOR_MAGIC_DUST);
 		// A soul stone has no merchant price: the counter asks by grade. His
 		// table names every +4 by kind and three of the lower ones; the old
 		// per-grade array stays for a stone he has not priced.
@@ -2110,7 +2270,7 @@ namespace
 		// alone was a giveaway. A soul stone keeps its grade table.
 		const DWORD wallet = GetPlayerBotMarketMedianWallet();
 		if (wallet > 0 && item->GetType() != ITEM_METIN && bookSkill == 0 &&
-				materialBase == 0 && iwakuraBase == 0 && !hairstyle)
+				materialBase == 0 && iwakuraBase == 0 && !hairstyle && !magicDust)
 		{
 			DWORD permille = PLAYERBOT_MARKET_OTHER_WALLET_PERMILLE;
 			if (IsPlayerBotTradeableMaterial(item))
@@ -2614,6 +2774,12 @@ namespace
 			return GetPlayerBotStuckSkill(ch) != 0 ? -1 : 800;
 		// (A Blessing or Dragon God scroll was judged here, under the materials
 		// that took it first - see above the material reserve.)
+		// Magiczny Pyl, what the Alchemist gives for the banned soul stones:
+		// the smelting rows and Zaczarowany Klejnot consume it and no bot
+		// does, so all of it is goods. Ahead of the rule below, which would
+		// call a material no refine recipe names scenery.
+		if (item->GetVnum() == PLAYERBOT_MAGIC_DUST_VNUM)
+			return PLAYERBOT_SHOP_LOW_SOUL_STONE_SCORE + 20;
 		// An ITEM_MATERIAL no recipe consumes is scenery, not goods: it was put
 		// up for its type, and its type is not a reason anybody would buy it -
 		// unless Iwakura's sheet prices it, which is exactly that reason (the
@@ -2623,10 +2789,24 @@ namespace
 			return -1;
 		// A soul stone the bot cannot seat - one Iwakura's list keeps out of the
 		// hunting set, no socket open, the wrong grade for the piece it keeps -
-		// is somebody else's set.
+		// is somebody else's set. One of the grades his list bans goes to the
+		// Alchemist for dust, eighty-five in a hundred of them, and the rest
+		// are the counter's cheapest goods (PLAYERBOT_SOUL_STONE_DUST_MAX_GRADE):
+		// scored 700 to 900 like any stone, a +2 went up level with the horse
+		// medal and first onto every counter.
 		if (item->GetType() == ITEM_METIN)
-			return CanPlayerBotSeatSoulStone(ch, item->GetVnum(), (DWORD)item->GetValue(5))
-					? -1 : 700 + GetPlayerBotSoulStoneGrade(item->GetVnum()) * 100;
+		{
+			if (CanPlayerBotSeatSoulStone(ch, item->GetVnum(), (DWORD)item->GetValue(5)) ||
+					IsPlayerBotSoulStoneForDust(ch, item))
+				return -1;
+#if defined(PLAYERBOT_ENGINE_MT2009)
+			if (IsPlayerBotSoulStoneVnum(item->GetVnum()) &&
+					GetPlayerBotSoulStoneGrade(item->GetVnum()) <= PLAYERBOT_SOUL_STONE_DUST_MAX_GRADE)
+				return PLAYERBOT_SHOP_LOW_SOUL_STONE_SCORE +
+						GetPlayerBotSoulStoneGrade(item->GetVnum()) * 5;
+#endif
+			return 700 + GetPlayerBotSoulStoneGrade(item->GetVnum()) * 100;
+		}
 		// Sztuka Combo and the Leadership books: kept while the bot can read
 		// them (a few of each), the rest goods like any other book.
 		if (IsPlayerBotGeneralSkillBook(item->GetVnum()))
@@ -3595,7 +3775,8 @@ namespace
 		// on the next tick. They, the clock and the town are asked before the
 		// reason, which reads the whole bag: this pass runs on every tick of
 		// every bot without a counter.
-		if (state.bVisitingShop || state.bVisitingBiologist || state.bVisitingStable)
+		if (state.bVisitingShop || state.bVisitingBiologist || state.bVisitingStable ||
+				state.bVisitingAlchemist)
 			return false;
 		if (state.dwNextShopKeepTime != 0 && dwNow < state.dwNextShopKeepTime)
 			return false;

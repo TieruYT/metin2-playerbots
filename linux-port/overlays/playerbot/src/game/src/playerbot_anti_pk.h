@@ -19,7 +19,9 @@
 // levels either way claims the bot even in the middle of a pack; three bots of
 // its own kingdom on one are enough and it goes back to what it was doing;
 // anybody of another kingdom breaking it is a rival, fought to drive off the
-// stone; below 35% health with the stone's monsters on it the bot turns on
+// stone (another kingdom's bot only for a bot of the operator's KINGDOMPVP
+// share, IsPlayerBotHostileToOtherKingdoms); below 35% health with the
+// stone's monsters on it the bot turns on
 // them and comes back when they are gone; and a stone that has killed it more
 // than six times is given up.
 //
@@ -105,6 +107,214 @@ namespace
 	std::map<DWORD, TPlayerBotGrudge> s_mapPlayerBotGrudge;
 	const DWORD PLAYERBOT_ANTIPK_GRUDGE_MS = 10 * 60 * 1000;
 
+	// A person's truce with the bots (playerbot_truce_rules.h), by pid: a
+	// whisper's "poddaje sie", or the person's second death in a quarter of an
+	// hour while bots fought them. Kept for the process - a restart forgets
+	// the truces, and the calls and grudges they cleared went with them.
+	struct TPlayerBotPersonTruce
+	{
+		playerbot_truce_rules::TTruce truce;
+		playerbot_truce_rules::TDeathTally deaths;
+	};
+	std::map<DWORD, TPlayerBotPersonTruce> s_mapPlayerBotPersonTruce;
+
+	bool IsPlayerBotPersonCharacter(LPCHARACTER ch)
+	{
+		return ch && ch->IsPC() && ch->GetDesc() && !ch->GetDesc()->IsBot();
+	}
+
+	bool IsPlayerBotPersonTruced(LPCHARACTER ch, DWORD dwNow)
+	{
+		if (!IsPlayerBotPersonCharacter(ch))
+			return false;
+		std::map<DWORD, TPlayerBotPersonTruce>::const_iterator it =
+				s_mapPlayerBotPersonTruce.find(ch->GetPlayerID());
+		return it != s_mapPlayerBotPersonTruce.end() && playerbot_truce_rules::IsActive(it->second.truce, dwNow);
+	}
+
+	// A person's truce with nothing left in it goes before the map grows:
+	// not running, no refusal pending, no death in the window.
+	void PrunePlayerBotPersonTruces(DWORD dwNow)
+	{
+		if (s_mapPlayerBotPersonTruce.size() < 1024)
+			return;
+		for (std::map<DWORD, TPlayerBotPersonTruce>::iterator it = s_mapPlayerBotPersonTruce.begin();
+				it != s_mapPlayerBotPersonTruce.end(); )
+		{
+			const TPlayerBotPersonTruce& t = it->second;
+			const bool refusing = t.truce.brokenAt != 0 && dwNow - t.truce.brokenAt < PLAYERBOT_ANTIPK_TRUCE_REFUSE_MS;
+			const bool counting = t.deaths.count > 0 && dwNow - t.deaths.firstAt < PLAYERBOT_ANTIPK_TRUCE_DEATH_WINDOW_MS;
+			if (!playerbot_truce_rules::IsActive(t.truce, dwNow) && !refusing && !counting)
+				s_mapPlayerBotPersonTruce.erase(it++);
+			else
+				++it;
+		}
+	}
+
+	// What the bots hold against the person goes with a truce: the guild
+	// calls and the parties' memory of the person's blows, and every bot's
+	// grudge. A foe in hand is let go on the bot's next pass, because
+	// IsPlayerBotFoeFightable says no to a truced person.
+	void SettlePlayerBotTruce(LPCHARACTER person, DWORD dwNow, const char* how)
+	{
+		const DWORD pid = person->GetPlayerID();
+		int calls = 0, grudges = 0, holders = 0;
+		for (std::map<DWORD, TPlayerBotGuildCall>::iterator it = s_mapPlayerBotGuildCall.begin();
+				it != s_mapPlayerBotGuildCall.end(); )
+			if (it->second.dwAttackerPID == pid)
+			{
+				s_mapPlayerBotGuildCall.erase(it++);
+				++calls;
+			}
+			else
+				++it;
+		for (std::map<DWORD, TPlayerBotHumanStruck>::iterator it = s_mapPlayerBotHumanStruck.begin();
+				it != s_mapPlayerBotHumanStruck.end(); )
+			if (it->second.dwAttackerPID == pid)
+				s_mapPlayerBotHumanStruck.erase(it++);
+			else
+				++it;
+		for (std::map<DWORD, TPlayerBotGrudge>::iterator it = s_mapPlayerBotGrudge.begin();
+				it != s_mapPlayerBotGrudge.end(); )
+			if (it->second.dwKillerPID == pid)
+			{
+				s_mapPlayerBotGrudge.erase(it++);
+				++grudges;
+			}
+			else
+				++it;
+		for (TPlayerBotAIStateMap::iterator it = s_mapPlayerBotAIStates.begin(); it != s_mapPlayerBotAIStates.end(); ++it)
+		{
+			TPlayerBotPersona& p = it->second.persona;
+			if (p.dwStruckByPID == pid)
+			{
+				p.dwStruckByPID = 0;
+				p.dwStruckByVID = 0;
+				p.dwStruckAt = 0;
+			}
+			if (p.dwFoeVID != 0 && p.dwFoeVID == (DWORD)person->GetVID())
+				++holders;
+		}
+		sys_log(0, "PLAYERBOT_ANTIPK: truce pid=%u name=%s level=%u how=%s minutes=%u guild_calls=%d grudges=%d bots_fighting=%d map=%ld",
+				pid, person->GetName(), (unsigned int)person->GetLevel(), how,
+				(unsigned int)(PLAYERBOT_ANTIPK_TRUCE_MS / 60000), calls, grudges, holders, person->GetMapIndex());
+	}
+
+	// The person's own aimed blow ends it (NotePlayerBotStruck decides that).
+	void BreakPlayerBotTruce(LPCHARACTER person, LPCHARACTER victim, DWORD dwNow)
+	{
+		TPlayerBotPersonTruce& t = s_mapPlayerBotPersonTruce[person->GetPlayerID()];
+		playerbot_truce_rules::BreakTruce(t.truce, dwNow);
+		person->ChatPacket(CHAT_TYPE_INFO, "[Rozejm] Zaatakowano bota - rozejm z botami zerwany.");
+		sys_log(0, "PLAYERBOT_ANTIPK: truce broken pid=%u name=%s by_hitting_pid=%u by_hitting=%s map=%ld",
+				person->GetPlayerID(), person->GetName(), victim ? victim->GetPlayerID() : 0U,
+				victim ? victim->GetName() : "", person->GetMapIndex());
+	}
+
+	// A person a bot was fighting has fallen: the second such death in the
+	// window, and the bots give the person a truce.
+	void NotePlayerBotPersonFellFighting(LPCHARACTER person, LPCHARACTER bot, DWORD dwNow)
+	{
+		if (!IsPlayerBotPersonCharacter(person))
+			return;
+		PrunePlayerBotPersonTruces(dwNow);
+		TPlayerBotPersonTruce& t = s_mapPlayerBotPersonTruce[person->GetPlayerID()];
+		if (!playerbot_truce_rules::NoteDeath(t.deaths, dwNow, PLAYERBOT_ANTIPK_TRUCE_DEATH_WINDOW_MS,
+				PLAYERBOT_ANTIPK_TRUCE_DEATH_DEDUP_MS, PLAYERBOT_ANTIPK_TRUCE_DEATHS))
+			return;
+		playerbot_truce_rules::GrantTruce(t.truce, dwNow, PLAYERBOT_ANTIPK_TRUCE_MS);
+		SettlePlayerBotTruce(person, dwNow, "deaths");
+		char text[160];
+		snprintf(text, sizeof(text),
+				"[Rozejm] Boty odpuszczaja ci na %u minut. Rozejm skonczy sie, jesli zaatakujesz ktoregos z nich.",
+				(unsigned int)(PLAYERBOT_ANTIPK_TRUCE_MS / 60000));
+		person->ChatPacket(CHAT_TYPE_INFO, "%s", text);
+		if (bot)
+			sys_log(0, "PLAYERBOT_ANTIPK: truce after deaths pid=%u name=%s last_seen_by_pid=%u last_seen_by=%s",
+					person->GetPlayerID(), person->GetName(), bot->GetPlayerID(), bot->GetName());
+	}
+
+	// Whether the bots are at the person now: a bot holds the person as its
+	// foe, remembers a blow of the person's from the last minute, a guild's
+	// call or a grudge names the person, or the person fell fighting bots in
+	// the window. What makes "dosc" and "przepraszam" a surrender.
+	bool IsPlayerBotPersonInFight(LPCHARACTER person, DWORD dwNow)
+	{
+		const DWORD pid = person->GetPlayerID();
+		const DWORD vid = (DWORD)person->GetVID();
+		std::map<DWORD, TPlayerBotPersonTruce>::const_iterator t = s_mapPlayerBotPersonTruce.find(pid);
+		if (t != s_mapPlayerBotPersonTruce.end() &&
+				(playerbot_truce_rules::IsActive(t->second.truce, dwNow) ||
+				 (t->second.deaths.count > 0 && dwNow - t->second.deaths.lastAt < PLAYERBOT_ANTIPK_TRUCE_DEATH_WINDOW_MS)))
+			return true;
+		for (std::map<DWORD, TPlayerBotGuildCall>::const_iterator it = s_mapPlayerBotGuildCall.begin();
+				it != s_mapPlayerBotGuildCall.end(); ++it)
+			if (it->second.dwAttackerPID == pid && dwNow - it->second.dwAt < 60000)
+				return true;
+		for (std::map<DWORD, TPlayerBotGrudge>::const_iterator it = s_mapPlayerBotGrudge.begin();
+				it != s_mapPlayerBotGrudge.end(); ++it)
+			if (it->second.dwKillerPID == pid && dwNow < it->second.dwUntil)
+				return true;
+		for (TPlayerBotAIStateMap::const_iterator it = s_mapPlayerBotAIStates.begin(); it != s_mapPlayerBotAIStates.end(); ++it)
+		{
+			const TPlayerBotPersona& p = it->second.persona;
+			if (p.dwFoeVID != 0 && p.dwFoeVID == vid)
+				return true;
+			if (p.dwStruckByPID == pid && p.dwStruckAt != 0 && dwNow - p.dwStruckAt < 60000)
+				return true;
+		}
+		return false;
+	}
+
+	// "Poddaje sie", whispered to any bot: the truce for every bot on this
+	// core. Called from HandlePlayerWhisperToBot ahead of the lure order,
+	// whose bare stop words it shares - from a person the bots are fighting
+	// "dosc" is a surrender, not "Nie luruje dla ciebie" - unless this bot is
+	// luring for the person, when "dosc" is that order's stop.
+	bool HandlePlayerBotSurrenderWhisper(LPCHARACTER player, LPCHARACTER bot, const char* text, DWORD dwNow)
+	{
+		if (!IsPlayerBotPersonCharacter(player) || !bot || !text)
+			return false;
+		char folded[256];
+		FoldPlayerBotChatText(text, folded, sizeof(folded));
+		const playerbot_truce_rules::ESurrender word = playerbot_truce_rules::ParseSurrender(folded);
+		if (word == playerbot_truce_rules::SURRENDER_NONE)
+			return false;
+		if (word == playerbot_truce_rules::SURRENDER_IN_A_FIGHT)
+		{
+			TPlayerBotAIStateMap::const_iterator st = s_mapPlayerBotAIStates.find(bot->GetPlayerID());
+			if (st != s_mapPlayerBotAIStates.end() && st->second.dwLurePlayerPID == player->GetPlayerID())
+				return false;
+			if (!IsPlayerBotPersonInFight(player, dwNow))
+				return false;
+		}
+		PrunePlayerBotPersonTruces(dwNow);
+		TPlayerBotPersonTruce& t = s_mapPlayerBotPersonTruce[player->GetPlayerID()];
+		unsigned int minutes = 0;
+		char reply[CHAT_MAX_LEN + 1];
+		switch (playerbot_truce_rules::AskTruce(t.truce, dwNow, PLAYERBOT_ANTIPK_TRUCE_MS,
+				PLAYERBOT_ANTIPK_TRUCE_REFUSE_MS, minutes))
+		{
+			case playerbot_truce_rules::ANSWER_GRANTED:
+				SettlePlayerBotTruce(player, dwNow, "whisper");
+				snprintf(reply, sizeof(reply),
+						"Dobra, odpuszczamy. Przez %u minut zaden bot cie nie zaczepi - chyba ze zaatakujesz ktoregos z nas.",
+						minutes);
+				break;
+			case playerbot_truce_rules::ANSWER_ALREADY:
+				snprintf(reply, sizeof(reply),
+						"Rozejm trwa jeszcze %u min. Nikt cie nie ruszy, dopoki nie zaatakujesz ktoregos z nas.", minutes);
+				break;
+			default:
+				snprintf(reply, sizeof(reply), "Rozejm zostal przed chwila zerwany. Pogadamy za %u min.", minutes);
+				sys_log(0, "PLAYERBOT_ANTIPK: truce refused pid=%u name=%s minutes_left=%u", player->GetPlayerID(),
+						player->GetName(), minutes);
+				break;
+		}
+		SendPlayerBotWhisper(bot, player, reply);
+		return true;
+	}
+
 	// Whether a blow between these two is one the protocol has any business
 	// with: not an agreed duel (CPVPManager holds the pair; a bot's own duel
 	// pass fights it), not a guild war between their guilds.
@@ -141,6 +351,17 @@ namespace
 				attackerState->second.dwTargetVID != (DWORD)victim->GetVID() &&
 				attackerState->second.persona.dwFoeVID != (DWORD)victim->GetVID())
 			return;
+		// A person under a truce with the bots (playerbot_truce_rules.h): a blow
+		// at the person's own selected target ends the truce and is answered as
+		// ever; the graze of an area skill cast at something else is nobody's
+		// blow - a boss with bots round it is what the truce is for, and the
+		// first splash would otherwise end it.
+		if (IsPlayerBotPersonTruced(attacker, dwNow))
+		{
+			if (attacker->GetTarget() != victim)
+				return;
+			BreakPlayerBotTruce(attacker, victim, dwNow);
+		}
 		// An executioner's blow at another kingdom calls that kingdom's bots
 		// near the fight, whoever the victim is.
 		if (attackerState != s_mapPlayerBotAIStates.end() &&
@@ -221,6 +442,10 @@ namespace
 	{
 		if (!ch || !foe || foe == ch || !foe->IsPC() || foe->IsDead() ||
 				foe->GetMapIndex() != ch->GetMapIndex() || IsPlayerBotWarFoeRecovering(foe))
+			return false;
+		// Every road to a fight comes through here: a person under a truce is
+		// nobody's foe, whoever called for them.
+		if (IsPlayerBotPersonTruced(foe, get_dword_time()))
 			return false;
 		if (IsPlayerBotSafeZone(ch->GetMapIndex(), ch->GetX(), ch->GetY()) ||
 				IsPlayerBotSafeZone(foe->GetMapIndex(), foe->GetX(), foe->GetY()))
@@ -435,7 +660,12 @@ namespace
 			if (keep && p.bFoeReason == BOT_FOE_EXECUTOR &&
 					!IsPlayerBotRareNow(p, playerbot_persona::RARE_EGZEKUTOR, dwNow))
 				keep = false;
-			const char* why = keep ? "" : (!held || held->IsDead() ? "foe_down" : "out_of_reach");
+			const char* why = keep ? "" : (!held || held->IsDead() ? "foe_down" :
+					(IsPlayerBotPersonTruced(held, dwNow) ? "truce" : "out_of_reach"));
+			// A person who fell while bots fought them: the second such death
+			// in the window, and the bots give the person a truce.
+			if (!keep && held && held->IsDead())
+				NotePlayerBotPersonFellFighting(held, ch, dwNow);
 			if (keep && p.bFoeReason == BOT_FOE_STONE_RIVAL)
 			{
 				// Driven off the stone is what the fight was for.
@@ -466,10 +696,18 @@ namespace
 			return BeginPlayerBotFoe(ch, state, aggressor, BOT_FOE_PARTY, dwNow);
 		if (LPCHARACTER aggressor = FindPlayerBotGuildAggressor(ch, dwNow))
 			return BeginPlayerBotFoe(ch, state, aggressor, BOT_FOE_GUILD, dwNow);
-		if (LPCHARACTER executor = FindPlayerBotExecutorToDefendAgainst(ch, dwNow))
-			return BeginPlayerBotFoe(ch, state, executor, BOT_FOE_DEFEND, dwNow);
+		// A bot on a raid - at its boss, or in the Demon Tower - answers the
+		// blows that land on it and its party and guild, and nothing it would
+		// have to leave its boss for: not another bot's call to defend the
+		// kingdom from an executioner, not a grudge from before the raid. The
+		// 2.2.15 release promised a raid kept out of the kingdoms' quarrels,
+		// and these two still walked a raider off the Orc Chief.
+		const bool onRaid = IsPlayerBotOnTowerBusiness(ch, state);
+		if (!onRaid)
+			if (LPCHARACTER executor = FindPlayerBotExecutorToDefendAgainst(ch, dwNow))
+				return BeginPlayerBotFoe(ch, state, executor, BOT_FOE_DEFEND, dwNow);
 		std::map<DWORD, TPlayerBotGrudge>::iterator grudge = s_mapPlayerBotGrudge.find(ch->GetPlayerID());
-		if (grudge != s_mapPlayerBotGrudge.end())
+		if (grudge != s_mapPlayerBotGrudge.end() && !onRaid)
 		{
 			if (dwNow >= grudge->second.dwUntil)
 				s_mapPlayerBotGrudge.erase(grudge);

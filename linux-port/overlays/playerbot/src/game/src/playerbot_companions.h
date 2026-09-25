@@ -190,7 +190,7 @@ namespace
 			return false;
 		if (state.bVisitingShop || state.bFishingSession || state.bMarketTrip ||
 				state.bVisitingBiologist || state.bVisitingStable || state.bVisitingHerbalist ||
-				state.bServicePending || state.bRecoveringAfterDeath || state.bTacticalRetreat ||
+				state.bVisitingAlchemist || state.bServicePending || state.bRecoveringAfterDeath || state.bTacticalRetreat ||
 				ch->GetMyShop() != NULL || IsPlayerBotMiningNow(ch->GetPlayerID(), dwNow) ||
 				IsPlayerBotGambling(state, dwNow) || FindPlayerBotDuelOpponent(ch, dwNow) != NULL)
 			return false;

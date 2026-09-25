@@ -643,7 +643,7 @@ namespace
 				? CHARACTER_MANAGER::instance().Find(state.dwTargetVID) : NULL;
 		const bool busy = (target && !target->IsDead()) || ch->GetVictim() != NULL ||
 				state.bVisitingShop || state.bVisitingBiologist || state.bVisitingStable ||
-				state.bVisitingHerbalist || state.bMarketTrip || state.bFishingSession ||
+				state.bVisitingHerbalist || state.bVisitingAlchemist || state.bMarketTrip || state.bFishingSession ||
 				state.bRecoveringAfterDeath || state.bTacticalRetreat || ch->GetMyShop() != NULL ||
 				IsPlayerBotMiningNow(ch->GetPlayerID(), dwNow) ||
 				(ch->GetMaxHP() > 0 && ch->GetHP() * 100 < ch->GetMaxHP() * PLAYERBOT_MOOD_AFK_MIN_HP_PERCENT);

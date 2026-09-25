@@ -106,6 +106,10 @@ namespace
 	{
 		if (!ch || !item || item->IsExchanging() || !item->IsEquipable())
 			return false;
+		// A piece a companion's owner took off in the window stays off
+		// (playerbot_sidekick.h).
+		if (IsPlayerBotSidekickUnwanted(ch, item))
+			return false;
 
 		// IsEquipable only describes the item type.  The class restrictions live
 		// in the anti flags and were previously checked only for sex, so a Warrior
@@ -1036,7 +1040,20 @@ namespace
 		// The one stone weapon the bot has chosen (dagger first), not any
 		// blade in the bag: the score alone would put a heavier sword ahead.
 		LPITEM chosenStoneWeapon = stoneMode ? FindPlayerBotStoneWeapon(ch, false) : NULL;
-		for (WORD cell = 0; cell < PLAYERBOT_BAG_CELLS; ++cell)
+		// What a companion's owner put on goes on first, whatever it scores,
+		// and nothing below is ranked against it (playerbot_sidekick.h): the
+		// owner's word over the pass's, or the two would take turns.
+		int pinnedWear = -1;
+		LPITEM pinned = FindPlayerBotSidekickPinnedInBag(ch, pinnedWear, true);
+		if (pinned)
+		{
+			bestItem = pinned;
+			bestOldItem = ch->GetWear(pinnedWear);
+			bestWearCell = pinnedWear;
+			bestImprovement = 1;
+			bestScore = GetPlayerBotEquipmentScore(pinned, ch);
+		}
+		for (WORD cell = 0; !pinned && cell < PLAYERBOT_BAG_CELLS; ++cell)
 		{
 			LPITEM item = ch->GetInventoryItem(cell);
 			if (!item)
@@ -1061,6 +1078,8 @@ namespace
 				continue;
 			}
 			if (oldItem && IS_SET(oldItem->GetFlag(), ITEM_FLAG_IRREMOVABLE))
+				continue;
+			if (oldItem && IsPlayerBotSidekickPinned(ch, oldItem))
 				continue;
 #if defined(PLAYERBOT_ENGINE_MT2009)
 			// A fishing pass the fishing asked for a moment ago stays on; see
@@ -2900,7 +2919,9 @@ namespace
 			return false;
 		LPITEM gear = IsPlayerBotWeaponSoulStoneKind(kind) ? ch->GetWear(WEAR_WEAPON)
 				: (IsPlayerBotArmorSoulStoneKind(kind) ? ch->GetWear(WEAR_BODY) : NULL);
-		if (!gear)
+		// Seven seatings in ten weld a cracked stone into the socket: not in
+		// the piece a companion's owner put on.
+		if (!gear || IsPlayerBotSidekickPinned(ch, gear))
 			return false;
 		int openSocket = -1;
 		for (int socketIdx = 0; socketIdx < ITEM_SOCKET_MAX_NUM; ++socketIdx)
@@ -2959,6 +2980,54 @@ namespace
 	{
 		return GetPlayerBotSoulStoneGrade(vnum) >= PLAYERBOT_SOUL_STONE_MIN_GRADE &&
 				CanPlayerBotSeatSoulStone(ch, vnum, stoneValue5);
+	}
+
+	// Kamien Duszy proper: 28[grade][kind] with a kind of 30 to 43. Other
+	// ITEM_METIN exist, and the Alchemist's own test (grade = vnum / 100 - 280)
+	// would read them as nonsense grades.
+	bool IsPlayerBotSoulStoneVnum(DWORD vnum)
+	{
+		return vnum >= 28000 && vnum < 28500 &&
+				GetPlayerBotSoulStoneKind(vnum) >= 30 && GetPlayerBotSoulStoneKind(vnum) <= 43;
+	}
+
+	// The fifteen in a hundred of the banned grades that stay goods for a
+	// counter (PLAYERBOT_SOUL_STONE_MARKET_PERCENT), by item id: the same
+	// stone gets the same answer in the bag, on the counter and at the
+	// Alchemist, and a line taken off a counter keeps its id.
+	bool IsPlayerBotSoulStoneForMarket(DWORD itemId)
+	{
+		return PlayerBotNavHash(itemId ^ 0x4b44504dU) % 100U < (DWORD)PLAYERBOT_SOUL_STONE_MARKET_PERCENT;
+	}
+
+	// A stone the Alchemist turns into dust: a soul stone of a grade Iwakura
+	// bans from sockets, not one of the fifteen kept for the market, and not
+	// one the operator's weak piece would take now. Asked of an offline
+	// counter's line by its id and vnum, before it is an item in the bag.
+	bool IsPlayerBotSoulStoneForDustOf(LPCHARACTER ch, DWORD vnum, DWORD itemId, DWORD stoneValue5)
+	{
+#if defined(PLAYERBOT_ENGINE_MT2009)
+		if (!IsPlayerBotSoulStoneVnum(vnum) ||
+				GetPlayerBotSoulStoneGrade(vnum) > PLAYERBOT_SOUL_STONE_DUST_MAX_GRADE)
+			return false;
+		if (IsPlayerBotSoulStoneForMarket(itemId))
+			return false;
+		return !ch || !CanPlayerBotSeatSoulStone(ch, vnum, stoneValue5);
+#else
+		(void)ch; (void)vnum; (void)itemId; (void)stoneValue5;
+		return false;
+#endif
+	}
+
+	// The operator's word on the item (playerbot_item_policy.tsv, the panel's
+	// item page) wins over Iwakura's rule here as everywhere: a stone put on
+	// keep, stall, merchant or drop is not the Alchemist's.
+	bool IsPlayerBotSoulStoneForDust(LPCHARACTER ch, LPITEM item)
+	{
+		return item && item->GetType() == ITEM_METIN &&
+				GetPlayerBotItemPolicy(item) == PLAYERBOT_ITEM_POLICY_NONE &&
+				IsPlayerBotSoulStoneForDustOf(ch, item->GetVnum(), item->GetID(),
+						(DWORD)item->GetValue(5));
 	}
 
 	// Does this bot have a socket that a stone worth having could still fill?
@@ -3319,7 +3388,7 @@ namespace
 		for (WORD cell = 0; cell < PLAYERBOT_BAG_CELLS; ++cell)
 		{
 			LPITEM item = ch->GetInventoryItem(cell);
-			if (!IsPlayerBotWeapon(ch, item))
+			if (!IsPlayerBotWeapon(ch, item) || IsPlayerBotSidekickUnwanted(ch, item))
 				continue;
 
 			const DWORD vnum = item->GetVnum();
@@ -3394,8 +3463,10 @@ namespace
 		LPITEM equippedWeapon = ch->GetWear(WEAR_WEAPON);
 		// PlayerBotWeaponFitsNow and not IsPlayerBotWeapon: the Archer's dagger
 		// on a stone is the right weapon for the moment, not a profession
-		// mismatch to be taken off.
-		if (equippedWeapon && PlayerBotWeaponFitsNow(ch, state, equippedWeapon))
+		// mismatch to be taken off. Nor is what a companion's owner put in its
+		// hand, whatever the companion's path would choose.
+		if (equippedWeapon && (PlayerBotWeaponFitsNow(ch, state, equippedWeapon) ||
+				IsPlayerBotSidekickPinned(ch, equippedWeapon)))
 		{
 			state.dwEmergencyScavengeUntil = 0;
 			if (equippedWeapon->GetSubType() == WEAPON_BOW)

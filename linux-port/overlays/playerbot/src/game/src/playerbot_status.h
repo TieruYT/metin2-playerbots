@@ -633,7 +633,14 @@ namespace
 					snprintf(status, statusSize, PBT(en, "%sWybieram profesje", "%sChoosing a profession"), prefix);
 				break;
 			case BOT_ACTION_SHOP:
-				snprintf(status, statusSize, PBT(en, "%sHandluje", "%sTrading"), prefix);
+				// The Alchemist's exchange (ManagePlayerBotAlchemist) walks under
+				// this action too, and "trading" over a bot crossing the village
+				// to an NPC says nothing.
+				if (state.bVisitingAlchemist)
+					snprintf(status, statusSize, PBT(en, "%sNiose Alchemikowi kamienie duszy na pyl",
+							"%sTaking soul stones to the Alchemist for dust"), prefix);
+				else
+					snprintf(status, statusSize, PBT(en, "%sHandluje", "%sTrading"), prefix);
 				break;
 			case BOT_ACTION_REFINE:
 				snprintf(status, statusSize, PBT(en, "%sUlepszam ekwipunek", "%sUpgrading equipment"), prefix);

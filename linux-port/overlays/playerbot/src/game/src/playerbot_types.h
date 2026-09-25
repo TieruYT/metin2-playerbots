@@ -799,6 +799,37 @@ namespace
 	// tierow KD". A +0 or a +1 goes nowhere now, whatever the piece; the kind
 	// is judged by the table as it always was.
 	const int PLAYERBOT_SOUL_STONE_WEAK_MIN_GRADE = 2;
+	// And what becomes of the stones his list bans from every socket: "Moglyby
+	// 85% zamieniac w pyl a 15% na market" (Iwakura, 25 September, on DUDU's
+	// report that the bots of the Metin top did nothing with their +0 to +2
+	// but stand them on a counter - 2 720 such lines on m2zip's counters that
+	// morning and 783 more in the bags). The Alchemist (20001, one in each
+	// first village) takes a stone of +0 to +3 for grade + 1 Magiczny Pyl at
+	// 500 yang each (the package's item_exchange.lua), and the dust is what
+	// the smelting rows and Zaczarowany Klejnot want (world.crafting_proto).
+	// Eighty-five in a hundred of the banned grades go to him, the other
+	// fifteen - drawn by item id, so a stone's fate never changes - stay goods
+	// for the counter. A stone the operator's weak piece would take is kept
+	// for it (PLAYERBOT_SOUL_STONE_WEAK_*). mt2009 only: r40250 has no
+	// Alchemist to take one.
+	const int PLAYERBOT_SOUL_STONE_DUST_MAX_GRADE = 2;
+	const int PLAYERBOT_SOUL_STONE_MARKET_PERCENT = 15;
+	const DWORD PLAYERBOT_MAGIC_DUST_VNUM = 30360;
+	const long long PLAYERBOT_MAGIC_DUST_FEE = 500;
+	// A walk to the Alchemist is for a handful of stones, not for each one
+	// the bot picks up, and it is asked again on this clock.
+	const int PLAYERBOT_ALCHEMIST_MIN_STONES = 3;
+	const DWORD PLAYERBOT_ALCHEMIST_CHECK_MIN_MS = 5 * 60 * 1000;
+	const DWORD PLAYERBOT_ALCHEMIST_CHECK_MAX_MS = 10 * 60 * 1000;
+	// The fifteen in a hundred a counter keeps are its cheapest goods: under
+	// the books and the materials, where the 700 to 900 every soul stone had
+	// put a +2 level with the horse medal and first onto every counter.
+	const int PLAYERBOT_SHOP_LOW_SOUL_STONE_SCORE = 380;
+	// Magiczny Pyl on a counter. Iwakura's sheet does not price it, so the
+	// prior is ours: what a dust costs the cheapest way to make it, a +1
+	// stone off his sheet (62 525) and two fees, per dust (31 763). The sale
+	// memory moves it from there, and his number replaces it when he has one.
+	const DWORD PLAYERBOT_PRIOR_MAGIC_DUST = 32000;
 	const DWORD PLAYERBOT_GOAL_PLAN_INTERVAL = 5000;
 	// How long the population takes to log in after a start, and how often a
 	// batch goes out. The whole cohort used to be asked for in one call, and the
@@ -5684,6 +5715,14 @@ namespace
 	bool IsPlayerBotSidekickHolding(LPCHARACTER ch);
 	bool IsPlayerBotSidekickGift(LPCHARACTER ch, LPITEM item);
 	const char* GetPlayerBotSidekickOwnerName(LPCHARACTER ch);
+	// What its owner did in the companion's bag window: a piece put on
+	// (pinned - kept on, never refined, its lines never changed), a piece
+	// taken off (never put back on by the AI), a pinned piece waiting in the
+	// bag for its slot, and the skill points the owner spends.
+	bool IsPlayerBotSidekickPinned(LPCHARACTER ch, LPITEM item);
+	bool IsPlayerBotSidekickUnwanted(LPCHARACTER ch, LPITEM item);
+	LPITEM FindPlayerBotSidekickPinnedInBag(LPCHARACTER ch, int& wearCell, bool askEngine);
+	bool IsPlayerBotSidekickManualSkills(LPCHARACTER ch);
 
 	// Iwakura's personality system ("SYSTEM OSOBOWOSCI v2.0", 19 September):
 	// playerbot_persona_rules.h is the policy, playerbot_mood.h and
@@ -5892,6 +5931,16 @@ namespace
 	// which is what lets a bot twelve kilometres off set out at all.
 	const int PLAYERBOT_ANTIPK_GUILD_RANGE = 12000;
 	const DWORD PLAYERBOT_ANTIPK_GUILD_MEMORY_MS = 15000;
+	// A person's truce with the bots (playerbot_truce_rules.h): asked for by a
+	// whisper, or given after the person's second death in a quarter of an
+	// hour while bots fought them. A surrender is not taken again for a while
+	// after the person's own blow broke the last truce. Every bot fighting a
+	// person sees the same death, so deaths closer than the dedup are one.
+	const DWORD PLAYERBOT_ANTIPK_TRUCE_MS = 30 * 60 * 1000;
+	const DWORD PLAYERBOT_ANTIPK_TRUCE_REFUSE_MS = 10 * 60 * 1000;
+	const int PLAYERBOT_ANTIPK_TRUCE_DEATHS = 2;
+	const DWORD PLAYERBOT_ANTIPK_TRUCE_DEATH_WINDOW_MS = 15 * 60 * 1000;
+	const DWORD PLAYERBOT_ANTIPK_TRUCE_DEATH_DEDUP_MS = 20000;
 
 	// Iwakura's Rybak (playerbot_activities.h): from level thirty, never in a
 	// party, and mostly a bad mood's answer - "bardzo duza szansa" for SLABY,
@@ -6329,6 +6378,8 @@ namespace
 			dwNextBiologistActionTime(0),
 			dwNextHerbalistCheckTime(0),
 			dwNextHerbalistActionTime(0),
+			dwNextAlchemistCheckTime(0),
+			dwNextAlchemistActionTime(0),
 			dwNextHorseCheckTime(0),
 			dwNextHorseActionTime(0),
 			dwNextHorseRideCheckTime(0),
@@ -6429,6 +6480,7 @@ namespace
 			bTownNeedSafebox(false),
 			bVisitingBiologist(false),
 			bVisitingHerbalist(false),
+			bVisitingAlchemist(false),
 			bVisitingStable(false),
 			bFishingSession(false),
 			bIsFishing(false),
@@ -6608,6 +6660,10 @@ namespace
 		// NPCs stand in every first village and neither is the other.
 		DWORD dwNextHerbalistCheckTime;
 		DWORD dwNextHerbalistActionTime;
+		// The Alchemist's exchange (ManagePlayerBotAlchemist), the same shape
+		// again: soul stones of a banned grade for Magiczny Pyl.
+		DWORD dwNextAlchemistCheckTime;
+		DWORD dwNextAlchemistActionTime;
 		DWORD dwNextHorseCheckTime;
 		DWORD dwNextHorseActionTime;
 		DWORD dwNextHorseRideCheckTime;
@@ -6771,6 +6827,7 @@ namespace
 		bool bTownNeedSafebox;
 		bool bVisitingBiologist;
 		bool bVisitingHerbalist;
+		bool bVisitingAlchemist;
 		bool bVisitingStable;
 		// The bot has committed to a fishing trip: it carries a rod in the weapon
 		// slot and skips combat and gear swaps until the session ends.

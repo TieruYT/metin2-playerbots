@@ -71,7 +71,8 @@ namespace
 		for (WORD cell = 0; cell < PLAYERBOT_BAG_CELLS; ++cell)
 		{
 			LPITEM item = ch->GetInventoryItem(cell);
-			if (!item || item->GetType() != ITEM_UNIQUE || item->isLocked() || item->IsExchanging())
+			if (!item || item->GetType() != ITEM_UNIQUE || item->isLocked() || item->IsExchanging() ||
+					IsPlayerBotSidekickUnwanted(ch, item))
 				continue;
 			if (ring ? IsPlayerBotExpRing(item->GetVnum()) : IsPlayerBotThiefGlove(item->GetVnum()))
 			{
@@ -99,7 +100,7 @@ namespace
 		{
 			LPITEM worn = ch->GetWear(wear);
 			if (!worn || !IsPlayerBotWornItemSound(ch, worn, wear) ||
-					IS_SET(worn->GetFlag(), ITEM_FLAG_IRREMOVABLE))
+					IS_SET(worn->GetFlag(), ITEM_FLAG_IRREMOVABLE) || IsPlayerBotSidekickPinned(ch, worn))
 				continue;
 			const DWORD vnum = worn->GetVnum();
 			const bool never = IsPlayerBotNeverWornUnique(vnum);
@@ -151,7 +152,7 @@ namespace
 				LPITEM worn = ch->GetWear(wear);
 				if (!worn || !IsPlayerBotWornItemSound(ch, worn, wear) ||
 						IS_SET(worn->GetFlag(), ITEM_FLAG_IRREMOVABLE) ||
-						IsPlayerBotTimedUnique(worn->GetVnum()))
+						IsPlayerBotTimedUnique(worn->GetVnum()) || IsPlayerBotSidekickPinned(ch, worn))
 					continue;
 #if defined(PLAYERBOT_ENGINE_MT2009)
 				if (worn->GetVnum() == UNIQUE_ITEM_FISHING_PASS &&
