@@ -17,6 +17,31 @@ every version here.
 
 ---
 
+## 2.2.15 — 2026-09-25
+
+Serwer 2.2.15. Klient bez zmian (2.0.33, z wydania 2.2.14). Zawiera wszystko z 2.2.14.
+
+### Rajd na bossa bez bójek między królestwami (zgłosił DUDU)
+
+- Bot, który idzie z rajdem na bossa albo do Wieży Demonów, nie zaczepia już
+  botów innego królestwa i nie przyjmuje ich zaczepek ani pojedynków.
+  Egzekutor też go nie atakuje. Dotąd przy Wodzu Orków boty z różnych
+  królestw potrafiły bić się ze sobą, a boss wykańczał obie strony.
+- Gracz, który wyzwie takiego bota na pojedynek, dostaje na czacie
+  wyjaśnienie, że bot idzie z rajdem.
+- Zaczepki między królestwami włącza suwak „Wrogość między królestwami”
+  w panelu (domyślnie 0%), więc zmiana dotyczy serwerów, na których jest
+  włączony.
+
+### Skrzynia Ucznia w oknie POZIOM TRUDNOŚCI (zgłosił Drip)
+
+- W launcherze, pod przyciskiem POZIOM TRUDNOŚCI, obok Auto Łowów
+  i Towarzysza jest teraz pole Skrzynia Ucznia. Dotąd dało się ją ustawić
+  tylko przy tworzeniu nowego świata, więc na istniejącym świecie nie było
+  jej gdzie wyłączyć.
+- Zmiana działa od następnego uruchomienia serwera. Na Linuksie służy do tego
+  `M2_STARTER_CHEST` w `.env` (1 włączona, 0 wyłączona).
+
 ## 2.2.14 — 2026-09-25
 
 Serwer 2.2.14 i klient 2.0.33: zaktualizuj oba. Zawiera wszystko z 2.2.13.
