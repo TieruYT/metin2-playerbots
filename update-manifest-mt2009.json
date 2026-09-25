@@ -1,12 +1,12 @@
 {
   "schema": 1,
   "channel": "stable",
-  "publishedAt": "2026-09-25T09:08:42Z",
-  "statusMessage": "2.2.14 (serwer i klient 2.0.33 - zaktualizuj oba): boty bija bossow swiata grupami jednego krolestwa, umiejetnosci staja na 17 (reset u Starszej Pani do 30 lvl), gildie botow znow ida do Wiezy Demonow i to od 55 lvl, okno towarzysza pod klawiszem P, przyciski Towarzysz i Auto Lowy na pasku, Auto Lowy po wstaniu tylko buffuja, Auto Lowy i Towarzysz do wylaczenia pod POZIOM TRUDNOSCI w launcherze. Zawiera wszystko z 2.2.13.",
+  "publishedAt": "2026-09-25T09:35:52Z",
+  "statusMessage": "2.2.15 (serwer; klient bez zmian, 2.0.33): boty idace z rajdem na bossa albo do Wiezy Demonow nie biora udzialu w bojkach miedzy krolestwami, a Skrzynie Ucznia mozna wlaczyc lub wylaczyc w oknie POZIOM TRUDNOSCI w launcherze. Zawiera wszystko z 2.2.14: boty bija bossow grupami, umiejetnosci staja na 17, Wieza od 55 lvl, okno towarzysza pod P, przyciski na pasku.",
   "server": {
-    "version": "2.2.14",
-    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.14/metin2-server-update-2.2.14.zip",
-    "sha256": "1E719A8582263A47154444F9E612DEBE48F6B028D3911DD1158D8B5A4F8055B4"
+    "version": "2.2.15",
+    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.15/metin2-server-update-2.2.15.zip",
+    "sha256": "520AAB11FE507A041E7FC5D85D21B4A3684A2018609CAEAF64A17C336C5CF3BB"
   },
   "support": {
     "contactUrl": "https://discord.gg/pt5tvnrN6",
