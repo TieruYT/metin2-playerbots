@@ -27,7 +27,9 @@ Writes into client-root/ (beside serverinfo.py, which is hand-written):
                     Auto Lowy: the "AutoHuntTarget" and "AutoHuntLoot" commands, the K key and the
                     hunt among the updateables (uiautohunt.py, hand-written);
                     the "InventoryArrangeResult" command (inventoryarrange.py);
-                    the ` key picks up every drop in range (pickupnearby.py).
+                    the ` key picks up every drop in range (pickupnearby.py);
+                    the companion's window on the P key and its "Sidekick*"
+                    commands (uisidekick.py, hand-written).
   * uiinventory.py - the auto-stack button is "Scal i uporzadkuj": one
                     /inventory_arrange to the server, which pours the stacks
                     and lays the four pages out (inventoryarrange.py,
@@ -56,6 +58,10 @@ Writes into client-root/ (beside serverinfo.py, which is hand-written):
                     two texts fall back to the plain numbers.
   * localeinfo.py - English over the loaded texts (english_gui.py), keeping
                     a typed line a function.
+  * uiscript/taskbar.py, uitaskbar.py - Towarzysz and Auto Lowy on the
+                    taskbar, left of the character button, in the originals'
+                    frame (client-root/playerbot_ui/, tools/
+                    generate_taskbar_icons.py), on a bar 940 pixels wide or more.
 
 Exact-string edits on the stock CP1250/CRLF files, byte for byte otherwise.
 Idempotent; re-run after a new client package.
@@ -377,6 +383,62 @@ EDITS = {
          b'\t\timport safeboxtransfer\r\n'
          b'\t\tsafeboxtransfer.OnTransferResult(op, code, units)\r\n'
          b'\r\n'),
+        # The companion's window (uisidekick.py, hand-written; Tieru, 25
+        # September: "GUI na podstawie AutoLowow, ale do sterowania
+        # towarzyszem"): the server's three answers to "/towarzysz okno" and the
+        # letter's "SidekickWindow", the P key, and the handlers. With them the
+        # server's "AutoHuntOff", a world played without Auto Lowy (the
+        # launcher's M2_AUTOHUNT). The entries go on the line above the global
+        # ranking's, the key after Y's and the methods before the G key's -
+        # text no other edit here reads or writes, and each insertion keeps its
+        # anchor whole.
+        (b'\t\tserverCommandList["GlobalRankingWipe"] = self.__Global_Ranking__RecvWipe\r\n',
+         b'\t\tserverCommandList["SidekickInfo"] = self.__SidekickInfo\r\n'
+         b'\t\tserverCommandList["SidekickNames"] = self.__SidekickNames\r\n'
+         b'\t\tserverCommandList["SidekickGear"] = self.__SidekickGear\r\n'
+         b'\t\tserverCommandList["SidekickWindow"] = self.__SidekickWindow\r\n'
+         b'\t\tserverCommandList["AutoHuntOff"] = self.__AutoHuntOff\r\n'
+         b'\t\tserverCommandList["GlobalRankingWipe"] = self.__Global_Ranking__RecvWipe\r\n'),
+        (b'\t\tonPressKeyDict[app.DIK_Y] \t\t\t= lambda : self.interface.wndPlayerStat.Open()\r\n',
+         b'\t\tonPressKeyDict[app.DIK_Y] \t\t\t= lambda : self.interface.wndPlayerStat.Open()\r\n'
+         b'\t\tonPressKeyDict[app.DIK_P]\t\t\t= lambda : self.__ToggleSidekick()\r\n'),
+        (b'\tdef __PressGKey(self):\r\n',
+         b'\tdef __KeepSidekickWindow(self):\r\n'
+         b'\t\t# The keeper closes the companion\'s window with the game window.\r\n'
+         b'\t\timport uisidekick\r\n'
+         b'\t\tfor keeper in self.updateable:\r\n'
+         b'\t\t\tif isinstance(keeper, uisidekick.Keeper):\r\n'
+         b'\t\t\t\treturn\r\n'
+         b'\t\tself.RegisterUpdatable(uisidekick.GetKeeper())\r\n'
+         b'\r\n'
+         b'\tdef __ToggleSidekick(self):\r\n'
+         b'\t\tself.__KeepSidekickWindow()\r\n'
+         b'\t\timport uisidekick\r\n'
+         b'\t\tuisidekick.ToggleWindow()\r\n'
+         b'\r\n'
+         b'\tdef __SidekickWindow(self, *rest):\r\n'
+         b'\t\tself.__KeepSidekickWindow()\r\n'
+         b'\t\timport uisidekick\r\n'
+         b'\t\tuisidekick.OpenWindow()\r\n'
+         b'\r\n'
+         b'\tdef __SidekickInfo(self, *args):\r\n'
+         b'\t\tself.__KeepSidekickWindow()\r\n'
+         b'\t\timport uisidekick\r\n'
+         b'\t\tuisidekick.OnServerInfo(*args)\r\n'
+         b'\r\n'
+         b'\tdef __SidekickNames(self, name="-", place="-", doing="-", *rest):\r\n'
+         b'\t\timport uisidekick\r\n'
+         b'\t\tuisidekick.OnServerNames(name, place, doing)\r\n'
+         b'\r\n'
+         b'\tdef __SidekickGear(self, slot="0", name="-", *rest):\r\n'
+         b'\t\timport uisidekick\r\n'
+         b'\t\tuisidekick.OnServerGear(slot, name)\r\n'
+         b'\r\n'
+         b'\tdef __AutoHuntOff(self, *rest):\r\n'
+         b'\t\timport uiautohunt\r\n'
+         b'\t\tuiautohunt.OnServerOff()\r\n'
+         b'\r\n'
+         b'\tdef __PressGKey(self):\r\n'),
     ],
     # "Scal i uporzadkuj" (Tieru, 18 September; Codex's audit the same day):
     # the inventory's auto-stack button asks the server once
@@ -1100,6 +1162,72 @@ EDITS = {
     'constinfo.py': [
         (b'\t"major" : 0,\r\n\t"minor" : 15,\r\n',
          b'\t"major" : 1,\r\n\t"minor" : 0,\r\n'),
+    ],
+    # Towarzysz and Auto Lowy on the taskbar, left of the character button, in
+    # the originals' frame and tones (Tieru, 25 September: "na zasadzie
+    # oryginalnych ikonek"; the pictures are tools/generate_taskbar_icons.py's,
+    # in client-root/playerbot_ui/). Appended after the window's dict, so the
+    # stock layout above is untouched, and only on a bar with room for them:
+    # under 940 pixels the quick slots and the right mouse button reach that
+    # far, and the P and K keys open the same windows anyway. The tooltips are
+    # escapes, not CP1250 bytes: the script is read as plain Python 2.
+    'uiscript/taskbar.py': [
+        (b'\r\n\t),\r\n}\r\n',
+         b'\r\n\t),\r\n}\r\n'
+         b'\r\n'
+         b'# Towarzysz and Auto Lowy (uisidekick.py, uiautohunt.py), when the bar has\r\n'
+         b'# room for them - clientrootify.py.\r\n'
+         b'if SCREEN_WIDTH >= 940:\r\n'
+         b'\twindow["children"] = window["children"] + (\r\n'
+         b'\t\t{\r\n'
+         b'\t\t\t"name" : "SidekickButton",\r\n'
+         b'\t\t\t"type" : "button",\r\n'
+         b'\r\n'
+         b'\t\t\t"x" : SCREEN_WIDTH - 205,\r\n'
+         b'\t\t\t"y" : 3 + Y_ADD_POSITION,\r\n'
+         b'\r\n'
+         b'\t\t\t"tooltip_text" : "Towarzysz (P)",\r\n'
+         b'\r\n'
+         b'\t\t\t"default_image" : "playerbot_ui/sidekick_button_01.tga",\r\n'
+         b'\t\t\t"over_image" : "playerbot_ui/sidekick_button_02.tga",\r\n'
+         b'\t\t\t"down_image" : "playerbot_ui/sidekick_button_03.tga",\r\n'
+         b'\t\t},\r\n'
+         b'\t\t{\r\n'
+         b'\t\t\t"name" : "AutoHuntButton",\r\n'
+         b'\t\t\t"type" : "button",\r\n'
+         b'\r\n'
+         b'\t\t\t"x" : SCREEN_WIDTH - 171,\r\n'
+         b'\t\t\t"y" : 3 + Y_ADD_POSITION,\r\n'
+         b'\r\n'
+         b'\t\t\t"tooltip_text" : "Auto \\xa3owy (K)",\r\n'
+         b'\r\n'
+         b'\t\t\t"default_image" : "playerbot_ui/autohunt_button_01.tga",\r\n'
+         b'\t\t\t"over_image" : "playerbot_ui/autohunt_button_02.tga",\r\n'
+         b'\t\t\t"down_image" : "playerbot_ui/autohunt_button_03.tga",\r\n'
+         b'\t\t},\r\n'
+         b'\t)\r\n'),
+    ],
+    # And what the two do: the same windows as the P and K keys. A button the
+    # bar has no room for is not there (IsChild), and the taskbar never asks
+    # for it.
+    'uitaskbar.py': [
+        (b'\t\tself.toggleButtonDict = toggleButtonDict\r\n',
+         b'\t\tself.toggleButtonDict = toggleButtonDict\r\n'
+         b'\t\t# Towarzysz and Auto Lowy, when the bar has room for them (uiscript/taskbar.py).\r\n'
+         b'\t\tif self.IsChild("SidekickButton"):\r\n'
+         b'\t\t\tself.GetChild("SidekickButton").SetEvent(ui.__mem_func__(self.__OnClickSidekick))\r\n'
+         b'\t\tif self.IsChild("AutoHuntButton"):\r\n'
+         b'\t\t\tself.GetChild("AutoHuntButton").SetEvent(ui.__mem_func__(self.__OnClickAutoHunt))\r\n'),
+        (b'\tdef __RampageGauge_Click(self):\r\n',
+         b'\tdef __OnClickSidekick(self):\r\n'
+         b'\t\timport uisidekick\r\n'
+         b'\t\tuisidekick.ToggleWindow()\r\n'
+         b'\r\n'
+         b'\tdef __OnClickAutoHunt(self):\r\n'
+         b'\t\timport uiautohunt\r\n'
+         b'\t\tuiautohunt.ToggleWindow()\r\n'
+         b'\r\n'
+         b'\tdef __RampageGauge_Click(self):\r\n'),
     ],
 }
 

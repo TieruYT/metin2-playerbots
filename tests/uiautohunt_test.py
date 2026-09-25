@@ -773,6 +773,44 @@ class HuntTest(unittest.TestCase):
 		step(self.hunter, 0.1)
 		self.assertEqual(STATE['attack'], [True])
 
+	def test_a_world_without_auto_hunt_stops_it_once(self):
+		# M2_AUTOHUNT=0 on the server: the target and the drop are answered
+		# "AutoHuntOff" (Tieru, 25 September, for Drip's COOP), and the hunt
+		# stops and says why once, however many refusals follow.
+		self.assertTrue(self.hunter.running)
+		self.hunter.OnServerOff()
+		self.assertFalse(self.hunter.running)
+		said = [text for text in STATE['chat'] if 'wy\xb3\xb9czone na tym serwerze' in text]
+		self.assertEqual(len(said), 1)
+		self.hunter.OnServerOff()
+		said = [text for text in STATE['chat'] if 'wy\xb3\xb9czone na tym serwerze' in text]
+		self.assertEqual(len(said), 1)
+		# And the module's own entry point, which game.py calls, reaches its hunter.
+		uiautohunt.OnServerOff()
+
+	def test_waiting_for_health_casts_buffs_and_no_attack(self):
+		# The Shaman stood up among the monsters that killed her and roared
+		# (Dragon's Roar, 93, a standing attack) the moment it cooled down, and
+		# fell again (prodnathin, 25 September): only the buff goes now.
+		self.hunter.config['skill0_slot'] = 1
+		self.hunter.config['skill1_slot'] = 2
+		STATE['skills'][1] = 93
+		STATE['skills'][2] = 94
+		STATE['status'][1] = 0
+		step(self.hunter)
+		STATE['status'][1] = 20
+		step(self.hunter, 16.0)
+		self.assertTrue(self.hunter.justRevived)
+		self.assertEqual(STATE['cast'], [2])
+		for _ in range(5):
+			step(self.hunter, 1.6)
+		self.assertNotIn(1, STATE['cast'])
+		STATE['status'][1] = 60
+		step(self.hunter, 1.6)
+		self.assertFalse(self.hunter.justRevived)
+		step(self.hunter, 1.6)
+		self.assertIn(1, STATE['cast'])
+
 	def test_a_share_over_a_hundred_waits_for_full_health_only(self):
 		self.hunter.config['revive_hp_percent'] = 250
 		self.hunter.justRevived = True

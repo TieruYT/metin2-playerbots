@@ -124,6 +124,16 @@ STUCK_SKIP_SECONDS = 60.0
 # stands, and SELF_SKILLS - the Ninja's Stealth and the Shaman's buffs,
 # which the client turns on the caster when the target is a monster.
 SELF_SKILLS = (34, 94, 95, 96, 109, 110, 111)
+# What goes while the hunter waits for its health after standing up
+# ('HP po wskrz. %'): the buffs and nothing that fights. A standing skill
+# is an attack cast where the character stands, and the Shaman's Dragon's
+# Roar (93) woke the monsters that had just killed her, the moment it came
+# off its cooldown - she fell again, stood up and roared again, for good
+# (prodnathin, 25 September). SELF_SKILLS and the standing buffs: the
+# Warrior's Berserk, Aura and Strong Body, the Archer's Feather Walk, the
+# weapon Sura's Enchanted Blade, Fear and Enchanted Armour, the black-magic
+# Sura's Dark Protection. Not Flame Spirit (78), which strikes by itself.
+BUFF_SKILLS = SELF_SKILLS + (3, 4, 19, 49, 63, 64, 65, 79)
 # What skill.IsStandingSkill says of this client's own skills, for an exe or
 # a stub that cannot be asked.
 STANDING_SKILLS = (3, 4, 18, 19, 47, 49, 62, 63, 64, 65, 77, 78, 79, 93)
@@ -476,7 +486,7 @@ class Hunter(object):
             threshold = min(100, self.config.get('revive_hp_percent', 60))
             if maxHP > 0 and curHP * 100 < maxHP * threshold:
                 self.HandleItems(now)
-                self.CastSkills(now)
+                self.CastSkills(now, buffsOnly=True)
                 return
             self.justRevived = False
             
@@ -533,6 +543,16 @@ class Hunter(object):
         self.lootVid = 0
         if not quiet:
             chat.AppendChat(chat.CHAT_TYPE_INFO, 'Auto \xa3owy: stop.')
+
+    def OnServerOff(self):
+        # The world is played without Auto Lowy (M2_AUTOHUNT=0 on the server,
+        # the launcher's difficulty window): the target and the drop are
+        # refused with "AutoHuntOff", and the hunt stops and says why - once a
+        # start, however many refusals were already on their way.
+        if not self.running:
+            return
+        self.Stop(quiet=True)
+        chat.AppendChat(chat.CHAT_TYPE_INFO, 'Auto \xa3owy s\xb9 wy\xb3\xb9czone na tym serwerze (ustawienia \x9cwiata w launcherze).')
 
     def OnServerTarget(self, value):
         if not self.running or not self.config.get('attack', 1):
@@ -736,7 +756,7 @@ class Hunter(object):
                 player.SetAttackKeyState(True)
                 self.attacking = True
 
-    def CastSkills(self, now):
+    def CastSkills(self, now, buffsOnly=False):
         if not self.config['use_skills']:
             return
 
@@ -749,6 +769,8 @@ class Hunter(object):
             if not skillIndex or player.IsSkillCoolTime(slot):
                 continue
             if skill.IsToggleSkill(skillIndex) and player.IsSkillActive(slot):
+                continue
+            if buffsOnly and skillIndex not in BUFF_SKILLS:
                 continue
             if NeedsTarget(skillIndex):
                 # The slot's clock is left alone, so the skill goes on the
@@ -1611,3 +1633,6 @@ def OnServerTarget(value):
 
 def OnServerLoot(vid, x, y):
     GetHunter().OnServerLoot(vid, x, y)
+
+def OnServerOff():
+    GetHunter().OnServerOff()

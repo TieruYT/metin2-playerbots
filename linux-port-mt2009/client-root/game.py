@@ -639,6 +639,7 @@ class GameWindow(ui.ScriptWindow):
 		onPressKeyDict[app.DIK_B]			= lambda : self.__PressBKey()
 		onPressKeyDict[app.DIK_F]			= lambda : self.__PressFKey()
 		onPressKeyDict[app.DIK_Y] 			= lambda : self.interface.wndPlayerStat.Open()
+		onPressKeyDict[app.DIK_P]			= lambda : self.__ToggleSidekick()
 		# if app.ENABLE_IKASHOP_RENEWAL:
 		# 	onPressKeyDict[app.DIK_F8]		= lambda : self.__PressF8Key()
 
@@ -746,6 +747,41 @@ class GameWindow(ui.ScriptWindow):
 			net.SendChatPacket("/user_horse_feed")
 		else:
 			app.ZoomCamera(app.CAMERA_TO_POSITIVE)
+
+	def __KeepSidekickWindow(self):
+		# The keeper closes the companion's window with the game window.
+		import uisidekick
+		for keeper in self.updateable:
+			if isinstance(keeper, uisidekick.Keeper):
+				return
+		self.RegisterUpdatable(uisidekick.GetKeeper())
+
+	def __ToggleSidekick(self):
+		self.__KeepSidekickWindow()
+		import uisidekick
+		uisidekick.ToggleWindow()
+
+	def __SidekickWindow(self, *rest):
+		self.__KeepSidekickWindow()
+		import uisidekick
+		uisidekick.OpenWindow()
+
+	def __SidekickInfo(self, *args):
+		self.__KeepSidekickWindow()
+		import uisidekick
+		uisidekick.OnServerInfo(*args)
+
+	def __SidekickNames(self, name="-", place="-", doing="-", *rest):
+		import uisidekick
+		uisidekick.OnServerNames(name, place, doing)
+
+	def __SidekickGear(self, slot="0", name="-", *rest):
+		import uisidekick
+		uisidekick.OnServerGear(slot, name)
+
+	def __AutoHuntOff(self, *rest):
+		import uiautohunt
+		uiautohunt.OnServerOff()
 
 	def __PressGKey(self):
 		if app.IsPressed(app.DIK_LCONTROL) or app.IsPressed(app.DIK_RCONTROL):
@@ -2668,6 +2704,11 @@ class GameWindow(ui.ScriptWindow):
 	        "event": self.__ProcessServerEvent,
 		}
 
+		serverCommandList["SidekickInfo"] = self.__SidekickInfo
+		serverCommandList["SidekickNames"] = self.__SidekickNames
+		serverCommandList["SidekickGear"] = self.__SidekickGear
+		serverCommandList["SidekickWindow"] = self.__SidekickWindow
+		serverCommandList["AutoHuntOff"] = self.__AutoHuntOff
 		serverCommandList["GlobalRankingWipe"] = self.__Global_Ranking__RecvWipe
 		serverCommandList["GlobalRankingUpdatePacket"] = self.__Global_Ranking__RecvData
 		serverCommandList["GlobalRankingUpdatePacketMyPos"] = self.__Global_Ranking__RecvSelfData
