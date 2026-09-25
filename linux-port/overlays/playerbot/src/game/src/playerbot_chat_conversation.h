@@ -221,12 +221,10 @@ namespace
 		if (!item || !item->GetProto())
 			return std::string();
 		std::string name = item->GetProto()->szLocaleName;
-		if (item->GetRefineLevel() > 0 && (item->GetType() == ITEM_WEAPON || item->GetType() == ITEM_ARMOR))
-		{
-			char plus[8];
-			snprintf(plus, sizeof(plus), " +%d", item->GetRefineLevel());
-			name += plus;
-		}
+		// The table's name already carries the grade ("Pajecza Wlocznia+8"), so
+		// appending it said the plus twice.
+		if (item->GetType() == ITEM_WEAPON || item->GetType() == ITEM_ARMOR)
+			name = playerbot_conv::GearName(name, item->GetRefineLevel());
 		else if (item->GetCount() > 1)
 		{
 			char count[16];
@@ -910,7 +908,7 @@ namespace
 					LPITEM item = m_bot->GetWear(worn[i]);
 					if (item && item->GetProto() && PlayerBotConvNameMatches(item->GetProto()->szLocaleName, query))
 					{
-						outName = PlayerBotConvItemName(item) + " (mam na sobie)";
+						outName = PlayerBotConvItemName(item) + " (na sobie)";
 						outCount = 1;
 						return true;
 					}
@@ -1160,6 +1158,36 @@ namespace
 				{
 					s.weaponName = weapon->GetProto()->szLocaleName;
 					s.weaponPlus = weapon->GetRefineLevel();
+					s.weaponLevel = weapon->GetLevelLimit();
+				}
+				// "czemu biegasz z bronia na 15 level?" is answered from what the AI
+				// is playing for (playerbot_weapon_goal.h) - read from its cache and
+				// never worked out from here, because the conversation writes
+				// nothing to the AI. A bot whose goal was never read says no goal.
+				{
+					std::map<DWORD, TPlayerBotWeaponGoal>::const_iterator known = s_mapPlayerBotWeaponGoals.find(botPID);
+					LPITEM hand = GetPlayerBotHandWeapon(bot);
+					if (known != s_mapPlayerBotWeaponGoals.end() && known->second.when != 0 && known->second.family)
+					{
+						const TPlayerBotWeaponGoal& goal = known->second;
+						const TItemTable* goalProto = ITEM_MANAGER::instance().GetTable(goal.family->dwBaseVnum);
+						if (goalProto)
+						{
+							s.weaponGoal = playerbot_conv::GearName(goalProto->szLocaleName, 0);
+							s.weaponGoalPrice = (long long)GetPlayerBotWeaponGoalPrice(goal.family);
+						}
+						s.weaponIsGoal = hand && hand->GetVnum() - (DWORD)hand->GetRefineLevel() == goal.family->dwBaseVnum;
+						if (s.weaponIsGoal)
+							s.weaponOutclassed = false;
+						else if (hand && goal.handVnum == hand->GetVnum())
+							s.weaponOutclassed = IsPlayerBotWeaponOutclassed(goal);
+						else
+						{
+							// The hand changed since the goal was read: its blow now.
+							const long long handBlow = hand ? GetPlayerBotWeaponHitDamage(hand, bot) : 0;
+							s.weaponOutclassed = goal.goalBlow * 100 >= handBlow * (100 + PLAYERBOT_WEAPON_OUTCLASSED_PERCENT);
+						}
+					}
 				}
 				LPITEM body = bot->GetWear(WEAR_BODY);
 				if (body && body->GetProto())

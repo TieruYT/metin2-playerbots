@@ -99,6 +99,49 @@ namespace playerbot_conv
 		return false;
 	}
 
+	// Which alias a typed word is ("riba" is "rib" with an ending), or NULL.
+	inline const TItemAlias* FindItemAlias(const std::string& word)
+	{
+		size_t n = 0;
+		const TItemAlias* al = GetItemAliases(n);
+		for (size_t i = 0; i < n; ++i)
+			if (!strchr(al[i].alias, ' ') && AliasWordMatches(word, al[i].alias))
+				return &al[i];
+		return NULL;
+	}
+
+	// The alias as a reply says it back: the short ones are acronyms (FMS,
+	// RIB, 12D, KD), the long ones a word ("Halka").
+	inline std::string ItemAliasDisplay(const TItemAlias* al)
+	{
+		if (!al)
+			return std::string();
+		std::string out = al->alias;
+		const bool acronym = out.size() <= 3;
+		for (size_t i = 0; i < out.size(); ++i)
+			if (out[i] >= 'a' && out[i] <= 'z' && (acronym || i == 0))
+				out[i] = (char)(out[i] - 'a' + 'A');
+		return out;
+	}
+
+	// Whether an alias names something to wear or to fight with, as opposed
+	// to a book, a potion or a stone ("czemu nie kupisz sobie potek?" is not a
+	// question about the bot's weapon).
+	inline bool IsGearAlias(const TItemAlias* al)
+	{
+		if (!al)
+			return false;
+		static const char* const kStems[] = {
+			"miecz", "ostrze", "luk", "kozik", "dzwon", "wachlarz", "halabarda", "partyzana", "kolczyki",
+			"bransoleta", "naszyjnik", "polksiezycowy"
+		};
+		const std::string name = al->name;
+		for (size_t i = 0; i < sizeof(kStems) / sizeof(kStems[0]); ++i)
+			if (name.find(kStems[i]) != std::string::npos)
+				return true;
+		return false;
+	}
+
 	// The query itself first, then the query with each alias replaced by its
 	// expansion: "fms +9" -> { "fms +9", "miecz pelni ksiezyca +9" }.
 	inline void ExpandItemQuery(const std::string& query, std::vector<std::string>& out)

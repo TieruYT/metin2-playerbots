@@ -54,6 +54,12 @@ namespace playerbot_conv
 		C_ITEMWORD, C_PRICEQ, C_ITEMSHOP, C_KS, C_READY, C_GOODLUCK, C_BRB, C_MAPNAME, C_BONUS,
 		// a class's path, a Shaman's buffs, a person calling the bot over and letting it go
 		C_BUILD, C_BUFF, C_BUFFNAME, C_GIVE, C_SUMMON, C_DISMISS,
+		// a person talking AT the bot rather than asking it something: told to
+		// stop writing, threatened with a ban, mocked, sworn at
+		C_STOPTALK, C_THREAT, C_MOCK, C_SWEAR,
+		// the bot's gear argued about: an item shown off, one to swap to, advice,
+		// a gift offered - and "you said something else before"
+		C_SHOWOFF, C_SWAP, C_ADVICE, C_GIFT, C_SAIDBEFORE,
 		C_COUNT
 	};
 
@@ -188,6 +194,8 @@ namespace playerbot_conv
 			{ "lvluj", C_EXP, M_PREFIX }, { "leveluj", C_EXP, M_PREFIX }, { "nabijasz", C_EXP, M_EXACT },
 			{ "levelowa", C_EXP, M_PREFIX }, { "ekspi", C_EXP, M_PREFIX },
 			{ "bij", C_HIT, M_PREFIX }, { "bic", C_HIT, M_EXACT }, { "atak", C_HIT, M_PREFIX },
+			{ "zbic", C_HIT, M_EXACT }, { "zbij", C_HIT, M_EXACT }, { "zbijesz", C_HIT, M_EXACT },
+			{ "zbijam", C_HIT, M_EXACT }, { "zbije", C_HIT, M_EXACT }, { "zbijemy", C_HIT, M_EXACT },
 			{ "walcz", C_HIT, M_PREFIX }, { "walk", C_HIT, M_PREFIX }, { "tlucz", C_HIT, M_PREFIX },
 			{ "klepiesz", C_HIT, M_EXACT }, { "ubij", C_HIT, M_PREFIX }, { "zabijasz", C_HIT, M_EXACT },
 			{ "siekasz", C_HIT, M_EXACT }, { "mordujesz", C_HIT, M_EXACT },
@@ -469,6 +477,11 @@ namespace playerbot_conv
 			{ "obron", C_BONUS, M_PREFIX }, { "abs", C_BONUS, M_EXACT }, { "nno", C_BONUS, M_EXACT },
 			{ "ono", C_BONUS, M_EXACT }, { "nns", C_BONUS, M_EXACT }, { "bonus", C_BONUS, M_PREFIX },
 			{ "odpornos", C_BONUS, M_PREFIX }, { "staty", C_BONUS, M_EXACT }, { "statystyk", C_BONUS, M_PREFIX },
+			// "srednie" is the average-damage line; "srednio" (so-so) is not, so
+			// these are exact.
+			{ "srednie", C_BONUS, M_EXACT }, { "srednimi", C_BONUS, M_EXACT }, { "srednich", C_BONUS, M_EXACT },
+			{ "srednia", C_BONUS, M_EXACT }, { "sredniej", C_BONUS, M_EXACT }, { "sredniaki", C_BONUS, M_EXACT },
+			{ "sredniakow", C_BONUS, M_EXACT },
 			{ "respawn", C_MOB, M_EXACT }, { "magazyn", C_TOWN, M_PREFIX }, { "polimorfi", C_SKILL, M_PREFIX },
 			{ "rewanz", C_PVP, M_EXACT }, { "sprzedasz", C_BUYME, M_EXACT },
 			{ "wystawiony", C_SHOP, M_EXACT }, { "wystawiles", C_SHOP, M_EXACT }, { "wystawila", C_SHOP, M_EXACT },
@@ -513,6 +526,91 @@ namespace playerbot_conv
 			{ "juz idz", C_DISMISS, M_PHRASE }, { "idz sobie", C_DISMISS, M_PHRASE },
 			{ "zmykaj", C_DISMISS, M_EXACT }, { "odejdz", C_DISMISS, M_EXACT },
 			{ "nie potrzebuje cie", C_DISMISS, M_PHRASE }, { "juz cie nie potrzebuje", C_DISMISS, M_PHRASE },
+			// ---- a person talking at the bot: "przestan do mnie pisac" is not a
+			// question about anything, and the words in it ("gold digger") are
+			// not the subject. A bare "nie pisz" is left out: "nie pisz tak
+			// szybko" asks for less, not for nothing.
+			{ "przestan do mnie pisac", C_STOPTALK, M_PHRASE }, { "przestan mi pisac", C_STOPTALK, M_PHRASE },
+			{ "przestan pisac", C_STOPTALK, M_PHRASE }, { "przestan do mnie gadac", C_STOPTALK, M_PHRASE },
+			{ "przestan gadac", C_STOPTALK, M_PHRASE }, { "przestan spamowac", C_STOPTALK, M_PHRASE },
+			{ "przestan mnie zaczepiac", C_STOPTALK, M_PHRASE }, { "nie pisz do mnie", C_STOPTALK, M_PHRASE },
+			{ "nie pisz mi", C_STOPTALK, M_PHRASE }, { "nie pisz juz", C_STOPTALK, M_PHRASE },
+			{ "nie pisz wiecej", C_STOPTALK, M_PHRASE }, { "nie gadaj do mnie", C_STOPTALK, M_PHRASE },
+			{ "nie zaczepiaj", C_STOPTALK, M_PHRASE }, { "odczep sie", C_STOPTALK, M_PHRASE },
+			{ "odwal sie", C_STOPTALK, M_PHRASE }, { "odwalcie sie", C_STOPTALK, M_PHRASE },
+			{ "daj mi spokoj", C_STOPTALK, M_PHRASE }, { "zostaw mnie", C_STOPTALK, M_PHRASE },
+			{ "nie spamuj", C_STOPTALK, M_PHRASE }, { "nie odzywaj sie", C_STOPTALK, M_PHRASE },
+			{ "nie chce z toba gadac", C_STOPTALK, M_PHRASE }, { "nie chce z toba rozmawiac", C_STOPTALK, M_PHRASE },
+			{ "nie mam ochoty gadac", C_STOPTALK, M_PHRASE }, { "koniec rozmowy", C_STOPTALK, M_PHRASE },
+			{ "ban", C_THREAT, M_EXACT }, { "bana", C_THREAT, M_EXACT }, { "banem", C_THREAT, M_EXACT },
+			{ "banik", C_THREAT, M_EXACT }, { "bany", C_THREAT, M_EXACT }, { "zbanow", C_THREAT, M_PREFIX },
+			{ "zbanuj", C_THREAT, M_PREFIX }, { "banuj", C_THREAT, M_PREFIX }, { "zglosze", C_THREAT, M_EXACT },
+			{ "zglaszam", C_THREAT, M_EXACT }, { "zglosic", C_THREAT, M_EXACT }, { "zgloszen", C_THREAT, M_PREFIX },
+			{ "report", C_THREAT, M_PREFIX }, { "gmowi", C_THREAT, M_EXACT }, { "adminowi", C_THREAT, M_EXACT },
+			{ "do gma", C_THREAT, M_PHRASE }, { "do gm", C_THREAT, M_PHRASE }, { "do admina", C_THREAT, M_PHRASE },
+			{ "wyrzuce cie", C_THREAT, M_PHRASE }, { "dostaniesz bana", C_THREAT, M_PHRASE },
+			// Mockery is banter, not abuse: "bieda", "zawijaj stad", "tyle jestes
+			// warta", "daleko w zyciu zajdziesz". It is answered with a joke.
+			{ "bied", C_MOCK, M_PREFIX }, { "zawijaj", C_MOCK, M_EXACT }, { "zawijajcie", C_MOCK, M_EXACT },
+			{ "zawijaj stad", C_MOCK, M_PHRASE }, { "wypad stad", C_MOCK, M_PHRASE }, { "spadaj stad", C_MOCK, M_PHRASE },
+			{ "slabiak", C_MOCK, M_EXACT }, { "slabiaku", C_MOCK, M_EXACT }, { "slabeusz", C_MOCK, M_EXACT },
+			{ "cienki", C_MOCK, M_EXACT }, { "cienka", C_MOCK, M_EXACT }, { "cieniutki", C_MOCK, M_EXACT },
+			{ "slaby jestes", C_MOCK, M_PHRASE }, { "slaba jestes", C_MOCK, M_PHRASE },
+			{ "jestes slaby", C_MOCK, M_PHRASE }, { "jestes slaba", C_MOCK, M_PHRASE },
+			{ "jestes cienki", C_MOCK, M_PHRASE }, { "jestes cienka", C_MOCK, M_PHRASE },
+			{ "slaby z ciebie", C_MOCK, M_PHRASE }, { "slaba z ciebie", C_MOCK, M_PHRASE },
+			{ "slabo grasz", C_MOCK, M_PHRASE }, { "grasz slabo", C_MOCK, M_PHRASE },
+			{ "jestes wart", C_MOCK, M_PHRASE }, { "jestes warta", C_MOCK, M_PHRASE }, { "jestes warty", C_MOCK, M_PHRASE },
+			{ "tyle wart", C_MOCK, M_PHRASE }, { "tyle warta", C_MOCK, M_PHRASE }, { "tyle jestes", C_MOCK, M_PHRASE },
+			{ "daleko zajdziesz", C_MOCK, M_PHRASE }, { "w zyciu zajdziesz", C_MOCK, M_PHRASE },
+			{ "zajdziesz daleko", C_MOCK, M_PHRASE }, { "daleko nie zajdziesz", C_MOCK, M_PHRASE },
+			{ "zenada", C_MOCK, M_EXACT }, { "zenujace", C_MOCK, M_EXACT }, { "zenujacy", C_MOCK, M_EXACT },
+			{ "smiech na sali", C_MOCK, M_PHRASE }, { "zal mi cie", C_MOCK, M_PHRASE },
+			// Directed abuse, beside the old list.
+			{ "spierd", C_INSULT, M_PREFIX }, { "wypierd", C_INSULT, M_PREFIX }, { "odpierd", C_INSULT, M_PREFIX },
+			{ "cwel", C_INSULT, M_PREFIX }, { "ciota", C_INSULT, M_EXACT }, { "cioto", C_INSULT, M_EXACT },
+			{ "szmat", C_INSULT, M_PREFIX }, { "gnoj", C_INSULT, M_PREFIX }, { "leszcz", C_INSULT, M_PREFIX },
+			// "digger" exact, never a stem: one letter from "dagger", the Ninja's path.
+			{ "smieciu", C_INSULT, M_EXACT }, { "digger", C_INSULT, M_EXACT }, { "diggerze", C_INSULT, M_EXACT },
+			{ "diggerka", C_INSULT, M_EXACT }, { "diggerko", C_INSULT, M_EXACT }, { "golddigg", C_INSULT, M_PREFIX },
+			{ "gold digger", C_INSULT, M_PHRASE }, { "glupek", C_INSULT, M_EXACT }, { "glupku", C_INSULT, M_EXACT },
+			{ "dzban", C_INSULT, M_PREFIX }, { "matol", C_INSULT, M_PREFIX }, { "palant", C_INSULT, M_PREFIX },
+			{ "kmiot", C_INSULT, M_PREFIX },
+			// Swearing is how people talk, not a line about the bot; only aimed at
+			// the bot (the I_INSULT rule with C_YOU) is it abuse.
+			{ "kurw", C_SWEAR, M_PREFIX }, { "kurde", C_SWEAR, M_EXACT }, { "choler", C_SWEAR, M_PREFIX },
+			{ "huj", C_SWEAR, M_PREFIX }, { "chuj", C_SWEAR, M_PREFIX }, { "gown", C_SWEAR, M_PREFIX },
+			{ "pierdol", C_SWEAR, M_PREFIX }, { "pizd", C_SWEAR, M_PREFIX }, { "jeba", C_SWEAR, M_PREFIX },
+			{ "jebn", C_SWEAR, M_PREFIX }, { "jebie", C_SWEAR, M_EXACT },
+			// ---- the bot's gear argued about
+			{ "zoba", C_SHOWOFF, M_EXACT }, { "zobacz", C_SHOWOFF, M_EXACT }, { "zobaczcie", C_SHOWOFF, M_EXACT },
+			{ "patrz", C_SHOWOFF, M_EXACT }, { "popatrz", C_SHOWOFF, M_EXACT }, { "patrzcie", C_SHOWOFF, M_EXACT },
+			{ "zerknij", C_SHOWOFF, M_EXACT }, { "spojrz", C_SHOWOFF, M_EXACT }, { "podziwiaj", C_SHOWOFF, M_EXACT },
+			{ "pochwale", C_SHOWOFF, M_EXACT }, { "pochwalic", C_SHOWOFF, M_EXACT }, { "chwale", C_SHOWOFF, M_EXACT },
+			{ "wymien", C_SWAP, M_PREFIX }, { "zamien", C_SWAP, M_PREFIX }, { "zmien", C_SWAP, M_PREFIX },
+			{ "zaloz", C_SWAP, M_PREFIX }, { "ubierz", C_SWAP, M_PREFIX },
+			{ "powinien", C_ADVICE, M_PREFIX }, { "powinn", C_ADVICE, M_PREFIX }, { "lepiej", C_ADVICE, M_EXACT },
+			{ "lepsz", C_ADVICE, M_PREFIX }, { "najlepsz", C_ADVICE, M_PREFIX }, { "wyzsz", C_ADVICE, M_PREFIX },
+			{ "przydal", C_ADVICE, M_PREFIX }, { "radze", C_ADVICE, M_EXACT }, { "polecam", C_ADVICE, M_EXACT },
+			{ "polecalbym", C_ADVICE, M_EXACT }, { "potrzebujesz", C_ADVICE, M_EXACT }, { "musisz", C_ADVICE, M_EXACT },
+			{ "kup sobie", C_ADVICE, M_PHRASE }, { "kupisz sobie", C_ADVICE, M_PHRASE }, { "kupic sobie", C_ADVICE, M_PHRASE },
+			{ "kupilbys sobie", C_ADVICE, M_PHRASE }, { "wez sobie", C_ADVICE, M_PHRASE },
+			{ "potrzebne ci", C_ADVICE, M_PHRASE }, { "potrzebny ci", C_ADVICE, M_PHRASE },
+			{ "potrzebna ci", C_ADVICE, M_PHRASE }, { "nie lepiej", C_ADVICE, M_PHRASE },
+			{ "dam ci", C_GIFT, M_PHRASE }, { "ci dam", C_GIFT, M_PHRASE }, { "dac ci", C_GIFT, M_PHRASE },
+			{ "ci dac", C_GIFT, M_PHRASE }, { "dal ci", C_GIFT, M_PHRASE }, { "ci dal", C_GIFT, M_PHRASE },
+			{ "ci dala", C_GIFT, M_PHRASE }, { "dala ci", C_GIFT, M_PHRASE }, { "za darmo", C_GIFT, M_PHRASE },
+			{ "za free", C_GIFT, M_PHRASE }, { "w prezencie", C_GIFT, M_PHRASE }, { "dalbym", C_GIFT, M_EXACT },
+			{ "dalabym", C_GIFT, M_EXACT }, { "dostalbys", C_GIFT, M_EXACT }, { "dostalabys", C_GIFT, M_EXACT },
+			{ "podaruje", C_GIFT, M_EXACT }, { "podarowac", C_GIFT, M_EXACT }, { "gratis", C_GIFT, M_EXACT },
+			{ "prezent", C_GIFT, M_PREFIX },
+			{ "powiedziales", C_SAIDBEFORE, M_EXACT }, { "powiedzialas", C_SAIDBEFORE, M_EXACT },
+			{ "mowiles", C_SAIDBEFORE, M_EXACT }, { "mowilas", C_SAIDBEFORE, M_EXACT }, { "pisales", C_SAIDBEFORE, M_EXACT },
+			{ "pisalas", C_SAIDBEFORE, M_EXACT }, { "twierdziles", C_SAIDBEFORE, M_EXACT },
+			{ "twierdzilas", C_SAIDBEFORE, M_EXACT }, { "klamiesz", C_SAIDBEFORE, M_EXACT }, { "klamca", C_SAIDBEFORE, M_EXACT },
+			{ "klamczuch", C_SAIDBEFORE, M_EXACT }, { "sciemniasz", C_SAIDBEFORE, M_EXACT },
+			{ "kitujesz", C_SAIDBEFORE, M_EXACT }, { "nieprawda", C_SAIDBEFORE, M_EXACT },
+			{ "nie prawda", C_SAIDBEFORE, M_PHRASE },
 			// ---- sentiment of a statement
 			{ "super", C_POSITIVE, M_EXACT }, { "fajnie", C_POSITIVE, M_EXACT }, { "ekstra", C_POSITIVE, M_EXACT },
 			{ "wbilem", C_POSITIVE, M_EXACT }, { "dropnalem", C_POSITIVE, M_EXACT }, { "dropnelo", C_POSITIVE, M_EXACT },
@@ -822,6 +920,32 @@ namespace playerbot_conv
 		// "co tam" is a greeting even with "co".
 		if (out.Has(C_HOWAREYOU) && tok.words.size() <= 3)
 			out.Unset(C_WHAT);
+
+		// Words that name something inside an insult or an offer and are not
+		// the subject: "gold digger" is no question about yang, "kup sobie X"
+		// is advice and not an offer to buy X from the bot, "czemu nie kupisz
+		// X?" asks why the bot does not buy it, not whether it buys from the
+		// person.
+		for (size_t i = 0; i < tok.words.size(); ++i)
+		{
+			const std::string& w = tok.words[i];
+			if (StartsWith(w, "digger") || StartsWith(w, "golddigg"))
+				out.Unset(C_GOLD);
+			if (StartsWith(w, "kup") && i + 1 < tok.words.size() && tok.words[i + 1] == "sobie")
+			{
+				out.Unset(C_BUYME);
+				out.Unset(C_SELLYOU);
+			}
+		}
+		if (out.Has(C_WHY) && tok.Has("kupisz") && !tok.Has("ode") && !tok.Has("odemnie"))
+			out.Unset(C_SELLYOU);
+		// "zbic konia" in a line that says what the other one may do - "teraz
+		// to najwyzej mozesz mi zbic konia" - is a jibe, not a question about
+		// the bot's horse. A horse word is a question only beside a question
+		// word or the bot.
+		if (out.Has(C_HORSE) && out.Has(C_HIT) && !out.Has(C_YOU) && !out.Has(C_WHAT) &&
+				!out.Has(C_HOWMUCH) && !out.Has(C_WHICH) && !out.Has(C_HAVE) && !out.Has(C_LEVEL))
+			out.Unset(C_HORSE);
 
 		// A path named by its own word ("body", "archerem", "smok") and a buff
 		// named by its own ("odbicie", "pomoc smoka"). "heal" and "leczenie"

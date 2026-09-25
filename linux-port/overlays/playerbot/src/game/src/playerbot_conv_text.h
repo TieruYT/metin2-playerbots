@@ -345,6 +345,11 @@ namespace playerbot_conv
 					out.words.push_back(raw[i]);
 				continue;
 			}
+			// "np" alone is "nie ma problemu"; inside a sentence it is "na
+			// przyklad" ("czemu nie wymienisz broni? np. rib ze srednimi"), and
+			// read as "spoko" it put an acknowledgement into an argument.
+			if (!shortLine && raw[i] == "np")
+				continue;
 			const char* rw = RewriteWord(raw[i]);
 			if (rw)
 				SplitWords(rw, out.words);
@@ -490,6 +495,328 @@ namespace playerbot_conv
 		else
 			snprintf(buf, sizeof(buf), "%lld", v);
 		return buf;
+	}
+
+	// ----------------------------------------------------------- arithmetic
+
+	// "ile to 2+2", "7 razy 8", "10/4", "2+2*2": one sum the whole line is
+	// about. "Ale czego?" to "ile to 2+2" was a person testing the bot and the
+	// bot failing the test. The operators are read from the raw line, because
+	// normalization turns every one of them but a '+' before a digit into a
+	// space.
+	struct TArithmetic
+	{
+		double value;
+		int terms;
+		bool divZero;
+		bool tooBig;
+		bool mixed;      // + or - beside * or /: "2+2*2" is 6, and it is asked to catch somebody out
+		TArithmetic() : value(0), terms(0), divZero(false), tooBig(false), mixed(false) {}
+	};
+
+	// The words a sum may be wrapped in. Anything else in the line - "mam 2+2
+	// miecze", "na 3-4 lvl", "fms +9" - makes it a line about something else.
+	inline bool IsArithmeticFiller(const std::string& w)
+	{
+		static const char* const kWords[] = {
+			"ile", "to", "jest", "bedzie", "wynosi", "daje", "da", "a", "no", "hej", "siema", "policz", "oblicz",
+			"policzysz", "obliczysz", "policzyc", "obliczyc", "mi", "szybko", "rowna", "rowne", "sie", "wynik",
+			"prosze", "pls", "czy", "wiesz", "umiesz", "powiedz", "ty", "ziomek", "kolego", "stary", "hmm",
+			"xd", "haha", "hehe", "lol", "ok", "dobra", "zagadka", "pytanie", "matma", "matematyka", "matme",
+			"sprawdzmy", "sprawdze", "zobaczymy", "test", "testuje"
+		};
+		for (size_t i = 0; i < sizeof(kWords) / sizeof(kWords[0]); ++i)
+			if (w == kWords[i])
+				return true;
+		return false;
+	}
+
+	inline char ArithmeticWordOperator(const std::string& w)
+	{
+		if (w == "plus" || w == "dodac" || w == "dodaj")
+			return '+';
+		if (w == "minus" || w == "odjac" || w == "odejmij")
+			return '-';
+		if (w == "razy" || w == "x" || StartsWith(w, "pomnoz"))
+			return '*';
+		if (w == "przez" || StartsWith(w, "podziel") || StartsWith(w, "dzielon") || w == "dzielic")
+			return '/';
+		return 0;
+	}
+
+	inline bool ParseArithmetic(const char* raw, TArithmetic& out)
+	{
+		out = TArithmetic();
+		if (!raw)
+			return false;
+		struct TTok
+		{
+			char kind;        // 'n' a number, 'o' an operator, 'w' a word
+			double num;
+			char op;
+			std::string word;
+		};
+		std::vector<TTok> toks;
+		const unsigned char* p = (const unsigned char*)raw;
+		size_t n = strlen(raw);
+		if (n > CONV_MAX_INPUT)
+			n = CONV_MAX_INPUT;
+		size_t i = 0;
+		while (i < n && toks.size() < 48)
+		{
+			const unsigned char c = p[i];
+			if (c >= '0' && c <= '9')
+			{
+				size_t j = i;
+				double v = 0;
+				int digits = 0;
+				while (j < n && p[j] >= '0' && p[j] <= '9')
+				{
+					if (digits < 15)
+						v = v * 10 + (p[j] - '0');
+					++digits;
+					++j;
+				}
+				if (j + 1 < n && (p[j] == '.' || p[j] == ',') && p[j + 1] >= '0' && p[j + 1] <= '9')
+				{
+					++j;
+					double scale = 0.1;
+					while (j < n && p[j] >= '0' && p[j] <= '9')
+					{
+						v += (p[j] - '0') * scale;
+						scale /= 10;
+						++j;
+					}
+				}
+				TTok t;
+				// "7x8": the x between two numbers is a times.
+				const bool times = j + 1 < n && (p[j] == 'x' || p[j] == 'X') && p[j + 1] >= '0' && p[j + 1] <= '9';
+				// "12d", "2kk", "1v1", "50lvl": a number glued to letters is a name.
+				if (!times && j < n && ((p[j] >= 'a' && p[j] <= 'z') || (p[j] >= 'A' && p[j] <= 'Z') || p[j] >= 0x80))
+				{
+					t.kind = 'w';
+					t.num = 0;
+					t.op = 0;
+					while (i < n && ((p[i] >= 'a' && p[i] <= 'z') || (p[i] >= 'A' && p[i] <= 'Z') ||
+							(p[i] >= '0' && p[i] <= '9') || p[i] >= 0x80))
+						t.word += (char)FoldCp1250(p[i++]);
+					toks.push_back(t);
+					continue;
+				}
+				t.kind = 'n';
+				t.num = digits > 15 ? 1e18 : v;
+				t.op = 0;
+				toks.push_back(t);
+				i = j;
+				if (times)
+				{
+					TTok o;
+					o.kind = 'o';
+					o.num = 0;
+					o.op = '*';
+					toks.push_back(o);
+					++i;
+				}
+				continue;
+			}
+			if (c == '+' || c == '-' || c == '*' || c == '/')
+			{
+				TTok o;
+				o.kind = 'o';
+				o.num = 0;
+				o.op = (char)c;
+				toks.push_back(o);
+				++i;
+				continue;
+			}
+			if ((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || c >= 0x80)
+			{
+				std::string w;
+				while (i < n && ((p[i] >= 'a' && p[i] <= 'z') || (p[i] >= 'A' && p[i] <= 'Z') || p[i] >= 0x80))
+				{
+					if (p[i] >= 0xC3 && p[i] <= 0xC5 && i + 1 < n && p[i + 1] >= 0x80 && p[i + 1] <= 0xBF)
+					{
+						const unsigned char f = FoldUtf8Pair(p[i], p[i + 1]);
+						if (f)
+							w += (char)f;
+						i += 2;
+						continue;
+					}
+					const unsigned char f = FoldCp1250(p[i]);
+					if (f != ' ')
+						w += (char)f;
+					++i;
+				}
+				// "pomnozone przez", "podzielic na": the second word belongs to the first.
+				if ((w == "przez" || w == "na") && !toks.empty() && toks.back().kind == 'o')
+					continue;
+				const char op = ArithmeticWordOperator(w);
+				TTok t;
+				t.kind = op ? 'o' : 'w';
+				t.num = 0;
+				t.op = op;
+				t.word = w;
+				toks.push_back(t);
+				continue;
+			}
+			++i; // '?', '!', '=', ',', spaces: nothing of their own
+		}
+
+		// The first run of number (operator number)+.
+		size_t start = toks.size(), end = toks.size();
+		for (size_t k = 0; k < toks.size() && start == toks.size(); ++k)
+		{
+			if (toks[k].kind != 'n')
+				continue;
+			size_t e = k + 1;
+			while (e + 1 < toks.size() && toks[e].kind == 'o' && toks[e + 1].kind == 'n')
+				e += 2;
+			if (e > k + 1)
+			{
+				start = k;
+				end = e;
+			}
+		}
+		if (start == toks.size())
+			return false;
+		for (size_t k = 0; k < toks.size(); ++k)
+		{
+			if (k >= start && k < end)
+				continue;
+			if (toks[k].kind != 'w' || !IsArithmeticFiller(toks[k].word))
+				return false;
+		}
+
+		// Times and division first, then plus and minus, as at school.
+		std::vector<double> sums;
+		std::vector<char> signs;
+		double acc = toks[start].num;
+		bool additive = false, multiplicative = false;
+		out.terms = 1;
+		for (size_t k = start + 1; k + 1 < end; k += 2)
+		{
+			const char op = toks[k].op;
+			const double b = toks[k + 1].num;
+			++out.terms;
+			if (b > 1e15 || acc > 1e15)
+				out.tooBig = true;
+			if (op == '*' || op == '/')
+			{
+				multiplicative = true;
+				if (op == '/' && b == 0)
+				{
+					out.divZero = true;
+					return true;
+				}
+				acc = op == '*' ? acc * b : acc / b;
+			}
+			else
+			{
+				additive = true;
+				sums.push_back(acc);
+				signs.push_back(op);
+				acc = b;
+			}
+		}
+		sums.push_back(acc);
+		double result = sums[0];
+		for (size_t k = 0; k < signs.size(); ++k)
+			result = signs[k] == '+' ? result + sums[k + 1] : result - sums[k + 1];
+		out.value = result;
+		out.mixed = additive && multiplicative;
+		if (result > 1e15 || result < -1e15)
+			out.tooBig = true;
+		return true;
+	}
+
+	// 4 -> "4", 2.5 -> "2,5", 3.3333 -> "3,33": the way a person writes it.
+	inline std::string FormatNumberPl(double v)
+	{
+		char buf[48];
+		const double rounded = v < 0 ? -(double)(long long)(-v + 0.5) : (double)(long long)(v + 0.5);
+		const double diff = v - rounded;
+		if (diff < 1e-9 && diff > -1e-9)
+		{
+			snprintf(buf, sizeof(buf), "%lld", (long long)rounded);
+			return buf;
+		}
+		snprintf(buf, sizeof(buf), "%.2f", v);
+		std::string s = buf;
+		while (!s.empty() && s[s.size() - 1] == '0')
+			s.erase(s.size() - 1);
+		if (!s.empty() && s[s.size() - 1] == '.')
+			s.erase(s.size() - 1);
+		for (size_t i = 0; i < s.size(); ++i)
+			if (s[i] == '.')
+				s[i] = ',';
+		return s;
+	}
+
+	// ------------------------------------------------------------ item links
+
+	// A shift-clicked item. The client sends "|cffffc700|Hitem:4e21:0:0:0|h
+	// [Miecz Pelni Ksiezyca+9]|h|r" and draws only the bracketed name; the
+	// words of it made the old reader answer "[Miecz Pelni Ksiezyca+9]" with
+	// the bot's own gear. A line typed with brackets reads the same, but
+	// "[GA]Seban" is a guild tag in a name, so a bare bracket counts only round
+	// a name of two words or one carrying a refine. The name is kept as it
+	// came (the proto's own CP1250), less anything but letters, digits,
+	// spaces and "+.-", so a colour code cannot be echoed back.
+	inline bool ExtractItemLink(const char* raw, std::string& name)
+	{
+		name.clear();
+		if (!raw)
+			return false;
+		const char* link = strstr(raw, "|Hitem");
+		const char* open = link ? strchr(link, '[') : NULL;
+		if (!open)
+			open = strchr(raw, '[');
+		if (!open)
+			return false;
+		const char* close = strchr(open + 1, ']');
+		if (!close || close - open - 1 < 2 || close - open - 1 > 64)
+			return false;
+		std::string out;
+		bool letter = false;
+		for (const unsigned char* q = (const unsigned char*)open + 1; q < (const unsigned char*)close; ++q)
+		{
+			const unsigned char c = *q;
+			const bool isLetter = (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || c >= 0x80;
+			const bool keep = isLetter || (c >= '0' && c <= '9') || c == ' ' || c == '+' || c == '.' || c == '-';
+			if (!keep)
+				continue;
+			if (c == ' ' && (out.empty() || out[out.size() - 1] == ' '))
+				continue;
+			if (isLetter)
+				letter = true;
+			out += (char)c;
+		}
+		while (!out.empty() && out[out.size() - 1] == ' ')
+			out.erase(out.size() - 1);
+		if (!letter || out.size() < 3)
+			return false;
+		if (!link && out.find(' ') == std::string::npos && out.find('+') == std::string::npos)
+			return false;
+		name = out;
+		return true;
+	}
+
+	// "Miecz Pelni Ksiezyca+9" -> 9, -1 when the name carries no refine.
+	inline int RefineOfName(const std::string& name)
+	{
+		const size_t plus = name.find_last_of('+');
+		if (plus == std::string::npos || plus + 1 >= name.size())
+			return -1;
+		int v = 0;
+		for (size_t i = plus + 1; i < name.size(); ++i)
+		{
+			if (name[i] < '0' || name[i] > '9')
+				return -1;
+			v = v * 10 + (name[i] - '0');
+			if (v > 99)
+				return -1;
+		}
+		return v;
 	}
 
 	// --------------------------------------------------------------- random

@@ -216,9 +216,11 @@ namespace playerbot_conv
 				return PBC_SAY(g, k);
 			}
 			case A_BIOLOGIST:
+				// An item's name stands after a colon: "zbieram Ksiega Klatw"
+				// is a case no Pole would use.
 				if (!s.bioWanted.empty())
 				{
-					static const char* const k[] = { "Zbieram $BIO dla Biologa.", "Robie zadanie Biologa, szukam $BIO." };
+					static const char* const k[] = { "Zbieram dla Biologa: $BIO.", "Robie zadanie Biologa. Brakuje mi jeszcze: $BIO." };
 					return PBC_SAY(g, k);
 				}
 				else
@@ -279,6 +281,37 @@ namespace playerbot_conv
 		}
 	}
 
+	// The map the bot last named to this person, when it has changed map
+	// since: "Przemieszczam sie w Joan", a teleport, and "co robisz?" again.
+	// 0 when it has not (or said so already).
+	inline long RecentOtherMap(const TGen& g)
+	{
+		const TConvMemory& m = g.m;
+		if (m.lastSaidMap != 0 && m.lastSaidMap != g.s.mapIndex && IsKnownMap(m.lastSaidMap) &&
+				IsKnownMap(g.s.mapIndex) && g.now - m.lastSaidMapAt < CONV_SAID_MAP_TTL_MS)
+			return m.lastSaidMap;
+		return 0;
+	}
+
+	// Whether the bot named `map` to this person lately, the newest or the
+	// one before it: "przeciez mowiles, ze w Joan" after the move was told.
+	inline bool SaidMapLately(const TGen& g, long map)
+	{
+		const TConvMemory& m = g.m;
+		if (map == 0)
+			return false;
+		return (map == m.lastSaidMap && g.now - m.lastSaidMapAt < CONV_SAID_MAP_TTL_MS) ||
+				(map == m.prevSaidMap && g.now - m.prevSaidMapAt < CONV_SAID_MAP_TTL_MS);
+	}
+
+	// "$WASAT" is where the bot was: "w Joan".
+	inline std::string WithOldMap(const TGen& g, const char* tpl, long old)
+	{
+		std::string out = Fill(g, tpl);
+		ReplaceAll(out, "$WASAT", GetMapWords(old).at);
+		return out;
+	}
+
 	inline std::string GenActivity(TGen& g)
 	{
 		const bool yesNoExp = g.a && g.a->concepts.Has(C_EXP) && !g.a->concepts.Has(C_WHAT);
@@ -290,6 +323,9 @@ namespace playerbot_conv
 			else
 				out = "Teraz nie. ";
 		}
+		// It named another map a moment ago: the move is part of the answer.
+		if (const long old = RecentOtherMap(g))
+			out += WithOldMap(g, "Juz nie jestem $WASAT. ", old);
 		out += ActivityClause(g, !g.saidMap);
 		if (!g.saidMap && IsKnownMap(g.s.mapIndex) && out.find(GetMapWords(g.s.mapIndex).atShort) != std::string::npos)
 			g.saidMap = true;
@@ -344,6 +380,9 @@ namespace playerbot_conv
 		}
 		if (!IsKnownMap(s.mapIndex))
 			return "Nie, jestem gdzie indziej.";
+		// "jestes w joan?" right after it said it was, and a teleport since.
+		if (mentioned == RecentOtherMap(g) && mentioned != 0)
+			return WithOldMap(g, "Juz nie - bylem $WASAT, a teraz jestem $MAPIN.", mentioned);
 		static const char* const k[] = { "Nie, jestem $MAPIN.", "Nie, teraz $MAPIN." };
 		return PBC_SAY(g, k);
 	}
@@ -359,6 +398,11 @@ namespace playerbot_conv
 			return PBC_SAY(g, k);
 		}
 		g.saidMap = true;
+		if (const long old = RecentOtherMap(g))
+		{
+			static const char* const k[] = { "Bylem $WASAT, ale juz jestem $MAPIN.", "Juz nie $WASAT - teraz jestem $MAPIN." };
+			return WithOldMap(g, Pick(g, k, 2), old);
+		}
 		if (s.askerNear)
 		{
 			static const char* const k[] = { "Tuz obok ciebie :)", "Przeciez stoje niedaleko ciebie, $MAPIN." };
@@ -385,6 +429,12 @@ namespace playerbot_conv
 			return MapYesNo(g, mentioned);
 		if (!IsKnownMap(s.mapIndex))
 			return GenLocation(g);
+		if (const long old = RecentOtherMap(g))
+		{
+			g.saidMap = true;
+			return WithOldMap(g, Fighting(g) ? "Juz nie $WASAT, teraz expie $MAPIN." :
+					"Juz nie $WASAT, teraz jestem $MAPIN.", old);
+		}
 		g.saidMap = true;
 		// The last whisper already named the map: say so, do not recite it.
 		if (!g.Merged() && g.m.lastReply.find(GetMapWords(s.mapIndex).atShort) != std::string::npos &&
@@ -501,6 +551,18 @@ namespace playerbot_conv
 	{
 		const TBotSnapshot& s = g.s;
 		std::string out;
+		// Asked again a moment after it said it: the same number, not the same
+		// sentence. "Mam 64 poziom" three times over reads as a recording.
+		const bool again = g.m.levelSaidAt != 0 && g.now - g.m.levelSaidAt < CONV_FACT_TTL_MS &&
+				g.m.levelSaid == s.level;
+		g.m.levelSaidAt = g.now != 0 ? g.now : 1;
+		g.m.levelSaid = s.level;
+		g.reason = "Bo tyle wyexpilem.";
+		if (again)
+		{
+			static const char* const k[] = { "Dalej $LVL :)", "$LVL, nic sie nie zmienilo.", "Wciaz $LVL." };
+			return PBC_SAY(g, k);
+		}
 		if (s.expPct >= 85)
 		{
 			static const char* const k[] = { "Mam $LVL, zaraz wbijam $NEXTLVL.", "$LVL, ale juz prawie $NEXTLVL." };
@@ -522,7 +584,6 @@ namespace playerbot_conv
 			else if (s.askerLevel >= s.level - 3 && s.askerLevel <= s.level + 3)
 				Append(out, "Mamy podobnie.");
 		}
-		g.reason = "Bo tyle wyexpilem.";
 		return out;
 	}
 
@@ -773,21 +834,37 @@ namespace playerbot_conv
 		return PBC_SAY(g, k);
 	}
 
+	// The gear line. The names stand in the nominative, after "w rece:" or
+	// "bron to" - "Mam Pajecza Wlocznia" is a case nobody speaks - and a
+	// question asked again a moment later gets "dalej to samo", not the
+	// line recited a second and a third time.
 	inline std::string GenEquipment(TGen& g)
 	{
 		const TBotSnapshot& s = g.s;
-		if (g.a && g.a->concepts.Has(C_BONUS) && !s.weaponName.empty())
-			return Fill(g, "Bonusow nie licze co do punktu. Mam $WEAPON +$WPLUS i $ARMOR +$APLUS, jakos to idzie.");
 		if (s.weaponName.empty())
 			return "Na razie bez porzadnej broni.";
+		const bool again = g.m.gearSaidAt != 0 && g.now - g.m.gearSaidAt < CONV_FACT_TTL_MS;
+		g.m.gearSaidAt = g.now != 0 ? g.now : 1;
+		if (again)
+		{
+			static const char* const k[] = { "Dalej to samo: $WEAPON.", "Nic sie nie zmienilo, dalej $WEAPON.", "Wciaz $WEAPON w rece." };
+			return PBC_SAY(g, k);
+		}
+		if (g.a && g.a->concepts.Has(C_BONUS))
+		{
+			std::string out = "Bonusow nie licze co do punktu.";
+			Append(out, Fill(g, s.armorName.empty() ? "W rece: $WEAPON." : "W rece: $WEAPON, na sobie: $ARMOR."));
+			return out;
+		}
 		std::string out;
 		if (!s.armorName.empty())
 		{
-			static const char* const k[] = { "Nosze $WEAPON +$WPLUS i $ARMOR +$APLUS.", "$WEAPON +$WPLUS, do tego $ARMOR +$APLUS." };
+			static const char* const k[] = { "W rece $WEAPON, na sobie $ARMOR.", "Bron to $WEAPON, a zbroja $ARMOR.",
+				"W rece: $WEAPON. Na sobie: $ARMOR." };
 			out = PBC_SAY(g, k);
 		}
 		else
-			out = Fill(g, "Mam $WEAPON +$WPLUS.");
+			out = Fill(g, "W rece: $WEAPON.");
 		if (s.weaponPlus >= 7)
 			Append(out, "Nie narzekam.");
 		else if (s.weaponPlus <= 2 && g.rng.Chance(50))
@@ -798,7 +875,7 @@ namespace playerbot_conv
 	inline std::string GenInventory(TGen& g)
 	{
 		const TBotSnapshot& s = g.s;
-		std::string out = s.bagSummary.empty() ? std::string("Nic ciekawego w EQ.") : "W EQ mam m.in. " + s.bagSummary + ".";
+		std::string out = s.bagSummary.empty() ? std::string("Nic ciekawego w EQ.") : "W EQ m.in.: " + s.bagSummary + ".";
 		if (s.bagCells > 0)
 			Append(out, Fill(g, "Wolnych miejsc $FREE."));
 		return out;
@@ -840,7 +917,7 @@ namespace playerbot_conv
 		unsigned int count = 0;
 		if (g.world && g.world->FindItem(obj, name, count))
 		{
-			std::string out = "Tak, mam " + name;
+			std::string out = "Tak, mam: " + name;
 			if (count > 1)
 				out += " x" + ToString(count);
 			out += ".";
@@ -848,7 +925,7 @@ namespace playerbot_conv
 		}
 		long long price = 0;
 		if (g.world && g.world->FindShopItem(obj, name, price, count))
-			return "W EQ nie, ale mam " + name + " na straganie " + ShopWhere(g) + " za " + SayMoney(price) + ".";
+			return "W EQ nie, ale na straganie " + ShopWhere(g) + " stoi " + name + " za " + SayMoney(price) + ".";
 		static const char* const k[] = { "Nie, nie mam tego.", "Nie mam czegos takiego w EQ.", "Niestety nie." };
 		return PBC_SAY(g, k);
 	}
@@ -936,7 +1013,7 @@ namespace playerbot_conv
 	inline std::string GenBiologist(TGen& g)
 	{
 		if (!g.s.bioWanted.empty())
-			return Fill(g, g.s.action == A_BIOLOGIST ? "Wlasnie zbieram $BIO dla Biologa." : "Szukam teraz $BIO dla Biologa.");
+			return Fill(g, g.s.action == A_BIOLOGIST ? "Wlasnie zbieram dla Biologa: $BIO." : "Dla Biologa szukam teraz: $BIO.");
 		if (g.s.action == A_BIOLOGIST)
 			return "Wlasnie robie jego zadanie.";
 		return "Teraz nic dla Biologa nie zbieram.";
@@ -1065,10 +1142,10 @@ namespace playerbot_conv
 			}
 		}
 		else if (count > 1)
-			out = "Tak, mam $ITEM x$COUNT na straganie $WHERE, $PRICE za calosc.";
+			out = "Tak, na straganie $WHERE stoi $ITEM x$COUNT, $PRICE za calosc.";
 		else
 		{
-			static const char* const k[] = { "Tak, mam $ITEM na straganie $WHERE za $PRICE.", "Mam. $ITEM, $PRICE, stragan $WHERE." };
+			static const char* const k[] = { "Tak, na straganie $WHERE stoi $ITEM za $PRICE.", "Mam. $ITEM, $PRICE, stragan $WHERE." };
 			out = PBC_PICK(g, k);
 		}
 		ReplaceAll(out, "$OFFER", SayMoney(offer));
@@ -1097,7 +1174,7 @@ namespace playerbot_conv
 		}
 		unsigned int bagCount = 0;
 		if (g.world && g.world->FindItem(obj, name, bagCount))
-			return "Straganu teraz nie mam, ale " + name + " mam w EQ.";
+			return "Straganu teraz nie mam, ale w EQ lezy " + name + ".";
 		return "Nie mam tego, a straganu teraz tez nie.";
 	}
 
@@ -1185,7 +1262,7 @@ namespace playerbot_conv
 		if (g.world && g.world->FindShopItem(obj, name, price, count))
 			return ShopLineAnswer(g, name, price, count);
 		if (g.world && g.world->FindItem(obj, name, count))
-			return "Mam " + name + " w EQ, ale nie wystawilem tego na sprzedaz.";
+			return "W EQ lezy " + name + ", ale nie wystawilem tego na sprzedaz.";
 		if (g.s.shopOpen)
 			return "Tego nie mam na straganie.";
 		return "Nie mam tego teraz na sprzedaz.";
@@ -1275,16 +1352,16 @@ namespace playerbot_conv
 		if (g.s.goal == G_REFINE)
 			return "Planuje ulepszyc bron, jak tylko zbiore materialy.";
 		if (!g.s.weaponName.empty())
-			return Fill(g, "Ulepszam, jak mam materialy. Teraz mam $WEAPON +$WPLUS.");
+			return Fill(g, "Ulepszam, jak mam materialy. Teraz w rece: $WEAPON.");
 		return "Jak bedzie z czego, to ulepsze.";
 	}
 
 	inline std::string GenMissions(TGen& g)
 	{
 		if (!g.s.huntMob.empty())
-			return Fill(g, "Mam polowanie na $HUNT, zostalo $HUNTN.");
+			return Fill(g, "Mam polowanie: $HUNT, zostalo $HUNTN.");
 		if (!g.s.bioWanted.empty())
-			return Fill(g, "Zbieram $BIO dla Biologa.");
+			return Fill(g, "Zbieram dla Biologa: $BIO.");
 		return "Teraz zadnej misji nie mam.";
 	}
 
@@ -1894,6 +1971,475 @@ namespace playerbot_conv
 		return true;
 	}
 
+	// ------------------------------------------------ the bot's gear argued about
+
+	// The item a line names, as a reply says it back: the link as it came,
+	// the players' word with its plus ("FMS +9"), or nothing.
+	inline std::string ShownItem(const TGen& g)
+	{
+		return g.a ? g.a->itemShown : std::string();
+	}
+
+	// "$ITEM? ..." with the item filled in.
+	inline std::string SayWithItem(TGen& g, const char* const* variants, size_t n, const std::string& item)
+	{
+		std::string out = Say(g, variants, n);
+		ReplaceAll(out, "$ITEM", item);
+		CapitalizeFirst(out);
+		return out;
+	}
+
+	// Whether the line names the family the AI is playing for: "rib" when the
+	// goal is Ostrze Czerwonej Stali.
+	inline bool LineNamesGoal(const TGen& g)
+	{
+		if (!g.a || g.a->object.empty() || g.s.weaponGoal.empty())
+			return false;
+		return ItemNameMatches(g.s.weaponGoal.c_str(), g.a->object);
+	}
+
+	// Why the bot holds the weapon it holds, from what the AI actually has in
+	// mind: the goal of playerbot_weapon_goal.h against the purse, the plus.
+	// Said in full once; asked again within CONV_FACT_TTL_MS it is a short
+	// "jak mowilem", because four replies ending in the same sentence is the
+	// repetition the gear line had - and within CONV_REASON_RECENT_MS it is
+	// not said at all beside a reply that has something of its own
+	// (`haveContent`). An empty answer leaves the last reason standing for a
+	// "a czemu?" that follows.
+	inline bool GearReasonSaidLately(const TGen& g, u32 window)
+	{
+		return g.m.gearReasonAt != 0 && g.now - g.m.gearReasonAt < window;
+	}
+
+	inline std::string GearReason(TGen& g, bool haveContent)
+	{
+		const TBotSnapshot& s = g.s;
+		const bool again = GearReasonSaidLately(g, CONV_FACT_TTL_MS);
+		if (again && haveContent && GearReasonSaidLately(g, CONV_REASON_RECENT_MS))
+			return std::string();
+		g.m.gearReasonAt = g.now != 0 ? g.now : 1;
+		const bool saving = s.weaponOutclassed && !s.weaponGoal.empty() && s.weaponGoalPrice > 0 &&
+				s.gold < s.weaponGoalPrice;
+		if (again)
+		{
+			if (saving || s.gold < 1000000)
+			{
+				static const char* const k[] = { "Tylko na razie kasy brak, jak pisalem.", "Kasa, jak mowilem. Zbieram.",
+					"Tylko najpierw musze uzbierac.", "Na razie zbieram, jak mowilem." };
+				return PBC_SAY(g, k);
+			}
+			static const char* const k[] = { "Ale na razie zostaje przy swojej.", "Jak trafie cos w normalnej cenie, to zmienie.",
+				"Na razie ta mi wystarcza." };
+			return PBC_SAY(g, k);
+		}
+		if (s.weaponName.empty())
+			return "Na razie w ogole nie mam porzadnej broni, zbieram na cos.";
+		if (s.goal == G_EQUIPMENT || s.marketTrip || s.action == A_MARKET)
+			return "Wlasnie sie za czyms lepszym rozgladam.";
+		if (s.weaponIsGoal)
+			return "Na moj poziom lepszej za bardzo nie ma, sprawdzalem.";
+		if (saving)
+			return g.tier >= TIER_KNOWN ? Fill(g, "Odkladam na nowa bron ($GOAL), ale kosztuje z $GOALPRICE, a mam $GOLD.") :
+					Fill(g, "Odkladam na nowa bron ($GOAL), ale jeszcze mnie nie stac.");
+		if (s.weaponOutclassed && !s.weaponGoal.empty())
+			return Fill(g, "Celuje w nowa bron ($GOAL), tylko nikt jej nie wystawia w normalnej cenie.");
+		if (s.weaponPlus >= 7)
+			return Fill(g, "Moja ma +$WPLUS i jeszcze daje rade, szkoda mi jej.");
+		if (s.gold < 1000000)
+			return "Na lepsza mnie jeszcze nie stac.";
+		return "Jeszcze nie trafilem na nic lepszego w normalnej cenie.";
+	}
+
+	// The family the bot is playing for, named by the person: it holds one
+	// already, it is saving for one (named again: "no mowie" - the reason it
+	// gave said so), or it would take one some day but is not chasing it.
+	inline std::string GoalNamedReaction(TGen& g, const std::string& shown)
+	{
+		const TBotSnapshot& s = g.s;
+		if (s.weaponIsGoal)
+		{
+			static const char* const k[] = { "$ITEM? Przeciez taka mam :)", "Przeciez ja mam $ITEM :)" };
+			return SayWithItem(g, k, 2, shown);
+		}
+		if (s.weaponOutclassed)
+		{
+			if (GearReasonSaidLately(g, CONV_FACT_TTL_MS))
+			{
+				static const char* const k[] = { "No mowie, na $ITEM zbieram :)", "Przeciez pisze, ze na $ITEM odkladam :)" };
+				return SayWithItem(g, k, 2, shown);
+			}
+			static const char* const k[] = { "$ITEM? No wlasnie na to zbieram!", "$ITEM? Na to wlasnie odkladam!" };
+			return SayWithItem(g, k, 2, shown);
+		}
+		static const char* const k[] = { "$ITEM? Kiedys na pewno.", "$ITEM to by bylo cos, kiedys." };
+		return SayWithItem(g, k, 2, shown);
+	}
+
+	// "czemu nie wymienisz broni?", "czemu nie kupisz sobie riba?", "czemu,
+	// przeciez ta bron ma srednie": the point granted when it is a fair one,
+	// the item they named taken up, and the bot's own reason.
+	inline std::string GenGearWhy(TGen& g)
+	{
+		const TAnalysis* a = g.a;
+		const TBotSnapshot& s = g.s;
+		std::string out;
+		const std::string shown = ShownItem(g);
+		if (a && a->concepts.Has(C_UPGRADE) && !s.weaponName.empty())
+		{
+			out = s.weaponPlus >= 7 ? Fill(g, "Moja ma juz +$WPLUS, dalej to juz loteria u kowala.") :
+					"Ulepszam, jak mam materialy i kase na kowala.";
+			g.reason = out;
+			return out;
+		}
+		if (a && a->levelNamed > 0 && s.weaponLevel > 0 &&
+				(a->levelNamed + 5 < s.weaponLevel || a->levelNamed > s.weaponLevel + 5))
+			out = Fill(g, "To bron na $WLVL poziom, nie na ") + ToString((long long)a->levelNamed) + " :)";
+		else if (a && (a->tokens.Has("przeciez") || a->tokens.Has("ale")) && a->concepts.Has(C_BONUS))
+		{
+			static const char* const k[] = { "No ma, nie przecze.", "Racja, srednie robia robote.", "Wiem, wiem." };
+			out = PBC_SAY(g, k);
+		}
+		else if (s.weaponLevel > 0 && s.weaponLevel + 15 <= s.level)
+		{
+			static const char* const k[] = { "Wiem, stara jest.", "No wiem, juz troche odstaje.", "Tak, dawno jej nie zmienialem." };
+			out = PBC_SAY(g, k);
+		}
+		if (!shown.empty())
+		{
+			if (LineNamesGoal(g))
+				Append(out, GoalNamedReaction(g, shown));
+			else
+			{
+				static const char* const k[] = { "$ITEM? Dobry pomysl.", "$ITEM? Tez o tym myslalem.", "$ITEM to niezly wybor." };
+				Append(out, SayWithItem(g, k, 3, shown));
+			}
+		}
+		const std::string reason = GearReason(g, out.size() >= 25);
+		Append(out, reason);
+		g.reason = reason.empty() ? g.m.lastReason : reason;
+		return out;
+	}
+
+	// "zmien bron", "potrzebne ci sa obrazenia", "kup sobie riba".
+	inline std::string GenGearAdvice(TGen& g)
+	{
+		const TAnalysis* a = g.a;
+		std::string out;
+		const std::string shown = ShownItem(g);
+		if (a && a->concepts.Has(C_BONUS))
+		{
+			static const char* const k[] = { "Wiem, obrazenia sie licza.", "No tak, bez obrazen daleko nie zajde.",
+				"Masz racje, z lepsza bronia szybciej by szlo." };
+			out = PBC_SAY(g, k);
+		}
+		else if (!shown.empty())
+		{
+			if (LineNamesGoal(g))
+				out = GoalNamedReaction(g, shown);
+			else
+			{
+				static const char* const k[] = { "$ITEM? Moze to dobry pomysl.", "$ITEM? Pomysle o tym." };
+				out = SayWithItem(g, k, 2, shown);
+			}
+		}
+		else
+		{
+			static const char* const k[] = { "Moze masz racje.", "Pomysle o tym.", "Wiem, przydaloby sie cos lepszego." };
+			out = PBC_SAY(g, k);
+		}
+		const std::string reason = GearReason(g, out.size() >= 25);
+		Append(out, reason);
+		g.reason = reason.empty() ? g.m.lastReason : reason;
+		return out;
+	}
+
+	// "co myslisz o broni ze srednimi?", "jaka bron jest najlepsza?"
+	inline std::string GenGearOpinion(TGen& g)
+	{
+		const TAnalysis* a = g.a;
+		const TBotSnapshot& s = g.s;
+		const std::string shown = ShownItem(g);
+		const bool which = a && a->concepts.Has(C_ADVICE) &&
+				(a->concepts.Has(C_WHICH) || a->concepts.Has(C_WHAT) || a->concepts.Has(C_OR));
+		if (which)
+		{
+			if (a->concepts.Has(C_ME) && !a->concepts.Has(C_YOU))
+			{
+				static const char* const k[] = { "Zalezy od klasy i poziomu, ale taka ze srednimi zawsze sie oplaca.",
+					"Na twoj poziom? Bierz cos ze srednimi, to sie zawsze oplaca." };
+				return PBC_SAY(g, k);
+			}
+			if (s.weaponIsGoal && !s.weaponName.empty())
+				return Fill(g, "Na moj poziom chyba ta, ktora mam: $WEAPON.");
+			if (!s.weaponGoal.empty())
+				return Fill(g, "Na moj poziom chyba $GOAL. Na nia odkladam.");
+			static const char* const k[] = { "Zalezy od poziomu i klasy. Ja bym bral cos ze srednimi.",
+				"Kazda ma swoje plusy. Byle ze srednimi.", "Zalezy, do czego. Na expa te ze srednimi." };
+			return PBC_SAY(g, k);
+		}
+		std::string out;
+		if (a && a->concepts.Has(C_BONUS))
+		{
+			static const char* const k[] = { "Srednie to podstawa na expie, wszystko szybciej schodzi.",
+				"Bron ze srednimi to swietna sprawa, tylko dobre sa drogie.", "Bez srednich ani rusz, to wiem." };
+			out = PBC_SAY(g, k);
+			if (!shown.empty())
+			{
+				if (!LineNamesGoal(g))
+					Append(out, shown + " to solidna sprawa.");
+				else if (s.weaponIsGoal)
+					Append(out, "Sam taka mam.");
+				else if (s.weaponOutclassed)
+					Append(out, "Sam na " + shown + " odkladam.");
+				else
+					Append(out, shown + " to by bylo cos.");
+			}
+		}
+		else if (!shown.empty())
+		{
+			static const char* const k[] = { "$ITEM? Z dobrymi srednimi to marzenie :)", "$ITEM to solidna sprawa." };
+			out = SayWithItem(g, k, 2, shown);
+		}
+		else
+		{
+			static const char* const k[] = { "Dobra bron to podstawa, reszta to dodatki.", "Liczy sie bron i bonusy, jak dla mnie." };
+			out = PBC_SAY(g, k);
+		}
+		return out;
+	}
+
+	// "a jakbym ci dal riba +9 ze srednimi, wymienilbys?" - of course.
+	inline std::string GenGiftOffer(TGen& g)
+	{
+		if (g.tier == TIER_HOSTILE)
+			return "Od ciebie? Watpie :P";
+		const std::string shown = ShownItem(g);
+		const bool swap = g.a && g.a->concepts.Has(C_SWAP);
+		if (!shown.empty())
+		{
+			if (swap)
+			{
+				static const char* const k[] = { "Jasne, ze bym wymienil! $ITEM to by bylo cos :D", "Od razu bym wymienil, $ITEM to by bylo cos." };
+				return SayWithItem(g, k, 2, shown);
+			}
+			static const char* const k[] = { "$ITEM? Bralbym w ciemno :D", "$ITEM? Jasne, ze tak! Od razu bym zalozyl.",
+				"Pewnie! $ITEM to by bylo cos." };
+			return SayWithItem(g, k, 3, shown);
+		}
+		if (swap)
+		{
+			static const char* const k[] = { "Jasne, ze bym wymienil!", "Od razu bym wymienil :D" };
+			return PBC_SAY(g, k);
+		}
+		static const char* const k[] = { "Pewnie, ze tak!", "Bralbym bez zastanowienia :D", "No ba! Kto by nie wzial." };
+		return PBC_SAY(g, k);
+	}
+
+	// "zoba jaki fms 9", a shift-clicked "[Miecz Pelni Ksiezyca+9]".
+	inline std::string GenShowItem(TGen& g)
+	{
+		const TAnalysis* a = g.a;
+		const std::string shown = ShownItem(g);
+		const int plus = a ? a->objectPlus : -1;
+		std::string out;
+		// "moglas byc tu z nami, zoba..."
+		if (a && (a->concepts.Has(C_WE) || a->concepts.Has(C_WITHME)))
+			out = "Szkoda, ze mnie nie bylo!";
+		// Shown again a moment later: seen it, and said so, not the same
+		// admiration twice.
+		if (g.m.lastAnswered == I_SHOW_ITEM && g.now - g.m.lastAnsweredAt < CONV_CONTEXT_TTL_MS)
+		{
+			static const char* const k[] = { "No widze, widze :) Piekna sztuka.", "Juz widzialem, szacun :D", "No, robi wrazenie." };
+			Append(out, PBC_SAY(g, k));
+			return out;
+		}
+		if (shown.empty())
+		{
+			static const char* const k[] = { "O, ladne. Gratki!", "Fajne, gratki!", "No no, niezle." };
+			Append(out, PBC_SAY(g, k));
+			return out;
+		}
+		if (plus >= 8)
+		{
+			static const char* const k[] = { "Ale sztuka! $ITEM, szacun.", "O kurcze, $ITEM! Zazdroszcze.", "No no, $ITEM. Ile w to wlozyles?" };
+			Append(out, SayWithItem(g, k, 3, shown));
+		}
+		else if (plus >= 5)
+		{
+			static const char* const k[] = { "Niezle! $ITEM to juz cos.", "O, $ITEM. Ladnie." };
+			Append(out, SayWithItem(g, k, 2, shown));
+		}
+		else
+		{
+			static const char* const k[] = { "O, $ITEM. Ladne.", "Fajne, gratki!" };
+			Append(out, SayWithItem(g, k, 2, shown));
+		}
+		if (LineNamesGoal(g) && !g.s.weaponIsGoal && g.s.weaponOutclassed)
+			Append(out, "Sam na taka odkladam.");
+		return out;
+	}
+
+	// ------------------------------------------- a person talking at the bot
+
+	// "przestan do mnie pisac": said once, and the bot keeps to it
+	// (TConvMemory::quietUntil keeps it from starting anything).
+	inline std::string GenStopTalking(TGen& g)
+	{
+		const bool released = ReleaseSummonFor(g);
+		static const char* const k[] = { "Dobra, juz nie pisze.", "Ok, nie przeszkadzam.", "Spoko, juz daje spokoj." };
+		std::string out = PBC_SAY(g, k);
+		if (released)
+			Append(out, "Wracam do swoich spraw.");
+		return out;
+	}
+
+	// "bana ci daje": a question back about what for - and after a sum it had
+	// just got right, that sum.
+	inline std::string GenThreat(TGen& g)
+	{
+		if (g.m.lastAnswered == I_MATH && g.now - g.m.lastAnsweredAt < CONV_CONTEXT_TTL_MS)
+			return "Za co? Przeciez dobrze policzylem :P";
+		if (g.m.negative >= 3)
+			return "Rob, co chcesz.";
+		static const char* const k[] = { "Za co? Przeciez nic ci nie zrobilem.", "Hej, spokojnie, za co od razu ban?",
+			"Ban? A za co, za pisanie? :(" };
+		return PBC_SAY(g, k);
+	}
+
+	// Banter answered as banter: "bieda", "zawijaj stad", "tyle jestes
+	// warta", "daleko w zyciu zajdziesz". After "przestan do mnie pisac" or
+	// from somebody hostile, only a short "jak uwazasz".
+	inline std::string GenMock(TGen& g)
+	{
+		const TAnalysis* a = g.a;
+		if (a && a->answeredAsk == ASK_JOIN)
+			return "Haha, dobra, to sam sobie pobije :P";
+		if (IsQuiet(g.m, g.now) || g.tier == TIER_HOSTILE)
+		{
+			static const char* const k[] = { "Jak uwazasz.", "Niech ci bedzie.", "Ok." };
+			return PBC_SAY(g, k);
+		}
+		bool leave = false, worth = false, future = false, poor = false, weak = false;
+		if (a)
+		{
+			for (size_t i = 0; i < a->tokens.words.size(); ++i)
+			{
+				const std::string& w = a->tokens.words[i];
+				if (w == "zawijaj" || w == "zawijajcie" || w == "wypad" || w == "spadaj")
+					leave = true;
+				if (w == "wart" || w == "warta" || w == "warty")
+					worth = true;
+				if (StartsWith(w, "zajdziesz"))
+					future = true;
+				if (StartsWith(w, "bied"))
+					poor = true;
+				if (StartsWith(w, "slab") || StartsWith(w, "cienk") || StartsWith(w, "cieniut") || StartsWith(w, "zenad") ||
+						StartsWith(w, "zenuj"))
+					weak = true;
+			}
+		}
+		if (leave)
+		{
+			static const char* const k[] = { "Haha, dobra, juz sie zwijam :P", "Dobra, dobra, juz mnie nie ma :D" };
+			return PBC_SAY(g, k);
+		}
+		if (worth)
+		{
+			static const char* const k[] = { "Moze i niewiele, ale uczciwie zarobione :P", "Auc. Ale sie nie poddaje :P" };
+			return PBC_SAY(g, k);
+		}
+		if (future)
+		{
+			static const char* const k[] = { "Hehe, na razie zajde do nastepnego poziomu.", "Krok po kroku, jak na expie :P" };
+			return PBC_SAY(g, k);
+		}
+		if (poor)
+		{
+			static const char* const k[] = { "Kazdy kiedys zaczynal :P", "Bieda, ale uczciwa.", "Spokojnie, jeszcze sie odkuje." };
+			return PBC_SAY(g, k);
+		}
+		if (weak)
+		{
+			static const char* const k[] = { "Kazdy jest slaby na poczatku :P", "Jeszcze zobaczysz :P" };
+			return PBC_SAY(g, k);
+		}
+		static const char* const k[] = { "Haha, dobra, dobra.", "Hehe, jak tam chcesz :P" };
+		return PBC_SAY(g, k);
+	}
+
+	// "ile to 2+2" - the number, the way a person writes it.
+	inline std::string GenMath(TGen& g)
+	{
+		const TAnalysis* a = g.a;
+		if (!a)
+			return "Hm?";
+		if (a->mathDivZero)
+			return "Przez zero sie nie dzieli :P";
+		if (a->mathTooBig || a->mathText.empty())
+			return "Za duze liczby jak na moja glowe :D";
+		const std::string r = a->mathText;
+		if (r == "4" && a->tokens.norm.find("2 +2") != std::string::npos)
+			return "4. To akurat wiem :D";
+		if (a->mathMixed)
+			return r + ". Najpierw mnozenie :P";
+		static const char* const k[] = { "$R.", "Wychodzi $R.", "$R :)", "Hmm... $R." };
+		std::string out = Pick(g, k, 4);
+		ReplaceAll(out, "$R", r);
+		return out;
+	}
+
+	// "to powiedziales mi, ze w Joan": it did say so - and moved since.
+	inline std::string GenContradiction(TGen& g)
+	{
+		const TBotSnapshot& s = g.s;
+		const long mentioned = MentionedMap(g);
+		if (!IsKnownMap(s.mapIndex))
+			return "Nie klamie :) Po prostu sie przenioslem.";
+		g.saidMap = true;
+		if (mentioned > 0 && mentioned != s.mapIndex && IsKnownMap(mentioned))
+		{
+			if (SaidMapLately(g, mentioned))
+			{
+				static const char* const k[] = { "Bo wtedy bylem $WASAT :) Teraz jestem juz $MAPIN.",
+					"Bylem $WASAT, ale juz sie przenioslem - teraz jestem $MAPIN." };
+				return WithOldMap(g, Pick(g, k, 2), mentioned);
+			}
+			return Fill(g, "Nie, jestem $MAPIN. Moze cos ci sie pomylilo?");
+		}
+		if (mentioned == s.mapIndex)
+			return Fill(g, "No tak, dalej jestem $MAPIN.");
+		long old = RecentOtherMap(g);
+		if (!old && g.m.prevSaidMap != 0 && g.m.prevSaidMap != s.mapIndex && IsKnownMap(g.m.prevSaidMap) &&
+				SaidMapLately(g, g.m.prevSaidMap))
+			old = g.m.prevSaidMap;
+		if (old)
+			return WithOldMap(g, "Wczesniej bylem $WASAT, teraz jestem juz $MAPIN.", old);
+		static const char* const k[] = { "Nie klamie :) Moze sie zle wyrazilem.", "Hm, chyba sie nie zrozumielismy." };
+		return PBC_SAY(g, k);
+	}
+
+	// "to nie lepiej na jakas wyzsza mape isc?", "czemu zmieniles mape?"
+	inline std::string GenMapAdvice(TGen& g)
+	{
+		const TBotSnapshot& s = g.s;
+		const bool why = g.a && g.a->concepts.Has(C_WHY);
+		g.saidMap = true;
+		if (const long old = RecentOtherMap(g))
+		{
+			if (why)
+				return Fill(g, "Bo $MAPNAME lepiej pasuje na moj poziom.");
+			return WithOldMap(g, "Wlasnie tak zrobilem - bylem $WASAT, a teraz jestem juz $MAPIN.", old);
+		}
+		if (s.action == A_TRAVEL && IsKnownMap(s.travelMap) && s.travelMap != s.mapIndex)
+			return Fill(g, why ? "Bo tam jest lepszy exp. Wlasnie ide $DEST." : "Wlasnie ide $DEST.");
+		if (s.inTown)
+			return why ? "Bo mam sprawy w miescie." : "Pewnie tak. Jak zalatwie sprawy w miescie, to sie przeniose.";
+		if (why)
+			return "Bo tu jest dobry exp na moj poziom.";
+		static const char* const k[] = { "Tu mi pasuje, exp leci na moj poziom.", "Moze i tak. Zobacze, jak wbije pare poziomow." };
+		return PBC_SAY(g, k);
+	}
+
 	// ------------------------------------------------------------- follow-ups
 
 	inline std::string GenerateOne(TGen& g, const TAnalysis& a);
@@ -2048,11 +2594,22 @@ namespace playerbot_conv
 					return PBC_SAY(g, k);
 				}
 			case ASK_JOIN:
-				if (yes)
+			{
+				// "teraz to najwyzej mozesz mi zbic konia" is a no with a joke in
+				// it; asking "to jak, zapraszasz?" after it was not listening.
+				const TTokens& t = a.tokens;
+				const bool softNo = t.Has("najwyzej") || t.Has("raczej") || t.Has("potem") || t.Has("innym") ||
+						t.Has("zajety") || t.Has("zajeta") || t.Has("sorry") || t.Has("sory") || t.Has("sorki");
+				if (yes && !no && !softNo)
 					return "To zapros mnie do PT!";
-				if (no)
-					return "Szkoda, moze innym razem.";
-				return "To jak, zapraszasz?";
+				if (no || softNo)
+				{
+					static const char* const k[] = { "No trudno, moze innym razem.", "Dobra, innym razem :)" };
+					return PBC_SAY(g, k);
+				}
+				static const char* const k[] = { "Haha, no dobra, to innym razem :)", "Dobra, jakbys zmienil zdanie, to pisz." };
+				return PBC_SAY(g, k);
+			}
 			case ASK_FOUND:
 				if (yes || c.Has(C_POSITIVE))
 					return "O, gratki!";
@@ -2080,7 +2637,8 @@ namespace playerbot_conv
 				}
 				if (pack)
 					return PickField(g, pack->react, 4);
-				return "Ciekawe.";
+				static const char* const k[] = { "Aha, rozumiem.", "No, jasne.", "Mhm, rozumiem." };
+				return PBC_SAY(g, k);
 			}
 		}
 	}
@@ -2121,12 +2679,23 @@ namespace playerbot_conv
 		}
 	}
 
+	// A question nothing understood. Twice in a row it stops pretending and
+	// says what it can talk about.
 	inline std::string GenUnknownQuestion(TGen& g, const TAnalysis& a)
 	{
-		(void)a;
+		if (g.m.fallbackStreak >= 1)
+		{
+			static const char* const k[] = { "Chyba sie nie rozumiemy :) Zapytaj mnie o exp, sprzet albo mape.",
+				"Nie lapie, o co chodzi. Zapytaj jakos inaczej?" };
+			return PBC_SAY(g, k);
+		}
+		if (a.concepts.Has(C_YOU))
+		{
+			static const char* const k[] = { "Hm, nie bardzo rozumiem, o co pytasz. Mozesz inaczej?", "A czemu pytasz? :)" };
+			return PBC_SAY(g, k);
+		}
 		static const char* const kSteer[] = {
-			"Hmm, ciezko powiedziec.", "Dobre pytanie. Sam nie wiem.", "Nie wiem, nigdy sie nad tym nie zastanawialem.",
-			"Nie mam pojecia, szczerze." };
+			"Dobre pytanie. Sam nie wiem.", "Nie wiem, nigdy sie nad tym nie zastanawialem.", "Nie mam pojecia, szczerze." };
 		std::string out = PBC_SAY(g, kSteer);
 		if (g.rng.Chance(25) && g.askBack.empty())
 		{
@@ -2153,7 +2722,22 @@ namespace playerbot_conv
 			return "No to tak jak ja.";
 		if (c.Has(C_EXP) && c.Has(C_ME))
 			return "O, to powodzenia na expie.";
-		static const char* const k[] = { "Aha, rozumiem.", "No tak.", "Ciekawe.", "Mhm, jasne." };
+		// Two lines in a row nothing understood: say what the bot is doing,
+		// something the person can pick up, instead of another "aha".
+		if (g.m.fallbackStreak >= 1)
+		{
+			std::string out = "Aha.";
+			Append(out, ActivityClause(g, !g.saidMap));
+			g.saidActivity = true;
+			return out;
+		}
+		// About the bot itself: a shrug with a smile, not "ciekawe".
+		if (c.Has(C_YOU))
+		{
+			static const char* const k[] = { "Moze troche :P", "Tak myslisz? :)", "Hehe, moze." };
+			return PBC_SAY(g, k);
+		}
+		static const char* const k[] = { "Aha, rozumiem.", "Mhm, jasne.", "No, rozumiem.", "Jasne." };
 		std::string out = PBC_SAY(g, k);
 		if (!g.Bad() && g.askBack.empty() && g.rng.Chance(g.voice == V_SOCIAL ? 40 : 20))
 		{
@@ -2261,6 +2845,17 @@ namespace playerbot_conv
 			case I_PROGRESS_TODAY: out = GenProgressToday(g); break;
 			case I_BUILD: out = GenBuild(g); break;
 			case I_BUFFS: out = GenBuffs(g); break;
+			case I_GEAR_WHY: out = GenGearWhy(g); break;
+			case I_GEAR_ADVICE: out = GenGearAdvice(g); break;
+			case I_GEAR_OPINION: out = GenGearOpinion(g); break;
+			case I_MAP_ADVICE: out = GenMapAdvice(g); break;
+			case I_SHOW_ITEM: out = GenShowItem(g); break;
+			case I_GIFT_OFFER: out = GenGiftOffer(g); break;
+			case I_STOP_TALKING: out = GenStopTalking(g); break;
+			case I_THREAT: out = GenThreat(g); break;
+			case I_MOCK: out = GenMock(g); break;
+			case I_MATH: out = GenMath(g); break;
+			case I_CONTRADICTION: out = GenContradiction(g); break;
 			case I_SUMMON: out = GenSummon(g); break;
 			case I_DISMISS: out = GenDismiss(g); break;
 			case I_FOLLOW_UP: out = GenFollowUp(g, a); break;

@@ -33,6 +33,10 @@ namespace playerbot_conv
 		// social
 		I_GREETING, I_FAREWELL, I_THANKS, I_APOLOGY, I_HOW_ARE_YOU, I_HELP,
 		I_IS_BOT, I_INSULT, I_PRAISE, I_AGE, I_ORIGIN, I_KS, I_READY, I_GOODLUCK, I_BRB,
+		// a person talking at the bot rather than asking it anything ("przestan
+		// do mnie pisac", a ban threatened, banter), a sum to work out, and
+		// "przeciez mowiles, ze..."
+		I_STOP_TALKING, I_THREAT, I_MOCK, I_MATH, I_CONTRADICTION,
 		// identity
 		I_NAME, I_LEVEL, I_CLASS, I_EMPIRE, I_PERSONALITY, I_MOOD,
 		// state
@@ -45,6 +49,10 @@ namespace playerbot_conv
 		I_MAP_OPINION, I_DROP_LUCK, I_PROGRESS_TODAY, I_PRICE, I_ITEMSHOP,
 		// the class's path, and what a Shaman's buffs give
 		I_BUILD, I_BUFFS,
+		// the bot's gear argued about ("czemu nie wymienisz broni?", "kup sobie
+		// riba", "co myslisz o srednich?"), a better map suggested, an item
+		// shown off, and one offered
+		I_GEAR_WHY, I_GEAR_ADVICE, I_GEAR_OPINION, I_MAP_ADVICE, I_SHOW_ITEM, I_GIFT_OFFER,
 		// asking the bot to come over, and letting it go again
 		I_SUMMON, I_DISMISS,
 		// conversation mechanics
@@ -124,23 +132,52 @@ namespace playerbot_conv
 		// The memory closes the question the moment the line arrives, and the
 		// reply is composed a second later, so it has to travel with the line.
 		unsigned char answeredAsk;
+		// An item named in a line about gear, or shown: "fms 9" is 9, a link
+		// "[Miecz Pelni Ksiezyca+9]" 9, -1 when the line says no refine.
+		int objectPlus;
+		// "bronia na 15 level": a level the line names, 0 when none.
+		int levelNamed;
+		bool itemLink;          // the item came as a shift-clicked link (or in brackets)
+		std::string itemShown;  // how a reply says it back: the link as it came, "FMS +9"
+		// I_MATH: the result as a person writes it ("4", "2,5"), and why there is none.
+		std::string mathText;
+		bool mathMixed;
+		bool mathDivZero;
+		bool mathTooBig;
 
 		TAnalysis() : intent(I_NONE), rawIntent(I_NONE), subject(I_NONE), follow(F_NONE),
 			topic(T_NONE), qtype(Q_STATEMENT), score(0), question(false), greetingToo(false),
 			thanksToo(false), returnToTopic(false), topicChange(false), repeated(false),
-			polarityNegative(false), at(0), gapBefore(0), offerYang(0), mentionMap(0), answeredAsk(0) {}
+			polarityNegative(false), at(0), gapBefore(0), offerYang(0), mentionMap(0), answeredAsk(0),
+			objectPlus(-1), levelNamed(0), itemLink(false), mathMixed(false), mathDivZero(false),
+			mathTooBig(false) {}
 	};
 
 	// The summon and its release are requests, not a subject the conversation
 	// returns to, so they sit outside the game range.
 	inline bool IsGameIntent(EIntent i)
 	{
-		return i >= I_NAME && i <= I_BUFFS;
+		return i >= I_NAME && i <= I_GIFT_OFFER;
 	}
 
 	inline bool IsSocialIntent(EIntent i)
 	{
-		return i >= I_GREETING && i <= I_BRB;
+		return i >= I_GREETING && i <= I_CONTRADICTION;
+	}
+
+	// A line that talks at the bot rather than to it: the reply is short and
+	// asks nothing back, and no mood is volunteered after it.
+	inline bool IsColdIntent(EIntent i)
+	{
+		return i == I_STOP_TALKING || i == I_THREAT || i == I_INSULT || i == I_MOCK;
+	}
+
+	// A line arguing with the bot about what it has, where it is or what it
+	// said: never an answer to a question the bot asked.
+	inline bool IsArgumentIntent(EIntent i)
+	{
+		return i == I_GEAR_WHY || i == I_GEAR_ADVICE || i == I_GEAR_OPINION || i == I_MAP_ADVICE ||
+				i == I_SHOW_ITEM || i == I_GIFT_OFFER || i == I_CONTRADICTION;
 	}
 
 	inline bool IsReactionIntent(EIntent i)
@@ -156,6 +193,7 @@ namespace playerbot_conv
 		{
 			case I_ACTIVITY: case I_ACTIVITY_LOCATION: case I_LOCATION: case I_TARGET:
 			case I_MOB_COUNT: case I_TIME_HERE: case I_MAP_OPINION: case I_TRAVEL: case I_REST:
+			case I_MAP_ADVICE:
 				return 1;
 			case I_GOAL: case I_NEXT_PLAN: case I_PROGRESS_TODAY:
 				return 2;
@@ -163,7 +201,8 @@ namespace playerbot_conv
 				return 3;
 			case I_GOLD: case I_SHOP: case I_MARKET: case I_BUY: case I_SELL: case I_INVENTORY:
 			case I_INVENTORY_SPACE: case I_ITEM_OWN: case I_EQUIPMENT: case I_REFINE:
-			case I_PRICE: case I_ITEMSHOP:
+			case I_PRICE: case I_ITEMSHOP: case I_GEAR_WHY: case I_GEAR_ADVICE: case I_GEAR_OPINION:
+			case I_SHOW_ITEM: case I_GIFT_OFFER:
 				return 4;
 			case I_FISHING: case I_MINING: case I_HERBALISM: case I_BIOLOGIST: case I_METIN:
 			case I_DEMON_TOWER: case I_MISSIONS: case I_DROP_LUCK:
@@ -178,6 +217,7 @@ namespace playerbot_conv
 		static const char* const kNames[] = {
 			"NONE", "GREETING", "FAREWELL", "THANKS", "APOLOGY", "HOW_ARE_YOU", "HELP",
 			"IS_BOT", "INSULT", "PRAISE", "AGE", "ORIGIN", "KS", "READY", "GOOD_LUCK", "BRB",
+			"STOP_TALKING", "THREAT", "MOCK", "MATH", "CONTRADICTION",
 			"NAME", "LEVEL", "CLASS", "EMPIRE", "PERSONALITY", "MOOD",
 			"CURRENT_ACTIVITY", "ACTIVITY_LOCATION", "LOCATION", "TARGET", "MOB_COUNT",
 			"GOAL", "NEXT_PLAN", "HP", "GOLD", "HORSE", "EQUIPMENT", "INVENTORY",
@@ -186,7 +226,8 @@ namespace playerbot_conv
 			"PARTY_REQUEST", "SHOP", "MARKET", "BUY", "SELL", "SKILLS", "PVP", "TRAVEL",
 			"REST", "REFINE", "MISSIONS", "DEATH", "RELATIONSHIP", "TIME_HERE",
 			"MAP_OPINION", "DROP_LUCK", "PROGRESS_TODAY", "PRICE", "ITEMSHOP",
-			"BUILD", "BUFFS", "SUMMON", "DISMISS",
+			"BUILD", "BUFFS", "GEAR_WHY", "GEAR_ADVICE", "GEAR_OPINION", "MAP_ADVICE", "SHOW_ITEM",
+			"GIFT_OFFER", "SUMMON", "DISMISS",
 			"FOLLOW_UP", "ACK", "LAUGH", "YES", "NO", "ANSWER_TO_BOT",
 			"GENERAL_CONVERSATION", "UNKNOWN_QUESTION", "UNKNOWN_STATEMENT"
 		};
@@ -415,6 +456,50 @@ namespace playerbot_conv
 			// "chodz do mnie do pt" is an invitation, and the party rule has it.
 			{ PBC_R(I_SUMMON, 0, 80), { C_SUMMON }, { 0 }, { C_HYPO, C_PARTY, C_DISMISS }, { C_ME, C_THERE } },
 			{ PBC_R(I_DISMISS, 0, 82), { C_DISMISS }, { 0 }, { C_HYPO }, { 0 } },
+
+			// ---------------- a person talking at the bot
+			// These outrank every topic the words inside them name: "przestan do
+			// mnie pisac gold diggerze" is not a question about yang, "bana ci
+			// daje" not one about buffs, "zawijaj stad" not a farewell.
+			{ PBC_R(I_STOP_TALKING, 0, 95), { C_STOPTALK }, { 0 }, { 0 }, { 0 } },
+			{ PBC_R(I_THREAT, 0, 90), { C_THREAT }, { 0 }, { 0 }, { C_YOU } },
+			{ PBC_R(I_MOCK, 0, 80), { C_MOCK }, { 0 }, { 0 }, { C_YOU } },
+			// Swearing aimed at the bot. Under the activity rule's 70 on purpose:
+			// "kurwa, co ty robisz" is still a question.
+			{ PBC_R(I_INSULT, 0, 66), { C_SWEAR, C_YOU }, { 0 }, { C_WHAT, C_WHERE, C_HOW, C_WHY }, { 0 } },
+			// "przeciez mowiles, ze w Joan"; "co powiedziales?" asks to hear it again.
+			{ PBC_R(I_CONTRADICTION, 0, 84), { C_SAIDBEFORE }, { 0 }, { C_WHAT }, { 0 } },
+
+			// ---------------- the bot's gear argued about
+			// "zoba jaki fms 9" - an item shown, not a question about the bot's.
+			{ PBC_R(I_SHOW_ITEM, 0, 86), { C_SHOWOFF }, { C_ITEMWORD, C_GEAR },
+				{ C_PRICEQ, C_BUYME, C_SELLYOU, C_SHOP }, { 0 } },
+			// "a jakbym ci dal riba +9 ze srednimi" - a gift, even a hypothetical one.
+			{ PBC_R(I_GIFT_OFFER, 0, 90), { C_GIFT }, { C_GEAR, C_ITEMWORD, C_BONUS, C_SWAP },
+				{ C_PRICEQ, C_SELLYOU, C_BUYME, C_WHO, C_WHERE }, { 0 } },
+			// "co myslisz o broni ze srednimi?", "jaka bron jest najlepsza?"
+			{ PBC_R(I_GEAR_OPINION, 0, 82), { C_THINK }, { C_GEAR, C_ITEMWORD, C_BONUS }, { C_MAP, C_MAPNAME }, { 0 } },
+			{ PBC_R(I_GEAR_OPINION, 0, 82), { C_ADVICE, C_GEAR }, { C_WHICH, C_WHAT, C_OR },
+				{ C_WHY, C_MAP, C_MAPNAME, C_HAVE }, { 0 } },
+			{ PBC_R(I_GEAR_OPINION, 0, 82), { C_ADVICE, C_ITEMWORD }, { C_WHICH, C_WHAT, C_OR },
+				{ C_WHY, C_MAP, C_MAPNAME, C_HAVE }, { 0 } },
+			// "czemu nie wymienisz broni?", "czemu nie kupisz sobie riba?",
+			// "czemu, przeciez ta bron ma srednie" - why the bot holds what it holds.
+			{ PBC_R(I_GEAR_WHY, 0, 82), { C_WHY, C_GEAR }, { 0 }, { C_BUYME, C_SELLYOU, C_TRADE, C_SHOP, C_PRICEQ },
+				{ C_SWAP, C_ADVICE, C_BONUS } },
+			{ PBC_R(I_GEAR_WHY, 0, 82), { C_WHY, C_ITEMWORD }, { 0 }, { C_BUYME, C_SELLYOU, C_TRADE, C_SHOP, C_PRICEQ },
+				{ C_SWAP, C_ADVICE, C_BONUS } },
+			{ PBC_R(I_GEAR_WHY, 0, 80), { C_WHY, C_BONUS }, { 0 }, { C_BUYME, C_SELLYOU, C_TRADE, C_SHOP }, { C_SWAP, C_ADVICE } },
+			{ PBC_R(I_GEAR_WHY, 0, 78), { C_WHY, C_SWAP }, { 0 }, { C_MAP, C_MAPNAME, C_GUILD, C_PARTY, C_SKILL }, { C_ADVICE } },
+			// "zmien bron", "potrzebne ci sa obrazenia", "kup sobie riba"
+			{ PBC_R(I_GEAR_ADVICE, 0, 80), { C_SWAP }, { C_GEAR, C_ITEMWORD, C_BONUS },
+				{ C_BUYME, C_SELLYOU, C_PRICEQ, C_MAP, C_MAPNAME }, { C_ADVICE } },
+			{ PBC_R(I_GEAR_ADVICE, 0, 78), { C_ADVICE }, { C_GEAR, C_ITEMWORD, C_BONUS },
+				{ C_BUYME, C_SELLYOU, C_PRICEQ, C_MAP, C_HAVE }, { 0 } },
+			// "to nie lepiej na jakas wyzsza mape isc?", "czemu zmieniles mape?"
+			{ PBC_R(I_MAP_ADVICE, 0, 80), { C_ADVICE }, { C_MAP, C_MAPNAME }, { C_BUYME, C_SELLYOU, C_GEAR, C_ITEMWORD }, { 0 } },
+			{ PBC_R(I_MAP_ADVICE, 0, 80), { C_WHY, C_MAP }, { 0 }, { C_TRAVELG, C_LIKE }, { C_SWAP, C_ADVICE } },
+			{ PBC_R(I_MAP_ADVICE, 0, 76), { C_SWAP, C_MAP }, { 0 }, { C_GEAR, C_ITEMWORD, C_TRAVELG }, { 0 } },
 			// weak catch-alls
 			{ PBC_R(I_ITEM_OWN, 0, 42), { C_HAVE }, { 0 }, { C_WHICH, C_DREAM, C_HOBBY, C_WHAT }, { 0 } },
 		};
@@ -424,9 +509,14 @@ namespace playerbot_conv
 
 #undef PBC_R
 
+	// The arguments about the bot's gear are opinions and hypotheticals by
+	// nature ("wymienilbys?", "jakbym ci dal..."), so a preference word is
+	// what they are made of, not a sign of small talk.
 	inline bool IsPreferenceRule(const TIntentRule& r)
 	{
-		return r.intent == I_GENERAL || r.intent == I_RELATIONSHIP || r.intent == I_MAP_OPINION;
+		return r.intent == I_GENERAL || r.intent == I_RELATIONSHIP || r.intent == I_MAP_OPINION ||
+				r.intent == I_GIFT_OFFER || r.intent == I_GEAR_WHY || r.intent == I_GEAR_ADVICE ||
+				r.intent == I_GEAR_OPINION || r.intent == I_MAP_ADVICE || r.intent == I_SHOW_ITEM;
 	}
 
 	inline int ScoreRule(const TIntentRule& r, const TConceptSet& c)
@@ -623,10 +713,12 @@ namespace playerbot_conv
 		for (int i = C_DO; i < C_COUNT; ++i)
 		{
 			// A give word is about something only beside what gives it: "a ile
-			// daje?" after the buffs is a follow-up about the buffs.
+			// daje?" after the buffs is a follow-up about the buffs. A curse is
+			// how some people talk: "kurde, gdzie?" is still a follow-up.
 			if (i == C_MANY || i == C_ALONE || i == C_ACK || i == C_LAUGH || i == C_SURPRISE ||
 					i == C_YES || i == C_NO || i == C_BUDDY || i == C_OR || i == C_NEXT ||
-					i == C_TODAY || i == C_NOW || i == C_POSITIVE || i == C_NEGATIVE || i == C_GIVE)
+					i == C_TODAY || i == C_NOW || i == C_POSITIVE || i == C_NEGATIVE || i == C_GIVE ||
+					i == C_SWEAR)
 				continue;
 			if (c.Has(i))
 				return true;
@@ -659,6 +751,85 @@ namespace playerbot_conv
 		return F_NONE;
 	}
 
+	// ------------------------------------------------------- gear in a line
+
+	// "+9" -> 9; with `bare`, "9" as well ("fms 9"). A refine runs 1..15 on
+	// this line of the game; anything else is some other number.
+	inline int PlusOfWord(const std::string& w, bool bare)
+	{
+		size_t p = 0;
+		if (!w.empty() && w[0] == '+')
+			p = 1;
+		else if (!bare)
+			return -1;
+		if (p >= w.size())
+			return -1;
+		int v = 0;
+		for (size_t i = p; i < w.size(); ++i)
+		{
+			if (w[i] < '0' || w[i] > '9')
+				return -1;
+			v = v * 10 + (w[i] - '0');
+			if (v > 15)
+				return -1;
+		}
+		return v >= 1 ? v : -1;
+	}
+
+	// "bronia na 15 level", "64 lvl", "poziom 30": a level the line names.
+	inline int FindLevelNamed(const TTokens& tok)
+	{
+		const std::vector<std::string>& w = tok.words;
+		for (size_t i = 0; i < w.size(); ++i)
+		{
+			const std::string& n = w[i];
+			if (n.empty() || n.size() > 3 || n[0] < '0' || n[0] > '9')
+				continue;
+			int v = 0;
+			bool digits = true;
+			for (size_t k = 0; k < n.size(); ++k)
+			{
+				if (n[k] < '0' || n[k] > '9')
+					digits = false;
+				else
+					v = v * 10 + (n[k] - '0');
+			}
+			if (!digits || v < 1 || v > 150)
+				continue;
+			const std::string next = i + 1 < w.size() ? w[i + 1] : std::string();
+			const std::string prev = i > 0 ? w[i - 1] : std::string();
+			if (next == "lvl" || StartsWith(next, "level") || StartsWith(next, "poziom") ||
+					prev == "lvl" || StartsWith(prev, "level") || StartsWith(prev, "poziom"))
+				return v;
+		}
+		return 0;
+	}
+
+	// The item a line about gear names, as the players name it: "rib", "fms
+	// 9", "riba +9". What a reply says back is the players' word with the
+	// plus ("FMS +9"); a book, a potion or a stone is not gear.
+	inline void ExtractGearObject(TAnalysis& a)
+	{
+		if (a.itemLink)
+			return;
+		const std::vector<std::string>& w = a.tokens.words;
+		for (size_t i = 0; i < w.size(); ++i)
+		{
+			const TItemAlias* al = FindItemAlias(w[i]);
+			if (!al || !IsGearAlias(al))
+				continue;
+			int plus = i + 1 < w.size() ? PlusOfWord(w[i + 1], true) : -1;
+			for (size_t k = 0; k < w.size() && plus < 0; ++k)
+				plus = PlusOfWord(w[k], false);
+			a.object = al->alias;
+			a.objectPlus = plus;
+			a.itemShown = ItemAliasDisplay(al);
+			if (plus > 0)
+				a.itemShown += " +" + ToString((long long)plus);
+			return;
+		}
+	}
+
 	// ------------------------------------------------------------- analysis
 
 	// The line on its own: no memory yet.
@@ -674,6 +845,43 @@ namespace playerbot_conv
 		{
 			size_t at = 0;
 			a.mentionMap = FindMapAlias(a.tokens.words, at);
+		}
+		a.levelNamed = FindLevelNamed(a.tokens);
+
+		// A sum that is the whole line ("ile to 2+2") is answered as one;
+		// read as words it was "ile" and nothing, and the bot said "Ale czego?"
+		{
+			TArithmetic math;
+			if (ParseArithmetic(raw, math))
+			{
+				a.intent = a.rawIntent = I_MATH;
+				a.score = 90;
+				a.question = true;
+				a.mathDivZero = math.divZero;
+				a.mathTooBig = math.tooBig;
+				a.mathMixed = math.mixed;
+				if (!math.divZero && !math.tooBig)
+					a.mathText = FormatNumberPl(math.value);
+				return;
+			}
+		}
+
+		// A shift-clicked item with nothing asked about it is somebody showing
+		// it off. The old reader took the words of the name for a question
+		// about the bot's own weapon and recited its gear back.
+		std::string link;
+		const bool hasLink = ExtractItemLink(raw, link);
+		if (hasLink && !c.Has(C_BUYME) && !c.Has(C_SELLYOU) && !c.Has(C_PRICEQ) && !c.Has(C_SHOP) &&
+				!c.Has(C_HAVE) && !c.Has(C_GIFT) && a.offerYang == 0)
+		{
+			a.intent = a.rawIntent = I_SHOW_ITEM;
+			a.score = 88;
+			a.itemLink = true;
+			a.itemShown = link;
+			a.object = FoldName(link.c_str());
+			a.objectPlus = RefineOfName(link);
+			a.greetingToo = c.Has(C_GREET);
+			return;
 		}
 
 		size_t ruleCount = 0;
@@ -738,7 +946,11 @@ namespace playerbot_conv
 		const bool firstPersonNews = !a.question && (c.Has(C_POSITIVE) || c.Has(C_NEGATIVE)) &&
 				!c.Has(C_WHAT) && !c.Has(C_WHERE) && !c.Has(C_HOWMUCH) && !c.Has(C_WHY) && !c.Has(C_YOU) &&
 				!c.Has(C_BUYME) && !c.Has(C_SELLYOU);
-		if (firstPersonNews && (!bestRule || bestRule->intent != I_GENERAL))
+		// A line that talks at the bot or argues about its gear is that, even
+		// with a "zle" or a "super" in it.
+		const bool pointed = bestRule && (IsColdIntent((EIntent)bestRule->intent) ||
+				IsArgumentIntent((EIntent)bestRule->intent));
+		if (firstPersonNews && (!bestRule || bestRule->intent != I_GENERAL) && !pointed)
 		{
 			a.intent = a.rawIntent = I_UNKNOWN_STATEMENT;
 			a.score = 45;
@@ -788,6 +1000,31 @@ namespace playerbot_conv
 			a.object = ExtractTradeObject(a.tokens, FindWordIndexOfConcept(c, C_BUYME));
 		if (a.intent == I_SELL)
 			a.object = ExtractTradeObject(a.tokens, FindWordIndexOfConcept(c, C_SELLYOU));
+
+		// "dam ci 2kk za fms" is an offer to buy, not a gift: a sum named for
+		// an item, and no word that says it is free.
+		if (a.intent == I_GIFT_OFFER && a.offerYang > 0 && !a.tokens.Has("darmo") && !a.tokens.Has("free") &&
+				!a.tokens.Has("gratis"))
+		{
+			const int za = a.tokens.Find("za");
+			const std::string obj = za >= 0 ? ExtractTradeObject(a.tokens, za + 1) : std::string();
+			if (!obj.empty())
+			{
+				a.intent = a.rawIntent = I_BUY;
+				a.object = obj;
+			}
+		}
+		if (hasLink)
+		{
+			// The link names the item whatever the words around it say.
+			a.itemLink = true;
+			a.itemShown = link;
+			a.object = FoldName(link.c_str());
+			a.objectPlus = RefineOfName(link);
+		}
+		else if (a.intent == I_SHOW_ITEM || a.intent == I_GIFT_OFFER || a.intent == I_GEAR_WHY ||
+				a.intent == I_GEAR_ADVICE || a.intent == I_GEAR_OPINION)
+			ExtractGearObject(a);
 	}
 }
 

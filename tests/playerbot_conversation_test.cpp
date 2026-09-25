@@ -1126,6 +1126,314 @@ static void TestSummon()
 	}
 }
 
+// ------------------------------- v6.3: talking back (the operator's screenshots)
+
+// The lines of five real whispers of 24 September, each read as what it is:
+// an argument about the bot's weapon, a showed-off item, banter, a "stop
+// writing", a sum, a threat - before any topic word in them gets a say.
+static void TestTalkBackIntents()
+{
+	static const TIntentCase kCases[] = {
+		// cw3likdrop -> xXxXMatiXxXx (level 64, a weapon of level 15)
+		{ "czesc, czemu na takim poziomie biegasz z bronia na 15 level?", I_GEAR_WHY },
+		{ "czemu nie wymienisz broni na lepsza? np. rib ze srednimi, ktore zwiekszaja ci obrazenia - to najlepsza bron na twoj poziom", I_GEAR_WHY },
+		{ "co z twoja bronia?", I_EQUIPMENT },
+		{ "czemu nie kupisz sobie riba?", I_GEAR_WHY },
+		{ "czemu, przeciez ta bron ma srednie", I_GEAR_WHY },
+		{ "co myslisz o broni ze srednimi obrazeniami? rib ma je wbudowane", I_GEAR_OPINION },
+		{ "a jakbym ci dal riba +9 ze srednimi 30% to wymienilbys swoja bron?", I_GIFT_OFFER },
+		{ "expa? potrzebne ci sa obrazenia", I_GEAR_ADVICE },
+		{ "ty mati daleko w zyciu zajdziesz nie", I_MOCK },
+		// cw3likdrop -> Dupeeeeczkaa
+		{ "moglas byc tu z nami, zoba jaki fms 9", I_SHOW_ITEM },
+		{ "[Miecz Pelni Ksiezyca+9]", I_SHOW_ITEM },
+		{ "haha bieda w huj zawijaj stad", I_MOCK },
+		// after the bot's own "moze razem pobijemy?"
+		{ "przestan do mnie pisac gold diggerze", I_STOP_TALKING },
+		{ "tyle jestes warta", I_MOCK },
+		{ "nie pisz do mnie", I_STOP_TALKING }, { "odczep sie", I_STOP_TALKING },
+		// [GA]Seban -> DobryMordercaM2
+		{ "to nie lepiej na jakas wyzsza mape isc?", I_MAP_ADVICE },
+		{ "to powiedziales mi ze w Joan", I_CONTRADICTION },
+		// [GA]Seban -> BoskiMentalRzeznik
+		{ "ile to 2+2", I_MATH }, { "gowna psiego, bana ci daje", I_THREAT },
+		{ "10/4", I_MATH }, { "ile to 7 razy 8", I_MATH }, { "2+2*2", I_MATH },
+		// what must stay what it was
+		{ "jestes daggerem?", I_BUILD }, { "a ty jestes archer czy dagger?", I_BUILD },
+		{ "dam ci 2kk za fms", I_BUY }, { "sprzedam [Miecz Pelni Ksiezyca+9] za 10kk", I_SELL },
+		{ "kurwa co ty robisz", I_ACTIVITY }, { "ale jestes slaby", I_MOCK }, { "debil", I_INSULT },
+	};
+	for (size_t i = 0; i < sizeof(kCases) / sizeof(kCases[0]); ++i)
+	{
+		const EIntent got = IntentOf(kCases[i].text);
+		CHECK(got == kCases[i].intent, "\"%s\" -> %s, expected %s", kCases[i].text, IntentName(got), IntentName(kCases[i].intent));
+	}
+	// A number beside a word is no sum.
+	static const char* const kNotMath[] = { "fms +9", "za 2kk", "na 3-4 lvl", "12d", "mam 2 miecze", "fms 9" };
+	for (size_t i = 0; i < sizeof(kNotMath) / sizeof(kNotMath[0]); ++i)
+		CHECK(IntentOf(kNotMath[i]) != I_MATH, "\"%s\" is no sum", kNotMath[i]);
+
+	TAnalysis a;
+	AnalyzeLine("[Miecz Pelni Ksiezyca+9]", a, 1);
+	CHECK(a.itemLink && a.objectPlus == 9 && a.itemShown == "Miecz Pelni Ksiezyca+9", "link: %d %d '%s'",
+			a.itemLink, a.objectPlus, a.itemShown.c_str());
+	AnalyzeLine("[GA]Seban co robisz", a, 1);
+	CHECK(!a.itemLink, "a guild tag is no item link");
+	AnalyzeLine("moglas byc tu z nami, zoba jaki fms 9", a, 1);
+	CHECK(a.itemShown == "FMS +9" && a.objectPlus == 9, "shown '%s' +%d", a.itemShown.c_str(), a.objectPlus);
+	AnalyzeLine("dam ci 2kk za fms", a, 1);
+	CHECK(a.intent == I_BUY && Contains(a.object, "fms"), "offer for fms: %s '%s'", IntentName(a.intent), a.object.c_str());
+	AnalyzeLine("10/4", a, 1);
+	CHECK(a.mathText == "2,5", "10/4 = '%s'", a.mathText.c_str());
+	AnalyzeLine("5/0", a, 1);
+	CHECK(a.mathDivZero, "5/0 divides by zero");
+	AnalyzeLine("2+2*2", a, 1);
+	CHECK(a.mathText == "6" && a.mathMixed, "2+2*2 = '%s' mixed=%d", a.mathText.c_str(), a.mathMixed);
+	AnalyzeLine("teraz to najwyzej mozesz mi zbic konia", a, 1);
+	CHECK(!a.concepts.Has(C_HORSE), "'zbic konia' is not about the bot's horse");
+	AnalyzeLine("przestan do mnie pisac gold diggerze", a, 1);
+	CHECK(!a.concepts.Has(C_GOLD), "'gold digger' is not about gold");
+
+	// The plus is said once, whichever side of the name it came on.
+	CHECK(GearName("Pajecza Wlocznia+8", 8) == "Pajecza Wlocznia+8", "grade in the name: '%s'", GearName("Pajecza Wlocznia+8", 8).c_str());
+	CHECK(GearName("Miecz Pelni", 6) == "Miecz Pelni+6", "grade apart: '%s'", GearName("Miecz Pelni", 6).c_str());
+	CHECK(GearName("Ostrze Czerwonej Stali+0", 0) == "Ostrze Czerwonej Stali", "+0 dropped: '%s'", GearName("Ostrze Czerwonej Stali+0", 0).c_str());
+	CHECK(GearName("Miecz +5", 0) == "Miecz+5", "spaced grade: '%s'", GearName("Miecz +5", 0).c_str());
+}
+
+static int CountOf(const std::string& s, const char* what)
+{
+	int n = 0;
+	for (size_t at = s.find(what); at != std::string::npos; at = s.find(what, at + 1))
+		++n;
+	return n;
+}
+
+static void SetMatiSnapshot(TBotSnapshot& s)
+{
+	s.name = "xXxXMatiXxXx";
+	s.askerName = "cw3likdrop";
+	s.level = 64;
+	s.weaponName = "Pajecza Wlocznia+8";
+	s.weaponPlus = 8;
+	s.weaponLevel = 15;
+	s.armorName = "Smiert. Zbroja Plytowa+4";
+	s.armorPlus = 4;
+	s.weaponGoal = "Ostrze Czerwonej Stali";
+	s.weaponGoalPrice = 5000000;
+	s.weaponOutclassed = true;
+	s.gold = 1200000;
+	s.mood = MOOD_GOOD;
+}
+
+// "czemu biegasz z bronia na 15 level?" and the eight lines after it: the
+// bot argues from what the AI is playing for, says the grade once, accepts
+// the gift, and does not recite the same reason four times.
+static void TestGearArgument()
+{
+	static const char* const kLines[] = {
+		"czesc, czemu na takim poziomie biegasz z bronia na 15 level?",
+		"czemu nie wymienisz broni na lepsza? np. rib ze srednimi, ktore zwiekszaja ci obrazenia - to najlepsza bron na twoj poziom",
+		"co z twoja bronia?",
+		"czemu nie kupisz sobie riba?",
+		"czemu, przeciez ta bron ma srednie",
+		"co myslisz o broni ze srednimi obrazeniami? rib ma je wbudowane",
+		"a jakbym ci dal riba +9 ze srednimi 30% to wymienilbys swoja bron?",
+		"expa? potrzebne ci sa obrazenia",
+		"ty mati daleko w zyciu zajdziesz nie",
+	};
+	const size_t n = sizeof(kLines) / sizeof(kLines[0]);
+	for (u32 seed = 1; seed <= 6; ++seed)
+	{
+		TScenario s(seed);
+		SetMatiSnapshot(s.host.snap);
+		std::vector<std::string> r;
+		std::string all;
+		for (size_t i = 0; i < n; ++i)
+		{
+			r.push_back(Ask(s, kLines[i], 8000));
+			all += r.back() + " | ";
+			CHECK(!r.back().empty(), "seed %u line %u answered", seed, (unsigned)i);
+		}
+		CHECK(Contains(r[0], "Ostrze Czerwonej Stali") &&
+				(Contains(r[0], "stara") || Contains(r[0], "odstaje") || Contains(r[0], "dawno")),
+				"seed %u why the old weapon: '%s'", seed, r[0].c_str());
+		CHECK(Contains(r[1], "RIB") && Contains(r[3], "RIB"), "seed %u rib taken up: '%s' / '%s'", seed, r[1].c_str(), r[3].c_str());
+		CHECK(Contains(r[2], "Pajecza Wlocznia+8") && !Contains(r[2], "+8 +8"), "seed %u gear line: '%s'", seed, r[2].c_str());
+		CHECK(Contains(r[6], "wymienil"), "seed %u gift accepted: '%s'", seed, r[6].c_str());
+		CHECK(!Contains(r[8], "Glebokie") && !Contains(r[8], "Humor"), "seed %u banter as banter: '%s'", seed, r[8].c_str());
+		CHECK(!Contains(all, "+8 +8") && !Contains(all, "Mam Pajecza"), "seed %u grade and case: %s", seed, all.c_str());
+		CHECK(!Contains(all, "Humor mi dzis"), "seed %u no mood tail while argued with: %s", seed, all.c_str());
+		CHECK(CountOf(all, "Pajecza Wlocznia") <= 2, "seed %u the weapon named %d times: %s", seed, CountOf(all, "Pajecza Wlocznia"), all.c_str());
+		CHECK(CountOf(all, "jak mowilem") + CountOf(all, "jak pisalem") <= 2, "seed %u the reason recited: %s", seed, all.c_str());
+		CHECK(CountOf(all, "No wlasnie na to zbieram") <= 1, "seed %u the goal reaction repeated: %s", seed, all.c_str());
+		if (g_verbose)
+			printf("    seed %u: %s\n", seed, all.c_str());
+	}
+	// The bot that already holds the goal family says so, and one that is
+	// not chasing it does not claim to save for it.
+	{
+		TScenario s(3);
+		SetMatiSnapshot(s.host.snap);
+		s.host.snap.weaponIsGoal = true;
+		s.host.snap.weaponOutclassed = false;
+		s.host.snap.weaponName = "Ostrze Czerwonej Stali+7";
+		s.host.snap.weaponPlus = 7;
+		s.host.snap.weaponLevel = 60;
+		const std::string r = Ask(s, "czemu nie kupisz sobie riba?", 8000);
+		CHECK(Contains(r, "mam") && !Contains(r, "zbieram") && !Contains(r, "odkladam"), "holds the goal: '%s'", r.c_str());
+	}
+	{
+		TScenario s(4);
+		SetMatiSnapshot(s.host.snap);
+		s.host.snap.weaponOutclassed = false;
+		s.host.snap.weaponLevel = 60;
+		s.host.snap.gold = 90000000;
+		const std::string r = Ask(s, "czemu nie kupisz sobie riba?", 8000);
+		CHECK(!Contains(r, "zbieram") && !Contains(r, "odkladam"), "not chasing the goal: '%s'", r.c_str());
+	}
+}
+
+// "zoba jaki fms 9", then the item shift-clicked, then banter.
+static void TestShowItem()
+{
+	for (u32 seed = 1; seed <= 4; ++seed)
+	{
+		TScenario s(seed);
+		s.host.snap.name = "Dupeeeeczkaa";
+		s.host.snap.job = 1;
+		const std::string r1 = Ask(s, "moglas byc tu z nami, zoba jaki fms 9");
+		CHECK(Contains(r1, "FMS +9") && Contains(r1, "Szkoda"), "seed %u fms shown: '%s'", seed, r1.c_str());
+		const std::string r2 = Ask(s, "[Miecz Pelni Ksiezyca+9]");
+		CHECK(!r2.empty() && !Contains(r2, "Ciekawe") && !Contains(r2, "Hmm"), "seed %u link reacted to: '%s'", seed, r2.c_str());
+		CHECK(r2 != r1, "seed %u second look is not the first", seed);
+		const std::string r3 = Ask(s, "haha bieda w huj zawijaj stad");
+		CHECK(Contains(r3, "zwijam") || Contains(r3, "nie ma"), "seed %u leaving: '%s'", seed, r3.c_str());
+	}
+	TScenario s(9);
+	const std::string r = Ask(s, "[Zwoj Blogoslawienstwa]");
+	CHECK(Contains(r, "Zwoj Blogoslawienstwa") || Contains(r, "gratki"), "a lone link: '%s'", r.c_str());
+}
+
+// The bot's own "moze razem pobijemy?", a soft no, "przestan do mnie
+// pisac", and the quiet that follows: no initiative for a long time, and
+// "przepraszam" lifts it.
+static void TestStopTalking()
+{
+	for (u32 seed = 1; seed <= 4; ++seed)
+	{
+		TScenario s(seed);
+		s.host.snap.name = "Dupeeeeczkaa";
+		s.Say("hej");
+		s.Wait(5u * 60u * 1000u);
+		TConvPair* p = s.engine.FindPair(7, 99);
+		CHECK(p != NULL, "pair");
+		if (!p)
+			continue;
+		p->mem.botAsk = ASK_JOIN;
+		p->mem.botAskAt = s.t - 20000;
+		p->mem.lastBotAt = s.t - 20000;
+		const std::string r1 = Ask(s, "teraz to najwyzej mozesz mi zbic konia");
+		CHECK(Contains(r1, "innym razem") && !Contains(r1, "kon") && !Contains(r1, "Humor"), "seed %u soft no: '%s'", seed, r1.c_str());
+		const std::string r2 = Ask(s, "przestan do mnie pisac gold diggerze");
+		CHECK((Contains(r2, "nie pisze") || Contains(r2, "nie przeszkadzam") || Contains(r2, "spokoj")) &&
+				!Contains(r2, "yang") && !Contains(r2, "zlot"), "seed %u stop: '%s'", seed, r2.c_str());
+		CHECK(IsQuiet(p->mem, s.t), "seed %u quiet after 'przestan'", seed);
+		const std::string r3 = Ask(s, "tyle jestes warta");
+		CHECK(r3.size() <= 20 && !Contains(r3, "?"), "seed %u cold and short: '%s'", seed, r3.c_str());
+	}
+	// Quiet holds the initiative back; the same talk without it does not.
+	for (int told = 0; told < 2; ++told)
+	{
+		TScenario s(31);
+		s.engine.SetInitiative(true);
+		s.host.snap.askerNear = true;
+		const char* chat[] = { "hej", "co robisz", "jak tam", "dzieki", "fajnie", "ok", "jaki lvl", "dzieki" };
+		for (int i = 0; i < 8; ++i) { s.Say(chat[i]); s.Wait(2000); }
+		if (told)
+		{
+			s.Say("przestan do mnie pisac");
+			s.Wait(4000);
+		}
+		const size_t before = s.Sent();
+		s.host.snap.level = 43;
+		s.Wait(20u * 60u * 1000u);
+		if (told)
+			CHECK(s.Sent() == before, "no initiative after 'przestan' (%u)", (unsigned)(s.Sent() - before));
+		else
+			CHECK(s.Sent() > before, "initiative without it (%u)", (unsigned)(s.Sent() - before));
+		if (told)
+		{
+			TConvPair* p = s.engine.FindPair(7, 99);
+			Ask(s, "przepraszam");
+			CHECK(p && !IsQuiet(p->mem, s.t), "an apology lifts the quiet");
+		}
+	}
+}
+
+// "co ty robisz" in Joan, a teleport, "to nie lepiej na wyzsza mape?" and
+// "to powiedziales mi ze w Joan": the bot owns the move.
+static void TestMapChangeOwned()
+{
+	for (u32 seed = 1; seed <= 4; ++seed)
+	{
+		TScenario s(seed);
+		s.host.snap.name = "DobryMordercaM2";
+		s.host.snap.level = 32;
+		s.host.snap.mapIndex = 21;
+		s.host.snap.inTown = true;
+		s.host.snap.action = A_TRAVEL;
+		s.host.snap.travelMap = 21;
+		const std::string r0 = Ask(s, "gdzie jestes?");
+		CHECK(Contains(r0, "Joan"), "seed %u in Joan: '%s'", seed, r0.c_str());
+		Ask(s, "co ty robisz");
+		Ask(s, "aha a jaki poziom masz");
+		s.host.snap.mapIndex = 64;
+		s.host.snap.inTown = false;
+		s.host.snap.action = A_FIGHT;
+		const std::string r1 = Ask(s, "to nie lepiej na jakas wyzsza mape isc?");
+		CHECK(Contains(r1, "Joan") && Contains(r1, "Dolinie Orkow"), "seed %u the move said: '%s'", seed, r1.c_str());
+		const std::string r2 = Ask(s, "to powiedziales mi ze w Joan");
+		CHECK(Contains(r2, "Joan") && Contains(r2, "Dolinie Orkow") && !Contains(r2, "pomylilo"), "seed %u owned: '%s'", seed, r2.c_str());
+		const std::string r3 = Ask(s, "a gdzie teraz jestes?");
+		CHECK(Contains(r3, "Dolinie") && !Contains(r3, "jestem w Joan"), "seed %u where now: '%s'", seed, r3.c_str());
+	}
+}
+
+// "ile to 2+2", then "bana ci daje".
+static void TestMathAndThreat()
+{
+	TScenario s(5);
+	const std::string r1 = Ask(s, "ile to 2+2");
+	CHECK(Contains(r1, "4"), "2+2: '%s'", r1.c_str());
+	const std::string r2 = Ask(s, "gowna psiego, bana ci daje");
+	CHECK(Contains(r2, "policzylem"), "the ban after a right sum: '%s'", r2.c_str());
+	CHECK(Contains(Ask(s, "ile to 7 razy 8"), "56"), "7x8");
+	CHECK(Contains(Ask(s, "10/4"), "2,5"), "10/4");
+	CHECK(Contains(Ask(s, "5/0"), "zero"), "5/0");
+	CHECK(Contains(Ask(s, "2+2*2"), "6"), "2+2*2");
+	TScenario t(6);
+	const std::string r3 = Ask(t, "dostaniesz bana");
+	CHECK(Contains(r3, "a co") || Contains(r3, "Za co"), "a threat asks what for: '%s'", r3.c_str());
+}
+
+// Lines nothing in the lexicon understands: no "Ciekawe." and no "Hmm,
+// ciezko powiedziec", and a second one in a row steers.
+static void TestFallbacks()
+{
+	for (u32 seed = 1; seed <= 6; ++seed)
+	{
+		TScenario s(seed);
+		const std::string r1 = Ask(s, "no wiesz jak to bywa z tymi sprawami");
+		const std::string r2 = Ask(s, "a tamto zielone cos?");
+		const std::string r3 = Ask(s, "i tak dalej i tak dalej");
+		const std::string all = r1 + " | " + r2 + " | " + r3;
+		CHECK(!Contains(all, "Ciekawe.") && !Contains(all, "Hmm, ciezko powiedziec") && !Contains(all, "No tak."),
+				"seed %u generic: %s", seed, all.c_str());
+		CHECK(r1 != r2 && r2 != r3, "seed %u fallbacks vary: %s", seed, all.c_str());
+	}
+}
+
 static void DemoConversation()
 {
 	if (!g_verbose) return;
@@ -1177,6 +1485,13 @@ int main(int argc, char** argv)
 	TestBuildAnswers();
 	TestBuffAnswers();
 	TestSummon();
+	TestTalkBackIntents();
+	TestGearArgument();
+	TestShowItem();
+	TestStopTalking();
+	TestMapChangeOwned();
+	TestMathAndThreat();
+	TestFallbacks();
 	DemoConversation();
 	printf("\n%d checks, %d failures\n", g_checks, g_failures);
 	return g_failures ? 1 : 0;

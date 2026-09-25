@@ -195,7 +195,7 @@ namespace playerbot_conv
 				{ "Uczysz sie jeszcze?", "Jak ci idzie nauka?" },
 				{ "Bo wiedza sie przydaje.", "Bo to sie oplaca." }, NULL },
 			{ T_LIFE, { 50, 60, 50, 50, 60 },
-				{ "Zycie to ciekawa sprawa.", "Glebokie pytanie jak na szept.", "Kazdy ma swoja droge." },
+				{ "Zycie to ciekawa sprawa.", "Gleboka mysl jak na szept.", "Kazdy ma swoja droge." },
 				{ "", "" }, { "", "" },
 				{ "Dla mnie sens to isc do przodu, poziom po poziomie.", "Zycie to podroz, liczy sie droga.", "Zycie to dobre inwestycje i spokoj na starosc.", "Zycie to walka, trzeba byc gotowym.", "Zycie to ludzie, z ktorymi je dzielisz." },
 				{ "A ty jak myslisz?", "A dla ciebie co jest wazne?" },

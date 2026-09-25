@@ -332,6 +332,14 @@ namespace playerbot_conv
 		std::string summonerName;   // who, when it is somebody else
 		bool askerOnMap;
 		int askerDistance;          // units, -1 on another map
+		// The weapon in hand against what the AI is playing for
+		// (playerbot_weapon_goal.h): "czemu nie wymienisz broni?" is answered
+		// from these, not from a made-up reason.
+		int weaponLevel;            // the hand weapon's level limit, 0 unknown
+		std::string weaponGoal;     // the family the AI would buy, without a grade
+		long long weaponGoalPrice;  // what it costs on a counter, 0 unknown
+		bool weaponOutclassed;      // the goal hits a third harder than the hand
+		bool weaponIsGoal;          // the hand already holds the goal's family
 
 		TBotSnapshot() : level(1), job(0), empire(0), mapIndex(0), inTown(false), safeZone(false),
 			inDungeon(false), action(A_IDLE), goal(G_LEVEL), travelMap(0), riding(false),
@@ -347,7 +355,8 @@ namespace playerbot_conv
 			actionMinutes(0), recentDeaths(0), minutesSinceDeath(0xFFFFFFFFu), askerLevel(0),
 			askerNear(false), hour(12), afk(false), huntRemaining(0), dragonCoins(0), dragonKnown(false),
 			skillGroup(0), mainSkill(0), summonBlock(SB_NONE), summoned(false), summonedByAsker(false),
-			summonArrived(false), askerOnMap(false), askerDistance(-1)
+			summonArrived(false), askerOnMap(false), askerDistance(-1), weaponLevel(0), weaponGoalPrice(0),
+			weaponOutclassed(false), weaponIsGoal(false)
 		{
 			for (int i = 0; i < 6; ++i)
 			{
@@ -439,6 +448,32 @@ namespace playerbot_conv
 	inline bool IsKnownMap(long mapIndex)
 	{
 		return GetMapWords(mapIndex).index != 0;
+	}
+
+	// An item's name with its grade said once. The item table names every
+	// grade of a weapon or an armour ("Pajecza Wlocznia+8"), so a reply that
+	// added the snapshot's plus to it said "Pajecza Wlocznia+8 +8". The grade
+	// is taken off the name when it is there and put back from `plus` (or
+	// from the name, when `plus` does not know it).
+	inline std::string GearName(const std::string& name, int plus)
+	{
+		std::string base = name;
+		int namePlus = 0;
+		size_t k = base.size();
+		while (k > 0 && base[k - 1] >= '0' && base[k - 1] <= '9')
+			--k;
+		if (k < base.size() && k > 0 && base[k - 1] == '+')
+		{
+			for (size_t i = k; i < base.size() && namePlus < 100; ++i)
+				namePlus = namePlus * 10 + (base[i] - '0');
+			base.erase(k - 1);
+			while (!base.empty() && base[base.size() - 1] == ' ')
+				base.erase(base.size() - 1);
+		}
+		const int grade = plus > 0 ? plus : namePlus;
+		if (grade > 0)
+			base += "+" + ToString((long long)grade);
+		return base;
 	}
 
 	inline const char* ClassName(int job)

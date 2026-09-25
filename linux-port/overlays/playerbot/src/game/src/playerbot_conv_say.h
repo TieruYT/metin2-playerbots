@@ -79,7 +79,11 @@ namespace playerbot_conv
 		const TBotSnapshot& s = g.s;
 		const TMapWords& map = GetMapWords(s.mapIndex);
 		const TMapWords& dest = GetMapWords(s.travelMap);
-		// Longest names first, so $MAPIN is not eaten by $MAP.
+		// Longest names first, so $MAPIN is not eaten by $MAP, $WLVL by $LVL
+		// and $GOALPRICE by $GOAL.
+		ReplaceAll(out, "$WLVL", ToString((long long)s.weaponLevel));
+		ReplaceAll(out, "$GOALPRICE", FormatYang(s.weaponGoalPrice));
+		ReplaceAll(out, "$GOAL", s.weaponGoal.empty() ? std::string("cos lepszego") : s.weaponGoal);
 		ReplaceAll(out, "$MAPINSHORT", map.atShort);
 		ReplaceAll(out, "$MAPIN", map.at);
 		ReplaceAll(out, "$MAPNAME", *map.name ? map.name : "ta mapa");
@@ -104,9 +108,11 @@ namespace playerbot_conv
 		ReplaceAll(out, "$SP", ToString(s.spPct));
 		ReplaceAll(out, "$CLASS", ClassName(s.job));
 		ReplaceAll(out, "$EMPIRE", EmpireName(s.empire));
-		ReplaceAll(out, "$WEAPON", s.weaponName.empty() ? std::string("nic") : s.weaponName);
+		// The grade is part of the name the table gives (GearName): a template
+		// says "$WEAPON" alone, never "$WEAPON +$WPLUS".
+		ReplaceAll(out, "$WEAPON", s.weaponName.empty() ? std::string("nic") : GearName(s.weaponName, s.weaponPlus));
 		ReplaceAll(out, "$WPLUS", ToString(s.weaponPlus));
-		ReplaceAll(out, "$ARMOR", s.armorName.empty() ? std::string("nic") : s.armorName);
+		ReplaceAll(out, "$ARMOR", s.armorName.empty() ? std::string("nic") : GearName(s.armorName, s.armorPlus));
 		ReplaceAll(out, "$APLUS", ToString(s.armorPlus));
 		ReplaceAll(out, "$BIO", s.bioWanted);
 		ReplaceAll(out, "$HUNT", s.huntMob);

@@ -28,6 +28,19 @@ namespace playerbot_conv
 	const u32 CONV_SESSION_GAP_MS = 20 * 60 * 1000;     // a new conversation starts after this
 	const u32 CONV_MEMORY_TTL_MS = 3 * 60 * 60 * 1000;  // the pair is forgotten after this
 	const u32 CONV_BOT_ASK_TTL_MS = 90 * 1000;          // an answer to "a ty?" is expected this long
+	// "przestan do mnie pisac": how long the bot keeps from starting anything
+	// with that person. An apology ends it early.
+	const u32 CONV_QUIET_MS = 2 * 60 * 60 * 1000;
+	// A fact said this recently (the level, the gear line, why the weapon is
+	// what it is) is not recited again in full - "Dalej to samo".
+	const u32 CONV_FACT_TTL_MS = 3 * 60 * 1000;
+	// A reason said this recently is left out of a reply that already says
+	// something of its own: four replies in a row ending "kasa, jak mowilem"
+	// read as a bot with one line.
+	const u32 CONV_REASON_RECENT_MS = 60 * 1000;
+	// "Jestem w Joan" is remembered this long, so a teleport since then is
+	// said as one ("Bylem w Joan, teraz jestem juz w Dolinie Orkow").
+	const u32 CONV_SAID_MAP_TTL_MS = 15 * 60 * 1000;
 	const size_t CONV_TURNS = 4;
 	const size_t CONV_RECENT_TEMPLATES = 12;
 
@@ -120,12 +133,30 @@ namespace playerbot_conv
 		int lastKnownLevel;
 		u32 repeatCount;
 
+		// "przestan do mnie pisac": no initiative before this (0 = none).
+		u32 quietUntil;
+		// The maps the bot last named to this person, newest first: what a
+		// teleport since then is measured against.
+		long lastSaidMap;
+		u32 lastSaidMapAt;
+		long prevSaidMap;
+		u32 prevSaidMapAt;
+		// Facts said lately, so they are not recited again in full.
+		u32 levelSaidAt;
+		int levelSaid;
+		u32 gearSaidAt;
+		u32 gearReasonAt;
+		// Generic answers in a row ("Aha, rozumiem."): the second one steers.
+		int fallbackStreak;
+
 		TConvMemory() : playerPID(0), botPID(0), firstAt(0), lastPlayerAt(0), lastBotAt(0),
 			lastInitiativeAt(0), lastCheckAt(0), talks(0), sessions(0), positive(0), negative(0),
 			turnCount(0), lastGameIntent(I_NONE), lastGameAt(0), generalStreak(0), lastTopic(T_NONE),
 			lastTopicAt(0), lastAnswered(I_NONE), lastAnsweredAt(0), botAsk(ASK_NONE),
 			botAskTopic(T_NONE), botAskAt(0), recentIndex(0), moodMentionAt(0), greetedAt(0),
-			lastKnownLevel(0), repeatCount(0)
+			lastKnownLevel(0), repeatCount(0), quietUntil(0), lastSaidMap(0), lastSaidMapAt(0),
+			prevSaidMap(0), prevSaidMapAt(0), levelSaidAt(0), levelSaid(0), gearSaidAt(0), gearReasonAt(0),
+			fallbackStreak(0)
 		{
 			for (size_t i = 0; i < CONV_RECENT_TEMPLATES; ++i)
 				recentTemplates[i] = 0;
@@ -155,6 +186,8 @@ namespace playerbot_conv
 			++recentIndex;
 		}
 
+		// The quiet window and the maps said are kept: they have clocks of
+		// their own, longer than the context's.
 		void ClearContext()
 		{
 			turnCount = 0;
@@ -165,8 +198,31 @@ namespace playerbot_conv
 			botAsk = ASK_NONE;
 			lastAnswered = I_NONE;
 			lastReason.clear();
+			levelSaidAt = 0;
+			gearSaidAt = 0;
+			gearReasonAt = 0;
+			fallbackStreak = 0;
 		}
 	};
+
+	inline bool IsQuiet(const TConvMemory& m, u32 now)
+	{
+		return m.quietUntil != 0 && (int)(m.quietUntil - now) > 0;
+	}
+
+	// A map the bot has just named in a reply.
+	inline void NoteSaidMap(TConvMemory& m, long map, u32 now)
+	{
+		if (map == 0)
+			return;
+		if (m.lastSaidMap != map)
+		{
+			m.prevSaidMap = m.lastSaidMap;
+			m.prevSaidMapAt = m.lastSaidMapAt;
+			m.lastSaidMap = map;
+		}
+		m.lastSaidMapAt = now;
+	}
 
 	// What a resolved turn is "about" - the intent itself, or what a
 	// follow-up was about.
@@ -237,8 +293,15 @@ namespace playerbot_conv
 		// ("jaki masz lvl?") is a new question.
 		const bool newQuestion = IsQuestionLine(a) &&
 				(m.botAsk != ASK_SUMMON || IsGameIntent((EIntent)a.intent));
-		if (m.botAsk != ASK_NONE && now - m.botAskAt < CONV_BOT_ASK_TTL_MS && !newQuestion &&
-				a.intent != I_FAREWELL && a.intent != I_GREETING && a.intent != I_INSULT &&
+		const bool askPending = m.botAsk != ASK_NONE && now - m.botAskAt < CONV_BOT_ASK_TTL_MS;
+		// "moze razem pobijemy?" met with "zawijaj stad" or "przestan do mnie
+		// pisac" is not an answer to it, but it does close it: the reply knows
+		// which question it closed.
+		if (askPending && (IsColdIntent((EIntent)a.intent)))
+			a.answeredAsk = (unsigned char)m.botAsk;
+		if (askPending && !newQuestion &&
+				a.intent != I_FAREWELL && a.intent != I_GREETING && !IsColdIntent((EIntent)a.intent) &&
+				!IsArgumentIntent((EIntent)a.intent) && a.intent != I_MATH &&
 				a.intent != I_BUY && a.intent != I_SELL &&
 				(a.intent != I_PARTY_REQUEST || m.botAsk == ASK_SUMMON) &&
 				a.intent != I_SUMMON && a.intent != I_DISMISS && a.intent != I_THANKS)
@@ -355,6 +418,14 @@ namespace playerbot_conv
 	{
 		if (m.firstAt == 0)
 			m.firstAt = now;
+		// A question the bot asked a moment ago survives the clearing: the
+		// bot speaks first only to somebody who has been quiet a while, so
+		// the answer to "moze razem pobijemy?" is exactly the line that comes
+		// after a gap - and was read as a new question about the horse.
+		const unsigned char ask = m.botAsk;
+		const ETopic askTopic = m.botAskTopic;
+		const u32 askAt = m.botAskAt;
+		const bool keepAsk = ask != ASK_NONE && askAt != 0 && now - askAt < CONV_BOT_ASK_TTL_MS;
 		if (m.lastPlayerAt == 0 || now - m.lastPlayerAt > CONV_SESSION_GAP_MS)
 		{
 			++m.sessions;
@@ -362,6 +433,12 @@ namespace playerbot_conv
 		}
 		else if (now - m.lastPlayerAt > CONV_CONTEXT_TTL_MS)
 			m.ClearContext();
+		if (keepAsk)
+		{
+			m.botAsk = ask;
+			m.botAskTopic = askTopic;
+			m.botAskAt = askAt;
+		}
 	}
 
 	inline void RememberPlayerLine(TConvMemory& m, const TAnalysis& a, u32 now)
@@ -399,12 +476,21 @@ namespace playerbot_conv
 			m.lastTopic = a.topic;
 			m.lastTopicAt = now;
 		}
-		if (a.intent == I_INSULT)
+		// Abuse counts wherever it sits: "przestan do mnie pisac gold diggerze"
+		// is a request to stop and an insult at once. Banter does not count.
+		if (a.intent == I_INSULT || a.intent == I_THREAT || a.concepts.Has(C_INSULT))
 			++m.negative;
 		if (a.intent == I_THANKS || a.intent == I_PRAISE || a.thanksToo || a.intent == I_APOLOGY)
 			++m.positive;
 		if (a.intent == I_APOLOGY && m.negative > 0)
 			--m.negative;
+		if (a.intent == I_STOP_TALKING)
+		{
+			const u32 until = now + CONV_QUIET_MS;
+			m.quietUntil = until != 0 ? until : 1;
+		}
+		if (a.intent == I_APOLOGY)
+			m.quietUntil = 0;
 		if (a.repeated)
 			++m.repeatCount;
 		// "lubie zime" - one thing to remember about the person.
@@ -420,8 +506,9 @@ namespace playerbot_conv
 					m.playerLikes = obj;
 			}
 		}
-		// An answer closes the question; anything else lets it expire.
-		if (a.intent == I_ANSWER_TO_BOT || now - m.botAskAt > CONV_BOT_ASK_TTL_MS)
+		// An answer closes the question, and so does a jibe or a "stop"
+		// instead of one; anything else lets it expire.
+		if (a.intent == I_ANSWER_TO_BOT || a.answeredAsk != ASK_NONE || now - m.botAskAt > CONV_BOT_ASK_TTL_MS)
 			m.botAsk = ASK_NONE;
 	}
 

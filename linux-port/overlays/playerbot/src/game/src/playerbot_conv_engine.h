@@ -111,7 +111,11 @@ namespace playerbot_conv
 			return x.follow == y.follow && x.subject == y.subject;
 		if (x.intent == I_ITEM_OWN || x.intent == I_BUY || x.intent == I_SELL)
 			return x.object == y.object;
-		if (x.intent == I_UNKNOWN_QUESTION || x.intent == I_UNKNOWN_STATEMENT)
+		if (x.intent == I_MATH)
+			return x.mathText == y.mathText && x.tokens.norm == y.tokens.norm;
+		// Two lines of one argument are two points, not one question twice.
+		if (x.intent == I_UNKNOWN_QUESTION || x.intent == I_UNKNOWN_STATEMENT || IsArgumentIntent(x.intent) ||
+				IsColdIntent(x.intent))
 			return x.tokens.norm == y.tokens.norm;
 		return true;
 	}
@@ -202,7 +206,10 @@ namespace playerbot_conv
 			"Chodze", "Krece", "Rozgladam", "Nic", "Gram", "Prawie", "Okolo", "Sam", "Solo", "Prowadze",
 			"Przeciez", "Liderem", "Pelne", "Dobrze", "Bardzo", "Moze", "Dopiero", "Kiepsko", "Swietnie",
 			"Calkiem", "Normalnie", "Lubie", "Chyba", "Jeszcze", "Zmierzam", "Przemieszczam", "Leca",
-			"Walcze", "Kilka", "Jest", "Jak", "Nigdzie", "Wolnych", "Zero", "Nosze", "Poluje"
+			"Walcze", "Kilka", "Jest", "Jak", "Nigdzie", "Wolnych", "Zero", "Nosze", "Poluje",
+			// "A wracajac do gry, Ciezko powiedziec..." kept its capital.
+			"Ciezko", "Wiem", "Nikt", "Zalezy", "Raczej", "Pewnie", "Ostatnio", "Bylem", "Wczesniej",
+			"Kosztuje", "Stoi", "Wychodzi", "Juz", "Srednio"
 		};
 		size_t end = s.find_first_of(" ,.!?");
 		const std::string first = s.substr(0, end);
@@ -269,6 +276,13 @@ namespace playerbot_conv
 		bool anyQuestion = false;
 		bool greet = false;
 		bool thanks = false;
+		// Told to stop writing, threatened, mocked: the reply is short and
+		// warm-free - no "Hej!", no mood, no question back.
+		bool cold = IsQuiet(mem, now);
+		// Argued with, or answering the bot's own question: no mood tail
+		// either ("Dobra, innym razem :) Humor mi dzis dopisuje!") - nor on a
+		// plain "co z twoja bronia?" in the middle of that argument.
+		bool argued = IsArgumentIntent(mem.lastAnswered) && now - mem.lastAnsweredAt < CONV_CONTEXT_TTL_MS;
 		for (size_t i = 0; i < items.size(); ++i)
 		{
 			const EIntent it = items[i].intent;
@@ -278,6 +292,10 @@ namespace playerbot_conv
 				greet = true;
 			if (it == I_THANKS || items[i].thanksToo)
 				thanks = true;
+			if (IsColdIntent(it))
+				cold = true;
+			if (IsArgumentIntent(it) || it == I_ANSWER_TO_BOT || it == I_MATH)
+				argued = true;
 		}
 		std::vector<const TAnalysis*> todo;
 		for (size_t i = 0; i < items.size(); ++i)
@@ -317,11 +335,11 @@ namespace playerbot_conv
 			static const char* const k[] = { "Spokojnie, nie nadazam pisac :D", "Po kolei, po kolei :)", "Wolniej troche :D" };
 			out = PBC_SAY(g, k);
 		}
-		if (anyQuestion && greet)
+		if (anyQuestion && greet && !cold)
 		{
 			Append(out, GenGreeting(g, true));
 		}
-		if (anyQuestion && thanks && !greet)
+		if (anyQuestion && thanks && !greet && !cold)
 			Append(out, "Spoko.");
 
 		bool returned = false;
@@ -362,8 +380,9 @@ namespace playerbot_conv
 				return res;
 		}
 
-		// The mood shows, sometimes.
-		if (!spam && res.answered > 0 && (mem.moodMentionAt == 0 || now - mem.moodMentionAt > CONV_MOOD_MENTION_MS))
+		// The mood shows, sometimes - never after a jibe ("daleko zajdziesz"
+		// answered with "Humor mi dzis dopisuje!" was a non sequitur).
+		if (!spam && !cold && !argued && res.answered > 0 && (mem.moodMentionAt == 0 || now - mem.moodMentionAt > CONV_MOOD_MENTION_MS))
 		{
 			bool moodSaid = false;
 			for (size_t i = 0; i < todo.size(); ++i)
@@ -383,8 +402,9 @@ namespace playerbot_conv
 				mem.moodMentionAt = now;
 		}
 
-		// One question back, only in a short reply.
-		if (!g.askBack.empty() && res.answered <= 2 && !spam)
+		// One question back, only in a short reply. "Po co mam przyjsc?" is the
+		// one a cold reply still asks: without it the answer is not read as one.
+		if (!g.askBack.empty() && res.answered <= 2 && !spam && (!cold || g.askBackKind == ASK_SUMMON))
 		{
 			Append(out, g.askBack);
 			mem.botAsk = g.askBackKind;
@@ -396,6 +416,14 @@ namespace playerbot_conv
 		else if (res.answered > 0)
 			mem.lastReason.clear();
 		mem.lastKnownLevel = snap.level;
+		// The map a reply named is what a teleport since will be measured
+		// against ("Bylem w Joan, teraz jestem juz w Dolinie Orkow").
+		if (IsKnownMap(snap.mapIndex) && out.find(GetMapWords(snap.mapIndex).atShort) != std::string::npos)
+			NoteSaidMap(mem, snap.mapIndex, now);
+		// Generic answers in a row: the next one steers (GenUnknown*).
+		if (res.answered > 0)
+			mem.fallbackStreak = res.lastIntent == I_UNKNOWN_QUESTION || res.lastIntent == I_UNKNOWN_STATEMENT ?
+					mem.fallbackStreak + 1 : 0;
 		res.text = out;
 		return res;
 	}
@@ -406,6 +434,9 @@ namespace playerbot_conv
 	// every condition is a reason to stay quiet.
 	inline std::string ChooseInitiative(TConvMemory& m, const TBotSnapshot& s, u32 now, TRng& rng)
 	{
+		// "przestan do mnie pisac" is kept.
+		if (IsQuiet(m, now))
+			return std::string();
 		const int tier = ComputeTier(m, s.affinity, s.askerInParty);
 		if (tier < TIER_KNOWN || s.dead || s.afk)
 			return std::string();
@@ -716,6 +747,8 @@ namespace playerbot_conv
 					if (m.lastCheckAt != 0 && now - m.lastCheckAt < CONV_INITIATIVE_CHECK_MS)
 						continue;
 					if (m.talks < 3 && m.sessions < 2)
+						continue;
+					if (IsQuiet(m, now))
 						continue;
 					m.lastCheckAt = now;
 					if (!m_rng.Chance(25))
