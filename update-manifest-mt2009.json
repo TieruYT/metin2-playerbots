@@ -1,20 +1,20 @@
 {
   "schema": 1,
   "channel": "stable",
-  "publishedAt": "2026-09-25T06:02:25Z",
-  "statusMessage": "2.2.13 (serwer; klient bez zmian, 2.0.32): Towarzysz - staly kompan gracza (list Towarzysz po zalogowaniu), bron od 30 lvl do +6 u kowala i od +7 pod zwojami, bez zwojow do 18 lvl, boty czekaja 5 s przy rozbitym Metinie, 'Tak' w liscie wojny przenosi do obozu gildii, wojna na otwartym terenie, naturalniejsze szepty, serwer na VPS z launchera. Zawiera wszystko z 2.2.12.",
+  "publishedAt": "2026-09-25T09:08:42Z",
+  "statusMessage": "2.2.14 (serwer i klient 2.0.33 - zaktualizuj oba): boty bija bossow swiata grupami jednego krolestwa, umiejetnosci staja na 17 (reset u Starszej Pani do 30 lvl), gildie botow znow ida do Wiezy Demonow i to od 55 lvl, okno towarzysza pod klawiszem P, przyciski Towarzysz i Auto Lowy na pasku, Auto Lowy po wstaniu tylko buffuja, Auto Lowy i Towarzysz do wylaczenia pod POZIOM TRUDNOSCI w launcherze. Zawiera wszystko z 2.2.13.",
   "server": {
-    "version": "2.2.13",
-    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.13/metin2-server-update-2.2.13.zip",
-    "sha256": "8D3E407AE7943B2EEE67C2F5DBB4764ED87DB30ABD45C2759416CB86428E63F9"
+    "version": "2.2.14",
+    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.14/metin2-server-update-2.2.14.zip",
+    "sha256": "1E719A8582263A47154444F9E612DEBE48F6B028D3911DD1158D8B5A4F8055B4"
   },
   "support": {
     "contactUrl": "https://discord.gg/pt5tvnrN6",
     "uploadUrl": ""
   },
   "client": {
-    "version": "2.0.32",
-    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.11/metin2-client-update-2.0.32.zip",
-    "sha256": "F89D1ABD7B99E192F38F911159AB461B55CB23B9647A9D0D8C4A602822F1E3DB"
+    "version": "2.0.33",
+    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.14/metin2-client-update-2.0.33.zip",
+    "sha256": "79F800E9E6FDDDE1FBE8CBC78FBB5B8845783997A321E8EFA3182DD64C077256"
   }
 }
