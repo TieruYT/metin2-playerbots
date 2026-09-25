@@ -50,9 +50,10 @@ function Confirm-Operation { param([string]$Question) return $false }
 
 $Yes = $false
 $Difficulty = ''; $BiologistHours = ''; $HorseHours = ''; $BookHours = ''; $BotBookHours = ''
-# Auto Lowy and the companion joined the window on 25 September: -1 keeps
-# what .env says (on when it says nothing).
-$AutoHunt = -1; $Sidekick = -1
+# Auto Lowy and the companion joined the window on 25 September, and the
+# apprentice chest the same day: -1 keeps what .env says (on when it says
+# nothing).
+$AutoHunt = -1; $Sidekick = -1; $StarterChest = -1
 
 Write-Host '== hard is the package: 21 hours between books, players and bots =='
 $script:env = @{}
@@ -108,6 +109,23 @@ Set-DifficultyAction
 Check 'auto hunt back on' '1' $script:env['M2_AUTOHUNT']
 Check 'companion back on' '1' $script:env['M2_SIDEKICK']
 $AutoHunt = -1; $Sidekick = -1
+
+Write-Host '== the apprentice chest: on by default, 1 or 0, kept when not passed =='
+$script:env = @{}
+$Difficulty = 'easy'
+Set-DifficultyAction
+Check 'chest on by default' '1' $script:env['M2_STARTER_CHEST']
+$StarterChest = 0
+Set-DifficultyAction
+Check 'chest off' '0' $script:env['M2_STARTER_CHEST']
+Check 'auto hunt untouched by the chest' '1' $script:env['M2_AUTOHUNT']
+$StarterChest = -1
+Set-DifficultyAction
+Check 'chest kept off' '0' $script:env['M2_STARTER_CHEST']
+$StarterChest = 1
+Set-DifficultyAction
+Check 'chest back on' '1' $script:env['M2_STARTER_CHEST']
+$StarterChest = -1
 
 Write-Host '== a number out of range stops it =='
 $Difficulty = 'custom'; $BookHours = '721'; $BotBookHours = '0'

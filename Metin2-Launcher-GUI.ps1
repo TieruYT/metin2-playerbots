@@ -880,7 +880,7 @@ function Get-DifficultyFromEnv {
     # the keys are not there yet (an older .env, which start-server.ps1 fills in).
     $envPath = Join-Path $root 'linux-port\docker\.env'
     $level = 'easy'; $bio = '0'; $horse = '0'; $book = '0'; $botBook = '0'
-    $autoHunt = $true; $sidekick = $true
+    $autoHunt = $true; $sidekick = $true; $starter = $true
     if (Test-Path -LiteralPath $envPath -PathType Leaf) {
         $content = [IO.File]::ReadAllText($envPath)
         $m = [Regex]::Match($content, '(?m)^M2_DIFFICULTY=(\S+)\s*$')
@@ -898,10 +898,12 @@ function Get-DifficultyFromEnv {
         if ($m.Success) { $autoHunt = ($m.Groups[1].Value.Trim() -ne '0') }
         $m = [Regex]::Match($content, '(?m)^M2_SIDEKICK=(\S+)\s*$')
         if ($m.Success) { $sidekick = ($m.Groups[1].Value.Trim() -ne '0') }
+        $m = [Regex]::Match($content, '(?m)^M2_STARTER_CHEST=(\S+)\s*$')
+        if ($m.Success) { $starter = ($m.Groups[1].Value.Trim() -ne '0') }
     }
     if ($level -notin @('easy', 'medium', 'hard', 'custom')) { $level = 'easy' }
     return @{ Level = $level; Biologist = $bio; Horse = $horse; Book = $book; BotBook = $botBook
-        AutoHunt = $autoHunt; Sidekick = $sidekick }
+        AutoHunt = $autoHunt; Sidekick = $sidekick; Starter = $starter }
 }
 
 function Show-DifficultyDialog {
@@ -910,12 +912,15 @@ function Show-DifficultyDialog {
     # next start (quest/m2_difficulty.lua, and the engine and the bots for the
     # skill books), so the dialog says a restart is needed. Below them, whether
     # the world is played with Auto Lowy and with the companion (Tieru, 25
-    # September: Drip's COOP without the auto hunt). Returns
-    # @{ Level; Biologist; Horse; Book; BotBook; AutoHunt; Sidekick } or $null.
+    # September: Drip's COOP without the auto hunt), and whether a player's new
+    # character gets the apprentice chest - asked before only where a fresh
+    # world is made, so a world already standing had no way to it (Drip looked
+    # here for it the same morning). Returns
+    # @{ Level; Biologist; Horse; Book; BotBook; AutoHunt; Sidekick; Starter } or $null.
     param([hashtable]$Current)
     $dialog = [Windows.Forms.Form]::new()
     $dialog.Text = (T 'difficultyDialog')
-    $dialog.Size = [Drawing.Size]::new(560, 540)
+    $dialog.Size = [Drawing.Size]::new(560, 566)
     $dialog.StartPosition = 'CenterParent'
     $dialog.FormBorderStyle = 'FixedDialog'
     $dialog.MaximizeBox = $false
@@ -1055,17 +1060,24 @@ function Show-DifficultyDialog {
     $sidekickCheck.Size = [Drawing.Size]::new(516, 24)
     $sidekickCheck.Checked = ($Current.Sidekick -ne $false)
     $dialog.Controls.Add($sidekickCheck)
+    $starterCheck = [Windows.Forms.CheckBox]::new()
+    $starterCheck.Name = 'starterChest'
+    $starterCheck.Text = 'Skrzynia Ucznia dla nowych postaci graczy (przy pierwszym logowaniu)'
+    $starterCheck.Location = [Drawing.Point]::new(18, $y + 188)
+    $starterCheck.Size = [Drawing.Size]::new(516, 24)
+    $starterCheck.Checked = ($Current.Starter -ne $false)
+    $dialog.Controls.Add($starterCheck)
 
     $okButton = [Windows.Forms.Button]::new()
     $okButton.Text = (T 'apply')
-    $okButton.Location = [Drawing.Point]::new(332, $y + 204)
+    $okButton.Location = [Drawing.Point]::new(332, $y + 230)
     $okButton.Size = [Drawing.Size]::new(100, 32)
     $okButton.DialogResult = [Windows.Forms.DialogResult]::OK
     $dialog.Controls.Add($okButton)
 
     $cancelButton = [Windows.Forms.Button]::new()
     $cancelButton.Text = (T 'cancel')
-    $cancelButton.Location = [Drawing.Point]::new(438, $y + 204)
+    $cancelButton.Location = [Drawing.Point]::new(438, $y + 230)
     $cancelButton.Size = [Drawing.Size]::new(96, 32)
     $cancelButton.DialogResult = [Windows.Forms.DialogResult]::Cancel
     $dialog.Controls.Add($cancelButton)
@@ -1081,10 +1093,11 @@ function Show-DifficultyDialog {
     $botBook = $botBookBox.Value.ToString([Globalization.CultureInfo]::InvariantCulture)
     $autoHunt = $autoHuntCheck.Checked
     $sidekick = $sidekickCheck.Checked
+    $starter = $starterCheck.Checked
     $dialog.Dispose()
     if ($result -ne [Windows.Forms.DialogResult]::OK) { return $null }
     return @{ Level = $chosen; Biologist = $bio; Horse = $horse; Book = $book; BotBook = $botBook
-        AutoHunt = $autoHunt; Sidekick = $sidekick }
+        AutoHunt = $autoHunt; Sidekick = $sidekick; Starter = $starter }
 }
 
 function Show-FreshWorldDialog {
@@ -3296,14 +3309,15 @@ $difficultyButton.Add_Click({
         'hard' { 'trudny (Biolog 24 h, koń 12-21 h, księgi 21 h)' }
         default { "własny (Biolog $($chosen.Biologist) h, Stajenny $($chosen.Horse) h, księgi: gracze $($chosen.Book) h, boty $($chosen.BotBook) h)" }
     }
-    $features = "Auto Łowy $(if ($chosen.AutoHunt) { 'włączone' } else { 'wyłączone' }), Towarzysz $(if ($chosen.Sidekick) { 'włączony' } else { 'wyłączony' })"
+    $features = "Auto Łowy $(if ($chosen.AutoHunt) { 'włączone' } else { 'wyłączone' }), Towarzysz $(if ($chosen.Sidekick) { 'włączony' } else { 'wyłączony' }), Skrzynia Ucznia $(if ($chosen.Starter) { 'tak' } else { 'nie' })"
     $answer = [Windows.Forms.MessageBox]::Show(
         "Ustawić poziom trudności: $what; $features - i zrestartować serwer teraz, aby zastosować? Baza i postęp botów pozostaną bez zmian.",
         'Poziom trudności', 'YesNoCancel', 'Question')
     if ($answer -eq [Windows.Forms.DialogResult]::Cancel) { return }
     $extra = @('-Difficulty', $chosen.Level, '-BiologistHours', "$($chosen.Biologist)", '-HorseHours', "$($chosen.Horse)",
         '-BookHours', "$($chosen.Book)", '-BotBookHours', "$($chosen.BotBook)",
-        '-AutoHunt', $(if ($chosen.AutoHunt) { '1' } else { '0' }), '-Sidekick', $(if ($chosen.Sidekick) { '1' } else { '0' }))
+        '-AutoHunt', $(if ($chosen.AutoHunt) { '1' } else { '0' }), '-Sidekick', $(if ($chosen.Sidekick) { '1' } else { '0' }),
+        '-StarterChest', $(if ($chosen.Starter) { '1' } else { '0' }))
     if ($answer -eq [Windows.Forms.DialogResult]::Yes) {
         Start-LauncherAction -Action 'SetDifficulty' -Yes -ExtraArgs $extra
     }
