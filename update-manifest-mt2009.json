@@ -1,20 +1,20 @@
 {
   "schema": 1,
   "channel": "stable",
-  "publishedAt": "2026-09-25T18:31:04Z",
-  "statusMessage": "2.2.18 (serwer i klient 2.0.36 - zaktualizuj oba): Towarzysz dostaje wszystkie punkty umiejetnosci i trzyma Twoje buffy jak swoje, boty wracaja z pustki w Wiezy Demonow, \"kupie KZ\" to Ksiega Zapomnienia, opisy umiejetnosci w oknie Towarzysza, jedno pytanie o aktualizacje w launcherze. Zawiera wszystko z 2.2.17.",
+  "publishedAt": "2026-09-25T21:52:03Z",
+  "statusMessage": "2.2.19 (serwer i klient 2.0.37 - zaktualizuj oba): Patch 4 od Iwakury (ulepszanie do +9, naturalne stosy w sklepach, bonusy tylko na oplacalnym sprzecie), Towarzysz przekazuje Ci potwory, dostaje od Ciebie statystyki i luruje, COOP rozpoznaje stary metin2client.exe. Zawiera wszystko z 2.2.18.",
   "server": {
-    "version": "2.2.18",
-    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.18/metin2-server-update-2.2.18.zip",
-    "sha256": "F7F7C4BA9B7C37FBB5FA34F11F79025312AF3F80334EF2E76DB447901395DDB6"
+    "version": "2.2.19",
+    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.19/metin2-server-update-2.2.19.zip",
+    "sha256": "8F53D2338C211813971A601A9523CAFE54857B92DF50FEC5B7F3C2E3C87347EB"
   },
   "support": {
     "contactUrl": "https://discord.gg/pt5tvnrN6",
     "uploadUrl": ""
   },
   "client": {
-    "version": "2.0.36",
-    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.18/metin2-client-update-2.0.36.zip",
-    "sha256": "EEEC297AD9D4091FF1FFF2EA86FBCB1CEAF151B3849EF96BD1934F3C528ED8CF"
+    "version": "2.0.37",
+    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.19/metin2-client-update-2.0.37.zip",
+    "sha256": "3C9CD89B5CB6F9729309AE2C1156644ACFE3C3C9EC1D5F9711B21DAE72A8C4C6"
   }
 }
