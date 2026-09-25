@@ -98,6 +98,10 @@ services:
       # Whether a player's new character gets the apprentice chest (the
       # launcher asks with the rates; starter_chest.quest reads the flag).
       M2_STARTER_CHEST: "${M2_STARTER_CHEST:-1}"
+      # Whether the world is played with Auto Lowy and with the companion
+      # (the launcher's difficulty window; the migrator writes the flags).
+      M2_AUTOHUNT: "${M2_AUTOHUNT:-1}"
+      M2_SIDEKICK: "${M2_SIDEKICK:-1}"
 
     entrypoint: ["/bin/sh", "/opt/playerbot/apply.sh"]
 

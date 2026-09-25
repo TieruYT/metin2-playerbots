@@ -1451,6 +1451,45 @@ namespace
 	const int PLAYERBOT_GUILD_WAR_JITTER = 400;
 	const int PLAYERBOT_GUILD_WAR_KEEP_BONUS = 300;
 	const DWORD PLAYERBOT_GUILD_WAR_RETARGET_MS = 4000;
+	// Boss raids (playerbot_boss_raid.h). The world pass looks at the bosses
+	// every CHECK_MS, not before FIRST_DELAY_MS after a start (the cohort is
+	// still spawning), and calls a raid to a boss standing with none: the
+	// members have GATHER_MS to come to a spot RALLY_MIN..+RALLY_SPREAD from
+	// him - his aggressive sight is 2000 - and a member within ARRIVED_RANGE
+	// of him counts as come. A fight whose boss has not lost half a percent
+	// of his health in STALL_MS calls REINFORCEMENTS more once, and the second
+	// stall gives him up for OUTPACED_COOLDOWN_MS; FIGHT_MAX_MS ends any
+	// fight. The loot window after his fall is LOOT_MS. A bot is called with
+	// MIN_HP_PERCENT of its health and the potions below, and a boss is
+	// nobody's target past MAX_ATTACKERS on him - the claim a monster has kept
+	// every other bot off the one bot that saw him first.
+	const DWORD PLAYERBOT_BOSS_RAID_CHECK_MS = 5000;
+	const DWORD PLAYERBOT_BOSS_RAID_FIRST_DELAY_MS = 3 * 60 * 1000;
+	const DWORD PLAYERBOT_BOSS_RAID_DOWN_RECHECK_MS = 30 * 1000;
+	const DWORD PLAYERBOT_BOSS_RAID_CALL_RETRY_MS = 2 * 60 * 1000;
+	const DWORD PLAYERBOT_BOSS_RAID_GATHER_MS = 3 * 60 * 1000;
+	const DWORD PLAYERBOT_BOSS_RAID_STALL_MS = 60 * 1000;
+	const DWORD PLAYERBOT_BOSS_RAID_FIGHT_MAX_MS = 20 * 60 * 1000;
+	const DWORD PLAYERBOT_BOSS_RAID_LOOT_MS = 15 * 1000;
+	const DWORD PLAYERBOT_BOSS_RAID_KILLED_COOLDOWN_MS = 60 * 1000;
+	const DWORD PLAYERBOT_BOSS_RAID_TOO_FEW_COOLDOWN_MS = 5 * 60 * 1000;
+	const DWORD PLAYERBOT_BOSS_RAID_OUTPACED_COOLDOWN_MS = 30 * 60 * 1000;
+	const DWORD PLAYERBOT_BOSS_RAID_CENSUS_MS = 10 * 60 * 1000;
+	const int PLAYERBOT_BOSS_RAID_RALLY_MIN = 2300;
+	const int PLAYERBOT_BOSS_RAID_RALLY_SPREAD = 500;
+	const int PLAYERBOT_BOSS_RAID_ARRIVED_RANGE = 3200;
+	// A member further than this from him on his own map is brought to its
+	// spot as one from another map is: from the far end of Jayang the walk
+	// outlasted the gathering (25 September: three raids of seven there ended
+	// too_few_came with both members on the map, one of them ninety
+	// kilometres from its spot), while one warped in from another map was
+	// there at once.
+	const int PLAYERBOT_BOSS_RAID_WALK_MAX = 20000;
+	const int PLAYERBOT_BOSS_RAID_MIN_HP_PERCENT = 80;
+	const size_t PLAYERBOT_BOSS_RAID_MIN_RED_POTIONS = 30;
+	const size_t PLAYERBOT_BOSS_RAID_MIN_BLUE_POTIONS = 15;
+	const int PLAYERBOT_BOSS_RAID_REINFORCEMENTS = 3;
+	const int PLAYERBOT_BOSS_MAX_ATTACKERS = 8;
 	// The Demon Tower raid (playerbot_demon_tower.h): one bot guild at a
 	// time on this core, the first a few minutes after a start and the next
 	// an interval after a raid ends; the members gather on the ground floor
@@ -1470,7 +1509,15 @@ namespace
 	const DWORD PLAYERBOT_TOWER_SMITH_WAIT_MS = 60 * 1000;
 	const DWORD PLAYERBOT_TOWER_SCAN_INTERVAL = 1500;
 	const DWORD PLAYERBOT_TOWER_CENSUS_INTERVAL = 10 * 60 * 1000;
-	const int PLAYERBOT_TOWER_MIN_LEVEL = 40;
+	// The bots' tower level: the raid calls nobody under it, a guild master
+	// summons nobody under it, and a bot under it that the jump took in leaves
+	// (a person's party excepted). It was the keeper's forty, and on m2zip on
+	// 25 September five raids of six ended stone_timeout on the ground floor:
+	// its demons are 1001-1004 at 57-60, and bots of 40-48 spent the ten
+	// minutes dying and standing up. At fifty-five the youngest member has the
+	// floor's common demons two to five levels over itself (Tieru: "Podniesc
+	// prog?" - "tak").
+	const int PLAYERBOT_TOWER_MIN_LEVEL = 55;
 	const int PLAYERBOT_TOWER_UPPER_LEVEL = 75;
 	const int PLAYERBOT_TOWER_MIN_MEMBERS = 4;
 	const int PLAYERBOT_TOWER_MAX_MEMBERS = 16;
@@ -3285,8 +3332,16 @@ namespace
 	const long PLAYERBOT_SKILL_RESET_NPC_Y = 165700;  // map 21, base (0,102400)
 	const BYTE PLAYERBOT_SKILL_RESET_MIN_LEVEL = 5;
 	const BYTE PLAYERBOT_SKILL_RESET_MAX_LEVEL = 30;
+#if defined(PLAYERBOT_ENGINE_MT2009)
+	// The 2.x line's quest charges less and remembers the reset: with a skill
+	// at seventeen or more it adds one to skill_reset2.reset_count, which is
+	// 25 percent more on the next roll for Master (char_skill.cpp).
+	const long long PLAYERBOT_SKILL_RESET_BASE_COST = 5000;
+	const long long PLAYERBOT_SKILL_RESET_LEVEL_COST = 1000;
+#else
 	const long long PLAYERBOT_SKILL_RESET_BASE_COST = 10000;
 	const long long PLAYERBOT_SKILL_RESET_LEVEL_COST = 2000;
+#endif
 	// A wallet cushion, so a reset never leaves a bot unable to buy potions.
 	const long long PLAYERBOT_SKILL_RESET_GOLD_MARGIN = 100000;
 	const DWORD PLAYERBOT_SKILL_RESET_COOLDOWN = 1800000;   // 30 min between tries
@@ -5626,6 +5681,7 @@ namespace
 	// owner's side, and what its owner handed it.
 	bool IsPlayerBotSidekickPID(DWORD pid);
 	bool IsPlayerBotSidekickLeashed(LPCHARACTER ch);
+	bool IsPlayerBotSidekickHolding(LPCHARACTER ch);
 	bool IsPlayerBotSidekickGift(LPCHARACTER ch, LPITEM item);
 	const char* GetPlayerBotSidekickOwnerName(LPCHARACTER ch);
 
@@ -6818,6 +6874,12 @@ namespace
 		DWORD dwNextTowerMoveTime;
 		DWORD dwNextTowerMasterCheckTime;
 		BYTE bTowerTalkStep;
+		// A boss raid (playerbot_boss_raid.h): the boss this bot was called to
+		// and the map he stands on (zero when none), and the clock on its
+		// walks to him.
+		WORD wBossRaidRace = 0;
+		long lBossRaidMap = 0;
+		DWORD dwNextBossRaidMoveTime = 0;
 		// The ItemShop (playerbot_itemshop.h): the account's Dragon Coins and
 		// Marks as last read or reckoned, whether they were ever read, the
 		// hairstyle bought once, and the three clocks.
@@ -7062,11 +7124,13 @@ namespace
 	// The passes that run above the tower's hook in the tick and can move a
 	// bot to another map - the offline shop's service visit, the market trip,
 	// the negative-rank rule - stand down for such a bot: the first run lost
-	// three raiders to "offline_shop_service" inside two minutes.
+	// three raiders to "offline_shop_service" inside two minutes. A bot called
+	// to a boss (playerbot_boss_raid.h) is the same business: its hook sits
+	// beside the tower's.
 	bool IsPlayerBotOnTowerBusiness(LPCHARACTER ch, const TPlayerBotAIState& state)
 	{
 		return (ch && IsPlayerBotDemonTowerInstance(ch->GetMapIndex())) ||
-				state.dwTowerRaidGuild != 0 || state.bTowerSummoned;
+				state.dwTowerRaidGuild != 0 || state.bTowerSummoned || state.wBossRaidRace != 0;
 	}
 
 	void SetPlayerBotAction(TPlayerBotAIState& state, BYTE action, DWORD dwNow)

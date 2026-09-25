@@ -1147,13 +1147,15 @@ namespace
 			return true;
 		}
 
-		// The tower is from PLAYERBOT_TOWER_MIN_LEVEL, as its keeper tells a
-		// player at the door (deviltower_zone.quest), and a raid only ever
-		// calls bots of that level - but the stone's jump takes everybody on
-		// the ground floor, and a bot below it that came along only dies on
-		// the floors ("przydalby sie okreslony minimalny poziom", prodnathin,
-		// 23 September; "40 poziom minimum", Tieru). A bot in a person's party
-		// stays with the person, who decided.
+		// The tower is for a bot from PLAYERBOT_TOWER_MIN_LEVEL - the keeper
+		// tells a player forty at the door (deviltower_zone.quest), and the
+		// bots' own floor was that forty until the ground floor's demons of
+		// 57-60 were measured beating raids of forty to forty-eight - and a
+		// raid only ever calls bots of that level; but the stone's jump takes
+		// everybody on the ground floor, and a bot below it that came along
+		// only dies on the floors ("przydalby sie okreslony minimalny poziom",
+		// prodnathin, 23 September). A bot in a person's party stays with the
+		// person, who decided.
 		if (ch->GetLevel() < PLAYERBOT_TOWER_MIN_LEVEL &&
 				!(ch->GetParty() && IsPlayerBotHumanLedParty(ch->GetParty())))
 		{
@@ -1578,8 +1580,10 @@ namespace
 	// The guild that goes: enough members of the level in this core's world,
 	// not at war, one with a bot of seventy-five ahead of one without, and the
 	// pick rotated by the raids fought so the same guild does not go every time.
-	bool PickPlayerBotTowerGuild(DWORD dwNow, TPlayerBotTowerGuildEntry& out)
+	bool PickPlayerBotTowerGuild(DWORD dwNow, TPlayerBotTowerGuildEntry& out, int& warWindow, int& atWar)
 	{
+		warWindow = 0;
+		atWar = 0;
 		if (!s_bPlayerBotGuildInfoLoaded)
 			LoadPlayerBotGuildInfo();
 		std::vector<TPlayerBotTowerGuildEntry> ready;
@@ -1587,13 +1591,21 @@ namespace
 				it != s_mapPlayerBotGuildInfo.end(); ++it)
 		{
 			CGuild* g = CGuildManager::instance().FindGuild(it->first);
-			if (!g || g->UnderAnyWar() != 0)
+			if (!g)
 				continue;
+			if (g->UnderAnyWar() != 0)
+			{
+				++atWar;
+				continue;
+			}
 			// Not with the kingdom's war about to be declared: the war picker
 			// skips a raiding guild, and this is the other half of that.
 			const int nextWar = GetPlayerBotNextGuildWarInSeconds(it->second.bEmpire, dwNow);
 			if (nextWar > 0 && nextWar < 600)
+			{
+				++warWindow;
 				continue;
+			}
 			TPlayerBotTowerGuildEntry e;
 			e.guild = g;
 			e.empire = it->second.bEmpire;
@@ -1797,15 +1809,20 @@ namespace
 			if (now || (enabled && dwNow >= s_dwNextPlayerBotTowerRaidTime))
 			{
 				TPlayerBotTowerGuildEntry e;
-				if (PickPlayerBotTowerGuild(dwNow, e))
+				int warWindow = 0;
+				int atWar = 0;
+				if (PickPlayerBotTowerGuild(dwNow, e, warWindow, atWar))
 					CallPlayerBotTowerRaid(e, dwNow, now ? "panel" : "clock");
 				else
 				{
 					s_dwNextPlayerBotTowerRaidTime = dwNow + PLAYERBOT_TOWER_RETRY_MS;
+					// The guilds a war kept out are counted apart: "no guild"
+					// said the same over thirteen bots of forty held back by
+					// their kingdom's war clock alone.
 					PlayerBotLogThrottled("tower_no_guild", dwNow,
-							"PLAYERBOT_TOWER: no guild with %d bots of %d online, next try in %u min",
+							"PLAYERBOT_TOWER: no guild with %d bots of %d online, next try in %u min (at_war=%d war_soon=%d)",
 							PLAYERBOT_TOWER_MIN_MEMBERS, PLAYERBOT_TOWER_MIN_LEVEL,
-							(unsigned int)(PLAYERBOT_TOWER_RETRY_MS / 60000U));
+							(unsigned int)(PLAYERBOT_TOWER_RETRY_MS / 60000U), atWar, warWindow);
 				}
 			}
 		}

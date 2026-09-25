@@ -169,7 +169,8 @@ namespace
 	{
 		return !ch || ch->GetMapIndex() >= PLAYERBOT_INSTANCE_MAP_INDEX_MIN ||
 				IsPlayerBotDemonTowerInstance(ch->GetMapIndex()) || ch->GetDungeon() != NULL ||
-				state.dwGuildWarEnemyGID != 0 || state.dwTowerRaidGuild != 0 || state.bTowerSummoned;
+				state.dwGuildWarEnemyGID != 0 || state.dwTowerRaidGuild != 0 || state.bTowerSummoned ||
+				state.wBossRaidRace != 0;
 	}
 
 	// A bot hunting, with nothing else asking for it: the only time the

@@ -627,6 +627,30 @@ else
     echo "[playerbot-migrate] WARNING: could not write the apprentice chest flag; the quest keeps the last one" >&2
 fi
 
+# Whether the world is played with Auto Lowy and with the companion
+# (Towarzysz): the launcher's difficulty window writes M2_AUTOHUNT and
+# M2_SIDEKICK, both on unless .env says 0 (Tieru, 25 September, for Drip's
+# COOP without the auto hunt). Off, the server refuses the hunt's target
+# and drop (m2_autohunt_off, playerbotify apply_auto_hunt_switch) and
+# sends no Towarzysz letter, refuses its command and keeps companions out
+# of the world (m2_sidekick_off). Event flags like the difficulty, so a
+# change reaches the cores at the next start.
+feature_off() {
+    case "$(printf '%s' "$1" | tr 'A-Z' 'a-z' | tr -d ' \r')" in
+        0|off|no|false) echo 1 ;;
+        *)              echo 0 ;;
+    esac
+}
+autohunt_off=$(feature_off "${M2_AUTOHUNT:-1}")
+sidekick_off=$(feature_off "${M2_SIDEKICK:-1}")
+if db -e "REPLACE INTO player.quest (dwPID, szName, szState, lValue) VALUES
+        (0, 'm2_autohunt_off', '', $autohunt_off),
+        (0, 'm2_sidekick_off', '', $sidekick_off);"; then
+    echo "[playerbot-migrate] Auto Lowy: $([ "$autohunt_off" = 1 ] && echo off || echo on), companions: $([ "$sidekick_off" = 1 ] && echo off || echo on)"
+else
+    echo "[playerbot-migrate] WARNING: could not write the Auto Lowy and companion flags; the cores keep the last ones" >&2
+fi
+
 echo "[playerbot-migrate] applying deterministic Playerbot seed (PID $first_pid..$last_pid)"
 result=/tmp/playerbot-seed.out
 trap 'rm -f "$result"' EXIT HUP INT TERM

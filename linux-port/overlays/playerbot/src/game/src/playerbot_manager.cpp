@@ -151,6 +151,10 @@ namespace { bool HandlePlayerBotConversation(LPCHARACTER player, LPCHARACTER bot
 #include "playerbot_anti_pk.h"
 #include "playerbot_rare_persona.h"
 #include "playerbot_demon_tower.h"
+// The world's bosses, broken by a crowd of one kingdom: the call, the
+// gathering outside his sight, the fight together. After demon_tower.h, whose
+// fight and keeping alive it borrows.
+#include "playerbot_boss_raid.h"
 // The player's own companion, "Towarzysz": the owner's party, the owner's
 // fights, the owner's drops, the owner's trades. Before companions.h, whose
 // IsPlayerBotHeldForCompany asks whether a bot is one.
@@ -542,8 +546,9 @@ namespace
 	// trade, not an upgrade: worth taking against something that stands there
 	// long enough for the bonus to add up and cannot be killed faster by a
 	// rotation anyway. That is a boss, at the start of the fight - and of the
-	// bosses, the Reaper alone (PLAYERBOT_POLYMORPH_BOSS_VNUMS): the players
-	// keep their marbles for him and fight the Demon Kings with their skills.
+	// bosses, the Reaper (PLAYERBOT_POLYMORPH_BOSS_VNUMS): the players keep
+	// their marbles for him and fight the Demon Kings with their skills - and
+	// the world boss a raid was called to.
 	//
 	// Every refusal the engine can raise is left to the engine (already
 	// transformed, in the saddle, a monster too high for the bot's level): none
@@ -563,7 +568,14 @@ namespace
 				sizeof(PLAYERBOT_POLYMORPH_BOSS_VNUMS[0]); ++i)
 			if (PLAYERBOT_POLYMORPH_BOSS_VNUMS[i] == victim->GetRaceNum())
 				reaper = true;
-		if (!reaper)
+		// And on the boss a raid was called to (playerbot_boss_raid.h), by a
+		// build whose blows the marble multiplies: a raid is what "na
+		// marmurkach bic bossy" means (prodnathin, 25 September), and a
+		// Shaman's or a black-magic Sura's damage is its skills, which the
+		// marble takes away.
+		const bool raidBoss = state.wBossRaidRace != 0 && victim->GetRaceNum() == state.wBossRaidRace &&
+				ch->GetJob() != JOB_SHAMAN && !(ch->GetJob() == JOB_SURA && ch->GetSkillGroup() == 2);
+		if (!reaper && !raidBoss)
 			return;
 		// Early in the fight, or the five minutes are spent on a boss that is
 		// nearly down and the bot has thrown a marble away for one hit.
@@ -2449,8 +2461,10 @@ namespace
 				state.dwTownLingerUntil != 0 || IsPlayerBotBesideHumanLeader(ch) ||
 				IsPlayerBotSidekickBesideOwner(ch) ||
 				// waiting for a floor's script in the Demon Tower, or for the
-				// raid to gather on its ground floor (playerbot_demon_tower.h)
+				// raid to gather on its ground floor (playerbot_demon_tower.h),
+				// or at its spot for a boss raid to gather (playerbot_boss_raid.h)
 				state.lTowerInstance != 0 || state.dwTowerRaidGuild != 0 || state.bTowerSummoned ||
+				state.wBossRaidRace != 0 ||
 				// away from the keyboard, or pausing between two packs, in a
 				// SLABY mood (playerbot_persona.h): standing still is the point
 				(state.persona.dwAfkUntil != 0 && dwNow < state.persona.dwAfkUntil) ||
@@ -4748,6 +4762,9 @@ void CPlayerBotManager::Update()
 	RefreshPlayerBotStrengths(dwNow);
 	ManagePlayerBotGuildWars(dwNow);
 	ManagePlayerBotTowerRaids(dwNow);
+	// The world's bosses: a raid called to every one standing with none
+	// (playerbot_boss_raid.h).
+	ManagePlayerBotBossRaids(dwNow);
 	WritePlayerBotGuildStatus(dwNow);
 	WritePlayerBotItemShopCensus(dwNow);
 	// The ore veins, once a minute for the whole world. A vein deletes itself
@@ -5216,8 +5233,8 @@ void CPlayerBotManager::Update()
 		ProcessPlayerBotCatch(ch);
 		ManagePlayerBotHairDye(ch);
 		// A dropper that has reached its band stops earning experience, and a
-		// marble is spent on the Reaper. Both are cheap tests that end on the
-		// first lines for everybody they do not concern.
+		// marble is spent on the Reaper or a raid's boss. Both are cheap tests
+		// that end on the first lines for everybody they do not concern.
 		ManagePlayerBotExpLock(ch, state);
 		MirrorPlayerBotLevel(ch);
 		ManagePlayerBotPolymorph(ch, state, dwNow);
@@ -5373,6 +5390,12 @@ void CPlayerBotManager::Update()
 		// (playerbot_demon_tower.h). Owns the tick the way the guild war does,
 		// after the loot so the floors' keys are picked up.
 		if (ManagePlayerBotDemonTower(ch, state, dwNow))
+			continue;
+
+		// A bot called to a boss (playerbot_boss_raid.h): the walk to him, the
+		// gathering and the fight. Beside the tower's hook and for the same
+		// reasons - after the loot, so his drops are picked up.
+		if (ManagePlayerBotBossRaid(ch, state, dwNow))
 			continue;
 
 		// Horse medals are equally real resources: a bot leaves combat, walks to

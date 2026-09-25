@@ -549,14 +549,22 @@ namespace
 			return false;
 		const DWORD dwStuck = GetPlayerBotStuckSkill(ch);
 		const BYTE bOldGroup = ch->GetSkillGroup();
+#if defined(PLAYERBOT_ENGINE_MT2009)
+		// The quest's is_any_skill_at_level(17): a reset with a skill at
+		// seventeen or past it is remembered, and the next roll at seventeen
+		// is a quarter likelier. The engine clears it on the Master it buys.
+		if (dwStuck != 0)
+			ch->SetQuestFlag("skill_reset2.reset_count",
+					ch->GetQuestFlag("skill_reset2.reset_count") + 1);
+#endif
 		PlayerBotChangeGold(ch, (int)-cost);
 		ch->ClearSkill();
 		ch->SetSkillGroup(0);
 		state.dwNextSkillResetTime = dwNow + PLAYERBOT_SKILL_RESET_COOLDOWN;
-		sys_log(0, "PLAYERBOT_SKILL: reset at the old woman pid=%u name=%s level=%u group=%u stuck_skill=%u cost=%lld gold_left=%lld points=%d",
+		sys_log(0, "PLAYERBOT_SKILL: reset at the old woman pid=%u name=%s level=%u group=%u stuck_skill=%u cost=%lld gold_left=%lld points=%d reset_count=%d",
 				ch->GetPlayerID(), ch->GetName(), (unsigned int)ch->GetLevel(),
 				(unsigned int)bOldGroup, dwStuck, cost, (long long)ch->GetGold(),
-				ch->GetPoint(POINT_SKILL));
+				ch->GetPoint(POINT_SKILL), ch->GetQuestFlag("skill_reset2.reset_count"));
 		return true;
 	}
 

@@ -23,6 +23,10 @@ param(
     # And the waits between two skill books, players' and bots' (custom).
     [string]$BookHours = '',
     [string]$BotBookHours = '',
+    # And whether the world is played with Auto Lowy and with the companion
+    # (Towarzysz): 1 = on, 0 = off, -1 leaves .env as it is.
+    [int]$AutoHunt = -1,
+    [int]$Sidekick = -1,
     # The rates a fresh world starts on, asked for when one is about to be
     # made (ResetWorld, and the first start of an install that has no database
     # yet). -1 leaves .env as it is, which is what every other caller wants.
@@ -1000,7 +1004,10 @@ function Set-DifficultyAction {
     $currentHorse = Get-DotEnvValue -Key 'M2_HORSE_WAIT_HOURS' -Default '0'
     $currentBook = Get-DotEnvValue -Key 'M2_BOOK_WAIT_HOURS' -Default '0'
     $currentBotBook = Get-DotEnvValue -Key 'M2_BOT_BOOK_WAIT_HOURS' -Default '0'
+    $currentAutoHunt = (Get-DotEnvValue -Key 'M2_AUTOHUNT' -Default '1') -ne '0'
+    $currentSidekick = (Get-DotEnvValue -Key 'M2_SIDEKICK' -Default '1') -ne '0'
     Write-Host "Aktualny poziom trudności: $current (przy 'custom': Biolog $currentBio h, Stajenny $currentHorse h, księgi: gracze $currentBook h, boty $currentBotBook h)." -ForegroundColor Gray
+    Write-Host "Auto Łowy: $(if ($currentAutoHunt) { 'włączone' } else { 'wyłączone' }); Towarzysz: $(if ($currentSidekick) { 'włączony' } else { 'wyłączony' })." -ForegroundColor Gray
 
     # -Difficulty passed (from the GUI or scripting) is non-interactive, like
     # -BotCount: never Read-Host, restart only with -Yes.
@@ -1024,6 +1031,20 @@ function Set-DifficultyAction {
             $book = Read-Host 'Ile godzin gracz czeka między dwiema księgami tej samej umiejętności (0 = od razu)'
             $botBook = Read-Host 'Ile godzin czekają na kolejną księgę boty (0 = od razu)'
         }
+    }
+    # Auto Lowy and the companion: asked in the text menu after the level, and
+    # taken from -AutoHunt/-Sidekick otherwise; what .env says when neither.
+    $autoHuntOn = $currentAutoHunt
+    $sidekickOn = $currentSidekick
+    if ($interactive) {
+        $answer = Read-Host "Auto Łowy (automatyczne polowanie w kliencie, klawisz K) włączone? (T/n, Enter = $(if ($currentAutoHunt) { 'tak' } else { 'nie' }))"
+        if ("$answer".Trim()) { $autoHuntOn = "$answer".Trim().ToLowerInvariant() -notin @('n', 'nie', 'no', '0') }
+        $answer = Read-Host "Towarzysz (stały kompan gracza, list i okno P) włączony? (T/n, Enter = $(if ($currentSidekick) { 'tak' } else { 'nie' }))"
+        if ("$answer".Trim()) { $sidekickOn = "$answer".Trim().ToLowerInvariant() -notin @('n', 'nie', 'no', '0') }
+    }
+    else {
+        if ($AutoHunt -ge 0) { $autoHuntOn = ($AutoHunt -ne 0) }
+        if ($Sidekick -ge 0) { $sidekickOn = ($Sidekick -ne 0) }
     }
     if ($level -notin @('easy', 'medium', 'hard', 'custom')) {
         throw "Nieznany poziom trudności: '$level'. Dozwolone: easy, medium, hard, custom."
@@ -1050,7 +1071,10 @@ function Set-DifficultyAction {
     Set-DotEnvValue -Key 'M2_HORSE_WAIT_HOURS' -Value $horse
     Set-DotEnvValue -Key 'M2_BOOK_WAIT_HOURS' -Value $book
     Set-DotEnvValue -Key 'M2_BOT_BOOK_WAIT_HOURS' -Value $botBook
+    Set-DotEnvValue -Key 'M2_AUTOHUNT' -Value $(if ($autoHuntOn) { '1' } else { '0' })
+    Set-DotEnvValue -Key 'M2_SIDEKICK' -Value $(if ($sidekickOn) { '1' } else { '0' })
     Write-Host "Zapisano: poziom trudności $level (Biolog $bio h, Stajenny $horse h, księgi: gracze $book h, boty $botBook h)." -ForegroundColor Green
+    Write-Host "Auto Łowy: $(if ($autoHuntOn) { 'włączone' } else { 'wyłączone' }); Towarzysz: $(if ($sidekickOn) { 'włączony' } else { 'wyłączony' })." -ForegroundColor Green
     if ($Yes) {
         Start-Server
         Write-Host "Serwer zrestartowany z poziomem trudności: $level." -ForegroundColor Green

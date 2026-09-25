@@ -365,6 +365,15 @@ namespace
 			snprintf(status, statusSize, PBT(en, "%sZbiorka gildii: Wieza Demonow", "%sGuild gathering: Demon Tower"), prefix);
 			return;
 		}
+		// A boss raid (playerbot_boss_raid.h), named by the boss.
+		if (state.wBossRaidRace != 0)
+		{
+			const CMob* boss = CMobManager::instance().Get(state.wBossRaidRace);
+			snprintf(mobName, sizeof(mobName), "{m%u}", (unsigned int)state.wBossRaidRace);
+			snprintf(status, statusSize, PBT(en, "%sRajd na bossa: %s", "%sBoss raid: %s"), prefix,
+					en ? mobName : (boss ? boss->m_table.szLocaleName : "boss"));
+			return;
+		}
 		// A guild war outranks every errand while it lasts (playerbot_guild_war.h).
 		if (state.dwGuildWarEnemyGID != 0)
 		{
@@ -394,6 +403,8 @@ namespace
 				snprintf(status, statusSize, PBT(en, "Towarzysz %s - u handlarza", "%s's companion - at the merchant"), owner);
 			else if (state.bRecoveringAfterDeath)
 				snprintf(status, statusSize, PBT(en, "Towarzysz %s - wracam do sil", "%s's companion - recovering"), owner);
+			else if (IsPlayerBotSidekickHolding(ch))
+				snprintf(status, statusSize, PBT(en, "Towarzysz %s - czekam", "%s's companion - waiting"), owner);
 			else
 				snprintf(status, statusSize, PBT(en, "Towarzysz %s", "%s's companion"), owner);
 			return;

@@ -233,6 +233,34 @@ STARTER_CHEST = (
 )
 
 
+GAME_FEATURES = (
+    '\n'
+    "# Whether the world is played with Auto Lowy and with the companion\n"
+    "# (Towarzysz): the launcher's difficulty window writes M2_AUTOHUNT and\n"
+    "# M2_SIDEKICK, both on unless .env says 0 (Tieru, 25 September, for Drip's\n"
+    "# COOP without the auto hunt). Off, the server refuses the hunt's target\n"
+    "# and drop (m2_autohunt_off, playerbotify apply_auto_hunt_switch) and\n"
+    "# sends no Towarzysz letter, refuses its command and keeps companions out\n"
+    "# of the world (m2_sidekick_off). Event flags like the difficulty, so a\n"
+    "# change reaches the cores at the next start.\n"
+    'feature_off() {\n'
+    '    case "$(printf \'%s\' "$1" | tr \'A-Z\' \'a-z\' | tr -d \' \\r\')" in\n'
+    '        0|off|no|false) echo 1 ;;\n'
+    '        *)              echo 0 ;;\n'
+    '    esac\n'
+    '}\n'
+    'autohunt_off=$(feature_off "${M2_AUTOHUNT:-1}")\n'
+    'sidekick_off=$(feature_off "${M2_SIDEKICK:-1}")\n'
+    'if db -e "REPLACE INTO player.quest (dwPID, szName, szState, lValue) VALUES\n'
+    "        (0, 'm2_autohunt_off', '', $autohunt_off),\n"
+    "        (0, 'm2_sidekick_off', '', $sidekick_off);\"; then\n"
+    '    echo "[playerbot-migrate] Auto Lowy: $([ "$autohunt_off" = 1 ] && echo off || echo on), companions: $([ "$sidekick_off" = 1 ] && echo off || echo on)"\n'
+    'else\n'
+    '    echo "[playerbot-migrate] WARNING: could not write the Auto Lowy and companion flags; the cores keep the last ones" >&2\n'
+    'fi\n'
+)
+
+
 def sql_rows(rows, per_line=8):
     """A tuple of tuples as the SQL list of row constructors, a few to a line."""
     parts = ['(' + ', '.join(str(v) for v in r) + ')' for r in rows]
@@ -440,6 +468,8 @@ def main():
             (WORLD_DIFFICULTY,
              '\necho "[playerbot-migrate] applying deterministic Playerbot seed (PID $first_pid..$last_pid)"\n'),
             (STARTER_CHEST,
+             '\necho "[playerbot-migrate] applying deterministic Playerbot seed (PID $first_pid..$last_pid)"\n'),
+            (GAME_FEATURES,
              '\necho "[playerbot-migrate] applying deterministic Playerbot seed (PID $first_pid..$last_pid)"\n')):
         assert s.count(anchor) == 1, anchor
         s = s.replace(anchor, text + anchor)

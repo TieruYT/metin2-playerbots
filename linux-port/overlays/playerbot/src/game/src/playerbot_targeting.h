@@ -623,6 +623,12 @@ namespace
 			state.dwFightLastProgressTime = dwNow;
 		}
 
+		// A raid's boss heals faster than any one blade hurts him; whether the
+		// raid is getting anywhere is the raid's question, asked of all of
+		// them at once (playerbot_boss_raid.h).
+		if (state.wBossRaidRace != 0 && target->GetRaceNum() == state.wBossRaidRace)
+			return false;
+
 		if (dwNow - state.dwFightStartTime < PLAYERBOT_FIGHT_INITIAL_GRACE ||
 				dwNow - state.dwFightLastProgressTime < PLAYERBOT_FIGHT_STALL_TIMEOUT)
 			return false;
@@ -665,6 +671,12 @@ namespace
 							CountPlayerBotStoneKingdomBots(target, owner));
 				return CountPlayerBotStoneAttackers(target, owner) >= PLAYERBOT_STONE_MAX_ATTACKERS;
 			}
+			// A boss is broken together too: the first bot's claim sent every
+			// other one onto his escort, and the Orc Chief fought for
+			// thirty-four minutes had exactly one bot on him for eighteen of them
+			// (the test world, 25 September; playerbot_boss_raid.h).
+			if (target && target->IsMonster() && target->GetMobRank() >= MOB_RANK_BOSS)
+				return CountPlayerBotStoneAttackers(target, owner) >= PLAYERBOT_BOSS_MAX_ATTACKERS;
 		}
 
 		for (TPlayerBotAIStateMap::const_iterator it = s_mapPlayerBotAIStates.begin();

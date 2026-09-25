@@ -1457,6 +1457,8 @@ def main(root):
     apply_bot_shop_slots_unlocked(game)
     apply_refine_abandoned_session(game)
     apply_book_wait(game)
+    apply_skill_cap_at_seventeen(game)
+    apply_auto_hunt_switch(game)
     apply_gm_panel_url(game)
     apply_shop_edit_burst(game)
     apply_shop_search_picked_item(game)
@@ -4914,6 +4916,54 @@ def apply_book_wait(game):
     edit(item,
          'SetSkillNextReadTime(dwSkillVnum, get_global_time() + SKILLBOOK_LEARN_DELAY, true);',
          'SetSkillNextReadTime(dwSkillVnum, get_global_time() + M2SkillBookLearnDelay(), true);')
+
+
+def apply_skill_cap_at_seventeen(game):
+    # A normal skill stops at seventeen and rolls for Master there at every
+    # level. The package waived the stop for a character of thirty or under,
+    # so each point past seventeen was another roll and the twentieth was a
+    # Master without any - and the Old Woman's reset for yang, which is what
+    # the thirty is for, was never needed ("po resecie u babki mozna dodawac
+    # powyzej 17 punktow", prodnathin, 25 September; Tieru: seventeen, and up
+    # to thirty the Old Woman). Her reset still raises the next roll
+    # (skill_reset2.reset_count, 25 percent a reset, 20 more under 35), and
+    # past thirty the Forgetting Scroll is the way on, as it always was.
+    edit(os.path.join(game, 'char_skill.cpp'),
+         '\t\tGetSkillLevel(pkSk->dwVnum) >= 17 && GetSkillLevel(pkSk->dwVnum) < 20\n'
+         '\t\t&& GetLevel() > 30)\n'
+         '\t{\n'
+         '\t\tChatPacket(CHAT_TYPE_INFO, LC_TEXT("You can\'t advance this skill further. Use Skill Reset Scroll or Band of Oblivion."));\n',
+         '\t\tGetSkillLevel(pkSk->dwVnum) >= 17 && GetSkillLevel(pkSk->dwVnum) < 20)\n'
+         '\t{\n'
+         '\t\t// playerbot: seventeen and a roll at every level, not only past thirty.\n'
+         '\t\tChatPacket(CHAT_TYPE_INFO, LC_TEXT("You can\'t advance this skill further. Use Skill Reset Scroll or Band of Oblivion."));\n'
+         '\t\tif (GetLevel() <= 30)\n'
+         '\t\t\tChatPacket(CHAT_TYPE_INFO, "Do 30 poziomu umiejetnosci zresetuje Starsza Pani w pierwszej wiosce.");\n',
+         marker='// playerbot: seventeen and a roll at every level')
+
+
+def apply_auto_hunt_switch(game):
+    # Auto Lowy is the world's choice: M2_AUTOHUNT=0 in .env (the launcher's
+    # difficulty window) is the event flag m2_autohunt_off, which the migrator
+    # writes at a start, and then the two commands the hunt cannot move
+    # without - the target and the drop - answer "AutoHuntOff", on which the
+    # client stops its hunt and says why (uiautohunt.py). Drip asked for a
+    # world without it for the COOP (25 September; Tieru: "Specjalnie dla
+    # Ciebie to zrobie"). Inserted after the opening brace, so the edits that
+    # rewrote these heads (their markers are further down) stay whole.
+    path = os.path.join(game, 'cmd_general.cpp')
+    for name, marker in (('target', '\t// playerbot: Auto Lowy switched off for this world (target).\n'),
+                         ('loot', '\t// playerbot: Auto Lowy switched off for this world (loot).\n')):
+        edit(path,
+             'ACMD(do_autohunt_%s)\n{\n' % name,
+             'ACMD(do_autohunt_%s)\n{\n' % name +
+             marker +
+             '\tif (quest::CQuestManager::instance().GetEventFlag("m2_autohunt_off"))\n'
+             '\t{\n'
+             '\t\tch->ChatPacket(CHAT_TYPE_COMMAND, "AutoHuntOff");\n'
+             '\t\treturn;\n'
+             '\t}\n',
+             marker=marker)
 
 
 if __name__ == '__main__':

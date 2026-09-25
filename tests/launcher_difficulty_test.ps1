@@ -50,6 +50,9 @@ function Confirm-Operation { param([string]$Question) return $false }
 
 $Yes = $false
 $Difficulty = ''; $BiologistHours = ''; $HorseHours = ''; $BookHours = ''; $BotBookHours = ''
+# Auto Lowy and the companion joined the window on 25 September: -1 keeps
+# what .env says (on when it says nothing).
+$AutoHunt = -1; $Sidekick = -1
 
 Write-Host '== hard is the package: 21 hours between books, players and bots =='
 $script:env = @{}
@@ -84,6 +87,27 @@ $Difficulty = 'custom'; $BiologistHours = '1'; $HorseHours = '2'; $BookHours = '
 Set-DifficultyAction
 Check 'players books kept' '5' $script:env['M2_BOOK_WAIT_HOURS']
 Check 'bots books kept' '3' $script:env['M2_BOT_BOOK_WAIT_HOURS']
+
+Write-Host '== Auto Lowy and the companion: on by default, 1 or 0, kept when not passed =='
+$script:env = @{}
+$Difficulty = 'easy'; $BiologistHours = ''; $HorseHours = ''; $BookHours = ''; $BotBookHours = ''
+$AutoHunt = -1; $Sidekick = -1
+Set-DifficultyAction
+Check 'auto hunt on by default' '1' $script:env['M2_AUTOHUNT']
+Check 'companion on by default' '1' $script:env['M2_SIDEKICK']
+$AutoHunt = 0
+Set-DifficultyAction
+Check 'auto hunt off' '0' $script:env['M2_AUTOHUNT']
+Check 'companion untouched' '1' $script:env['M2_SIDEKICK']
+$AutoHunt = -1; $Sidekick = 0
+Set-DifficultyAction
+Check 'auto hunt kept off' '0' $script:env['M2_AUTOHUNT']
+Check 'companion off' '0' $script:env['M2_SIDEKICK']
+$AutoHunt = 1; $Sidekick = 1
+Set-DifficultyAction
+Check 'auto hunt back on' '1' $script:env['M2_AUTOHUNT']
+Check 'companion back on' '1' $script:env['M2_SIDEKICK']
+$AutoHunt = -1; $Sidekick = -1
 
 Write-Host '== a number out of range stops it =='
 $Difficulty = 'custom'; $BookHours = '721'; $BotBookHours = '0'

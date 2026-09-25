@@ -54,6 +54,15 @@ namespace
 	// battlefield.
 	std::map<BYTE, TPlayerBotGuildWar> s_mapPlayerBotGuildWars;
 	DWORD s_adwPlayerBotNextGuildWarTime[playerbot_empire_rules::EMPIRE_COUNT];
+	// A kingdom whose last pick found no pair: its clock is a retry, not a war
+	// on its way. The tower keeps a guild out of a raid for the ten minutes
+	// before its kingdom's war, and the retry re-arms that clock ten minutes
+	// ahead every ten minutes - so a kingdom with one bot guild could never
+	// raid the Tower again after the first try of a start ("nie wyswietla sie
+	// powiadomienie na chacie jak jakas gildia idzie na dt", prodnathin,
+	// 25 September: ViceVersa, Shinsoo's only guild, thirteen bots of forty,
+	// skipped by every pick while its next war stood at 59..539 seconds).
+	bool s_abPlayerBotGuildWarNoPair[playerbot_empire_rules::EMPIRE_COUNT];
 	DWORD s_dwNextPlayerBotGuildWarCheck = 0;
 	unsigned int s_uPlayerBotGuildWarsFought = 0;
 	// Who fought last, per kingdom and per guild, for the pick below: the
@@ -1003,8 +1012,10 @@ namespace
 			if (!PickPlayerBotGuildWarPair((BYTE)empire, dwNow, a, b))
 			{
 				s_adwPlayerBotNextGuildWarTime[empire] = dwNow + PLAYERBOT_GUILD_WAR_RETRY_MS;
+				s_abPlayerBotGuildWarNoPair[empire] = true;
 				continue;
 			}
+			s_abPlayerBotGuildWarNoPair[empire] = false;
 			a->RequestDeclareWar(b->GetID(), GUILD_WAR_TYPE_FIELD);
 			s_mapPlayerBotLastWarPair[(BYTE)empire] = std::make_pair(a->GetID(), b->GetID());
 			// One second for both, which is how the next start finds the pair
@@ -1036,14 +1047,16 @@ namespace
 
 	// Seconds until this kingdom's next war for the guild report: 0 while one
 	// is declared or under way, -1 when none is scheduled (the switch is off,
-	// the map is not hosted here, or the clock has not been set yet).
+	// the map is not hosted here, the clock has not been set yet, or the last
+	// look found no pair and the clock is only its retry).
 	int GetPlayerBotNextGuildWarInSeconds(BYTE empire, DWORD dwNow)
 	{
 		if (empire >= playerbot_empire_rules::EMPIRE_COUNT)
 			return -1;
 		if (s_mapPlayerBotGuildWars.find(empire) != s_mapPlayerBotGuildWars.end())
 			return 0;
-		if (!IsPlayerBotGuildWarsEnabled() || s_adwPlayerBotNextGuildWarTime[empire] == 0)
+		if (!IsPlayerBotGuildWarsEnabled() || s_adwPlayerBotNextGuildWarTime[empire] == 0 ||
+				s_abPlayerBotGuildWarNoPair[empire])
 			return -1;
 		const DWORD at = s_adwPlayerBotNextGuildWarTime[empire];
 		return dwNow >= at ? 0 : (int)((at - dwNow) / 1000U);
