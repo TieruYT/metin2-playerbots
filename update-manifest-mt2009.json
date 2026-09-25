@@ -1,20 +1,20 @@
 {
   "schema": 1,
   "channel": "stable",
-  "publishedAt": "2026-09-25T16:33:10Z",
-  "statusMessage": "2.2.17 (serwer i klient 2.0.35 - zaktualizuj oba): licencja CC BY-NC-SA 4.0 od tej wersji, boty trzymaja w torbie najwyzej trzy sztuki Krysztalowych Kolczykow i innych przedmiotow do przerobu, lucznik na Auto Lowach podbiega po lup, launcher mowi co zrobic, gdy Windows zablokuje klienta. Zawiera wszystko z 2.2.16.",
+  "publishedAt": "2026-09-25T18:31:04Z",
+  "statusMessage": "2.2.18 (serwer i klient 2.0.36 - zaktualizuj oba): Towarzysz dostaje wszystkie punkty umiejetnosci i trzyma Twoje buffy jak swoje, boty wracaja z pustki w Wiezy Demonow, \"kupie KZ\" to Ksiega Zapomnienia, opisy umiejetnosci w oknie Towarzysza, jedno pytanie o aktualizacje w launcherze. Zawiera wszystko z 2.2.17.",
   "server": {
-    "version": "2.2.17",
-    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.17/metin2-server-update-2.2.17.zip",
-    "sha256": "A2D2E83251E66F9E72508CF19D717AD4B55CBC1B0DC24DB4CDBE38B9AE8ABAA5"
+    "version": "2.2.18",
+    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.18/metin2-server-update-2.2.18.zip",
+    "sha256": "F7F7C4BA9B7C37FBB5FA34F11F79025312AF3F80334EF2E76DB447901395DDB6"
   },
   "support": {
     "contactUrl": "https://discord.gg/pt5tvnrN6",
     "uploadUrl": ""
   },
   "client": {
-    "version": "2.0.35",
-    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.17/metin2-client-update-2.0.35.zip",
-    "sha256": "219EDAB270CC72B667721912DE36F3EF30D94E01734CBE8A8668FA188D410B30"
+    "version": "2.0.36",
+    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.18/metin2-client-update-2.0.36.zip",
+    "sha256": "EEEC297AD9D4091FF1FFF2EA86FBCB1CEAF151B3849EF96BD1934F3C528ED8CF"
   }
 }
