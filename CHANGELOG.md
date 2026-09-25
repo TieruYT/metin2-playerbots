@@ -17,6 +17,102 @@ every version here.
 
 ---
 
+## 2.2.14 — 2026-09-25
+
+Serwer 2.2.14 i klient 2.0.33: zaktualizuj oba. Zawiera wszystko z 2.2.13.
+
+### Boty biją bossów (zgłosił prodnathin, Tieru)
+
+- Bossów świata biją teraz grupy botów jednego królestwa: Best. Kapitana
+  w drugich wioskach, Wodza Orków w Dolinie Orków, Królową Pająków w Lochu
+  Pająków, Ezot. Przyw. i Zjawę Żółt. Tygrysa w Hwang, Olbrzymiego Żółwia
+  na Pustyni Yongbi, Dziewięć Ogonów na Górze Sohan i Ognistego Króla
+  w Doyyumhwaji.
+- Na bossa idą boty z jego przedziału poziomów (od 8 poziomów niżej do 9
+  wyżej): najpierw te, które już są na jego mapie, potem najsilniejsze,
+  a do tego szaman, jeśli jakiś jest wolny. Zbierają się poza zasięgiem
+  wzroku bossa, buffują się i atakują razem, gdy dojdzie ich dość albo gdy
+  boss sam kogoś zaatakuje.
+- Dotąd na bossa szedł jeden bot, a reszta biła jego świtę. Bot odpuszczał
+  też bossa, który leczy się szybciej, niż on zadaje obrażenia (Królowa
+  Pająków, Zjawa Tygrysa). Teraz, gdy boss przez minutę prawie nie traci
+  życia, przychodzą posiłki. Jeśli i to nie pomoże, boty zostawiają go na
+  pół godziny.
+- Wojownik, sura broni i ninja używają na bossie z rajdu marmuru
+  przemiany (prodnathin: „na marmurkach bić bossy”).
+- Pokonanie dużego bossa ogłasza wiadomość na czacie: „Boty z królestwa X
+  pokonały: Y (N min)”. Kapitanów to nie dotyczy, bo padają kilka razy na
+  godzinę.
+- Na świecie testowym boty mają najwyżej 48 poziom, więc na razie
+  sprawdziliśmy tylko Kapitanów: we wszystkich trzech drugich wioskach
+  padali po 41–138 sekundach, bici przez dwa boty. Na większych bossów boty
+  ruszą, gdy dojdą do ich poziomów.
+
+### Umiejętności: 17 punktów i Starsza Pani (zgłosił prodnathin)
+
+- Zwykła umiejętność zatrzymuje się na 17 punktach na każdym poziomie
+  postaci. Przy 17. punkcie pada rzut na Mistrza. Dotąd do 30 poziomu
+  można było dodawać punkty powyżej 17: każdy był kolejnym rzutem, a 20.
+  dawał Mistrza bez rzutu, więc reset u Starszej Pani nie był potrzebny.
+- Gdy rzut się nie uda, do 30 poziomu umiejętności resetuje Starsza Pani
+  w pierwszej wiosce (za yang), a każdy reset podnosi szansę następnego
+  rzutu. Gra przypomina o tym na czacie. Po 30 poziomie zostają, jak dotąd,
+  przedmioty do resetu umiejętności.
+- Boty robią tak samo. Ich reset u Starszej Pani też podnosi szansę
+  następnego rzutu i kosztuje tyle, ile u gracza.
+
+### Gildie botów znów idą do Wieży Demonów (zgłoszenie z kanału)
+
+- Powiadomienie na czacie działało, ale gildie przestały wyruszać. Jeśli
+  w królestwie nie było dwóch gildii zdolnych do wojny, zegar wojny co
+  chwilę pokazywał „wojna za kilka minut”, a do Wieży nie idzie gildia,
+  która wkrótce ma wojnę. Teraz brak pary do wojny nie blokuje Wieży.
+- Boty idą do Wieży od 55 poziomu (dotąd od 40). Na parterze stoją demony
+  57–60 poziomu i na świecie testowym boty 40–48 poziomu przez dziesięć
+  minut nie zbiły kamienia w pięciu rajdach z sześciu. Boty z gildii
+  gracza przychodzą na parter, gdy stoi tam mistrz gildii, też od 55
+  poziomu. Bot w Twojej grupie idzie z Tobą jak dotąd, a strażnik
+  wpuszcza gracza od 40 poziomu.
+
+### Auto Łowy (zgłosił prodnathin)
+
+- Po wstaniu, gdy Auto Łowy czekają na ustawiony procent życia, rzucają już
+  tylko buffy. Dotąd rzucały wszystkie umiejętności, więc np. szaman
+  Skowytem budził stado, które przed chwilą go zabiło, i ginął w kółko.
+
+### Okno towarzysza (klient 2.0.33)
+
+- Klawisz P albo przycisk na pasku otwiera okno towarzysza. Okno pokazuje
+  poziom, życie, manę, doświadczenie, yang, mikstury, miejsce, to, co
+  towarzysz teraz robi, i jego ekwipunek.
+- **Polecenia:** Przywołaj, Czekaj tu (zostaje w miejscu, gdy idziesz
+  dalej), Wolna ręka, Na zakupy (idzie do miasta do kowala i handlarzy,
+  potem wraca), Raport i Odpraw (z pytaniem, bo tego nie da się cofnąć).
+- **Walka:** Atakuj, Nie 1. atak, Nie walcz, tak jak komendy szeptem.
+- **Drop i wsparcie:** co zbiera (nic, Twój drop, wszystko), czy ściąga na
+  siebie potwory, gdy masz mało życia, i czy szaman Cię buffuje.
+- W liście „Towarzysz” jest nowa pozycja „Okno towarzysza (klawisz P)”.
+
+### Przyciski na pasku (klient 2.0.33)
+
+- Na pasku w prawym dolnym rogu, obok przycisków postaci, ekwipunku,
+  społeczności i systemu, są dwa nowe: Towarzysz (P) i Auto Łowy (K).
+  Zrobiliśmy je z grafik oryginalnych przycisków. Mieszczą się tylko przy
+  szerokości ekranu od 940 pikseli; przy węższym zostają klawisze P i K.
+
+### Auto Łowy i Towarzysz do wyłączenia na serwerze (pomysł Drip, Tieru)
+
+- W launcherze, pod przyciskiem POZIOM TRUDNOŚCI, są dwa nowe pola: Auto
+  Łowy i Towarzysz. Oba są domyślnie włączone. Zmiana działa od następnego
+  uruchomienia serwera.
+- Z wyłączonymi Auto Łowami klient zatrzymuje polowanie i pisze na czacie,
+  że na tym serwerze są wyłączone.
+- Z wyłączonym Towarzyszem nie przychodzi list „Towarzysz”, a towarzysze,
+  którzy są w grze, wylogowują się. Ich dane zostają i wracają po ponownym
+  włączeniu.
+- Na Linuksie służą do tego `M2_AUTOHUNT` i `M2_SIDEKICK` w `.env`
+  (1 włączone, 0 wyłączone).
+
 ## 2.2.13 — 2026-09-25
 
 Serwer 2.2.13. Klient bez zmian (2.0.32). Zawiera wszystko z 2.2.12.
