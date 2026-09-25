@@ -17,6 +17,75 @@ every version here.
 
 ---
 
+## 2.2.17 — 2026-09-25
+
+Serwer 2.2.17 i klient 2.0.35: zaktualizuj oba. Zawiera wszystko z 2.2.16.
+
+### Nowa licencja: CC BY-NC-SA 4.0
+
+- Od tej wersji projekt jest udostępniany na licencji Creative Commons
+  Uznanie autorstwa – Użycie niekomercyjne – Na tych samych warunkach 4.0
+  (CC BY-NC-SA 4.0). Szczegóły są w plikach LICENSE i NOTICE.md w folderze
+  serwera.
+- W skrócie: paczki i przeróbki można udostępniać, także publicznie, jeśli
+  poda się autora i link do projektu, nie zarabia się na nich (bez
+  sprzedaży, płatnego dostępu do serwera i płatnych przedmiotów w grze),
+  a przeróbkę udostępnia się na tej samej licencji. Dobrowolne wpłaty na
+  utrzymanie serwera, które nie dają nic w grze, oraz nagrywanie
+  i streamowanie rozgrywki są w porządku.
+- Wersje do 2.2.16 zostają na licencji MIT, na której je wydano.
+- Kod źródłowy nowych wersji nie jest już publikowany na GitHubie.
+  W repozytorium są wydania z paczkami, lista zmian i pliki, z których
+  korzystają launcher i panele, więc aktualizacje działają jak dotąd.
+- Regulamin w grze mówi o tym w punktach 1.2 i 2.3 i pokaże się ponownie
+  przy najbliższym logowaniu.
+
+### Boty nie chomikują Kryształowych Kolczyków (zgłosił Iwakura)
+
+- Boty podnoszą Kryształowe Kolczyki, Zbroje Twarzy Ducha i bronie 65
+  poziomu dla graczy, którzy je przerabiają, i trzymały je dla straganu.
+  Stragan wystawia najwyżej trzy linie jednego przedmiotu, więc każda
+  następna sztuka leżała w torbie na zawsze. W jednej torbie było ich
+  siedemnaście.
+- Teraz bot trzyma w torbie najwyżej trzy sztuki jednego takiego
+  przedmiotu, żeby zastąpić te, które sprzedadzą się ze straganu. Resztę
+  sprzedaje handlarzowi przy najbliższej wizycie w mieście. Bot, który
+  jest wybredny przy podnoszeniu łupu i ma już swoje trzy, zostawia
+  następne na ziemi.
+- Zioła, Fasolki Zen, Pigułki Krwi, siano, marchewki i księgi misji się
+  stackują, więc ich to nie dotyczy.
+
+### Auto Łowy: łucznik podbiega po przedmioty (klient 2.0.35, zgłosił Mur4s)
+
+- Łuk sięga daleko, więc prawie zawsze jakiś potwór był „w zasięgu”
+  i łucznik podnosił tylko to, co spadło mu pod nogi. Jego własna
+  Szkatułka Blasku Księżyca leżała kilka kroków dalej.
+- Teraz przedmiot w pobliżu ma pierwszeństwo przed potworem, który nie
+  stoi tuż obok, także z łukiem w ręku. Potwór tuż obok nadal jest
+  pierwszy. U postaci walczących wręcz nic się nie zmienia.
+
+### Gdy Windows zablokuje klienta (zgłosili 6zmacko i Meskele)
+
+- 25 września gracze zaczęli zgłaszać, że Windows Defender uznaje klienta
+  gry (metin2client.exe) za zagrożenie (np. Trojan:Script/Wacatac)
+  i przenosi go do kwarantanny, a Inteligentna kontrola aplikacji (Smart
+  App Control) nie pozwala go uruchomić. To fałszywy alarm: plik nie ma
+  podpisu cyfrowego, więc ocenia go heurystyka. Inne antywirusy na
+  VirusTotal nic w nim nie znajdują.
+- Zamiast surowego błędu Windows launcher mówi teraz, co się stało i co
+  można zrobić: przy blokadzie przez Smart App Control, przy blokadzie
+  przez antywirusa i wtedy, gdy klienta nie ma już w folderze, bo zabrał go
+  antywirus. Zadziała po ponownym uruchomieniu launchera.
+- Co zrobić już teraz: Zabezpieczenia Windows > Ochrona przed wirusami
+  i zagrożeniami > Historia ochrony > wpis z metin2client.exe > Akcje >
+  Przywróć, a potem dodaj folder klienta do wykluczeń (Ochrona przed
+  wirusami i zagrożeniami > Zarządzaj ustawieniami > Wykluczenia). Smart
+  App Control nie ma listy wyjątków: klient uruchomi się dopiero po jej
+  wyłączeniu (Kontrola aplikacji i przeglądarki), a Windows może potem nie
+  pozwolić włączyć jej z powrotem bez ponownej instalacji systemu.
+- Aktualizacja klienta 2.0.35 nie zawiera metin2client.exe (nie zmienił
+  się), więc nie nadpisuje pliku, który masz.
+
 ## 2.2.16 — 2026-09-25
 
 Serwer 2.2.16 i klient 2.0.34: zaktualizuj oba. Zawiera wszystko z 2.2.15.
