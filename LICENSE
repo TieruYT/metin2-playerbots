@@ -1,171 +1,59 @@
 Metin2 Playerbots
-Licencja od wersji 2.2.17 / Licence from version 2.2.17
-
 Copyright (c) 2026 Tieru (github.com/TieruYT)
-Wszelkie prawa zastrzeżone. / All rights reserved.
-
-Wiążąca jest wersja polska. Niżej jest jej tłumaczenie na angielski.
-The Polish text is binding. An English translation follows it.
 
 ===========================================================================
 POLSKI
 ===========================================================================
 
-1. Czego dotyczy licencja
+Od wersji 2.2.17 projekt Metin2 Playerbots jest udostępniany na licencji
+Creative Commons Uznanie autorstwa - Użycie niekomercyjne - Na tych samych
+warunkach 4.0 Międzynarodowa (CC BY-NC-SA 4.0).
 
-   Licencja obejmuje projekt Metin2 Playerbots w wersjach 2.2.17 i nowszych:
-   kod, skrypty, dane, grafiki i dokumentację projektu oraz paczki
-   aktualizacji i pełne paczki rozpowszechniane przez autora (dalej:
-   „Oprogramowanie”).
+  Tekst licencji:  https://creativecommons.org/licenses/by-nc-sa/4.0/legalcode.pl
+  Skrót licencji:  https://creativecommons.org/licenses/by-nc-sa/4.0/deed.pl
 
-   Wersje do 2.2.16 włącznie zostały wydane na licencji MIT i ta licencja
-   nadal ich dotyczy. Jej treść jest w pliku LICENSE-MIT.txt.
+W skrócie (wiąże tekst licencji): możesz kopiować, udostępniać i zmieniać
+projekt, także publicznie, jeśli:
+  - podasz autora i link do projektu, a w przeróbce zaznaczysz, co
+    zmieniłeś;
+  - nie wykorzystasz go do celów komercyjnych;
+  - przeróbkę udostępnisz na tej samej licencji.
 
-2. Co wolno bez pytania o zgodę
+Jak podać autora:
+  Metin2 Playerbots - Tieru - https://github.com/TieruYT/metin2-playerbots - CC BY-NC-SA 4.0
 
-   a) Pobierać Oprogramowanie z oficjalnych źródeł projektu: repozytorium
-      github.com/TieruYT/metin2-playerbots i serwera Discord projektu.
-   b) Uruchamiać je na własnym komputerze lub serwerze i grać prywatnie,
-      bez celów zarobkowych, także z rodziną i znajomymi. Możesz im w tym
-      celu przekazać niezmienioną kopię, ale nie możesz jej publikować.
-   c) Robić kopie na własny użytek: kopie zapasowe, przeniesienie na inny
-      komputer albo na własny serwer VPS.
-   d) Zmieniać ustawienia (plik .env, panele, launcher, suwaki botów)
-      i dzielić się swoimi ustawieniami z innymi.
-   e) Modyfikować Oprogramowanie na własny użytek, bez udostępniania
-      zmienionej wersji innym osobom.
-   f) Nagrywać i transmitować rozgrywkę oraz pokazywać projekt w filmach,
-      recenzjach i poradnikach.
-   g) Zgłaszać autorowi błędy i przesyłać mu poprawki (punkt 4).
-
-3. Czego nie wolno bez pisemnej zgody autora
-
-   a) Publikować ani rozpowszechniać Oprogramowania lub jego części, w tym
-      kodu źródłowego zawartego w paczkach: w innych repozytoriach, na
-      forach, w serwisach z plikami ani w żaden inny publiczny sposób.
-   b) Sprzedawać go ani udostępniać za opłatą. Nie wolno też pobierać opłat
-      za dostęp do serwera, który na nim działa, ani za przedmioty w takiej
-      grze.
-   c) Tworzyć na jego podstawie projektów pochodnych (forków, przeróbek,
-      własnych wersji) i rozpowszechniać ich, również bezpłatnie.
-   d) Usuwać ani zmieniać informacji o autorach, prawach autorskich
-      i licencji.
-
-   O zgodę można poprosić autora na serwerze Discord projektu.
-
-4. Przesyłane poprawki i pomysły
-
-   Przesyłając autorowi poprawkę, kod, grafikę, dane lub pomysł, zgadzasz
-   się, że autor może je włączyć do Oprogramowania, zmieniać
-   i rozpowszechniać na warunkach tej licencji. Autor wymienia twórców
-   wkładów w pliku NOTICE.md, w README i w opisach wydań.
-
-5. Czego licencja nie obejmuje
-
-   a) Metin2. Gra, jej kod źródłowy, dane i klient należą do Ymir
-      Interactive i Webzen. Projekt nie udziela do nich żadnych praw.
-   b) Pakietów plików serwerowych, na których działa projekt: r40250
-      („[40250] Reference Serverfile” autorstwa TMP4) oraz mt2009
-      (Martysama r41023). Obowiązują ich własne warunki.
-   c) Bibliotek i komponentów stron trzecich, które mają własne licencje.
-   d) Części wydanych na licencji MIT: podstawy projektu przejętej
-      z AzzlackSyndicate/metin2-singleplayer-serverfiles-linux oraz wkładów
-      innych osób wydanych na tej licencji. W tych częściach nadal
-      obowiązuje licencja MIT (LICENSE-MIT.txt) razem z informacją o prawach
-      autorskich. Szczegóły są w pliku NOTICE.md.
-
-6. Brak gwarancji
-
-   Oprogramowanie jest dostarczane „tak jak jest”, bez jakiejkolwiek
-   gwarancji. W najszerszym zakresie dozwolonym przez prawo autor nie
-   odpowiada za szkody wynikłe z jego używania lub z tego, że nie dało się
-   go używać.
-
-7. Zmiany licencji
-
-   Autor może zmienić warunki dla przyszłych wersji. Wersja, którą już
-   pobrałeś, zostaje na warunkach, na których ją otrzymałeś.
-
-Kontakt: discord.gg/pt5tvnrN6, github.com/TieruYT
+Licencja obejmuje pracę autorów projektu: kod, skrypty, dane, grafiki
+i dokumentację. Nie obejmuje Metin2 (Ymir Interactive, Webzen), paczek plików
+serwerowych, bibliotek stron trzecich ani części, które mają własną licencję.
+Wersje do 2.2.16 włącznie zostały wydane na licencji MIT (LICENSE-MIT.txt)
+i na niej zostają. Szczegóły oraz dodatkowe zezwolenia autora (dobrowolne
+wpłaty na serwer, nagrywanie rozgrywki) są w pliku NOTICE.md.
 
 ===========================================================================
-ENGLISH (translation; the Polish text above prevails)
+ENGLISH
 ===========================================================================
 
-1. What the licence covers
+From version 2.2.17 the Metin2 Playerbots project is shared under the
+Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International
+licence (CC BY-NC-SA 4.0).
 
-   This licence covers the Metin2 Playerbots project from version 2.2.17
-   onwards: the project's code, scripts, data, graphics and documentation,
-   and the update packages and full packages the author distributes
-   (the "Software").
+  Licence text:     https://creativecommons.org/licenses/by-nc-sa/4.0/legalcode.en
+  Licence summary:  https://creativecommons.org/licenses/by-nc-sa/4.0/deed.en
 
-   Versions up to and including 2.2.16 were released under the MIT licence,
-   and that licence still applies to them. Its text is in LICENSE-MIT.txt.
+In short (the licence text is what binds): you may copy, share and modify the
+project, publicly too, provided that:
+  - you credit the author and link to the project, and say what you changed
+    in a modified version;
+  - you do not use it for commercial purposes;
+  - you share a modified version under the same licence.
 
-2. What you may do without asking
+How to credit:
+  Metin2 Playerbots - Tieru - https://github.com/TieruYT/metin2-playerbots - CC BY-NC-SA 4.0
 
-   a) Download the Software from the project's official sources: the
-      github.com/TieruYT/metin2-playerbots repository and the project's
-      Discord server.
-   b) Run it on your own computer or server and play privately, not for
-      profit, including with your family and friends. You may give them an
-      unmodified copy for that purpose, but you may not publish it.
-   c) Make copies for your own use: backups, moving it to another computer
-      or to your own VPS.
-   d) Change its settings (the .env file, the panels, the launcher, the bot
-      sliders) and share your settings with others.
-   e) Modify the Software for your own use, without making the modified
-      version available to anybody else.
-   f) Record and stream gameplay, and show the project in videos, reviews
-      and guides.
-   g) Report bugs to the author and send the author fixes (point 4).
-
-3. What you may not do without the author's written permission
-
-   a) Publish or distribute the Software or any part of it, including the
-      source code contained in the packages: in other repositories, on
-      forums, on file-hosting services or in any other public way.
-   b) Sell it or make it available for a fee. Charging for access to a
-      server that runs on it, or for items in such a game, is not allowed
-      either.
-   c) Create derivative projects based on it (forks, conversions, your own
-      editions) and distribute them, even free of charge.
-   d) Remove or change the information about its authors, the copyright
-      and the licence.
-
-   Permission can be requested from the author on the project's Discord
-   server.
-
-4. Fixes and ideas you send
-
-   By sending the author a fix, code, graphics, data or an idea, you agree
-   that the author may include it in the Software, change it and distribute
-   it under the terms of this licence. The author credits contributors in
-   NOTICE.md, in the README and in the release notes.
-
-5. What the licence does not cover
-
-   a) Metin2. The game, its source code, data and client belong to Ymir
-      Interactive and Webzen. The project grants no rights to them.
-   b) The server-file packages the project runs on: r40250 (the "[40250]
-      Reference Serverfile" by TMP4) and mt2009 (Martysama r41023). Their
-      own terms apply to them.
-   c) Third-party libraries and components, which carry their own licences.
-   d) Parts released under the MIT licence: the project foundation taken from
-      AzzlackSyndicate/metin2-singleplayer-serverfiles-linux and other
-      people's contributions released under that licence. The MIT licence
-      (LICENSE-MIT.txt) and its copyright notice still apply to those parts.
-      Details are in NOTICE.md.
-
-6. No warranty
-
-   The Software is provided "as is", without any warranty. To the fullest
-   extent permitted by law, the author is not liable for any damage arising
-   from its use or from being unable to use it.
-
-7. Changes to the licence
-
-   The author may change the terms for future versions. A version you have
-   already downloaded stays under the terms you received it with.
-
-Contact: discord.gg/pt5tvnrN6, github.com/TieruYT
+The licence covers the work of the project's authors: code, scripts, data,
+graphics and documentation. It does not cover Metin2 (Ymir Interactive,
+Webzen), the server-file packages, third-party libraries or parts that carry a
+licence of their own. Versions up to and including 2.2.16 were released under
+the MIT licence (LICENSE-MIT.txt) and stay under it. Details and the author's
+additional permissions (voluntary donations towards a server, recording
+gameplay) are in NOTICE.md.

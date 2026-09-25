@@ -5,13 +5,14 @@
 [![Strona](https://img.shields.io/badge/Strona-metin2singleplayer.com-2EA44F?style=for-the-badge&logo=firefoxbrowser&logoColor=white)](https://metin2singleplayer.com)
 [![Discord](https://img.shields.io/badge/Discord-Dołącz_do_społeczności-5865F2?style=for-the-badge&logo=discord&logoColor=white)](https://discord.gg/pt5tvnrN6)
 [![BuyCoffee](https://img.shields.io/badge/BuyCoffee-Postaw_kaw%C4%99-FF813F?style=for-the-badge&logo=coffeescript&logoColor=white)](https://buycoffee.to/metin2-playerbots)
+[![Licencja](https://img.shields.io/badge/Licencja-CC_BY--NC--SA_4.0-EF9421?style=for-the-badge&logo=creativecommons&logoColor=white)](https://creativecommons.org/licenses/by-nc-sa/4.0/deed.pl)
 
 Lokalny świat Metin2 singleplayer, w którym po mapach biegają i naprawdę grają autonomiczne postacie (Playerbots): zdobywają poziomy, walczą solo i w drużynach, handlują między sobą, ulepszają ekwipunek, polują na Metiny i bossów, zakładają gildie i zapisują swój postęp w bazie danych serwera.
 
 Boty nie są zewnętrznymi programami. To pełnoprawne postacie sterowane przez AI wewnątrz silnika serwera, więc gracz widzi ich ruch, walkę, umiejętności i ekwipunek tak samo jak postacie innych graczy.
 
 > [!IMPORTANT]
-> **Od wersji 2.2.17 kod źródłowy projektu nie jest publikowany w tym repozytorium.** Znajdziesz tu wydania z paczkami aktualizacji, listę zmian ([CHANGELOG.md](CHANGELOG.md)) i pliki, z których korzystają launcher i panele. Wersje do 2.2.16 włącznie zostały wydane na licencji MIT i ich historia zostaje w repozytorium. Nowsze wersje są objęte [licencją autora](LICENSE).
+> **Od wersji 2.2.17 kod źródłowy projektu nie jest publikowany w tym repozytorium.** Znajdziesz tu wydania z paczkami aktualizacji, listę zmian ([CHANGELOG.md](CHANGELOG.md)) i pliki, z których korzystają launcher i panele. Wersje do 2.2.16 włącznie zostały wydane na licencji MIT i ich historia zostaje w repozytorium. Nowsze wersje są udostępniane na licencji [CC BY-NC-SA 4.0](LICENSE).
 
 ## 📥 Jak zagrać
 
@@ -92,12 +93,13 @@ nietknięte. Potem kliknij GRAJ i zaloguj się jeszcze raz.
 
 ## 📜 Licencja
 
-- **Wolno** pobierać projekt z oficjalnych źródeł, grać w niego prywatnie i ze znajomymi, robić kopie na własny użytek, zmieniać ustawienia, modyfikować go na własny użytek oraz nagrywać i streamować rozgrywkę.
-- **Nie wolno bez pisemnej zgody autora** rozpowszechniać paczek ani kodu z nich, sprzedawać projektu ani dostępu do serwera, który na nim działa, ani tworzyć i publikować przeróbek.
-- Wersje do 2.2.16 włącznie są na licencji MIT ([LICENSE-MIT.txt](LICENSE-MIT.txt)).
-- Metin2 należy do Ymir Interactive i Webzen, a pakiety plików serwerowych do ich autorów. Szczegóły są w [NOTICE.md](NOTICE.md).
+Od wersji 2.2.17 projekt jest na licencji **[CC BY-NC-SA 4.0](https://creativecommons.org/licenses/by-nc-sa/4.0/deed.pl)** (Uznanie autorstwa - Użycie niekomercyjne - Na tych samych warunkach):
 
-Pełna treść: [LICENSE](LICENSE).
+- **wolno** kopiować, udostępniać i przerabiać projekt, także publicznie;
+- **trzeba** podać autora i link do projektu, a przeróbkę udostępnić na tej samej licencji;
+- **nie wolno** na nim zarabiać: sprzedawać go, brać opłat za dostęp do serwera ani sprzedawać przedmiotów w grze. Dobrowolne wpłaty na utrzymanie serwera, jeśli nie dają korzyści w grze, oraz nagrywanie i streamowanie rozgrywki są w porządku.
+
+Wersje do 2.2.16 włącznie są na licencji MIT ([LICENSE-MIT.txt](LICENSE-MIT.txt)). Metin2 należy do Ymir Interactive i Webzen, a pakiety plików serwerowych do ich autorów. Szczegóły są w plikach [LICENSE](LICENSE) i [NOTICE.md](NOTICE.md).
 
 ## 🤝 Podziękowania
 

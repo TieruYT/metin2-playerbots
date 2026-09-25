@@ -5,13 +5,14 @@
 [![Website](https://img.shields.io/badge/Website-metin2singleplayer.com-2EA44F?style=for-the-badge&logo=firefoxbrowser&logoColor=white)](https://metin2singleplayer.com)
 [![Discord](https://img.shields.io/badge/Discord-Join_Community-5865F2?style=for-the-badge&logo=discord&logoColor=white)](https://discord.gg/pt5tvnrN6)
 [![BuyCoffee](https://img.shields.io/badge/BuyCoffee-Support_the_Project-FF813F?style=for-the-badge&logo=coffeescript&logoColor=white)](https://buycoffee.to/metin2-playerbots)
+[![Licence](https://img.shields.io/badge/Licence-CC_BY--NC--SA_4.0-EF9421?style=for-the-badge&logo=creativecommons&logoColor=white)](https://creativecommons.org/licenses/by-nc-sa/4.0/deed.en)
 
 A local Metin2 singleplayer world in which autonomous characters (Playerbots) run across the maps and genuinely play: they level up, fight solo and in parties, trade with each other, refine their gear, hunt Metin stones and bosses, found guilds and keep their progress in the server's database.
 
 The bots are not external programs. They are first-class characters driven by AI inside the server engine, so a player sees their movement, combat, skills and equipment exactly as they see other players' characters.
 
 > [!IMPORTANT]
-> **From version 2.2.17 the project's source code is not published in this repository.** Here you will find the releases with their update packages, the changelog ([CHANGELOG.md](CHANGELOG.md)) and the files the launcher and the panels read. Versions up to and including 2.2.16 were released under the MIT licence and their history stays in the repository. Newer versions are covered by [the author's licence](LICENSE).
+> **From version 2.2.17 the project's source code is not published in this repository.** Here you will find the releases with their update packages, the changelog ([CHANGELOG.md](CHANGELOG.md)) and the files the launcher and the panels read. Versions up to and including 2.2.16 were released under the MIT licence and their history stays in the repository. Newer versions are shared under the [CC BY-NC-SA 4.0](LICENSE) licence.
 
 ## 📥 How to play
 
@@ -93,12 +94,13 @@ and bots stay untouched. Then click PLAY and log in again.
 
 ## 📜 Licence
 
-- **You may** download the project from its official sources, play it privately and with friends, make copies for your own use, change its settings, modify it for your own use, and record and stream gameplay.
-- **You may not, without the author's written permission,** distribute the packages or the code in them, sell the project or access to a server that runs on it, or create and publish conversions of it.
-- Versions up to and including 2.2.16 are under the MIT licence ([LICENSE-MIT.txt](LICENSE-MIT.txt)).
-- Metin2 belongs to Ymir Interactive and Webzen, and the server-file packages to their authors. Details are in [NOTICE.md](NOTICE.md).
+From version 2.2.17 the project is under **[CC BY-NC-SA 4.0](https://creativecommons.org/licenses/by-nc-sa/4.0/deed.en)** (Attribution-NonCommercial-ShareAlike):
 
-Full text: [LICENSE](LICENSE) (the Polish text is binding, an English translation follows it).
+- **you may** copy, share and modify the project, publicly too;
+- **you must** credit the author and link to the project, and share a modified version under the same licence;
+- **you may not** make money from it: no selling it, no charging for access to a server, no selling items in the game. Voluntary donations towards running a server that give no advantage in the game, and recording and streaming gameplay, are fine.
+
+Versions up to and including 2.2.16 are under the MIT licence ([LICENSE-MIT.txt](LICENSE-MIT.txt)). Metin2 belongs to Ymir Interactive and Webzen, and the server-file packages to their authors. Details are in [LICENSE](LICENSE) and [NOTICE.md](NOTICE.md).
 
 ## 🤝 Credits
 
