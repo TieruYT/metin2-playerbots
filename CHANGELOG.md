@@ -17,6 +17,109 @@ every version here.
 
 ---
 
+## 2.2.16 — 2026-09-25
+
+Serwer 2.2.16 i klient 2.0.34: zaktualizuj oba. Zawiera wszystko z 2.2.15.
+
+### Ekwipunek i umiejętności Towarzysza (zapowiedź Tieru, zgłosił GorącyDelfin)
+
+- W oknie Towarzysza (klawisz P) są dwa nowe przyciski: Ekwipunek
+  i Umiejętności.
+- Ekwipunek wygląda jak Twój: to, co Towarzysz ma na sobie, jego torba
+  (cztery strony) i jego yang. Przedmioty przeciągasz myszą jak u siebie:
+  w jego torbie, z jego torby do Twojej i z powrotem, a także prosto na
+  jego miejsca na ekwipunek.
+- Prawy albo podwójny klik zakłada przedmiot z jego torby albo zdejmuje
+  założony.
+- To, co założysz Towarzyszowi, zostaje na nim. Nie zdejmie tego sam, nie
+  zamieni na inny przedmiot, nie zaniesie do kowala i nie przelosuje na nim
+  bonusów (może najwyżej dodać nowy). To, co zdejmiesz, zostaje w jego
+  torbie: Towarzysz sam tego nie założy. Takie przedmioty są podświetlone
+  na kolorowo. Ctrl + klik albo przycisk „Odepnij” oddaje decyzję
+  Towarzyszowi. Dotąd potrafił odłożyć do torby np. dzwon z +12 INT
+  i założyć w jego miejsce inny.
+- Przedmiot, którego Towarzysz nie może założyć (klasa, płeć, poziom,
+  statystyki), zostaje w Twojej torbie, a okno pisze dlaczego.
+- Okno Umiejętności pokazuje umiejętności jego ścieżki z poziomami
+  (1–17, M1–M10, G1–G10, P) i wolne punkty. Plusem dodajesz punkt. Od
+  pierwszego punktu dodanego przez Ciebie to Ty rozdajesz punkty, a
+  Towarzysz przestaje robić to sam. Przycisk pod listą przełącza to
+  z powrotem.
+- Sprawdziliśmy to po stronie serwera na świecie testowym: autotest
+  wydawał te same polecenia, które wysyła okno. Samego okna w kliencie nie
+  uruchamialiśmy, więc piszcie, jeśli coś w nim wygląda źle.
+
+### „Poddaję się”: boty odpuszczają (zgłosił Mur4s)
+
+- Napisz szeptem do dowolnego bota „poddaję się” (albo „rozejm”, „odpuść”,
+  „litości”, „mam dość”), a boty dadzą Ci 30 minut spokoju. Nie zaatakuje
+  Cię ani uderzony bot, ani jego drużyna, ani jego gildia. „Dość”, „stop”,
+  „przepraszam” i „sorry” też działają, jeśli boty akurat z Tobą walczą.
+- Boty odpuszczają też same, gdy dwa razy w ciągu kwadransa padniesz
+  w walce z nimi. Dostajesz wtedy wiadomość na czacie.
+- Rozejm kończy się, gdy zaatakujesz bota, ale tylko takiego, którego masz
+  zaznaczonego. Umiejętności obszarowe rzucone na potwora, obok którego
+  stoją boty, rozejmu nie zrywają. Najpewniej to one ściągały wcześniej na
+  gracza przy bossie całą gildię botów: każde muśnięcie liczyło się jako
+  atak na bota.
+- Po zerwaniu rozejmu kolejny przez szept można dostać dopiero po 10
+  minutach.
+- Rozejm obowiązuje na kanale, na którym go zawarto, i kończy się przy
+  restarcie serwera.
+- Wojen gildii i pojedynków to nie dotyczy.
+- Nie mogliśmy tego sprawdzić z prawdziwym graczem: na świecie testowym
+  nie ma nikogo, z kim boty by walczyły.
+
+### Towarzysz buffuje Ciebie w trakcie walki (zgłosił Teivos)
+
+- Szaman-Towarzysz buffował właściciela tylko wtedy, gdy nie miał z kim
+  walczyć, a przy polującym właścicielu zawsze ma. W walce odnawiał buffy
+  wyłącznie sobie. Teraz przed każdym ciosem sprawdza Twoje buffy
+  i odnawia te, których brakuje.
+- Na świecie testowym szamanka-towarzysz rzucała Odbicie i Błogosławieństwo
+  na właściciela między swoimi atakami.
+
+### Słabe kamienie duszy idą do Alchemika (zgłosił DUDU, pomysł Iwakury)
+
+- Boty wystawiały na targ tysiące kamieni duszy +0 do +2 i nic więcej z nimi
+  nie robiły. Teraz 85 na 100 takich kamieni bot zanosi Alchemikowi
+  w pierwszej wiosce i wymienia na Magiczny Pył, jak gracz (500 yang za
+  sztukę pyłu). Pozostałe 15 na 100 nadal trafia na targ. Pył boty
+  wystawiają na sprzedaż.
+- Na świecie testowym w pierwszą godzinę: 82 wymiany, 342 kamienie, 666
+  sztuk pyłu.
+
+### Stragany dropperów znów się odnawiają (zgłosił SIZOWSKI)
+
+- Po każdym uruchomieniu serwera wygasły sklep offline zostawał na mapie
+  jako „duch”, w którego nie dało się kliknąć. To on blokował odnowienie
+  straganu w tym samym miejscu, więc stragany dropperów medali stały
+  wygasłe godzinami. Teraz wygasły sklep znika z mapy. Jeśli walka przerwie
+  botowi obsługę straganu, bot wraca do niego po chwili, a nie dopiero po
+  następnym obchodzie.
+
+### Boty różnych królestw nie biją się już o Metiny (zgłosił DUDU)
+
+- Bot dołączał do każdego bitego kamienia, a przy kamieniu bot, który był
+  pierwszy, bije przybysza z innego królestwa. Nawet przy suwaku
+  „Wrogość między królestwami” ustawionym na 0% kończyło się to bójkami.
+  Teraz bot dołącza tylko do kamienia, który biją boty jego królestwa,
+  a omija kamień innego królestwa.
+- Bot innego królestwa jest dla bota rywalem przy kamieniu tylko wtedy, gdy
+  ten suwak zalicza bota do wrogich innym królestwom. To te same boty, które
+  zaczepiają boty innych królestw na wspólnych mapach. Przy 0% boty różnych
+  królestw nie biją się o Metiny wcale. Gracz innego królestwa, który bije
+  kamień bota, jest dla niego rywalem jak dotąd.
+- Bot w rajdzie na bossa nie idzie już bronić królestwa przed Egzekutorem
+  i nie wraca do dawnych porachunków. To one odciągały boty od Wodza
+  Orków.
+
+### Towarzysz rozumie więcej słów
+
+- „zrób miejsce”, „opróżnij”, „wyczyść eq” i „sprzedaj śmieci” wysłane
+  szeptem działają jak „zakupy”: Towarzysz idzie do miasta sprzedać
+  śmieci u handlarza.
+
 ## 2.2.15 — 2026-09-25
 
 Serwer 2.2.15. Klient bez zmian (2.0.33, z wydania 2.2.14). Zawiera wszystko z 2.2.14.
