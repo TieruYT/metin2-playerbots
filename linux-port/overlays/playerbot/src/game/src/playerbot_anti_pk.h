@@ -363,6 +363,15 @@ namespace
 				const int gap = (int)other->GetLevel() - (int)m_ch->GetLevel();
 				if (gap > PLAYERBOT_EGZEKUTOR_LEVEL_WINDOW || gap < -PLAYERBOT_EGZEKUTOR_LEVEL_WINDOW)
 					return;
+				// A bot on a raid is at its boss or in the tower, and a fight
+				// started there is one its boss finishes for both sides - the
+				// kingdom quarrel stands down for it too (GetPlayerBotDuelRefusal).
+				if (other->GetDesc() && other->GetDesc()->IsBot())
+				{
+					TPlayerBotAIStateMap::const_iterator it = s_mapPlayerBotAIStates.find(other->GetPlayerID());
+					if (it != s_mapPlayerBotAIStates.end() && IsPlayerBotOnTowerBusiness(other, it->second))
+						return;
+				}
 				const int distance = DISTANCE_APPROX(m_ch->GetX() - other->GetX(), m_ch->GetY() - other->GetY());
 				if (distance >= m_bestDistance || distance > PLAYERBOT_EGZEKUTOR_HUNT_RANGE)
 					return;
@@ -386,7 +395,8 @@ namespace
 		if (!ch || !ch->GetSectree() ||
 				!IsPlayerBotRareNow(state.persona, playerbot_persona::RARE_EGZEKUTOR, dwNow) ||
 				ch->GetMapIndex() >= PLAYERBOT_INSTANCE_MAP_INDEX_MIN ||
-				playerbot_empire_rules::IsKingdomMap(ch->GetMapIndex()) || state.bRecoveringAfterDeath)
+				playerbot_empire_rules::IsKingdomMap(ch->GetMapIndex()) || state.bRecoveringAfterDeath ||
+				IsPlayerBotOnTowerBusiness(ch, state))
 			return NULL;
 		DWORD& next = s_mapNextScan[ch->GetPlayerID()];
 		if (next != 0 && (int)(dwNow - next) < 0)

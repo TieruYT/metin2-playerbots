@@ -636,7 +636,11 @@ namespace
 	// The same for a duel a bot may start or agree to: a bot a person called
 	// over takes none, because a duel ends the call (SB_DUEL). The Anti-PK
 	// fight asks the plain one above, since a summoned bot struck by somebody
-	// must still hit back.
+	// must still hit back. Nor does a bot on a raid - a boss's or the Demon
+	// Tower's - which is also what keeps the kingdom quarrel away from one:
+	// the bots of two kingdoms at the Orc Chief set about each other and the
+	// Chief finished them both ("bija sie nawzajem + do tego wodz bije ich",
+	// DUDU, 25 September).
 	const char* GetPlayerBotDuelRefusal(LPCHARACTER ch, DWORD dwNow)
 	{
 		const char* unready = GetPlayerBotDuelUnreadiness(ch, dwNow);
@@ -644,6 +648,12 @@ namespace
 			return unready;
 		if (ch && IsPlayerBotSidekickPID(ch->GetPlayerID()))
 			return "companion";
+		if (ch)
+		{
+			TPlayerBotAIStateMap::const_iterator it = s_mapPlayerBotAIStates.find(ch->GetPlayerID());
+			if (it != s_mapPlayerBotAIStates.end() && IsPlayerBotOnTowerBusiness(ch, it->second))
+				return "raid";
+		}
 		return ch && IsPlayerBotSummoned(ch->GetPlayerID()) ? "summoned" : NULL;
 	}
 
@@ -708,6 +718,10 @@ namespace
 					challenger->ChatPacket(CHAT_TYPE_INFO, "%s kopie rude i nie przyjmie teraz pojedynku.", ch->GetName());
 				else if (!strcmp(refusal, "companion"))
 					challenger->ChatPacket(CHAT_TYPE_INFO, "%s jest czyims towarzyszem i nie bierze udzialu w pojedynkach.", ch->GetName());
+				else if (!strcmp(refusal, "raid"))
+					challenger->ChatPacket(CHAT_TYPE_INFO, "%s idzie z rajdem i nie przyjmie teraz pojedynku.", ch->GetName());
+				else if (!strcmp(refusal, "summoned"))
+					challenger->ChatPacket(CHAT_TYPE_INFO, "%s idzie do kogos, kto go zawolal, i nie przyjmie teraz pojedynku.", ch->GetName());
 				else
 					challenger->ChatPacket(CHAT_TYPE_INFO, "%s nie ma broni w reku i nie przyjmie pojedynku.", ch->GetName());
 			}
