@@ -6014,6 +6014,11 @@ void CPlayerBotManager::OnGuildWarDeclared(DWORD dwGuildFrom, DWORD dwGuildTo, B
 	NotePlayerBotGuildWarDeclared(dwGuildFrom, dwGuildTo, bType);
 }
 
+void CPlayerBotManager::OnPlayerFieldWarEntry(LPCHARACTER ch, DWORD dwMyGuild, DWORD dwOppGuild)
+{
+	EnterPlayerBotFieldWar(ch, dwMyGuild, dwOppGuild);
+}
+
 // A player's blow at a bot, or at a person in a party (CHARACTER::Damage,
 // mt2009 via playerbotify.py): the one thing the engine does not remember
 // about a fight, and the one the Anti-PK protocol needs (playerbot_anti_pk.h).

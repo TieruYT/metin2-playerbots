@@ -76,6 +76,11 @@ class CPlayerBotManager : public singleton<CPlayerBotManager>
 		// mt2009 via playerbotify.py): a player's on a bot guild waits for the
 		// bots' answer (playerbot_guild_war.h).
 		void	OnGuildWarDeclared(DWORD dwGuildFrom, DWORD dwGuildTo, BYTE bType);
+		// A player's "Tak" to the war letter in a field war
+		// (CGuild::GuildWarEntryAccept, mt2009 via playerbotify.py): a war on a
+		// bot guild is fought on the kingdom's guild map, and the player goes
+		// to its guild's camp there (playerbot_guild_war.h).
+		void	OnPlayerFieldWarEntry(LPCHARACTER ch, DWORD dwMyGuild, DWORD dwOppGuild);
 		// A player struck a bot, or a person in a party (CHARACTER::Damage,
 		// mt2009 via playerbotify.py): the Anti-PK protocol's only source of
 		// who is attacking a bot - the engine keeps no record of it.

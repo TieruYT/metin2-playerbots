@@ -1541,6 +1541,32 @@ def apply_player_war_on_bot_guilds(game):
          '\t\t\tCPlayerBotManager::instance().OnGuildWarDeclared(p->dwGuildFrom, p->dwGuildTo, p->bType);\n'
          '\t\t\tbreak;\n',
          marker='CPlayerBotManager::instance().OnGuildWarDeclared(')
+    # Joining a war from the letter ("czy chcesz wziac udzial w wojnie?") is
+    # CGuild::GuildWarEntryAccept, which returns at once for a field war - it
+    # has no war map - and a war on a bot guild is always one, fought on the
+    # kingdom's guild map. "Tak" took the player nowhere (Remigiusz, 24
+    # September, with a video); the manager takes it to its guild's camp.
+    war = os.path.join(game, 'guild_war.cpp')
+    edit(war,
+         '#include "guild_manager.h"\n',
+         '#include "guild_manager.h"\n#include "playerbot_manager.h"\n',
+         marker='#include "playerbot_manager.h"\n')
+    edit(war,
+         '\tif (gw.type == GUILD_WAR_TYPE_FIELD)\n'
+         '\t\treturn;\n'
+         '\n'
+         '\tif (gw.state != GUILD_WAR_ON_WAR)\n',
+         '\tif (gw.type == GUILD_WAR_TYPE_FIELD)\n'
+         '\t{\n'
+         '\t\t// Playerbot: a field war on a bot guild is fought on the kingdom\'s\n'
+         '\t\t// guild map, and the join takes the player to its guild\'s camp\n'
+         '\t\t// there (playerbotify.py, apply_player_war_on_bot_guilds).\n'
+         '\t\tCPlayerBotManager::instance().OnPlayerFieldWarEntry(ch, GetID(), dwOppGID);\n'
+         '\t\treturn;\n'
+         '\t}\n'
+         '\n'
+         '\tif (gw.state != GUILD_WAR_ON_WAR)\n',
+         marker='CPlayerBotManager::instance().OnPlayerFieldWarEntry(')
 
 
 def apply_hwang_curse_removed(game):

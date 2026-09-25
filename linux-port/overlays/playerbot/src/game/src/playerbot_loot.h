@@ -526,7 +526,20 @@ namespace
 			TryPlayerBotCombatPickup(ch, state, dwNow);
 			return false;
 		}
-		if (dwNow < state.dwNextLootSearchTime)
+		// Bots ran on the moment a stone broke and left its books on the ground
+		// ("boty za szybko odbiegaja po zbiciu metina", prodnathin). The first
+		// search after the break often finds nothing - the drop is another
+		// character's for its first seconds, or not on the ground on this pass -
+		// and an empty search put the next one off by seconds, in which the
+		// target section below had already sent the bot on. For
+		// PLAYERBOT_METIN_LOOT_LINGER_MS it stands where the stone broke and
+		// looks again on every pass instead.
+		const bool metinLinger = metinDash &&
+				dwNow - state.dwStoneBrokenTime < PLAYERBOT_METIN_LOOT_LINGER_MS &&
+				!state.bRecoveringAfterDeath && ch->GetMaxHP() > 0 &&
+				(long long)ch->GetHP() * 100 >=
+						(long long)ch->GetMaxHP() * PLAYERBOT_METIN_LOOT_LINGER_MIN_HP_PERCENT;
+		if (dwNow < state.dwNextLootSearchTime && !metinLinger)
 			return false;
 
 		CCollectPlayerBotLoot collector(ch,
@@ -553,6 +566,18 @@ namespace
 				sys_log(0, "PLAYERBOT_LOOT: bag full pid=%u name=%s map=%ld drops_in_reach=%d level=%d can_open_shop=%d",
 						ch->GetPlayerID(), ch->GetName(), ch->GetMapIndex(),
 						collector.SkippedNoRoom(), ch->GetLevel(), PlayerBotCanOpenShop(ch) ? 1 : 0);
+			}
+			// Standing at a broken stone: nothing to take yet, and nothing else
+			// gets the tick until the linger is over.
+			if (metinLinger)
+			{
+				ch->Stop();
+				SetPlayerBotAction(state, BOT_ACTION_LOOT, dwNow);
+				PlayerBotLogThrottled("loot_metin_linger", dwNow,
+						"PLAYERBOT_LOOT: waiting at a broken stone pid=%u name=%s map=%ld since_ms=%u",
+						ch->GetPlayerID(), ch->GetName(), ch->GetMapIndex(),
+						(unsigned int)(dwNow - state.dwStoneBrokenTime));
+				return true;
 			}
 			// An empty 25 m search used to run twice per second for every peaceful
 			// bot.  Delay only the next empty-floor query; as soon as an item is seen,

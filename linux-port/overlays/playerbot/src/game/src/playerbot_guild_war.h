@@ -387,6 +387,61 @@ namespace
 		return false;
 	}
 
+	// The share, in percent, of the cells within PLAYERBOT_GUILD_WAR_OPEN_RADIUS
+	// of a point that a fight could stand on: neither blocked nor the safe zone.
+	int GetPlayerBotWarGroundOpenness(long lMapIndex, long x, long y)
+	{
+		const long r = PLAYERBOT_GUILD_WAR_OPEN_RADIUS;
+		int samples = 0, open = 0;
+		for (long dx = -r; dx <= r; dx += PLAYERBOT_GUILD_WAR_OPEN_SAMPLE)
+		{
+			for (long dy = -r; dy <= r; dy += PLAYERBOT_GUILD_WAR_OPEN_SAMPLE)
+			{
+				if (dx * dx + dy * dy > r * r)
+					continue;
+				++samples;
+				LPSECTREE tree = SECTREE_MANAGER::instance().Get(lMapIndex, x + dx, y + dy);
+				if (tree && tree->GetAttributePtr() &&
+						!tree->IsAttr(x + dx, y + dy, ATTR_BLOCK | ATTR_OBJECT | ATTR_BANPK))
+					++open;
+			}
+		}
+		return samples > 0 ? open * 100 / samples : 0;
+	}
+
+	// The most open ground within PLAYERBOT_GUILD_WAR_OPEN_SEARCH of the
+	// Town.txt point and reachable from it, the nearest of the most open
+	// (PLAYERBOT_GUILD_WAR_OPEN_*). Once a map, at its first war: some four
+	// thousand candidates, most refused by the first attribute they ask.
+	bool FindPlayerBotOpenWarGround(long lMapIndex, long townX, long townY, long& outX, long& outY,
+			int& outOpen)
+	{
+		int best = -1;
+		long bestDistance = 0;
+		for (long x = townX - PLAYERBOT_GUILD_WAR_OPEN_SEARCH; x <= townX + PLAYERBOT_GUILD_WAR_OPEN_SEARCH;
+				x += PLAYERBOT_GUILD_WAR_OPEN_STEP)
+		{
+			for (long y = townY - PLAYERBOT_GUILD_WAR_OPEN_SEARCH; y <= townY + PLAYERBOT_GUILD_WAR_OPEN_SEARCH;
+					y += PLAYERBOT_GUILD_WAR_OPEN_STEP)
+			{
+				if (!IsPlayerBotWarGroundFit(lMapIndex, x, y, PLAYERBOT_GUILD_WAR_SAFE_MARGIN))
+					continue;
+				const int open = GetPlayerBotWarGroundOpenness(lMapIndex, x, y);
+				const long distance = DISTANCE_APPROX(x - townX, y - townY);
+				if (open < best || (open == best && distance >= bestDistance))
+					continue;
+				if (!IsPlayerBotReachable(lMapIndex, townX, townY, x, y))
+					continue;
+				best = open;
+				bestDistance = distance;
+				outX = x;
+				outY = y;
+			}
+		}
+		outOpen = best;
+		return best >= 0;
+	}
+
 	struct TPlayerBotWarSide
 	{
 		// Each side's camp; both are the middle where the ground has no room.
@@ -499,8 +554,13 @@ namespace
 			long margin = PLAYERBOT_GUILD_WAR_SAFE_MARGIN;
 			const bool haveTown = playerbot_empire_rules::GetTeleportArrival((int)empire,
 					playerbot_empire_rules::TELEPORT_GUILD_MAP, town);
+			// The most open ground in reach first (PLAYERBOT_GUILD_WAR_OPEN_*),
+			// the nearest open cell only where none is found.
+			int openness = -1;
 			bool found = haveTown &&
-					FindPlayerBotWarGround(lMapIndex, town.x, town.y, PLAYERBOT_GUILD_WAR_GROUND_SEARCH, cx, cy, margin);
+					FindPlayerBotOpenWarGround(lMapIndex, town.x, town.y, cx, cy, openness);
+			if (!found && haveTown)
+				found = FindPlayerBotWarGround(lMapIndex, town.x, town.y, PLAYERBOT_GUILD_WAR_GROUND_SEARCH, cx, cy, margin);
 			if (!found && haveTown)
 			{
 				margin = 0;
@@ -518,8 +578,9 @@ namespace
 						sides.campX[s] = cx;
 						sides.campY[s] = cy;
 					}
-				sys_log(0, "PLAYERBOT_GUILD: battlefield map=%ld town=(%ld,%ld) ground=(%ld,%ld) middle=(%ld,%ld) camps=(%ld,%ld)/(%ld,%ld) apart=%d camp_gap=%d safe_margin=%ld",
-						lMapIndex, town.x, town.y, cx, cy, sides.groundX, sides.groundY,
+				sys_log(0, "PLAYERBOT_GUILD: battlefield map=%ld town=(%ld,%ld) ground=(%ld,%ld) open=%d middle=(%ld,%ld) middle_open=%d camps=(%ld,%ld)/(%ld,%ld) apart=%d camp_gap=%d safe_margin=%ld",
+						lMapIndex, town.x, town.y, cx, cy, openness, sides.groundX, sides.groundY,
+						GetPlayerBotWarGroundOpenness(lMapIndex, sides.groundX, sides.groundY),
 						sides.campX[0], sides.campY[0], sides.campX[1], sides.campY[1], (int)sides.bCamps,
 						DISTANCE_APPROX(sides.campX[0] - sides.campX[1], sides.campY[0] - sides.campY[1]), margin);
 			}
@@ -600,6 +661,63 @@ namespace
 			return false;
 		const DWORD startedAt = mine->GetWarStartTime(enemy->GetID());
 		return startedAt != 0 && (DWORD)get_global_time() < startedAt + PLAYERBOT_GUILD_WAR_MUSTER_SECONDS;
+	}
+
+	// A player's "Tak" to the letter that asks whether to join the war
+	// (guild_war_join, "czy chcesz wziac udzial w wojnie?"). The engine's
+	// CGuild::GuildWarEntryAccept returns at once for a field war, which has
+	// no war map, so in a war on a bot guild - always a field war, fought on
+	// the kingdom's guild map - the answer took the player nowhere (Remigiusz,
+	// 24 September, with a video: the letter, "Tak", and Joan still round
+	// him). It takes the player to its own guild's camp there now, the side
+	// the engine's arenas would give it (the lower guild id is side 0). The
+	// bots fight on channel 1 only, so a player elsewhere is told to change
+	// channel. Any other field war is fought wherever the guilds meet.
+	void EnterPlayerBotFieldWar(LPCHARACTER ch, DWORD dwMyGuild, DWORD dwOppGuild)
+	{
+		if (!ch || !ch->IsPC() || !ch->GetDesc() || ch->GetDesc()->IsBot())
+			return;
+		CGuild* mine = CGuildManager::instance().FindGuild(dwMyGuild);
+		CGuild* enemy = CGuildManager::instance().FindGuild(dwOppGuild);
+		BYTE empire = 0;
+		if (enemy && IsPlayerBotGuild(enemy))
+			empire = GetPlayerBotGuildEmpire(enemy);
+		else if (mine && IsPlayerBotGuild(mine))
+			empire = GetPlayerBotGuildEmpire(mine);
+		if (empire == 0)
+		{
+			ch->ChatPacket(CHAT_TYPE_INFO, "[Wojna] To wojna w polu: walczycie tam, gdzie sie spotkacie.");
+			return;
+		}
+		if (g_bChannel != 1)
+		{
+			ch->ChatPacket(CHAT_TYPE_INFO, "[Wojna] Boty walcza w wojnach gildii tylko na kanale 1 - zmien kanal i kliknij jeszcze raz.");
+			return;
+		}
+		const long battlefield = playerbot_empire_rules::GetHomeMap((int)empire, playerbot_empire_rules::MAP_ROLE_M3);
+		const int side = dwMyGuild < dwOppGuild ? 0 : 1;
+		long x = 0, y = 0;
+		bool camp = battlefield != 0 && IsPlayerBotMapHostedHere(battlefield) &&
+				GetPlayerBotWarCamp(battlefield, empire, side, ch->GetPlayerID(), x, y);
+		if (!camp)
+		{
+			// Another core hosts the guild map: the kingdom's own arrival on
+			// it, and the engine's warp does the rest.
+			playerbot_empire_rules::TPoint town;
+			if (!playerbot_empire_rules::GetTeleportArrival((int)empire,
+					playerbot_empire_rules::TELEPORT_GUILD_MAP, town))
+			{
+				ch->ChatPacket(CHAT_TYPE_INFO, "[Wojna] Nie znam pola bitwy tej wojny.");
+				return;
+			}
+			x = town.x;
+			y = town.y;
+		}
+		ch->ChatPacket(CHAT_TYPE_INFO, "[Wojna] Przenosze cie do obozu twojej gildii na mapie gildyjnej.");
+		sys_log(0, "PLAYERBOT_GUILD: player joins the field war pid=%u name=%s guild=%u enemy=%u empire=%d map=%ld side=%d camp=%d to=(%ld,%ld)",
+				ch->GetPlayerID(), ch->GetName(), dwMyGuild, dwOppGuild, (int)empire, battlefield, side,
+				camp ? 1 : 0, x, y);
+		ch->WarpSet(x, y);
 	}
 
 	// ------------------------------------------------ a player's declaration

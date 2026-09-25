@@ -114,6 +114,7 @@ linux-port-mt2009/docker/game/src/server/game/src/desc_manager.h
 linux-port-mt2009/docker/game/src/server/game/src/event.cpp
 linux-port-mt2009/docker/game/src/server/game/src/exchange.cpp
 linux-port-mt2009/docker/game/src/server/game/src/guild.cpp
+linux-port-mt2009/docker/game/src/server/game/src/guild_war.cpp
 linux-port-mt2009/docker/game/src/server/game/src/ikarus_shop_manager.cpp
 linux-port-mt2009/docker/game/src/server/game/src/ikarus_shop_manager.h
 linux-port-mt2009/docker/game/src/server/game/src/input.h

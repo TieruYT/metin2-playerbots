@@ -1349,8 +1349,29 @@ namespace
 	const DWORD PLAYERBOT_GUILD_WAR_DECLARE_TIMEOUT = 3 * 60 * 1000;
 	const int PLAYERBOT_GUILD_WAR_MIN_ONLINE = 8;
 	// The battlefield's middle is the open ground nearest the map's Town.txt
-	// point, found within this radius (playerbot_guild_war.h).
+	// point, found within this radius (playerbot_guild_war.h) - when no open
+	// plain is found (below).
 	const long PLAYERBOT_GUILD_WAR_GROUND_SEARCH = 6000;
+	// The ground nearest the Town.txt point was a narrow causeway on two of
+	// the three guild maps: Shinsoo's middle and both its camps stood on the
+	// long bridge south of the town plateau, 27% of the ground round it
+	// fightable, and Jinno's on a strip beside its safe zone, 55%. The bots
+	// fought on the bridge, in the river and up the slopes
+	// ("zmienilbym w kazdym krolestwie miejsce, w ktorym sie bija - na jakis
+	// otwarty obszar", prodnathin, with a screenshot of the bridge; Tieru: "by
+	// boty na wojnie nie wypadaly poza most do rzeki i na wzgorza"). So the
+	// middle is the most open point within OPEN_SEARCH of the Town.txt point
+	// reachable from it - the share of cells neither blocked nor the safe
+	// zone within OPEN_RADIUS, sampled every OPEN_SAMPLE, on a grid of
+	// OPEN_STEP - the nearest of the most open. Measured on the maps'
+	// server_attr: Shinsoo's plain south of the bridge (135400,14300),
+	// Chunjo's (221900,12400) beside the old ground, Jinno's south-west plain
+	// (268100,16300), every one fully open. Distance costs nothing: the bots
+	// are moved straight to their camps, and a player joins at its camp too.
+	const long PLAYERBOT_GUILD_WAR_OPEN_SEARCH = 12000;
+	const long PLAYERBOT_GUILD_WAR_OPEN_STEP = 400;
+	const long PLAYERBOT_GUILD_WAR_OPEN_RADIUS = 1500;
+	const long PLAYERBOT_GUILD_WAR_OPEN_SAMPLE = 250;
 	// Each side has a camp of its own, one of CAMP_DISTANCES from the middle
 	// on opposite sides of it, and fights in the middle. Both sides on one
 	// ground fought from the first second, the side that cast the first area
@@ -3233,6 +3254,14 @@ namespace
 	// rather than leaving them to whoever is not fighting.
 	const DWORD PLAYERBOT_METIN_LOOT_DASH_TIME = 20000;
 	const int PLAYERBOT_METIN_LOOT_DASH_RANGE = 1500;
+	// And for the first of those seconds the bot stands where the stone broke
+	// and looks for its drop on every pass, holding the tick even when the
+	// ground is empty so far: "mogliby chociaz 5 sekund poobserwowac co
+	// wypadlo" (Tieru, 24 September, over bots that ran on and left the
+	// stone's skill books lying). Not with its health under the second number:
+	// the stone's pack is still on it, and the fight comes first then.
+	const DWORD PLAYERBOT_METIN_LOOT_LINGER_MS = 5000;
+	const int PLAYERBOT_METIN_LOOT_LINGER_MIN_HP_PERCENT = 40;
 	// An archer pulls too, but a bow is not a shield: one group, four attackers.
 	const int PLAYERBOT_MULTI_PULL_ARCHER_MAX_AGGRESSORS = 4;
 	const BYTE PLAYERBOT_SKILL_MASTER_TRY_LEVEL = 17;
