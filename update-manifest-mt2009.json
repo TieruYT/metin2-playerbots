@@ -1,12 +1,12 @@
 {
   "schema": 1,
   "channel": "stable",
-  "publishedAt": "2026-09-24T19:55:22Z",
-  "statusMessage": "2.2.12 (serwer; klient bez zmian, 2.0.32): odpowiedzi Iwakury - Zwoje Blogoslawienstwa z Metinow 15-99 po 1% (50 z 2.2.11 w .env zmienia sie raz na 10), bron 30 lvl do +7 u zwyklego kowala i +8/+9 pod zwojami, Hazardzista moze ruszyc po Perfekcjoniscie. Zawiera wszystko z 2.2.11.",
+  "publishedAt": "2026-09-25T06:02:25Z",
+  "statusMessage": "2.2.13 (serwer; klient bez zmian, 2.0.32): Towarzysz - staly kompan gracza (list Towarzysz po zalogowaniu), bron od 30 lvl do +6 u kowala i od +7 pod zwojami, bez zwojow do 18 lvl, boty czekaja 5 s przy rozbitym Metinie, 'Tak' w liscie wojny przenosi do obozu gildii, wojna na otwartym terenie, naturalniejsze szepty, serwer na VPS z launchera. Zawiera wszystko z 2.2.12.",
   "server": {
-    "version": "2.2.12",
-    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.12/metin2-server-update-2.2.12.zip",
-    "sha256": "F6A5A5A84956DC5DCBC7A8D371F333E2B00B88C27503B2CB7E2575BABD34EE9E"
+    "version": "2.2.13",
+    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.13/metin2-server-update-2.2.13.zip",
+    "sha256": "8D3E407AE7943B2EEE67C2F5DBB4764ED87DB30ABD45C2759416CB86428E63F9"
   },
   "support": {
     "contactUrl": "https://discord.gg/pt5tvnrN6",
