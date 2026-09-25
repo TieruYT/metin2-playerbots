@@ -17,6 +17,76 @@ every version here.
 
 ---
 
+## 2.2.18 — 2026-09-25
+
+Serwer 2.2.18 i klient 2.0.36: zaktualizuj oba. Zawiera wszystko z 2.2.17.
+
+### Towarzysz dostaje wszystkie punkty umiejętności (zgłosił Piciu713)
+
+- Towarzysz stworzony przed 5 poziomem dostawał na 5 poziomie ścieżkę,
+  ale bez punktów, które gracz dostaje przy wyborze ścieżki u trenera.
+  Liczyły mu się tylko punkty za poziomy od szóstego, więc szaman na
+  7 poziomie miał 2 punkty zamiast 6.
+- Teraz dostaje je tak samo jak gracz. Towarzysz, któremu już ich brakuje,
+  dostanie brakujące punkty, gdy tylko pojawi się w grze po aktualizacji
+  serwera. Punkty rozdane wcześniej zostają na swoich miejscach.
+
+### Szaman-Towarzysz trzyma Twoje buffy tak jak swoje (zgłosili teivos i iceBeeg)
+
+- Towarzysz trzymał swoje buffy przez cały czas, a Tobie rzucał te do
+  walki tylko wtedy, gdy sam walczył. W trybie „Nie walcz” nie walczy
+  nigdy, więc smoczy szaman (Błogosławieństwo, Odbicie, Pomoc Smoka)
+  nie bufował Cię wcale, a po Twojej śmierci bufował z powrotem tylko
+  siebie. W trybie „Nie 1. atak” walczył razem z Tobą i dlatego tam
+  działało.
+- Teraz utrzymuje Twoje buffy tak jak swoje, w każdym trybie, i zawsze
+  najpierw Twoje. Gdy któregoś Ci brakuje, na przykład po śmierci,
+  rzuca go od razu. Buffy możesz wyłączyć jak dotąd w oknie Towarzysza.
+
+### Boty wracają do walki po odrzuceniu w Wieży Demonów (zgłosił prodnathin)
+
+- Umiejętności bossów odrzucają postać nawet o 8 metrów i gra nie
+  sprawdza, gdzie ona ląduje. Boty wyrzucone z 9. piętra w pustkę wokół
+  niego stały tam do końca rajdu, bo nie mogły stamtąd wyznaczyć
+  drogi. Gracz ma na to „Uwolnij się” w menu. Boty miały taki ratunek
+  tylko na zwykłych mapach, a na piętrach Wieży od drugiego w górę nie.
+- Teraz bot, który stoi w niedostępnym miejscu, od razu wraca na
+  najbliższy kawałek podłogi, także na każdym piętrze Wieży.
+
+### „Kupię KZ” to Księga Zapomnienia, nie księga umiejętności (zgłosił prodnathin)
+
+- Okrzyk „kupię księgę zapomnienia smoczy skowyt” był czytany jak prośba
+  o księgę umiejętności, więc bot odpisywał, że ma na straganie Instr.
+  Smoczy Skowyt.
+- Teraz „KZ …” i „księga zapomnienia …” oznaczają Księgę Zapomnienia tej
+  umiejętności, a „KU …” i „księga …” księgę umiejętności. W odpowiedzi
+  Księga Zapomnienia ma w nazwie umiejętność, np. „Księga Zapomnienia
+  (Mrocz. Uderzenie)”. Gdy nikt jej nie wystawił, żaden bot nie odpowiada,
+  zamiast proponować coś innego.
+- „Sprzedam KZ …” nie dostaje już odpowiedzi „kupię KU …”.
+
+### Opisy umiejętności w oknie Towarzysza (klient 2.0.36, propozycja Piciu713)
+
+- Po najechaniu myszą na umiejętność w oknie „Umiejętności towarzysza”
+  pojawia się ten sam opis co w Twoim oknie umiejętności: poziom, działanie,
+  czas trwania, odnowienie, wymagane PE i następny poziom.
+- Liczby są wyliczane ze statystyk Towarzysza (jego poziomu, INT, SIŁ
+  i broni), nie z Twoich. Ze starszym serwerem opis pokaże tylko nazwę
+  i działanie umiejętności.
+
+### Jedno pytanie o aktualizację (propozycja KamCio i bruce_willis)
+
+- Przy starcie launcher pytał osobno o serwer, potem, czy uruchomić się
+  ponownie, a na końcu o klienta.
+- Teraz jest jedno okno z przyciskami „Aktualizuj wszystko”, „Tylko serwer”
+  i „Nie teraz”. „Aktualizuj wszystko” aktualizuje serwer i klienta za
+  jednym razem, a launcher uruchamia się potem ponownie sam. „Tylko serwer”
+  jest dla tych, którzy nie grają na kliencie z tego komputera, np. mają
+  serwer na VPS. „Nie teraz” odkłada pytanie do następnej wersji, jak
+  dotąd.
+- Nowe okno zobaczysz przy następnej aktualizacji, bo tę instaluje jeszcze
+  obecny launcher.
+
 ## 2.2.17 — 2026-09-25
 
 Serwer 2.2.17 i klient 2.0.35: zaktualizuj oba. Zawiera wszystko z 2.2.16.
