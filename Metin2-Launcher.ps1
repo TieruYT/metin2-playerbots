@@ -1814,7 +1814,7 @@ function Start-CoopHostingAction {
     $requested = $CoopVia
     $vpns = @($report.Vpns)
     if ($Action -eq 'Menu' -and $requested -eq 'auto' -and $vpns.Count -gt 0 -and -not (@('cgnat', 'double-nat') -contains $report.Verdict)) {
-        if (Confirm-Action ("Wykryto {0} (adres {1}). Hostować przez VPN zamiast przez internet?" -f $vpns[0].Name, $vpns[0].Address)) { $requested = $vpns[0].Kind }
+        if (Confirm-Operation -Question ("Wykryto {0} (adres {1}). Hostować przez VPN zamiast przez internet?" -f $vpns[0].Name, $vpns[0].Address)) { $requested = $vpns[0].Kind }
         else { $requested = 'internet' }
     }
     $via = Resolve-M2CoopHostingVia -Report $report -Requested $requested

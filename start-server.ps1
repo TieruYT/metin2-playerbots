@@ -347,7 +347,7 @@ function Write-FileDurable {
     }
     finally { $stream.Dispose() }
     if (Test-Path -LiteralPath $Path -PathType Leaf) {
-        try { [IO.File]::Replace($temp, $Path, $null) }
+        try { [IO.File]::Replace($temp, $Path, [NullString]::Value) }
         catch {
             [IO.File]::Copy($temp, $Path, $true)
             Remove-Item -LiteralPath $temp -Force -ErrorAction SilentlyContinue
