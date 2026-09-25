@@ -17,6 +17,94 @@ every version here.
 
 ---
 
+## 2.2.19 — 2026-09-25
+
+Serwer 2.2.19 i klient 2.0.37: zaktualizuj oba. Zawiera wszystko z 2.2.18.
+
+### Towarzysz: potwory przechodzą na Ciebie, statystyki i lurowanie
+
+- Potwory, które biją Towarzysza, przechodzą na Ciebie, gdy on zginie,
+  gdy go puścisz wolno albo wyślesz na zakupy. Wcześniej stawały w
+  miejscu. Nic się nie zmienia w walce, którą toczysz razem z nim.
+- Statystyki Towarzysza możesz rozdawać sam: w oknie Towarzysza jest
+  nowy przycisk „Statystyki”, a w nim „+” i „+5” przy każdej statystyce.
+  Pierwszy rozdany punkt przełącza go na ręczne rozdawanie. Jeden raz
+  możesz za darmo zresetować wszystkie jego punkty i rozdać je od nowa.
+  Pomysł: Kiciamol.
+- Towarzysz może lurować: zbiera trzy grupy potworów z okolicy i
+  przyprowadza je do Ciebie. Włączasz to przyciskiem „Lurowanie” w oknie
+  Towarzysza albo szeptem „luruj”, a wyłączasz szeptem „przestań lurować”.
+  Nie luruje, gdy sam ma mało życia albo gdy wokół Ciebie trwa już
+  walka.
+
+### Patch 4 od Iwakury
+
+- **Biżuteria i reszta sprzętu od +4.** Boty podnoszą każdy noszony
+  przedmiot co najmniej do +4. Hełm, buty i biżuteria idą dalej, do +9,
+  gdy broń, zbroja i tarcza stoją już na +7. 38% botów wybiera
+  biżuterię i buty z listy Iwakury dla swojej klasy (np. Kolczyki Z
+  Niebiań.Łez dla szamana i sury, Buty Feniksa), reszta to, co ma
+  najlepsze.
+- **Perfekcjonista dąży do +9** z całym sprzętem, którego używa. Połowę
+  złota wydaje na ulepszanie, połowę na księgi umiejętności. Zapasowa
+  broń, zbroja i tarcza w plecaku zostają przy dotychczasowym celu, bo
+  to one ratują bota, gdy noszona sztuka spłonie. Jedyną broń od
+  handlarza bot podnosi ponad ten cel tylko z zapasową w plecaku albo
+  pod zwojem. Bez tego pierwszy test skończył się pętlą: spalony miecz
+  +8, zakup Miecza +0 u handlarza, znów spalony.
+- **Zakupy sprzętu z rynku:** tylko przedmiot co najmniej +6 i co
+  najmniej o dwa ulepszenia wyższy od noszonego. Płaci z puli
+  Perfekcjonisty.
+- **Naturalne stosy w sklepach.** Ulepszacze boty wystawiają po 1–2
+  sztuki, a przy zapasie od 50 sztuk pięć linii po 2 i dalej po 5. Zioła
+  i siano idą po 10, 20, 50 albo 200, a Zwoje Błogosławieństwa głównie
+  po 1–2, rzadko po 5. Na jednej ladzie jest najwyżej 8 linii jednego
+  ulepszacza. Linie w innych rozmiarach boty jednorazowo zdejmują i
+  wystawiają od nowa.
+- **Koniec chomikowania ulepszaczy.** Każdy ulepszacz ponad to, czego bot
+  potrzebuje do własnego sprzętu, trafia na sklep, a magazyn regularnie
+  oddaje je na sprzedaż. Jedna wizyta w sklepie dokłada kilka linii, a
+  nie jedną, więc wyprzedany towar szybciej wraca.
+- **Ludzka pomyłka:** raz na tysiąc wystawień księgi umiejętności albo
+  pojedynczego ulepszacza bot dopisuje cenie jedno zero. Boty takiej
+  ceny nie zapłacą.
+- **Bonusy tylko tam, gdzie się opłacają:** broń na 30 poziom ze
+  średnimi obrażeniami, broń od 45 poziomu od +7, tarcze, zbroje i hełmy
+  od 21 poziomu od +7, bransolety, naszyjniki i buty od +4, kolczyki od
+  +7. Nic poniżej +4. Bot z kamieniami bonusuje od razu, także poza
+  miastem, a zmienia bonusy dopiero przy czterech liniach.
+- **Jeden najlepszy egzemplarz.** Zapasowa broń, zbroja albo tarcza na
+  +7 do +9, gorsza od noszonej albo taka sama, trafia na sklep, także z
+  magazynu. Gdy bot spali u kowala swój jedyny przedmiot, najpierw szuka
+  zamiennika na rynku, a dopiero potem kupuje zwykły u handlarza.
+- **Buty:** obrona i poziom ulepszenia nie mają już znaczenia. Liczą się
+  bonusy z tieru 3 i wyższego, a czyste buty bot porównuje według tieru
+  z listy Iwakury.
+- **Wykrywacz Kamieni Metin:** Metinolog go używa (6 ładunków), idzie do
+  wskazanego kamienia i niszczy go.
+- **100 Magicznego Pyłu = Marmur Błogosławieństwa**, gdy bot nosi
+  przedmiot z czterema bonusami. Do tego czasu pył odkłada.
+- **Handlarz nie budzi się w lochach.** W Wieży Demonów i na rajdzie
+  pełny plecak nie odciąga już bota od grupy.
+- **Księgi Misji:** najwyżej 30 sztuk na ladach jednej wioski. Nadmiar
+  boty zdejmują i połowę kładą do magazynu, a połowę sprzedają u
+  Handlarki Różności.
+- **Zwój Błogosławieństwa bez kopii zapasowej:** broń bez zamiennika bot
+  ulepsza pod zwojem od razu, także w polu, a brakujące ulepszacze
+  kupuje na rynku.
+- Panel: ranking botów ma opcję „5000”.
+
+### COOP: stary metin2client.exe (zgłosił Cetis)
+
+- Klient sprzed wersji 2.0.17 po wybraniu postaci łączy się z Twoim
+  komputerem zamiast z serwerem znajomego i wraca do logowania, a w
+  logach serwera nic nie widać. Aktualizacje klienta nie przynoszą już
+  pliku exe (fałszywy alarm Defendera), więc stary exe z dawnej pełnej
+  paczki zostaje na dysku.
+- Launcher i „Dolacz.bat” mówią teraz o tym przy dołączaniu do świata
+  znajomego. Naprawa to podmiana metin2client.exe na ten z pełnej paczki
+  gry.
+
 ## 2.2.18 — 2026-09-25
 
 Serwer 2.2.18 i klient 2.0.36: zaktualizuj oba. Zawiera wszystko z 2.2.17.
