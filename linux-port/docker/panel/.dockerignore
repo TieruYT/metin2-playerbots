@@ -1,7 +1,0 @@
-**/__pycache__/
-**/*.pyc
-# Never let a real config or a client build get baked into the image -- both
-# belong on volumes, and m2panel.conf holds the admin password hash.
-app/m2panel.conf
-app/client.zip
-app/downloads.db

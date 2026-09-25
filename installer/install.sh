@@ -63,12 +63,19 @@ set -eu
 #
 #  Override any of it:
 #      M2_REPO_URL=https://.../server.git            sh install.sh
+#      M2_REPO_REF=main                              sh install.sh
 #      M2_REPO_DIR=/path/to/checkout                 sh install.sh
 #      M2_SRC_REFERENCE_DIR=/path/to/serverfiles     sh install.sh
 #      M2_SRC_ARCHIVE=/path/to/serverfiles.zip       sh install.sh
 #      M2_LOCAL_CONTEXT=/path/to/linux-port/docker   sh install.sh
 # -----------------------------------------------------------------------------
 M2_REPO_URL="${M2_REPO_URL:-https://github.com/TieruYT/metin2-playerbots.git}"
+# The last 1.x release, by its tag. From 2.2.17 the public repository's main
+# branch holds only what the launchers and panels read - the manifests, the two
+# VERSION files, the changelog - so it has no linux-port/ to build from; the
+# 1.x source stays where it was released, and a clone of main would stop at
+# "fetch-sources.sh not found". A fork of the project names its own branch.
+M2_REPO_REF="${M2_REPO_REF:-v1.33.3}"
 # Where this script itself lives. The panel shows it as the way to update, so
 # an operator who fetched this from somewhere else gets told to go back there.
 M2_INSTALLER_URL="${M2_INSTALLER_URL:-https://raw.githubusercontent.com/TieruYT/metin2-playerbots/main/installer/install.sh}"
@@ -927,13 +934,13 @@ locate_repo() {
 
     REPO_DIR="$M2_SRC_CACHE/repo"
     if [ "$DRY_RUN" = "1" ]; then
-        info "[dry-run] git clone --depth 1 $M2_REPO_URL $REPO_DIR"
+        info "[dry-run] git clone --depth 1 --branch $M2_REPO_REF $M2_REPO_URL $REPO_DIR"
         return 0
     fi
 
     if [ -d "$REPO_DIR/.git" ]; then
         say "Updating the checkout in $REPO_DIR ..."
-        ( cd "$REPO_DIR" && git fetch --depth 1 origin && git reset --hard FETCH_HEAD ) \
+        ( cd "$REPO_DIR" && git fetch --depth 1 origin "$M2_REPO_REF" && git reset --hard FETCH_HEAD ) \
             >/dev/null 2>&1 || warn "could not update it; using what is already there"
     else
         say "Getting the project from $M2_REPO_URL ..."
@@ -949,7 +956,7 @@ locate_repo() {
             "$REPO_DIR"/*) cd / || die "could not leave $REPO_DIR" ;;
         esac
         rm -rf "$REPO_DIR"
-        git clone --depth 1 "$M2_REPO_URL" "$REPO_DIR" || die \
+        git clone --depth 1 --branch "$M2_REPO_REF" "$M2_REPO_URL" "$REPO_DIR" || die \
 "The project could not be cloned from
 
       $M2_REPO_URL

@@ -1,4 +1,0 @@
-# Client files go into the packs byte for byte (CP1250, CRLF); Git must not
-# touch their line endings on the way in or out.
-client-root/** -text
-client-locale/** -text

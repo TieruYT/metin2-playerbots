@@ -1,18 +1,0 @@
-ARG RUNTIME_BASE=metin2/game-runtime-base:incremental
-FROM ${RUNTIME_BASE}
-
-COPY game /opt/metin2/share/bin/game
-
-# And the container-side scripts, exactly as linux-port/docker/game/Dockerfile
-# installs them.
-#
-# The fast build used to swap the compiled core alone and take everything else
-# from the base layer, which is whatever a full build last produced. That is a
-# test server drifting away from what players run, silently: the base image
-# here still carried the map assignment from before the Spider Dungeon and the
-# hard Monkey Dungeon were moved onto the bots' own core, so m2-render-config
-# wrote a CONFIG without them, every bot that walked to either gate was refused
-# ten thousand times a minute, and a day of measurements said those maps were
-# empty for reasons that were never true.
-COPY bin/ /usr/local/bin/
-RUN sed -i 's/$//' /usr/local/bin/entrypoint.sh /usr/local/bin/m2-* /usr/local/bin/m2ctl  && chmod 0755 /usr/local/bin/entrypoint.sh /usr/local/bin/m2-* /usr/local/bin/m2ctl  && chmod 0755 /opt/metin2/share/bin/game

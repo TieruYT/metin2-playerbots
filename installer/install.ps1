@@ -80,12 +80,19 @@ try {
 #
 #  Override before running:
 #      $env:M2_REPO_URL           = 'https://.../server.git'
+#      $env:M2_REPO_REF           = 'main'
 #      $env:M2_REPO_DIR           = 'C:\path\to\checkout'
 #      $env:M2_SRC_REFERENCE_DIR  = 'C:\path\to\[40250] Reference Serverfile'
 #      $env:M2_SRC_ARCHIVE        = 'C:\path\to\the-package.zip'
 #      $env:M2_LOCAL_CONTEXT      = 'C:\path\to\linux-port\docker'
 # -----------------------------------------------------------------------------
 $script:RepoUrl      = if ($env:M2_REPO_URL)          { $env:M2_REPO_URL }          else { 'https://github.com/TieruYT/metin2-playerbots.git' }
+# The last 1.x release, by its tag. From 2.2.17 the public repository's main
+# branch holds only what the launchers and panels read - the manifests, the two
+# VERSION files, the changelog - so it has no linux-port/ to build from; the
+# 1.x source stays where it was released, and a clone of main would stop at
+# "fetch-sources.sh not found". A fork of the project names its own branch.
+$script:RepoRef      = if ($env:M2_REPO_REF)          { $env:M2_REPO_REF }          else { 'v1.33.3' }
 # Where this script itself lives, so it can tell the panel how to update: on
 # Windows the update IS re-running this, and the panel shows the line to paste.
 $script:SelfUrl      = if ($env:M2_INSTALLER_URL)     { $env:M2_INSTALLER_URL }     else { 'https://raw.githubusercontent.com/TieruYT/metin2-playerbots/main/installer/install.ps1' }
@@ -1047,15 +1054,18 @@ or give it the repository:
 
     Write-Say "Getting the project from $($script:RepoUrl) ..."
     Write-Say 'A few megabytes -- this is the port, not the game.'
-    # git runs in the container too, so Windows needs none installed.
+    # git runs in the container too, so Windows needs none installed. $0 and $1
+    # carry no quotes: Windows PowerShell 5.1 hands a native command an argument
+    # with its inner double quotes unescaped, and neither a URL nor a tag has a
+    # space in it.
     $sh = 'set -e; if [ -d /work/repo/.git ]; then ' +
-          'cd /work/repo && git fetch --depth 1 origin && git reset --hard FETCH_HEAD; ' +
-          'else rm -rf /work/repo && git clone --depth 1 "$0" /work/repo; fi; ' +
+          'cd /work/repo && git fetch --depth 1 origin $1 && git reset --hard FETCH_HEAD; ' +
+          'else rm -rf /work/repo && git clone --depth 1 --branch $1 $0 /work/repo; fi; ' +
           'test -f /work/repo/linux-port/fetch-sources.sh'
     $code = Invoke-DockerLoud @(
         'run', '--rm',
         '-v', "$($script:SrcVolume):/work",
-        $script:FetcherImage, 'bash', '-c', $sh, $script:RepoUrl)
+        $script:FetcherImage, 'bash', '-c', $sh, $script:RepoUrl, $script:RepoRef)
     if ($code -ne 0) {
         Stop-Friendly @"
 The project could not be downloaded from

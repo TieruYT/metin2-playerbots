@@ -1,8 +1,0 @@
-pack/root.index
-pack/root.data
-pack/locale.index
-pack/locale.data
-metin2client.exe
-Dolacz.bat
-Dolacz.ps1
-COOP - jak zagrac u znajomego.txt
