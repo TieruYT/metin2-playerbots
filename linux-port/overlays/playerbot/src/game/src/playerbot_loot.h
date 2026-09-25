@@ -533,8 +533,10 @@ namespace
 		// and an empty search put the next one off by seconds, in which the
 		// target section below had already sent the bot on. For
 		// PLAYERBOT_METIN_LOOT_LINGER_MS it stands where the stone broke and
-		// looks again on every pass instead.
-		const bool metinLinger = metinDash &&
+		// looks again on every pass instead - with nothing attacking it: a pack
+		// the stone summoned is fought first, and standing still under it for
+		// five seconds is the wrong kind of patience.
+		const bool metinLinger = metinDash && !bFightingActiveTarget && !state.bLootThreatNearby &&
 				dwNow - state.dwStoneBrokenTime < PLAYERBOT_METIN_LOOT_LINGER_MS &&
 				!state.bRecoveringAfterDeath && ch->GetMaxHP() > 0 &&
 				(long long)ch->GetHP() * 100 >=
