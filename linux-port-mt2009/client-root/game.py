@@ -792,6 +792,56 @@ class GameWindow(ui.ScriptWindow):
 			else:
 				app.PitchCamera(app.CAMERA_TO_POSITIVE)
 
+	def __KeepSidekickInventory(self):
+		# The keeper closes the companion's bag and skill windows with the
+		# game window; the companion's own sends their queued orders.
+		self.__KeepSidekickWindow()
+		import uisidekickinventory
+		for keeper in self.updateable:
+			if isinstance(keeper, uisidekickinventory.Keeper):
+				return
+		self.RegisterUpdatable(uisidekickinventory.GetKeeper())
+
+	def __SidekickEqNone(self, *args):
+		self.__KeepSidekickInventory()
+		import uisidekickinventory
+		uisidekickinventory.OnEqNone(*args)
+
+	def __SidekickEqBegin(self, *args):
+		self.__KeepSidekickInventory()
+		import uisidekickinventory
+		uisidekickinventory.OnEqBegin(*args)
+
+	def __SidekickEqItem(self, *args):
+		import uisidekickinventory
+		uisidekickinventory.OnEqItem(*args)
+
+	def __SidekickEqEmpty(self, *args):
+		import uisidekickinventory
+		uisidekickinventory.OnEqEmpty(*args)
+
+	def __SidekickEqEnd(self, *args):
+		import uisidekickinventory
+		uisidekickinventory.OnEqEnd(*args)
+
+	def __SidekickEqResult(self, *args):
+		self.__KeepSidekickInventory()
+		import uisidekickinventory
+		uisidekickinventory.OnEqResult(*args)
+
+	def __SidekickSkillBegin(self, *args):
+		self.__KeepSidekickInventory()
+		import uisidekickinventory
+		uisidekickinventory.OnSkillBegin(*args)
+
+	def __SidekickSkill(self, *args):
+		import uisidekickinventory
+		uisidekickinventory.OnSkill(*args)
+
+	def __SidekickSkillEnd(self, *args):
+		import uisidekickinventory
+		uisidekickinventory.OnSkillEnd(*args)
+
 	def	__ReleaseGKey(self):
 		app.PitchCamera(app.CAMERA_STOP)
 
@@ -2712,6 +2762,15 @@ class GameWindow(ui.ScriptWindow):
 		serverCommandList["GlobalRankingWipe"] = self.__Global_Ranking__RecvWipe
 		serverCommandList["GlobalRankingUpdatePacket"] = self.__Global_Ranking__RecvData
 		serverCommandList["GlobalRankingUpdatePacketMyPos"] = self.__Global_Ranking__RecvSelfData
+		serverCommandList["SidekickEqNone"] = self.__SidekickEqNone
+		serverCommandList["SidekickEqBegin"] = self.__SidekickEqBegin
+		serverCommandList["SidekickEqItem"] = self.__SidekickEqItem
+		serverCommandList["SidekickEqEmpty"] = self.__SidekickEqEmpty
+		serverCommandList["SidekickEqEnd"] = self.__SidekickEqEnd
+		serverCommandList["SidekickEqResult"] = self.__SidekickEqResult
+		serverCommandList["SidekickSkillBegin"] = self.__SidekickSkillBegin
+		serverCommandList["SidekickSkill"] = self.__SidekickSkill
+		serverCommandList["SidekickSkillEnd"] = self.__SidekickSkillEnd
 
 		self.serverCommander=stringCommander.Analyzer()
 		for serverCommandItem in serverCommandList.items():

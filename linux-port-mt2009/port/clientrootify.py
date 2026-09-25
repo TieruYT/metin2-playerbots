@@ -29,13 +29,16 @@ Writes into client-root/ (beside serverinfo.py, which is hand-written):
                     the "InventoryArrangeResult" command (inventoryarrange.py);
                     the ` key picks up every drop in range (pickupnearby.py);
                     the companion's window on the P key and its "Sidekick*"
-                    commands (uisidekick.py, hand-written).
+                    commands (uisidekick.py, hand-written), and its bag and
+                    skill windows' "SidekickEq*" and "SidekickSkill*"
+                    (uisidekickinventory.py, hand-written).
   * uiinventory.py - the auto-stack button is "Scal i uporzadkuj": one
                     /inventory_arrange to the server, which pours the stacks
                     and lays the four pages out (inventoryarrange.py,
                     hand-written; playerbot_arrange.cpp on the server). The
                     method the button used to call stays under another name
-                    and is never called.
+                    and is never called. The companion's item dropped on the
+                    bag is "/towarzysz eq wez" (uisidekickinventory.py).
   * offlineshopmanage.py - a click on an empty slot of the shop's edit grid
                     removes nothing instead of raising KeyError.
   * offlineshopsearch.py - a click on an icon of the item search's grid picks
@@ -439,6 +442,77 @@ EDITS = {
          b'\t\tuiautohunt.OnServerOff()\r\n'
          b'\r\n'
          b'\tdef __PressGKey(self):\r\n'),
+        # The companion's bag and skill windows (uisidekickinventory.py,
+        # hand-written; the server's "/towarzysz eq" and "/towarzysz
+        # umiejetnosci"): nine answers, each handed on whole - the module reads
+        # what it can of a short or broken line. The first line of each package
+        # registers the windows' keeper, and with it the one of the companion's
+        # window, which sends what is queued. The entries follow the global
+        # ranking's last one and the methods precede the G key's release - text
+        # no other edit here reads or writes, and each keeps its anchor whole.
+        (b'\t\tserverCommandList["GlobalRankingUpdatePacketMyPos"] = self.__Global_Ranking__RecvSelfData\r\n',
+         b'\t\tserverCommandList["GlobalRankingUpdatePacketMyPos"] = self.__Global_Ranking__RecvSelfData\r\n'
+         b'\t\tserverCommandList["SidekickEqNone"] = self.__SidekickEqNone\r\n'
+         b'\t\tserverCommandList["SidekickEqBegin"] = self.__SidekickEqBegin\r\n'
+         b'\t\tserverCommandList["SidekickEqItem"] = self.__SidekickEqItem\r\n'
+         b'\t\tserverCommandList["SidekickEqEmpty"] = self.__SidekickEqEmpty\r\n'
+         b'\t\tserverCommandList["SidekickEqEnd"] = self.__SidekickEqEnd\r\n'
+         b'\t\tserverCommandList["SidekickEqResult"] = self.__SidekickEqResult\r\n'
+         b'\t\tserverCommandList["SidekickSkillBegin"] = self.__SidekickSkillBegin\r\n'
+         b'\t\tserverCommandList["SidekickSkill"] = self.__SidekickSkill\r\n'
+         b'\t\tserverCommandList["SidekickSkillEnd"] = self.__SidekickSkillEnd\r\n'),
+        (b'\tdef\t__ReleaseGKey(self):\r\n',
+         b'\tdef __KeepSidekickInventory(self):\r\n'
+         b'\t\t# The keeper closes the companion\'s bag and skill windows with the\r\n'
+         b'\t\t# game window; the companion\'s own sends their queued orders.\r\n'
+         b'\t\tself.__KeepSidekickWindow()\r\n'
+         b'\t\timport uisidekickinventory\r\n'
+         b'\t\tfor keeper in self.updateable:\r\n'
+         b'\t\t\tif isinstance(keeper, uisidekickinventory.Keeper):\r\n'
+         b'\t\t\t\treturn\r\n'
+         b'\t\tself.RegisterUpdatable(uisidekickinventory.GetKeeper())\r\n'
+         b'\r\n'
+         b'\tdef __SidekickEqNone(self, *args):\r\n'
+         b'\t\tself.__KeepSidekickInventory()\r\n'
+         b'\t\timport uisidekickinventory\r\n'
+         b'\t\tuisidekickinventory.OnEqNone(*args)\r\n'
+         b'\r\n'
+         b'\tdef __SidekickEqBegin(self, *args):\r\n'
+         b'\t\tself.__KeepSidekickInventory()\r\n'
+         b'\t\timport uisidekickinventory\r\n'
+         b'\t\tuisidekickinventory.OnEqBegin(*args)\r\n'
+         b'\r\n'
+         b'\tdef __SidekickEqItem(self, *args):\r\n'
+         b'\t\timport uisidekickinventory\r\n'
+         b'\t\tuisidekickinventory.OnEqItem(*args)\r\n'
+         b'\r\n'
+         b'\tdef __SidekickEqEmpty(self, *args):\r\n'
+         b'\t\timport uisidekickinventory\r\n'
+         b'\t\tuisidekickinventory.OnEqEmpty(*args)\r\n'
+         b'\r\n'
+         b'\tdef __SidekickEqEnd(self, *args):\r\n'
+         b'\t\timport uisidekickinventory\r\n'
+         b'\t\tuisidekickinventory.OnEqEnd(*args)\r\n'
+         b'\r\n'
+         b'\tdef __SidekickEqResult(self, *args):\r\n'
+         b'\t\tself.__KeepSidekickInventory()\r\n'
+         b'\t\timport uisidekickinventory\r\n'
+         b'\t\tuisidekickinventory.OnEqResult(*args)\r\n'
+         b'\r\n'
+         b'\tdef __SidekickSkillBegin(self, *args):\r\n'
+         b'\t\tself.__KeepSidekickInventory()\r\n'
+         b'\t\timport uisidekickinventory\r\n'
+         b'\t\tuisidekickinventory.OnSkillBegin(*args)\r\n'
+         b'\r\n'
+         b'\tdef __SidekickSkill(self, *args):\r\n'
+         b'\t\timport uisidekickinventory\r\n'
+         b'\t\tuisidekickinventory.OnSkill(*args)\r\n'
+         b'\r\n'
+         b'\tdef __SidekickSkillEnd(self, *args):\r\n'
+         b'\t\timport uisidekickinventory\r\n'
+         b'\t\tuisidekickinventory.OnSkillEnd(*args)\r\n'
+         b'\r\n'
+         b'\tdef\t__ReleaseGKey(self):\r\n'),
     ],
     # "Scal i uporzadkuj" (Tieru, 18 September; Codex's audit the same day):
     # the inventory's auto-stack button asks the server once
@@ -476,6 +550,41 @@ EDITS = {
          b'\t\t\t\tsafeboxtransfer.DropIntoBag(attachedSlotPos, itemSlotIndex, mouseModule.mouseController.GetAttachedItemCount(), True)\r\n'
          b'\r\n'
          b'\t\t\tmouseModule.mouseController.DeattachObject()\r\n'),
+        # The companion's item dropped on the player's own inventory (its bag
+        # window, uisidekickinventory.py): "/towarzysz eq wez" into this cell -
+        # onto an item as well, the server answers what it makes of it - and
+        # the first free cell from the equipment, the costume, the belt or the
+        # horse's page. The module asks the attached type itself, so every other
+        # drop goes on as before; the lines stand in front of the first branch,
+        # clear of the safebox's edits below them.
+        (b'\t\t\tattachedItemIndex = mouseModule.mouseController.GetAttachedItemIndex()\r\n'
+         b'\r\n'
+         b'\t\t\tif player.SLOT_TYPE_INVENTORY == attachedSlotType:\r\n'
+         b'\t\t\t\t#@fixme011 BEGIN (block ds equip)\r\n',
+         b'\t\t\tattachedItemIndex = mouseModule.mouseController.GetAttachedItemIndex()\r\n'
+         b'\r\n'
+         b'\t\t\t# The companion\'s item (uisidekickinventory.py): "/towarzysz eq wez".\r\n'
+         b'\t\t\timport uisidekickinventory\r\n'
+         b'\t\t\tif uisidekickinventory.DropIntoPlayerBag(attachedSlotType, attachedSlotPos, selectedSlotPos):\r\n'
+         b'\t\t\t\tmouseModule.mouseController.DeattachObject()\r\n'
+         b'\t\t\t\treturn\r\n'
+         b'\r\n'
+         b'\t\t\tif player.SLOT_TYPE_INVENTORY == attachedSlotType:\r\n'
+         b'\t\t\t\t#@fixme011 BEGIN (block ds equip)\r\n'),
+        (b'\t\t\tattachedItemVID = mouseModule.mouseController.GetAttachedItemIndex()\r\n'
+         b'\r\n'
+         b'\t\t\tif player.SLOT_TYPE_INVENTORY == attachedSlotType:\r\n'
+         b'\t\t\t\t#@fixme011 BEGIN (block ds equip)\r\n',
+         b'\t\t\tattachedItemVID = mouseModule.mouseController.GetAttachedItemIndex()\r\n'
+         b'\r\n'
+         b'\t\t\t# The companion\'s item (uisidekickinventory.py): "/towarzysz eq wez".\r\n'
+         b'\t\t\timport uisidekickinventory\r\n'
+         b'\t\t\tif uisidekickinventory.DropIntoPlayerBag(attachedSlotType, attachedSlotPos, itemSlotIndex):\r\n'
+         b'\t\t\t\tmouseModule.mouseController.DeattachObject()\r\n'
+         b'\t\t\t\treturn\r\n'
+         b'\r\n'
+         b'\t\t\tif player.SLOT_TYPE_INVENTORY == attachedSlotType:\r\n'
+         b'\t\t\t\t#@fixme011 BEGIN (block ds equip)\r\n'),
     ],
     # The safebox's side (blasty's proposal, 19 September; Tieru: "Jasne"):
     # "Scal i uporzadkuj" in the title bar, Shift and a click to split one of its

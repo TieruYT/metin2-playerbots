@@ -1228,6 +1228,12 @@ class InventoryWindow(ui.ScriptWindow):
 			attachedItemCount = mouseModule.mouseController.GetAttachedItemCount()
 			attachedItemIndex = mouseModule.mouseController.GetAttachedItemIndex()
 
+			# The companion's item (uisidekickinventory.py): "/towarzysz eq wez".
+			import uisidekickinventory
+			if uisidekickinventory.DropIntoPlayerBag(attachedSlotType, attachedSlotPos, selectedSlotPos):
+				mouseModule.mouseController.DeattachObject()
+				return
+
 			if player.SLOT_TYPE_INVENTORY == attachedSlotType:
 				#@fixme011 BEGIN (block ds equip)
 				attachedInvenType = player.SlotTypeToInvenType(attachedSlotType)
@@ -1277,6 +1283,12 @@ class InventoryWindow(ui.ScriptWindow):
 			attachedSlotType = mouseModule.mouseController.GetAttachedType()
 			attachedSlotPos = mouseModule.mouseController.GetAttachedSlotNumber()
 			attachedItemVID = mouseModule.mouseController.GetAttachedItemIndex()
+
+			# The companion's item (uisidekickinventory.py): "/towarzysz eq wez".
+			import uisidekickinventory
+			if uisidekickinventory.DropIntoPlayerBag(attachedSlotType, attachedSlotPos, itemSlotIndex):
+				mouseModule.mouseController.DeattachObject()
+				return
 
 			if player.SLOT_TYPE_INVENTORY == attachedSlotType:
 				#@fixme011 BEGIN (block ds equip)

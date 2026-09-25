@@ -23,6 +23,10 @@
 # nothing the server did not already take from the quest: przywolaj, wolny,
 # czekaj, zakupy, stan, walka N, zbieraj N, ochrona N, buffy N, odprawa tak.
 #
+# "Ekwipunek" and "Umiejetnosci" open the companion's bag and skill windows
+# (uisidekickinventory.py). Every command of the companion's windows leaves
+# through the one queue below, because the server's limit is per character.
+#
 # Python 2.7 as the client has it; the Polish letters are CP1250 escapes.
 
 import clientclock
@@ -54,9 +58,10 @@ GAUGE_HP = 'red'
 GAUGE_SP = 'pink'
 
 
-def DecodeText(value):
-	"""The server's hex of CP1250 bytes; '' for '-' or anything malformed."""
-	if not value or value == '-' or len(value) % 2 or len(value) > MAX_TEXT_BYTES * 2:
+def DecodeText(value, limit=MAX_TEXT_BYTES):
+	"""The server's hex of CP1250 bytes; '' for '-', anything malformed or
+	longer than limit bytes."""
+	if not value or value == '-' or len(value) % 2 or len(value) > limit * 2:
 		return ''
 	chars = []
 	for i in range(0, len(value), 2):
@@ -73,6 +78,62 @@ def ParseInt(value, default=0):
 		return int(value)
 	except (TypeError, ValueError):
 		return default
+
+
+# ---------------------------------------------------------------- the queue
+#
+# One queue for this window and the bag and skill windows: an order waits its
+# turn and keeps its place, a poll goes only when nothing waits, and nothing
+# leaves sooner than COMMAND_SPACING after the last. The windows pump it while
+# shown and the keeper while anything waits, so an order given just before a
+# window closed still goes.
+
+_queue = {'pending': [], 'next': 0.0}
+
+
+def _Send(text, now):
+	_queue['next'] = now + COMMAND_SPACING
+	net.SendChatPacket('/towarzysz ' + text)
+
+
+def SendCommand(text):
+	"""An order: at once when the line is free, else after those before it."""
+	now = clientclock.Now()
+	if not _queue['pending'] and now >= _queue['next']:
+		_Send(text, now)
+	else:
+		_queue['pending'].append(text)
+
+
+def PumpCommands():
+	"""Sends the next waiting order when its time has come; True when it did."""
+	if not _queue['pending']:
+		return False
+	now = clientclock.Now()
+	if now < _queue['next']:
+		return False
+	_Send(_queue['pending'].pop(0), now)
+	return True
+
+
+def TryPoll(text):
+	"""A poll, only when no order waits and the line is free; True when sent."""
+	if _queue['pending']:
+		return False
+	now = clientclock.Now()
+	if now < _queue['next']:
+		return False
+	_Send(text, now)
+	return True
+
+
+def HasPendingCommands():
+	return bool(_queue['pending'])
+
+
+def ResetCommands():
+	_queue['pending'] = []
+	_queue['next'] = 0.0
 
 
 def ParseInfo(args):
@@ -134,7 +195,7 @@ def PlaceText(info, place):
 
 class SidekickWindow(ui.BoardWithTitleBar):
 	WIDTH = 300
-	HEIGHT = 548
+	HEIGHT = 554
 
 	def __init__(self):
 		ui.BoardWithTitleBar.__init__(self)
@@ -143,8 +204,6 @@ class SidekickWindow(ui.BoardWithTitleBar):
 		self.names = ('', '', '')
 		self.gear = [''] * len(GEAR_LABELS)
 		self.nextPoll = 0.0
-		self.nextCommand = 0.0
-		self.pending = []
 		self.question = None
 		self.AddFlag('movable')
 		self.AddFlag('float')
@@ -157,7 +216,7 @@ class SidekickWindow(ui.BoardWithTitleBar):
 	# -------------------------------------------------------------- building
 
 	def Build(self):
-		# Five boards and a status line in 548 pixels, so the window fits an
+		# Five boards and a status line in 554 pixels, so the window fits an
 		# 800x600 screen beside the game as Auto Lowy's does.
 		BL = 10
 		BW = self.WIDTH - 2 * BL
@@ -208,13 +267,20 @@ class SidekickWindow(ui.BoardWithTitleBar):
 		self.buffButton = self._Btn(dpBoard, 'large', 98, 42, '', self.OnBuffs)
 		y += 66 + 4
 
-		eqBoard = self._Board(BL, y, BW, 20 + len(GEAR_LABELS) * 14 + 2)
-		self._Label(eqBoard, 14, 4, 'Ekwipunek')
+		# What it wears, and the two windows that show and change it: the bag
+		# and the gear as the player's own inventory (uisidekickinventory.py),
+		# and the skills. The buttons take the board's title row, six pixels
+		# taller than the label alone.
+		EQ_HEAD = 26
+		eqBoard = self._Board(BL, y, BW, EQ_HEAD + len(GEAR_LABELS) * 14 + 2)
+		self._Label(eqBoard, 14, 6, 'Za\xb3o\xbfone')
+		self.inventoryButton = self._Btn(eqBoard, 'large', 98, 3, 'Ekwipunek', self.OnInventory)
+		self.skillsButton = self._Btn(eqBoard, 'large', 190, 3, 'Umiej\xeatno\x9cci', self.OnSkills)
 		self.gearLines = []
 		for i, label in enumerate(GEAR_LABELS):
-			self._Label(eqBoard, 10, 20 + i * 14, label + ':')
-			self.gearLines.append(self._Label(eqBoard, 86, 20 + i * 14, '-'))
-		y += 20 + len(GEAR_LABELS) * 14 + 2 + 4
+			self._Label(eqBoard, 10, EQ_HEAD + i * 14, label + ':')
+			self.gearLines.append(self._Label(eqBoard, 86, EQ_HEAD + i * 14, '-'))
+		y += EQ_HEAD + len(GEAR_LABELS) * 14 + 2 + 4
 
 		self.statusLine = self._Label(self, self.WIDTH // 2, y, '')
 		self.statusLine.SetHorizontalAlignCenter()
@@ -343,12 +409,15 @@ class SidekickWindow(ui.BoardWithTitleBar):
 	# -------------------------------------------------------------- orders
 
 	def SendCommand(self, text):
-		now = clientclock.Now()
-		if now < self.nextCommand:
-			self.pending.append(text)
-			return
-		self.nextCommand = now + COMMAND_SPACING
-		net.SendChatPacket('/towarzysz ' + text)
+		SendCommand(text)
+
+	def OnInventory(self):
+		import uisidekickinventory
+		uisidekickinventory.ToggleEquipmentWindow(self)
+
+	def OnSkills(self):
+		import uisidekickinventory
+		uisidekickinventory.ToggleSkillWindow(self)
 
 	def OnOrder(self, order):
 		self.SendCommand(order)
@@ -396,28 +465,21 @@ class SidekickWindow(ui.BoardWithTitleBar):
 	# -------------------------------------------------------------- the clock
 
 	def OnUpdate(self):
-		now = clientclock.Now()
-		if self.pending and now >= self.nextCommand:
-			text = self.pending.pop(0)
-			self.nextCommand = now + COMMAND_SPACING
-			net.SendChatPacket('/towarzysz ' + text)
+		if PumpCommands():
 			return
-		if now >= self.nextPoll and now >= self.nextCommand:
+		now = clientclock.Now()
+		if now >= self.nextPoll and TryPoll('okno'):
 			self.nextPoll = now + POLL_INTERVAL
-			self.nextCommand = now + COMMAND_SPACING
-			net.SendChatPacket('/towarzysz okno')
 
 	def Open(self):
 		self.Show()
 		self.SetTop()
-		now = clientclock.Now()
-		self.nextPoll = now + POLL_INTERVAL
-		self.nextCommand = now + COMMAND_SPACING
-		net.SendChatPacket('/towarzysz okno 1')
+		self.nextPoll = clientclock.Now() + POLL_INTERVAL
+		SendCommand('okno 1')
 
 	def Close(self):
+		# The orders already given stay in the queue: the keeper sends them.
 		self.OnDismissCancel()
-		self.pending = []
 		self.Hide()
 
 	def OnPressEscapeKey(self):
@@ -474,19 +536,25 @@ def Destroy():
 	if window is not None:
 		window.Destroy()
 	_window['window'] = None
+	# The bag and skill windows were opened from this one; they go with it
+	# even where their own keeper never got registered.
+	import sys
+	if 'uisidekickinventory' in sys.modules:
+		sys.modules['uisidekickinventory'].Destroy()
+	ResetCommands()
 
 
 class Keeper(object):
-	"""One of the game's updateables, for its Destroy alone: the game window's
-	Close destroys every updateable, and the companion's window goes with it
-	rather than stand over the character select. The window updates itself
-	(its own OnUpdate while shown)."""
+	"""One of the game's updateables: the game window's Close destroys every
+	updateable, and the companion's window goes with it rather than stand over
+	the character select. The window updates itself (its own OnUpdate while
+	shown); the keeper sends what is still queued when none is."""
 
 	def CanUpdate(self):
-		return False
+		return HasPendingCommands()
 
 	def OnUpdate(self):
-		pass
+		PumpCommands()
 
 	def Destroy(self):
 		Destroy()
