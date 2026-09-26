@@ -17,6 +17,128 @@ every version here.
 
 ---
 
+## 2.2.21 — 2026-09-26
+
+Serwer 2.2.21 i klient 2.0.38: zaktualizuj oba. Bez nowego klienta
+wejście do Groty Wygnańców albo do Diabelskich Katakumb zamyka grę.
+
+### Grota Wygnańców i Katakumby w kliencie
+
+- Po wejściu do Groty klient się zamykał, a postaci zapisanej w Grocie
+  nie dało się potem zalogować (Iwakura; przyczynę w logu klienta
+  znalazł SIZOWSKI). Mapy Groty leżały w paczce klienta pod ścieżką,
+  której klient nie szuka, a mapy Katakumb nie było w żadnej paczce.
+  Klient 2.0.38 ma obie Groty tam, gdzie klient ich szuka, i mapę
+  Katakumb z oryginalnego klienta gry. Wszystkie obiekty, tekstury i
+  potwory tych map klient już miał.
+- Przy pierwszym starcie 2.2.21 serwer jednorazowo przenosi postacie
+  graczy zapisane w Grocie pod wejście do niej w Dolinie Orków, a
+  zapisane w Katakumbach przed Strażnika w Świątyni Hwang. Takimi
+  postaciami znów da się zalogować.
+
+### Grota Wygnańców: wejście za Krwisty Kamień
+
+- Portal z 2.2.20 wpuszczał do Groty każdego za darmo. Teraz jest jak
+  w grze: Koe-Pung w lewym dolnym rogu Doliny Orków wpuszcza postać od
+  75 poziomu za Krwisty Kamień. Kamień daje codzienna misja Seon-Hae:
+  siedem Skamieniałych Łez na Ognistej Ziemi, cztery Obsydiany z tamtejszych
+  potworów i duch w Czerwonym Lesie, raz na dobę. Seon-Hae stał dotąd
+  tylko w pierwszej wiosce Jinno, teraz stoi też w Yongan i Joan, obok
+  zielarza.
+- Boty wchodzą do Groty jak dotąd.
+
+### Rajdy botów na Azraela
+
+- Co mniej więcej dwie godziny drużyna od czterech do ośmiu botów
+  jednego królestwa zbiera się przy Strażniku Katakumb w Świątyni Hwang
+  (ogłoszenie na czacie), zdobywa klucz na pierwszym piętrze i schodzi
+  piętrami jak w grze: wrota, Metiny Zemsty, labirynt, Tartar, Charon i
+  Azrael. Pokonanie Azraela też jest ogłaszane na czacie.
+- Idą boty, które spełniają warunki lochu jak gracz: od 80 poziomu, z
+  przejściem 9. piętra Wieży Demonów i z Zasuszoną Głową w plecaku.
+- Gdy w Katakumbach jest gracz, to on klika posąg, skałę i kolec, a
+  boty tylko walczą.
+- Panel klasyczny, strona zachowań botów: przełącznik rajdów i przycisk
+  „Rajd na Azraela teraz”.
+- Zasuszone Głowy boty zatrzymują albo wystawiają na sklep za wysoką
+  cenę, nigdy nie sprzedają handlarzowi.
+- Trzy z drzwi labiryntu na 4. piętrze Katakumb nikogo nie
+  przenosiły, bo miały zepsuty cel. Działają także dla graczy.
+
+### Wieża Demonów (uwagi prodnathina)
+
+- 7. piętro w kolejności, którą zaproponował prodnathin: najpierw boty
+  zbijają cztery Metiny Śmierci i nie zatrzymują się na potworach z
+  nich, potem wybijają potwory, które pojawiają się z Metinem Mordu,
+  a na końcu biją tylko Metin Mordu.
+- Pokonanie Umarłego Rozpruwacza jest ogłaszane na czacie z nazwą
+  gildii i królestwa.
+- Boty innych królestw nie farmią już na parterze w czasie rajdu i nie
+  wskakują z rajdem na kolejne piętra. Wcześniej prodnathin liczył ich
+  8–15 przy jednym rajdzie.
+
+### Wojny gildii (propozycje prodnathina)
+
+- Każda klasa ma na wojnie swoją rolę. Wojownik mentalny jako tank
+  wybiega pierwszy. Sura czarnej magii poluje na ninje, uzdrowicieli i
+  inne czarne magie. Ninja łucznik trzyma dystans i odchodzi krok od
+  wroga. Ninja sztyletnik znika i celuje w uzdrowicieli, szamanów i
+  sury. Szaman smok buffuje swoich i wbiega w środek. Szaman
+  uzdrowiciel buffuje, leczy najsłabszych i trzyma się z dala od
+  wrogów albo atakuje ninje i czarne magie.
+- Gildia losuje na każdą wojnę jeden z sześciu schematów: klasyczny,
+  osłona uzdrowicieli, polowanie na uzdrowicieli, szturm, zasadzka i mur.
+- Rundy: gdy jedna strona wybije wszystkich przeciwników na polu, obie
+  wracają do obozów i dostają chwilę na odrodzenie i buffy przed
+  następną rundą.
+- Boty wybiegają z obozu po kolei, z losowym odstępem do kilku sekund.
+- Obozy stoją dalej od siebie.
+
+### Towarzysz: Księga Zapomnienia
+
+- Umiejętność Towarzysza, która na 17 poziomie nie została mistrzem,
+  stała tak na zawsze (pytanie Hioba). Gra losuje mistrza tylko raz,
+  gdy punkt podnosi umiejętność na 17, a Towarzysz nie ma yang na
+  księgi. Teraz wystarczy dać mu Księgę Zapomnienia tej umiejętności,
+  handlem albo w oknie ekwipunku. Towarzysz sam ją przeczyta i od razu
+  wróci punktem na 17, co jest kolejną próbą na mistrza (25%, poniżej
+  35 poziomu 45%). Gdy punkty umiejętności rozdajesz sam, punkt czeka w
+  oknie umiejętności na Twoje „+”.
+- Zwój Powrotu Umiejętności z ItemShopu też działa: Towarzysz zeruje nim
+  umiejętność stojącą na 17 i wbija ją od nowa, a na 17 zostaje ona
+  mistrzem na pewno, jak u gracza.
+- Towarzysz z umiejętnością na 17 bez mistrza sam poprosi na czacie o
+  księgę, nie częściej niż raz na godzinę. Księga do innej umiejętności
+  zostaje w jego plecaku.
+
+### Poprawki
+
+- Na wojnach gildii walczyli rybacy z wędkami w rękach (DUDU). Bot
+  wezwany na wojnę albo na rajd kończy łowienie albo kopanie i bierze
+  do ręki broń.
+- Boty w polimorfii zdejmowały broń i nie mogły jej założyć z powrotem
+  (SIZOWSKI). W polimorfii bot nie rusza teraz ekwipunku.
+- Boty utykały w małych, odciętych kawałkach terenu Świątyni Hwang
+  (SIZOWSKI). Bot stojący w takim miejscu po kilku sekundach wraca na
+  główny teren mapy.
+- „Could not re-equip” przy bonowaniu (SIZOWSKI): bot zdejmował
+  przedmiot do zmiany bonusu, a gra przez półtorej sekundy po jego
+  własnym ciosie albo umiejętności nie pozwalała go założyć. 2.2.20
+  pilnowało tego tylko przy bonowaniu w terenie i tylko po ciosie. Teraz
+  także przy kowalu i po każdej umiejętności, również buffie. Samo
+  bycie atakowanym nie przeszkadza w zakładaniu przedmiotów.
+- Auto Łowy: obrażenia z umiejętności czasem nie wchodziły (prodnathin).
+  Łowca ruszał w stronę przedmiotu albo kolejnego celu w trakcie
+  animacji umiejętności i ją przerywał (trop podsunął Colide). Teraz
+  przez 1,3 s po użyciu umiejętności stoi w miejscu.
+- Poprawka z 2.2.20 odblokowująca Kamień Duchowy i Wykrywacz Kamieni
+  Metin w ItemShopie działała tylko w połowie: liczniki starych aukcji
+  zostawały w bazie, a start serwera pokazywał ostrzeżenie. Teraz są
+  usuwane.
+- Panel: opis Wieży Demonów podaje właściwy próg botów, 55 poziom.
+
+---
+
 ## 2.2.20 — 2026-09-26
 
 Tylko serwer. Klient zostaje na 2.0.37.
