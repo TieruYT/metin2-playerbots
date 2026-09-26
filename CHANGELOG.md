@@ -17,6 +17,45 @@ every version here.
 
 ---
 
+## 2.2.23 — 2026-09-26
+
+Serwer 2.2.23 i klient 2.0.40: zaktualizuj oba. Przenikanie przez
+Towarzysza i naprawiony podgląd skrzynek działają dopiero z nowym klientem.
+Zawiera wszystko z 2.2.22.
+
+### Przez Towarzysza da się przejść
+
+- Twoja postać przechodzi przez swojego Towarzysza, zamiast zatrzymywać
+  się na nim w walce. Dotyczy to tylko Ciebie: dla innych graczy Towarzysz
+  zasłania drogę jak dotąd.
+- Twój klient traktuje Towarzysza jak postać niezależną, więc kliknięcie
+  go nie otwiera menu gracza (handel, szept). Przedmioty dajesz mu i
+  zabierasz w jego oknie (klawisz P). Nowa fryzura albo szarfa
+  Towarzysza pokaże się, gdy następnym razem pojawi się w polu widzenia,
+  a na minimapie ma kropkę postaci niezależnej.
+- Potrzebny jest serwer 2.2.23 i klient 2.0.40.
+
+### Podgląd skrzynek znowu się otwiera (poprawka od Gibona)
+
+- W kliencie 2.0.39 przycisk podglądu skrzynki w ekwipunku nie otwierał
+  okna, a w syserr.txt pojawiał się błąd „cannot create weak reference
+  to 'weakproxy' object”. Gibon znalazł przyczynę i przysłał poprawkę,
+  dziękujemy! To samo zabezpieczenie dostało okno dropu z potworów.
+
+### Panele: rynek taki, jaki jest naprawdę
+
+- W sklepie bota nie wisi już linia z ceną 0, np. „Medal Konny ×2 — 0”.
+  To była linia właśnie sprzedana, którą serwer zapisuje z opóźnieniem
+  (zgłosił 6zmacko).
+- Panel Sebana liczy do „Aktywnych sklepów”, ofert, wartości rynku i
+  średnich cen tylko stragany, z których można coś kupić. Wcześniej
+  wliczał też stragany wygasłe, których bot nie odnowił po 8 godzinach.
+  Na naszym świecie testowym było to 1641 sklepów zamiast 689 otwartych,
+  a średnie obejmowały oferty, których nikt nie mógł kupić.
+- Karta bota w obu panelach pokazuje, że jego stragan wygasł.
+
+---
+
 ## 2.2.22 — 2026-09-26
 
 Serwer 2.2.22 i klient 2.0.39: zaktualizuj oba. Podgląd skrzyń i dropu
