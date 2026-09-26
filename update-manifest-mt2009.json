@@ -1,20 +1,20 @@
 {
   "schema": 1,
   "channel": "stable",
-  "publishedAt": "2026-09-26T07:08:51Z",
-  "statusMessage": "2.2.20 (tylko serwer, klient zostaje 2.0.37): Grota Wygnancow z wejsciem w Dolinie Orkow, Diabelskie Katakumby, szkatulki bossow otwierane przez boty, ItemShop dla botow, poprawki Towarzysza. Zawiera wszystko z 2.2.19.",
+  "publishedAt": "2026-09-26T10:55:27Z",
+  "statusMessage": "2.2.21 (serwer i klient 2.0.38 - zaktualizuj oba, bez nowego klienta Grota i Katakumby zamykaja gre): mapy Groty Wygnancow i Diabelskich Katakumb w kliencie, wejscie do Groty za Krwisty Kamien, rajdy botow na Azraela, role klas na wojnach gildii, Wieza Demonow po uwagach graczy, Towarzysz czyta Ksiege Zapomnienia. Zawiera wszystko z 2.2.20.",
   "server": {
-    "version": "2.2.20",
-    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.20/metin2-server-update-2.2.20.zip",
-    "sha256": "B7EE105A24CF97922FF6472DC521DE0B88F49062D3C096C1079FD26E3EA86846"
+    "version": "2.2.21",
+    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.21/metin2-server-update-2.2.21.zip",
+    "sha256": "D6D8BFF73F505074C469581B0BEB3A2812EE46C8509A26565832ECB4D3324240"
   },
   "support": {
     "contactUrl": "https://discord.gg/pt5tvnrN6",
     "uploadUrl": ""
   },
   "client": {
-    "version": "2.0.37",
-    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.19/metin2-client-update-2.0.37.zip",
-    "sha256": "3C9CD89B5CB6F9729309AE2C1156644ACFE3C3C9EC1D5F9711B21DAE72A8C4C6"
+    "version": "2.0.38",
+    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.21/metin2-client-update-2.0.38.zip",
+    "sha256": "FA0D720380C5A90F513A770C82E8F36408EE3D3FF711568C6FF6B0059DAD8880"
   }
 }
