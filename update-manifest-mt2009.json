@@ -1,12 +1,12 @@
 {
   "schema": 1,
   "channel": "stable",
-  "publishedAt": "2026-09-25T21:52:03Z",
-  "statusMessage": "2.2.19 (serwer i klient 2.0.37 - zaktualizuj oba): Patch 4 od Iwakury (ulepszanie do +9, naturalne stosy w sklepach, bonusy tylko na oplacalnym sprzecie), Towarzysz przekazuje Ci potwory, dostaje od Ciebie statystyki i luruje, COOP rozpoznaje stary metin2client.exe. Zawiera wszystko z 2.2.18.",
+  "publishedAt": "2026-09-26T07:08:51Z",
+  "statusMessage": "2.2.20 (tylko serwer, klient zostaje 2.0.37): Grota Wygnancow z wejsciem w Dolinie Orkow, Diabelskie Katakumby, szkatulki bossow otwierane przez boty, ItemShop dla botow, poprawki Towarzysza. Zawiera wszystko z 2.2.19.",
   "server": {
-    "version": "2.2.19",
-    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.19/metin2-server-update-2.2.19.zip",
-    "sha256": "8F53D2338C211813971A601A9523CAFE54857B92DF50FEC5B7F3C2E3C87347EB"
+    "version": "2.2.20",
+    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.20/metin2-server-update-2.2.20.zip",
+    "sha256": "B7EE105A24CF97922FF6472DC521DE0B88F49062D3C096C1079FD26E3EA86846"
   },
   "support": {
     "contactUrl": "https://discord.gg/pt5tvnrN6",
