@@ -17,6 +17,90 @@ every version here.
 
 ---
 
+## 2.2.24 — 2026-09-26
+
+Tylko serwer, klient zostaje 2.0.40. Poprawki z audytu wdrożenia
+Community Patchy Iwakury: 27 miejsc, w których boty robiły co innego, niż
+zakładały patche (w nawiasach numery z audytu). Zawiera wszystko z 2.2.23.
+
+### Rynek i sklepy offline
+
+- Paczki ziół i siana trafiają na ladę za pierwszym razem. Paczka była
+  cięta drugi raz przy dodawaniu i przy wielu wizytach w ogóle nie stawała
+  na sklepie. Na naszym świecie testowym od razu na ladę trafia teraz 98%
+  pociętych paczek, wcześniej 52–59%. (B01)
+- Perfekcjonista wstrzymuje kowala dla gotowego przedmiotu z rynku tylko
+  wtedy, gdy naprawdę może go kupić: na swojej mapie, dwa plusy nad
+  noszonym i za swoje pieniądze. Od razu idzie po wskazaną linię i czeka
+  osobno na każdy slot. Wcześniej wstrzymywał kowala na 20 minut na
+  wszystkich slotach naraz dla przedmiotu, którego nie mógł kupić. Na
+  świecie testowym bot 19 lvl kupił i założył zbroję +8 po 31 sekundach.
+  (B03)
+- Przedmiot zrobiony przez Hazardzistę nie wraca już z lady do plecaka przy
+  każdej wizycie, więc jego przecena się nie zeruje. (B06)
+- Zakupy Nałogowca i Hazardzisty ze sklepów offline liczą się do ich
+  budżetu, a Nałogowiec nie kupi materiału z „ludzką pomyłką” w cenie. (B07)
+- Limit 30 Ksiąg Misji na wioskę liczy tylko sklepy botów: sklep gracza z
+  księgami nie zdejmuje już ksiąg botów. (B18)
+
+### Ekwipunek, kowal i bonusy
+
+- Kamienie bonusu idą w przedmiot, który bot naprawdę założy, a nie w
+  dowolny słabszy z plecaka. Pusty slot też czeka na lepiej zbonowany
+  przedmiot. (B02, B27)
+- Ochrona noszonego przedmiotu działa na każdym kroku ulepszania, nie tylko
+  na pierwszym: zwój na krokach 80% i 60%, a po spaleniu jedynej broni,
+  zbroi albo tarczy najpierw rynek. (B12)
+- W oknie odbudowy po spaleniu bot nie kupuje broni z drabinki u kupca i
+  nie idzie „zbierać” w pole, tylko szuka gotowej na rynku. (B13)
+- Marmur z Magicznego Pyłu używają też boty poniżej 30 lvl. (B19)
+- Broń na 30 lvl: zakup i kowadło mają jeden wspólny budżet 60%, jak w
+  Community Patchu 2. Wcześniej razem mogły wydać ok. 80%, a osobny limit
+  kowadła i tak nie działał. (B25)
+
+### Osobowości
+
+- Bot cofnięty do Grindera po trzech śmierciach trzyma blokadę na swoim
+  poziomie, aż jego sprzęt spełni Prawo Awansu. Wcześniej w następnej
+  chwili była podnoszona albo zdejmowana, a na 26–29 i 36–39 lvl nie
+  trzymała nigdy. (B04)
+- Wylosowana blokada Tier 1 na 19 lvl trzyma na 19. Staje tam ok. 14%
+  botów, wcześniej 2–5%. (B17)
+- Suwak wędkowania działa w pełni: 200% to dwa razy więcej chętnych do
+  łowienia, wcześniej 1,37 raza. Bot, który ruszył na ryby, nie zawraca w
+  połowie drogi. (B11)
+- Sesja Hazardzisty kończy się także wtedy, gdy bot nie wrócił do kowala,
+  więc nie blokuje następnych. Po restarcie serwera Hazardzista nie
+  obrabia już swoich gotowych +7 i +8. (B05, B22)
+- Rzadkie osobowości: bot w takim stanie nie dołącza do drużyny botów,
+  drużyna albo towarzystwo gracza kończy stan, a Egzekutor nie poluje z
+  drużyny. (B10)
+- Metinolog wybiera mapy z Metinami, a wykrywacz zużywa ładunek tylko
+  wtedy, gdy znajdzie kamień, który bot może bić. (B08, B09)
+- Dropek medali liczy w swoim celu także hełm, a wyłączenie i ponowne
+  włączenie osobowości nie cofa „absolwenta” z powrotem do dropka. (B16,
+  B21)
+- Bot w nastroju SŁABY nie odchodzi od klawiatury obok własnego dropu.
+  (B20)
+
+### Magazyn i miasto
+
+- Oddawanie z magazynu na rynek (lista Hazardzisty, ulepszacze) samo
+  prowadzi bota do miasta. Wcześniej działało tylko przy okazji innej
+  wizyty. (B15)
+- Przedmioty z listy, które próg poziomu Hazardzisty wyklucza, wychodzą z
+  magazynu i nie zajmują limitu 18 sztuk. (B14)
+
+### Panele i launcher
+
+- Historia ekwipunku pokazuje zakupy u kupców (zakładka handlu) i marmur z
+  pyłu (zakładka bonusów). (B23)
+- Ranking „Bronie 30 Lv” pokazuje najlepsze bronie spośród wszystkich, a
+  nie najlepsze spośród najnowszych. (B26)
+- Paczka wsparcia z launchera zawiera log wykrywacza Metinów. (B24)
+
+---
+
 ## 2.2.23 — 2026-09-26
 
 Serwer 2.2.23 i klient 2.0.40: zaktualizuj oba. Przenikanie przez
