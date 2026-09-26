@@ -1,12 +1,12 @@
 {
   "schema": 1,
   "channel": "stable",
-  "publishedAt": "2026-09-26T16:45:48Z",
-  "statusMessage": "2.2.23 (serwer i klient 2.0.40 - zaktualizuj oba): przez Towarzysza da sie przejsc, podglad skrzynek znowu dziala (poprawka od Gibona), panele pokazuja tylko stragany, z ktorych mozna kupic. Zawiera wszystko z 2.2.22.",
+  "publishedAt": "2026-09-26T18:45:24Z",
+  "statusMessage": "2.2.24 (tylko serwer, klient zostaje 2.0.40): poprawki z audytu Community Patchy Iwakury - paczki ziol i siana na ladzie, kowal Perfekcjonisty czeka na kupno, blokada Grindera trzyma, suwak wedkowania dziala w pelni, kamienie bonusu w noszony przedmiot. Zawiera wszystko z 2.2.23.",
   "server": {
-    "version": "2.2.23",
-    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.23/metin2-server-update-2.2.23.zip",
-    "sha256": "4DB1753E60AB96C0C994E090B7B66583AC9A9870CEE9A58ED76DD87E2389A595"
+    "version": "2.2.24",
+    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.24/metin2-server-update-2.2.24.zip",
+    "sha256": "E86A020751AE2C4E8DDFA09867AAD62AD94911F9E5BA7721A2CD0D15C06E05F1"
   },
   "support": {
     "contactUrl": "https://discord.gg/pt5tvnrN6",
