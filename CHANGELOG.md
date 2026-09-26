@@ -17,6 +17,90 @@ every version here.
 
 ---
 
+## 2.2.20 — 2026-09-26
+
+Tylko serwer. Klient zostaje na 2.0.37.
+
+### Grota Wygnańców
+
+- Wejście wraca na swoje miejsce: portal w lewym dolnym rogu Doliny
+  Orków, a obok niego Seon-Pyeong. Paczka miała oba zakomentowane, a cel
+  portalu wypadał w ścianie Groty, więc do Groty dało się wejść tylko
+  komendą GM. Teraz portal przenosi na punkt startowy Groty V1, 1,3 km od
+  wyjścia. Z V1 do V2 prowadzi portal na końcu V1, jak w paczce.
+- W Grocie V1 stoją lodowe potwory (81–85) i Setaou (87–89), a co
+  kilka godzin pojawia się Silna Lodowa Wiedźma (89). W V2 są Setaou
+  87–97 i Dowódca Yonghan (93), po którego śmierci pojawia się Generał
+  Yonghan (95). Metinów tam nie ma.
+- Boty chodzą do Groty V1 od 78 poziomu, a do V2 od 84. Na Wiedźmę i
+  obu dowódców Yonghan zwołują rajdy jak na innych bossów.
+- Mapa 72 (Grota V1) przeszła na rdzeń game1, obok V2. Na game2 żaden
+  bot nie mógł na niej stanąć.
+- Panel: obie Groty na mapie na żywo i punkt teleportu „Grota
+  Wygnańców”.
+
+### Diabelskie Katakumby
+
+- Katakumby da się przejść. Paczka trzymała quest w katalogu
+  nieużywanych, nigdy go nie skompilowała, a Strażnika Katakumb w
+  Świątyni Hwang miała zakomentowanego.
+- Wejście u Strażnika w Hwang: od 75 poziomu, po pokonaniu Umarłego
+  Rozpruwacza na 9. piętrze Wieży Demonów, raz na 30 minut. Od 2. piętra
+  potrzebna jest grupa, a przejście na 3. piętro zabiera każdemu po
+  jednej Zasuszonej Głowie.
+- Umarły Rozpruwacz upuszcza teraz Zasuszoną Głowę (100%). Wcześniej
+  jedynym źródłem była skrzynia z 90 poziomu.
+- Skrzynia Azraela i Skrzynia Mroku (z bossów Przylądka Smoczej Głowy,
+  Góry Grzmotu, Lasu Mglistego Świtu i Zatoki Czarnego Piasku) nie miały
+  zawartości i po otwarciu nic nie dawały. Mają teraz zawartość z
+  oryginalnych plików gry.
+
+### Szkatułki z bossów
+
+- Boty podnoszą i otwierają szkatułki z bossów, także dropiarze medali.
+  Szkatułka bossa nie trafia już na ladę, bot ją otwiera.
+- Jedna skrzynia, na której zawartość brakuje miejsca w plecaku, nie
+  blokuje już otwierania pozostałych.
+- Bot ze Srebrną albo Złotą Szkatułką bez klucza idzie na rynek po
+  klucz, jeśli jakaś lada go ma. Na serwerze testowym 43 boty nosiły
+  takie szkatułki bez klucza, a na ladach stało 207 srebrnych kluczy.
+
+### ItemShop
+
+- Boty kupowały wyłącznie fryzury. Teraz kupują też Kamień Duchowy (do
+  szkolenia umiejętności na poziomie Wielkiego Mistrza), pojedynczy
+  kamień zmiany bonusów zamiast paczki czterech za 207 monet, a na
+  światach z czekaniem na księgi Zwój Egzorcyzmu.
+- Kamień Duchowy (49 Smoczych Monet) i Wykrywacz Kamieni Metin (99)
+  wracają do sklepu także dla graczy. Stały za aukcjami czasowymi,
+  które skończyły się w grudniu 2024, więc nikt nie mógł ich kupić.
+
+### Poprawki
+
+- Na nowym świecie każdy bot dostawał przy pierwszym logowaniu drugą
+  Skrzynię Ucznia (Iwakura). Bot ma już skrzynię z seeda, a przy
+  aktualizacji istniejący świat oznacza to samo swoim botom.
+- Towarzysz: potwory, które zabija przy Tobie, liczą się do Twoich
+  misji (Biolog, misje zabijania) (Dabroo).
+- Towarzysz: nowy Towarzysz zaczyna z pustym plecakiem, pustym
+  magazynem i startowym wyposażeniem. Wcześniej przejmował przedmioty i
+  yang bota, którego tożsamość dostał, i można je było wyjąć przez jego
+  ekwipunek (Vipper). Towarzysz już stworzony zostaje, jaki jest.
+- Bot z jedyną bronią od handlarza nie ulepsza jej ponad +4 bez
+  zapasowej broni albo zwoju (Iwakura: „boty na start kupują wiele broni
+  na 1 lvl”). Na serwerze testowym 16 botów kupiło w godzinę 34 bronie
+  awaryjne, bo paliły kolejne bronie +0 przy krokach na +5 i +6. Do +4
+  samotna broń pali się raz na trzy próby, do +6 dwa razy na trzy.
+- Zielarstwo botów nic nie kosztowało: butelki i warzenie nie
+  zabierały yang, bo ta wersja silnika odrzucała taką zmianę złota. Teraz
+  bot płaci jak gracz.
+- Bot nie dodaje bonusu na noszony przedmiot tuż po ciosie. Zdejmował go
+  wtedy do zmiany, a silnik przez półtorej sekundy po ciosie nie pozwala
+  założyć go z powrotem, więc przedmiot zostawał w plecaku do następnego
+  przebiegu.
+
+---
+
 ## 2.2.19 — 2026-09-25
 
 Serwer 2.2.19 i klient 2.0.37: zaktualizuj oba. Zawiera wszystko z 2.2.18.
