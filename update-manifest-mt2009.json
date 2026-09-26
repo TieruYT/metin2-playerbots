@@ -1,20 +1,20 @@
 {
   "schema": 1,
   "channel": "stable",
-  "publishedAt": "2026-09-26T10:55:27Z",
-  "statusMessage": "2.2.21 (serwer i klient 2.0.38 - zaktualizuj oba, bez nowego klienta Grota i Katakumby zamykaja gre): mapy Groty Wygnancow i Diabelskich Katakumb w kliencie, wejscie do Groty za Krwisty Kamien, rajdy botow na Azraela, role klas na wojnach gildii, Wieza Demonow po uwagach graczy, Towarzysz czyta Ksiege Zapomnienia. Zawiera wszystko z 2.2.20.",
+  "publishedAt": "2026-09-26T15:17:44Z",
+  "statusMessage": "2.2.22 (serwer i klient 2.0.39 - zaktualizuj oba): nowe wydarzenia Pirat Tanaka i deszcz metinow Zuo (panel, strona wydarzen), podglad zawartosci skrzyn i dropu z potworow, buffy szamana na cala druzyne, Wieza Demonow wedlug uwag graczy, lup dla walczacych, poprawki Towarzysza. Zawiera wszystko z 2.2.21.",
   "server": {
-    "version": "2.2.21",
-    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.21/metin2-server-update-2.2.21.zip",
-    "sha256": "D6D8BFF73F505074C469581B0BEB3A2812EE46C8509A26565832ECB4D3324240"
+    "version": "2.2.22",
+    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.22/metin2-server-update-2.2.22.zip",
+    "sha256": "A72E127BE612C0ADD70FA345F7457BDC45EFC6641BE59627C0A5328CAA22F64C"
   },
   "support": {
     "contactUrl": "https://discord.gg/pt5tvnrN6",
     "uploadUrl": ""
   },
   "client": {
-    "version": "2.0.38",
-    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.21/metin2-client-update-2.0.38.zip",
-    "sha256": "FA0D720380C5A90F513A770C82E8F36408EE3D3FF711568C6FF6B0059DAD8880"
+    "version": "2.0.39",
+    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.22/metin2-client-update-2.0.39.zip",
+    "sha256": "17E3615D3CDB7B49764458EB0E8E38E99819B714ACCB7168361A36F97101917B"
   }
 }
