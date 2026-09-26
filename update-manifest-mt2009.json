@@ -1,20 +1,20 @@
 {
   "schema": 1,
   "channel": "stable",
-  "publishedAt": "2026-09-26T15:17:44Z",
-  "statusMessage": "2.2.22 (serwer i klient 2.0.39 - zaktualizuj oba): nowe wydarzenia Pirat Tanaka i deszcz metinow Zuo (panel, strona wydarzen), podglad zawartosci skrzyn i dropu z potworow, buffy szamana na cala druzyne, Wieza Demonow wedlug uwag graczy, lup dla walczacych, poprawki Towarzysza. Zawiera wszystko z 2.2.21.",
+  "publishedAt": "2026-09-26T16:45:48Z",
+  "statusMessage": "2.2.23 (serwer i klient 2.0.40 - zaktualizuj oba): przez Towarzysza da sie przejsc, podglad skrzynek znowu dziala (poprawka od Gibona), panele pokazuja tylko stragany, z ktorych mozna kupic. Zawiera wszystko z 2.2.22.",
   "server": {
-    "version": "2.2.22",
-    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.22/metin2-server-update-2.2.22.zip",
-    "sha256": "A72E127BE612C0ADD70FA345F7457BDC45EFC6641BE59627C0A5328CAA22F64C"
+    "version": "2.2.23",
+    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.23/metin2-server-update-2.2.23.zip",
+    "sha256": "4DB1753E60AB96C0C994E090B7B66583AC9A9870CEE9A58ED76DD87E2389A595"
   },
   "support": {
     "contactUrl": "https://discord.gg/pt5tvnrN6",
     "uploadUrl": ""
   },
   "client": {
-    "version": "2.0.39",
-    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.22/metin2-client-update-2.0.39.zip",
-    "sha256": "17E3615D3CDB7B49764458EB0E8E38E99819B714ACCB7168361A36F97101917B"
+    "version": "2.0.40",
+    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.23/metin2-client-update-2.0.40.zip",
+    "sha256": "CCE9AE13EF99E6D7D433C59B0540F3969D00D8FF4451F65064550BB958A32C96"
   }
 }
