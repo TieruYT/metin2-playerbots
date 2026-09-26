@@ -17,6 +17,102 @@ every version here.
 
 ---
 
+## 2.2.22 — 2026-09-26
+
+Serwer 2.2.22 i klient 2.0.39: zaktualizuj oba. Podgląd skrzyń i dropu
+działa tylko z nowym klientem, a reszta zmian już po aktualizacji
+serwera.
+
+### Nowe wydarzenia: Pirat Tanaka i deszcz metinów Zuo
+
+- Oba ustawiasz w panelu na stronie wydarzeń, obok skrzyń,
+  doświadczenia, dropu i yang: w tygodniowym planie albo przyciskiem
+  „Aktywuj teraz”. Działa to w obu panelach. Mapę wybierasz sam albo
+  zostawiasz wybór wydarzeniu.
+- Pirat Tanaka: po mapie biega kilku piratów naraz (domyślnie 3, do
+  20). Tanaka ucieka przed tym, kto go bije, sypie yang, gdy obrywa, a
+  po śmierci zostawia kupki yang i swoje ucho temu, kto go pokonał.
+  Za ucho Yonah w pierwszej wiosce daje Fioletową Hebanową Szkatułkę.
+  Uszy się stackują. Pokonanego pirata po minucie lub dwóch zastępuje
+  nowy, a pirat, którego nikt nie bił przez pół minuty, po dziesięciu
+  minutach ucieka z mapy.
+- Zuo: co pięć minut na mapie spada fala metinów z przedziału poziomów
+  tej mapy (domyślnie 8, do 30), wokół miejsca, które ogłoszenie na
+  czacie podaje we współrzędnych minimapy. Od połowy wydarzenia
+  przychodzą też bossowie. Po końcu wydarzenia znika to, czego nikt nie
+  bił przez ostatnią minutę.
+- Boty biorą udział: kilka goni każdego pirata, ale gracze mają 45
+  sekund przewagi, a na metiny Zuo przychodzi tłum. W panelu ustawiasz,
+  jaka część botów odpowiada. Bot na wojnie gildii, w Wieży Demonów, na
+  rajdzie na bossa albo na Azraela, w pojedynku i w drużynie gracza nie
+  rzuca tego, co robi.
+- Panel pokazuje, gdzie trwa wydarzenie, ile piratów albo metinów stoi
+  i ile już pokonano.
+
+### Podgląd skrzyń i dropu (Gibon)
+
+- Nowy mały przycisk obok przycisków ekwipunku otwiera okno podglądu.
+  Przeciągnij na nie skrzynię z plecaka, a zobaczysz wszystko, co może
+  z niej wypaść.
+- Pasek życia potwora albo metina ma teraz „?” w miejscu krzyżyka.
+  Pokazuje, co może z niego wypaść dla Twojej postaci, bo poziom ma
+  znaczenie. Szkatułki Blasku Księżyca są na liście tylko w czasie
+  wydarzenia skrzyń. Dropu z misji i ogólnego dropu z poziomu okno nie
+  pokazuje.
+- Serwer odpowiada z tabel, które naprawdę wczytał, więc tabele
+  zmienione przez operatora widać od razu.
+
+### Buffy szamana na całą drużynę (Gibon)
+
+- Błogosławieństwo, Odbicie, Pomoc Smoka, Leczenie, Zwinność i
+  Zwiększenie Ataku rzucone przez szamana w drużynie na siebie albo na
+  kogoś z drużyny dostają wszyscy członkowie drużyny na tej samej mapie,
+  do 300 kratek minimapy w każdą stronę. Dotyczy graczy i botów. Buff
+  rzucony na kogoś spoza drużyny działa jak dotąd, na jedną osobę.
+
+### Wieża Demonów (Update_DT prodnathina)
+
+- 7. piętro: po zbiciu Metinów Śmierci każdy bot bije najpierw demony
+  najbliżej siebie. Wcześniej cała grupa szła pod Metin Mordu i
+  ściągała na siebie całe piętro. Gdy przy bocie stoi potwór, bot
+  zajmuje się nim, zanim wróci do metina.
+- Mapa Wieży wypada z Nieznanej Starej Skrzyni raz na cztery, a nie
+  raz na dziesięć. Dotyczy także graczy.
+- Umarły Rozpruwacz: łucznik strzela z dystansu, szaman rzuca z daleka
+  i nie podchodzi, a ten, na kogo Rozpruwacz się rzuci, odsuwa się od
+  niego.
+- Boty nie tracą many ani czasu odnowienia na umiejętności, które nie
+  sięgają celu.
+
+### Łup dla tych, którzy walczą
+
+- Przedmioty z potwora i metina należą do tych, którzy bili go w
+  ostatnich 40 sekundach i nadal stoją w pobliżu (prodnathin).
+  Wcześniej łup mógł należeć do kogoś, kto zadał dziesiątą część
+  obrażeń i dawno odszedł albo zginął, a ten, kto zbił metina, nie mógł
+  podnieść ksiąg. Dotyczy także graczy. Doświadczenie dzieli się jak
+  dotąd.
+
+### Towarzysz
+
+- Walczy pieszo (prodnathin). Wcześniej dojeżdżał do Ciebie na koniu
+  bojowym i nie zsiadał do walki.
+- Gdy ma prawie pełny plecak, mówi Ci o tym, a złom sprzedaje
+  handlarzowi (SIZOWSKI). Wcześniej trzymał przedmioty na stragan,
+  którego nigdy nie otwiera, i plecak zapełniał się na stałe.
+- Po zmianie królestwa Olejkiem Wygnania Towarzysz zmienia je razem z
+  Tobą (Piciu713).
+
+### Poprawki
+
+- Boty podnoszą ucho Tanaki przed jego yang. Wcześniej zbierały kupki
+  yang i zdarzało się, że odchodziły bez ucha.
+- Launcher przy braku pamięci podczas budowania pisze wprost o RAM-ie.
+  Wcześniej komunikat mówił o „pamięci” i gracze czyścili dyski, choć
+  brakowało pamięci operacyjnej (artur554, charliee, uxietoszef).
+
+---
+
 ## 2.2.21 — 2026-09-26
 
 Serwer 2.2.21 i klient 2.0.38: zaktualizuj oba. Bez nowego klienta
