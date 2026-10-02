@@ -17,6 +17,55 @@ every version here.
 
 ---
 
+## 2.2.61 — 2026-10-02
+
+Serwer 2.2.61 i klient 2.0.70: zaktualizuj oba. Zawiera wszystko z 2.2.60.
+
+### Mapy
+
+- **Podgląd mapy w Grotach Wygnańców** (blasty): pod klawiszem M obie Groty
+  Wygnańców mają teraz mapę, a mapy obu Grot Pająków pokazują tylko
+  przejścia, którymi da się chodzić.
+
+### Biolog
+
+- **Misje Biologa po 50. poziomie** (Kordyl13): panel liczy wszystkie misje
+  Biologa aż do 90. poziomu, a boty i Towarzysz grający bez Ciebie robią też
+  misje z 60. i 70. poziomu.
+
+### Boty i Auto Łowy
+
+- **„Pomocy!” w oknie Boty gildii** (hubert): wezwane boty walczą w Twojej
+  walce - z Twoim celem, z potworami, które atakują Ciebie i Twoją drużynę,
+  i z napoczętym Metinem - a bez celu schodzą z konia, zamiast stać obok.
+- **Auto Łowy wychodzą z tłumu** (Colide): gdy postać w drodze do celu
+  utknie w grupce potworów, po chwili bierze najbliższego potwora, zamiast
+  dalej biec za pierwszym.
+
+### Launcher
+
+- **Gra tylko na serwerze na VPS** (Kordyl13): w oknie SERWER NA VPS jest
+  przełącznik „Ten komputer gra tylko na serwerze na VPS”. Po jego włączeniu
+  GRAJ uruchamia tylko klienta, a AKTUALIZUJ aktualizuje klienta i serwer na
+  VPS - bez Dockera na tym komputerze.
+- **Aktualizacja przy małej ilości pamięci** (Charlie): gdy świat działa, a
+  komputerowi brakuje pamięci, launcher przed aktualizacją sam zapisze i
+  zatrzyma świat oraz Docker Desktop, a po aktualizacji uruchomi wszystko z
+  powrotem.
+- **Nowy plik gry**: launcher sam podmieni metin2client.exe przy starcie.
+
+### Poprawki
+
+- **Liczba potworów w respie** (blipu): ustawienia „Potwory” oraz „Metiny i
+  bossowie” na wartości takie jak 150% naprawdę działają (wcześniej działały
+  tylko pełne wielokrotności, jak 200%). Jeśli masz je ustawione powyżej 100%,
+  po aktualizacji potworów będzie więcej, a serwer będzie bardziej obciążony.
+
+Aktualizację serwera i klienta zaproponuje launcher przy starcie. Świat,
+postacie i ustawienia są nietknięte.
+
+---
+
 ## 2.2.60 — 2026-10-02
 
 Serwer 2.2.60 i klient 2.0.69: zaktualizuj oba. Zawiera wszystko z 2.2.59.
