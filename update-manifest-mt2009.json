@@ -1,19 +1,19 @@
 {
   "schema": 1,
   "channel": "stable",
-  "publishedAt": "2026-10-02T15:01:53Z",
-  "statusMessage": "2.2.60 i klient 2.0.69: COOP za darmo dla wszystkich, wojny gildii na mapie wojen, blokada ekwipunku Towarzysza, uszlachetnianie Smoczych Kamieni o jeden stopien, boty z Peleryna Mestwa.",
+  "publishedAt": "2026-10-02T18:42:09Z",
+  "statusMessage": "2.2.61 i klient 2.0.70: mapy Grot Wygnancow, Biolog po 50. poziomie, gra tylko na VPS, aktualizacja przy malej ilosci pamieci, liczba Metinow i bossow, nowy plik gry.",
   "server": {
-    "version": "2.2.60",
-    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.60/metin2-server-protected-migration-2.2.60.zip",
-    "sha256": "5433E273087358FC7D558FD3AEE0812C2C880BBB54ED35F361002F63B9DE3BDE",
-    "size": 144908879
+    "version": "2.2.61",
+    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.61/metin2-server-protected-migration-2.2.61.zip",
+    "sha256": "AFF1E1476244CD692DB882485C9F4695D82F9A2C8701FBBE3CD75CE826E41B47",
+    "size": 144921181
   },
   "serverProtected": {
-    "version": "2.2.60",
-    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.60/metin2-server-protected-update-2.2.60.zip",
-    "sha256": "31F7EE8B8B06E4E2487E3058B6A58966BD8D65AC556B3D3208CE3E552DF07DCB",
-    "size": 134745988
+    "version": "2.2.61",
+    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.61/metin2-server-protected-update-2.2.61.zip",
+    "sha256": "31BF0FED67360F3AC94E94563E08ECBFDD3353923AB33DAFAE7B740E9C817FE1",
+    "size": 134758290
   },
   "protectedFrom": "2.2.39",
   "support": {
@@ -22,15 +22,15 @@
     "reportUrl": "https://script.google.com/macros/s/AKfycbweM8tWcvm59Va8BJxnS1z0o9L2GgtL0NXj6Yu_olAvJ7sPjnpckyGY6JB5fXH3lJYisA/exec?k=m2-7f3k9q"
   },
   "client": {
-    "version": "2.0.69",
-    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.60/metin2-client-update-2.0.69.zip",
-    "sha256": "1B4E8814EE4C23562526415CA00C53107ED3749B085AA0ED67C4829C4E24AC93",
-    "size": 101207819
+    "version": "2.0.70",
+    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.61/metin2-client-update-2.0.70.zip",
+    "sha256": "0AFD5166A1F5785C6201F78888E6C42410727F3B7EC5D1790C84947F648C108C",
+    "size": 101349604
   },
   "clientExe": {
-    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.60/metin2client.exe",
-    "sha256": "70989F4B03705A900920B7C700A37167E2E9830830817EABBBCBED1582CBA3CD",
-    "size": 13591040,
+    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.61/metin2client.exe",
+    "sha256": "C3B0D519C4847E6F32BF7FF1E1F96999BBAED8C7498C68825C66E56A8C6C84C3",
+    "size": 13590016,
     "replaces": [
       "8263F81BFACDFA4A664C1F2A8CE846AEE14F19E584DB40A43F3184FEF1A59531",
       "752623560AB54E2F3F84FF9ADB8961D73E2E289634075118D3FBEA984CFCEFB1",
@@ -40,7 +40,8 @@
       "C92E959FC64B026BE931F8A5ED93F82220429AB3E50033486246D4827A2DFCC3",
       "42B1EB724AD665E32FFFB56B34DD40FC21C22C299A5552AD5766F092865E7FA1",
       "91D8047FC17C210839F173BA2B26A9D259089499139EAA389EC4B0C192A8376A",
-      "610109AF706F9AAD00BC1FE1E0575D0DADD9D755F5CE54341B304FD5E9BB6455"
+      "610109AF706F9AAD00BC1FE1E0575D0DADD9D755F5CE54341B304FD5E9BB6455",
+      "70989F4B03705A900920B7C700A37167E2E9830830817EABBBCBED1582CBA3CD"
     ]
   }
 }
