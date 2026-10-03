@@ -1820,8 +1820,7 @@ Zawiera wszystko z 2.2.32.
 
 - **Dom Towarowy wyrzucał z gry.** Sekundę po otwarciu okna Domu
   Towarowego gracz był rozłączany: serwer nie obsługiwał pakietu, którym
-  okno prosi o katalog. Teraz katalog się wczytuje. Przyczynę znalazł
-  SIZOWSKI.
+  okno prosi o katalog. Teraz katalog się wczytuje.
 - **Wieża Demonów, 6. piętro.** Boty stały przed potworem zaklinowanym w
   ścianie, do którego nie ma przejścia, zamiast bić Elitarnego Króla
   Demonów, więc kowal się nie pojawiał i rajd nie szedł dalej. Teraz
@@ -2945,7 +2944,7 @@ serwera.
 - Walczy pieszo (prodnathin). Wcześniej dojeżdżał do Ciebie na koniu
   bojowym i nie zsiadał do walki.
 - Gdy ma prawie pełny plecak, mówi Ci o tym, a złom sprzedaje
-  handlarzowi (SIZOWSKI). Wcześniej trzymał przedmioty na stragan,
+  handlarzowi. Wcześniej trzymał przedmioty na stragan,
   którego nigdy nie otwiera, i plecak zapełniał się na stałe.
 - Po zmianie królestwa Olejkiem Wygnania Towarzysz zmienia je razem z
   Tobą (Piciu713).
@@ -2968,8 +2967,7 @@ wejście do Groty Wygnańców albo do Diabelskich Katakumb zamyka grę.
 ### Grota Wygnańców i Katakumby w kliencie
 
 - Po wejściu do Groty klient się zamykał, a postaci zapisanej w Grocie
-  nie dało się potem zalogować (Iwakura; przyczynę w logu klienta
-  znalazł SIZOWSKI). Mapy Groty leżały w paczce klienta pod ścieżką,
+  nie dało się potem zalogować (Iwakura). Mapy Groty leżały w paczce klienta pod ścieżką,
   której klient nie szuka, a mapy Katakumb nie było w żadnej paczce.
   Klient 2.0.38 ma obie Groty tam, gdzie klient ich szuka, i mapę
   Katakumb z oryginalnego klienta gry. Wszystkie obiekty, tekstury i
@@ -3059,12 +3057,12 @@ wejście do Groty Wygnańców albo do Diabelskich Katakumb zamyka grę.
 - Na wojnach gildii walczyli rybacy z wędkami w rękach (DUDU). Bot
   wezwany na wojnę albo na rajd kończy łowienie albo kopanie i bierze
   do ręki broń.
-- Boty w polimorfii zdejmowały broń i nie mogły jej założyć z powrotem
-  (SIZOWSKI). W polimorfii bot nie rusza teraz ekwipunku.
-- Boty utykały w małych, odciętych kawałkach terenu Świątyni Hwang
-  (SIZOWSKI). Bot stojący w takim miejscu po kilku sekundach wraca na
+- Boty w polimorfii zdejmowały broń i nie mogły jej założyć z powrotem.
+  W polimorfii bot nie rusza teraz ekwipunku.
+- Boty utykały w małych, odciętych kawałkach terenu Świątyni Hwang.
+  Bot stojący w takim miejscu po kilku sekundach wraca na
   główny teren mapy.
-- „Could not re-equip” przy bonowaniu (SIZOWSKI): bot zdejmował
+- „Could not re-equip” przy bonowaniu: bot zdejmował
   przedmiot do zmiany bonusu, a gra przez półtorej sekundy po jego
   własnym ciosie albo umiejętności nie pozwalała go założyć. 2.2.20
   pilnowało tego tylko przy bonowaniu w terenie i tylko po ciosie. Teraz
@@ -3465,7 +3463,7 @@ Serwer 2.2.16 i klient 2.0.34: zaktualizuj oba. Zawiera wszystko z 2.2.15.
 - Na świecie testowym w pierwszą godzinę: 82 wymiany, 342 kamienie, 666
   sztuk pyłu.
 
-### Stragany dropperów znów się odnawiają (zgłosił SIZOWSKI)
+### Stragany dropperów znów się odnawiają
 
 - Po każdym uruchomieniu serwera wygasły sklep offline zostawał na mapie
   jako „duch”, w którego nie dało się kliknąć. To on blokował odnowienie
@@ -4935,7 +4933,7 @@ teraz czas zegarem, który teleport nie zeruje.
 
 ### Boty w drużynie gracza trzymają się gracza
 
-Zgłosił **SIZOWSKI**: szamani dodani do drużyny robili swoje, zamiast iść za
+Szamani dodani do drużyny robili swoje, zamiast iść za
 graczem, więc nikogo nie buffowali. Bot szuka potworów do 6000 jednostek od
 siebie, a za graczem idzie tylko wtedy, gdy nie walczy. Bot, który zawsze
 miał następnego potwora w zasięgu, odchodził więc paczka po paczce i nie
@@ -5032,7 +5030,7 @@ nie dawało się oddać. Paczkowy quest sprawdzał w plecaku **inny przedmiot**
 
 ### Pilne z Community Patch 2
 
-- **Exp w drużynie „Na równym"** (**SIZOWSKI**): postać gracza nie dostawała
+- **Exp w drużynie „Na równym"**: postać gracza nie dostawała
   doświadczenia za potwory zabite przez boty z drużyny, dopóki sama czegoś nie
   uderzyła. Przyczyną była blokada doświadczenia Grindera: silnik pomijał
   zablokowanego napastnika w podziale łupu *całkowicie*, także dla drużyny.
@@ -5152,7 +5150,7 @@ go razem. Nad głową: „Bronię gildii przed …".
 
 ### Pomysły
 
-- **Sklepy botów bez kłódek** (Iwakura; na warunek SIZOWSKIEGO — tylko boty):
+- **Sklepy botów bez kłódek** (Iwakura; tylko boty):
   boty mają do dyspozycji całą ladę, a gracz nie widzi na ich sklepach kłódek.
   Sklepy graczy bez zmian.
 - **Sklepy tylko w M1** (pomysł Kuszaa): nowe sklepy botów stają tylko w
@@ -5790,7 +5788,7 @@ Nad glowa bota, w panelu i w pliku statusu widnieje ta sama odpowiedz;
 
 - Ulepszasz dalej bez klikania od nowa w kowala i w przedmiot. System byl w
   serwerze od 2.0.31, ale tylko dla kogos, kto wiedzial o komendzie
-  `/refine_keep_open 1` — teraz dziala u kazdego (podpowiedzial sizowski).
+  `/refine_keep_open 1` — teraz dziala u kazdego.
 - Kto woli po staremu, wpisuje `/refine_keep_open 0`. Wybor zostaje po
   wylogowaniu, a kto juz wczesniej ustawil sobie wlaczone, niczego nie traci.
 - Bez zmian w Wiezy Demona — tamto ulepszanie zamyka sie jak dotad.
@@ -5889,7 +5887,7 @@ Serwer 2.0.85. Klient bez zmian (2.0.19).
 Serwer 2.0.84 i klient 2.0.19. W launcherze ZAINSTALUJ AKTUALIZACJE: nowe
 Auto Łowy są w kliencie.
 
-### Drugi kanał dostaje swoich botów (SIZOWSKI, Xewi, Mkls)
+### Drugi kanał dostaje swoich botów (Xewi, Mkls)
 
 - Z włączonym drugim kanałem CH2 dostaje tylu botów, ile ustawia suwak
   (domyślnie 40%). Wcześniej każdy bot, który miał kiedyś sklep offline, był
@@ -5904,7 +5902,6 @@ Auto Łowy są w kliencie.
 - Ustawiony udział to najmniej tyle botów na CH2. Gdy nikt nie czeka na
   przejście, CH2 może przejąć do 10 punktów więcej. Dropki medali zostają na
   CH1.
-- Projekt przejść między kanałami przysłał SIZOWSKI. Dziękujemy!
 
 ### Serwer wstaje po nagłym wyłączeniu komputera (Greess)
 
@@ -6088,7 +6085,7 @@ Serwer 2.0.80, klient 2.0.17. W launcherze ZAINSTALUJ AKTUALIZACJE.
 
 Serwer 2.0.79, klient bez zmian (2.0.16). W launcherze ZAINSTALUJ AKTUALIZACJE.
 
-### Klątwa małp usunięta (SIZOWSKI)
+### Klątwa małp usunięta
 
 - Quest z paczki mt2009 (`monkey_curse`) po 55 minutach w łatwym Lochu Małp
   (35 w średnim, 25 w trudnym) zamieniał postać na 5 minut w małpę i wyrzucał
@@ -6242,7 +6239,7 @@ Serwer 2.0.76, klient 2.0.16. W launcherze ZAINSTALUJ AKTUALIZACJE — podnoszen
 pod tyldą, drugi kanał i poprawione okno juków potrzebują nowego serwera
 i nowego klienta.
 
-### Cały drop pod tyldą ` (vanderro, SIZOWSKI)
+### Cały drop pod tyldą ` (vanderro)
 
 - **Z** działa jak dotąd — podnosi jeden przedmiot.
 - **`** (tylda, klawisz nad Tab) podnosi naraz wszystko, co leży w zasięgu
@@ -6259,7 +6256,7 @@ i nowego klienta.
 - Bez zaznaczenia wszystko działa jak dotąd: jedna liczba dzielona po równo.
 - Menu tekstowe launchera też o to pyta. Zmiana działa po restarcie serwera.
 
-### Drugi kanał (CH2) — domyślnie wyłączony (pomysł i pomiary: SIZOWSKI)
+### Drugi kanał (CH2) — domyślnie wyłączony
 
 - Włączasz go w launcherze (**LICZBA BOTÓW** → **Drugi kanał (CH2) dla botów
   i graczy**, z ustawieniem, ile procent botów gra na CH2; domyślnie 40)
@@ -6287,7 +6284,7 @@ i nowego klienta.
   otworzy porty, czyli po następnym GRAJ.
 - CH2 zajmuje około 1 GB pamięci więcej.
 
-### Płynny ruch przy dużej liczbie botów (SIZOWSKI)
+### Płynny ruch przy dużej liczbie botów
 
 - Budżet czasu z 2.0.74 zostawiał na chwilę bez ruchu boty, do których
   przebieg AI jeszcze nie dotarł. Przy ponad ~1100 botach na jednym rdzeniu
@@ -6526,7 +6523,7 @@ Teraz każdy rdzeń ma własny zegar, a Szkatułki wypadają wyłącznie w trakc
 eventu skrzynkowego ze strony Eventy (w harmonogramie albo po „Aktywuj
 teraz”). Bez eventu nie wypadają wcale.
 
-### Logowanie na dużym świecie (SIZOWSKI)
+### Logowanie na dużym świecie
 
 Rdzeń gry obsługuje boty i graczy w jednym wątku. Długi przebieg botów (przy
 starcie ponad 0,7 s) wstrzymywał więc każde logowanie. Teraz przebieg botów
@@ -6852,9 +6849,9 @@ Po wdrożeniu u nas linii ziół było już 1955 (pojedynczych 545), a linii
 ulepszaczy ponad 10 sztuk 657 — i dalej ubywa, bo bot zdejmuje jedną linię na
 wizytę.
 
-### Biolog nie ściąga całego świata do Doliny Orków (SIZOWSKI)
+### Biolog nie ściąga całego świata do Doliny Orków
 
-U SIZOWSKIEGO 997 z 1621 botów stało w Dolinie Orków, u nas 277 z 1098 — prawie
+Na jednym ze światów 997 z 1621 botów stało w Dolinie Orków, u nas 277 z 1098 — prawie
 wszystkie na Zębach Orka, a 129 w drużynach „Szukam celu dla grupy”. Przyczyny
 z plików tego świata: skrypt misji daje ząb tylko z „Orka” (601), który w Dolinie
 stoi w dwóch punktach przy bossach; zęby spadają naprawdę z Czarnych Orków
@@ -6890,7 +6887,7 @@ stoi na innej mapie niż jego sklep, obsługuje go teraz raz na 45 minut; na map
 sklepu nadal co 10–15 minut. Po pierwszej fali wizyt takich przeskoków było
 2–12 na minutę zamiast 36.
 
-### Karta Wędkarska do kupienia u Rybaka (Greess, SIZOWSKI)
+### Karta Wędkarska do kupienia u Rybaka (Greess)
 
 Paczka sprzedaje Kartę Wędkarską tylko w specjalnym sklepie Rybaka (25 000 yang
 i 5× Materiały Rzemieślnicze, od 50 lvl, raz na 22 godziny), ale żaden skrypt
@@ -7536,7 +7533,7 @@ lider; drużyny botów dalej dzielą po równo.
 ### Boty nie wykupują wszystkich Szkatułek Blasku Księżyca
 
 Od 2.0.53 bot bez szkatułek kupował je z lad, i tysiąc botów opróżniało
-wszystkie lady świata (sizowski: „wykupują dosłownie WSZYSTKIE”). Dwa
+wszystkie lady świata. Dwa
 hamulce: gdy księga rynku liczy 30 lub mniej szkatułek na wszystkich ladach
 świata, żaden bot nie kupuje kolejnej, a bot, który kupił jedną, czeka
 20 minut przed następną. Otwieranie szkatułek z własnych dropów bez zmian.
@@ -7633,13 +7630,12 @@ umiejętności. Bot czyta je teraz, gdy może (Kombo od 30 i od 50 poziomu,
 Dowodzenie po dwadzieścia poziomów na księgę), zostawia sobie do trzech
 sztuk, a resztę wystawia na straganie; handlarz ich nie dostaje. Kombo daje
 botowi cios w więcej celów naraz, Dowodzenie liczy się dla bonusów grupy.
-Zgłoszenie sizowskiego.
 
 ### Drobne
 
 - Linia „login phase does not handle this packet! header 100” w syserr
   rdzenia logowania zniknęła: to logowanie osobnego połączenia klienta po
-  znaki gildii, nie błąd (sizowski, wątek o logowaniu).
+  znaki gildii, nie błąd.
 
 ## 2.0.56 — 2026-09-16
 
@@ -8564,8 +8560,8 @@ Zniszczenie Metinu Twardości w Wieży Demonów uruchamia quest, który po
 sześciu sekundach przenosi do nowej Wieży wszystkie postacie z mapy, na
 której stoi wtedy ten, kto kamień zniszczył. Boty rozbijały ten kamień jak
 każdy inny Metin, a gdy bot zdążył w tych sześciu sekundach zmienić mapę,
-do Wieży trafiali wszyscy z mapy, na którą przeszedł. Tak sizowski, stojący
-pod Lochem Małp w Bokjung, znalazł się nagle na piętrze Wieży. Boty nie
+do Wieży trafiali wszyscy z mapy, na którą przeszedł. Tak gracz stojący
+pod Lochem Małp w Bokjung znalazł się nagle na piętrze Wieży. Boty nie
 atakują już kamieni questowych Wieży (8015–8019) i nie ranią ich
 uderzeniem obszarowym. Na naszym świecie jedno zabicie tego kamienia
 przeniosło naraz 10 postaci; od poprawki nie było ani jednego takiego
@@ -8579,7 +8575,7 @@ stoi właśnie dlatego, że idzie za nim. Każde przeniesienie bota na inną
 mapę, także powrót na nogi po przeniesieniu do Wieży Demonów, stąd gracz
 zostawał sam w swojej grupie. I kilka sekund teleportu samego gracza, w
 których grupa nie widzi jego postaci, a bot brał ją wtedy za grupę botów:
-w logach sizowskiego bot jest w jego grupie o 15:42:40, o 15:42:54 postać
+w logach gracza bot jest w jego grupie o 15:42:40, o 15:42:54 postać
 gracza wchodzi do gry na nowo (tak wygląda każdy teleport), a o 15:42:56
 bota w grupie już nie ma. Teraz o końcu grupy decyduje tylko gracz. Na naszym świecie nie da się tego sprawdzić bez
 drugiego gracza — jeśli bot nadal wyjdzie z Twojej grupy, wciśnij ZBIERZ
@@ -8638,7 +8634,7 @@ magazynie, a przy każdej wizycie scala stosy rozsypane wcześniej. Na naszym
 Bot od 40 poziomu, który ma co najmniej 500 tys. yang, nie biegnie już po
 mikstury, sprzęt co najmniej 10 poziomów poniżej swojego (do +3, bez cennych
 bonusów) ani zioła, jeśli są warte u handlarza mniej niż 40 tys. yang
-(sizowski, próg od Tieru). Materiały do ulepszeń, księgi, zwoje, szkatułki,
+(próg od Tieru). Materiały do ulepszeń, księgi, zwoje, szkatułki,
 kamienie, sprzęt, który mógłby założyć, i yang zbiera jak dotąd, a młode i
 biedne boty zbierają wszystko.
 
@@ -9357,8 +9353,7 @@ poziomów nad potworem).
 ### Każde królestwo wchodzi na mapy wspólne własnym wejściem
 
 „Wszystkie boty po wejściu do doliny, niezależnie od królestwa z którego są,
-wchodzą w miejscu wejścia żółtych. To samo się dzieje z pustynią" (SIZOWSKI,
-potwierdzone przez NerrVoVy).
+wchodzą w miejscu wejścia żółtych. To samo się dzieje z pustynią" (NerrVoVy).
 
 Dolina Orków, Pustynia Yongbi i Góra Sohan mają po trzy wejścia i po trzy bramy
 — po jednym na królestwo. Tabela z tymi punktami istniała w kodzie od dawna
@@ -9559,7 +9554,7 @@ zaktualizuj się. Poza tym: przywracanie kopii świata znów działa, ceny ksią
 i ulepszaczy idą według nowych tabel Iwakury, a launcher pokazuje, czy długa
 operacja faktycznie postępuje.
 
-### Serwer odmawiał startu: „port 13001 zajmuje com.docker.backend” (sizowski)
+### Serwer odmawiał startu: „port 13001 zajmuje com.docker.backend”
 
 Błąd wprowadzony przeze mnie w 2.0.31 razem ze sprawdzaniem portów. Docker
 publikuje zakres portów jako **jeden** wpis — `127.0.0.1:13000-13002->13000-13002/tcp`
@@ -9685,15 +9680,14 @@ niesie dokładnie to, co mówi wiki: **Skorpion Łucznik (2105, 47 lvl)** —
 liczy teraz je, tak jak misja u Stajennego. Limitu 30 minut, który ma wersja dla
 graczy, nadal celowo nie ma: bot kuje aż skończy.
 
-### Szkatułki blasku i zwoje błogosławieństwa trafiają na stragany (sizowski, Iwakura)
+### Szkatułki blasku i zwoje błogosławieństwa trafiają na stragany (Iwakura)
 
 „Żaden bot nie sprzedaje szkat blasku i zwojów błogosławieństwa”. Bo każdy bot
 zużywał wszystko na siebie: szkatułka szła na stragan dopiero od stosu pięciu,
 a zwoje zostawały w plecaku, dopóki cokolwiek noszonego było poniżej +9 — czyli
 u bota, który wciąż się przezbraja, praktycznie zawsze.
 
-Zgodnie z propozycją sizowskiego („4 używają do rozwijania postaci, 1 sprzedaje
-— jak prawdziwy gracz”) **co piąty bot jest teraz handlarzem zasobów**:
+**Co piąty bot jest teraz handlarzem zasobów**:
 wystawia szkatułki już od stosu dwóch i zostawia sobie jeden zwój zamiast
 trzech. Rola jest stała (losowana z PID), więc nie miga między restartami, i
 jest rozdzielona od roli „skupuje złom”. Pozostałe cztery piąte populacji
@@ -9760,7 +9754,7 @@ Tylko serwer (ZAINSTALUJ AKTUALIZACJE); klient bez zmian. Shinsoo i Jinno mogą
 wyjść z M2, ceny na straganach różnią się między botami, liczba botów domyślnie
 1500.
 
-### Shinsoo i Jinno wychodzą z M2 — tryb jednego świata (thespartanin, sizowski)
+### Shinsoo i Jinno wychodzą z M2 — tryb jednego świata (thespartanin)
 
 „Czerwoni i niebiescy nie mogą wyjść z M2”. Cały front (Dolina Orków, Pustynia,
 Sohan, Lochy Pająków, Hwang) hostuje wyłącznie rdzeń Chunjo (game1), a bot nie ma
@@ -9898,7 +9892,7 @@ dało się wymusić samej odmowy (boty z niedoborem yang nie są tam wysyłane p
 Teleporter). Potwierdzenie przyjdzie z logów graczy; wpis w wątku kimakatsu
 poprawiony.
 
-### Dla sizowskiego: „boty nie wystawiają sklepów”
+### „Boty nie wystawiają sklepów”
 
 Pakiet z 11:57 był jeszcze z 2.0.25: spis pokazywał 1–21 klasycznych straganów
 na rdzeń, bo po serii stoisk straganiarz odpoczywa 30–90 min, a 2.0.24 zabrało
@@ -10059,8 +10053,7 @@ który po prostu ma nadwyżkę, może wystawiać ją dowolnie długo.
 
 Bot z koniem transportowym w drodze przez zatłoczoną mapę (np. pustynię) łapał
 mijanego potwora, zsiadał do walki pieszej, a pas podróży zaraz znów go wsadzał
-na konia — i tak w kółko, po parę razy na sekundę, nie robiąc ani kroku
-(sizowski: KimJestes2 wsiadał i zsiadał co sekundę przez minuty). Teraz koń
+na konia — i tak w kółko, po parę razy na sekundę, nie robiąc ani kroku. Teraz koń
 transportowy nie wsiada na etap podróży, dopóki bot ma żywy cel do walki
 pieszej — walkę oddaje pasowi walki, a po jej końcu jedzie dalej. Samoobrona
 działa jak dawniej.
@@ -10167,8 +10160,7 @@ Tylko serwer (ZAINSTALUJ AKTUALIZACJE); klient bez zmian.
 
 ### Bot kupował wędkę za wędką
 
-„Bot nie ogarnął, że jedna wędka wystarczy” (sizowski: osiem Wędek+0 w
-osiem sekund, potem plecak z piętnastoma). Wędka zajmuje trzy pola, a
+„Bot nie ogarnął, że jedna wędka wystarczy”. Wędka zajmuje trzy pola, a
 kontrola miejsca przed zakupem pytała o jedno: plecak z pojedynczymi
 dziurami i bez wolnej kolumny przechodził test, bot płacił, silnik kładł
 wędkę na ziemi (`AutoGiveItem` nie odmawia — zrzuca), licznik wędek dalej
@@ -10200,8 +10192,7 @@ dalej przy najbliższym zaakceptowanym zębie.
 
 ### Boty sprzedawały handlarzowi ulepszacze, marmury i materiały
 
-„Boty sprzedają ulepszacze oraz marmury polimorfii handlarzowi” (sizowski:
-Kawałek Lodu, Stalowy Grot, Futro Yeti, Zwój Kamienia Duszy, Marmur —
+„Boty sprzedają ulepszacze oraz marmury polimorfii handlarzowi” (Kawałek Lodu, Stalowy Grot, Futro Yeti, Zwój Kamienia Duszy, Marmur —
 wszystko za grosze u handlarza). Trzy reguły naraz:
 
 - **Marmur Polimorfii** (typ 19) był złomem — nic go nie wyłączało z domyślnej
@@ -10294,7 +10285,7 @@ Tylko serwer (ZAINSTALUJ AKTUALIZACJE); klient bez zmian.
 
 ### Stragany znikały: pętla dzielenia i scalania stosów przy pełnym plecaku
 
-„Stan Chunjo M1: 2 sklepy” (sizowski, z paczką: cenzus 50 → 15 → 2 stragany
+„Stan Chunjo M1: 2 sklepy” (z paczki: cenzus 50 → 15 → 2 stragany
 w dwadzieścia minut, 6 066 „split for the counter” i 4 054 „merged” w
 kwadrans na jednym rdzeniu). Licznik wolnych pól plecaka patrzył na
 wskaźniki przedmiotów, a silnik trzyma wskaźnik tylko w górnej komórce i
@@ -10366,7 +10357,7 @@ z tabeli obowiązują jak dotąd.
 
 ### Lagi klienta co kilkanaście sekund: jedno planowanie trasy trwało pięć sekund
 
-„Klient laguje, stałe lagi co około 10–20 s” (sizowski, z paczką wsparcia).
+„Klient laguje, stałe lagi co około 10–20 s”.
 W paczce: rdzeń `game1` (1127 botów, mapy wspólne) spędzał w ticku botów
 20–32 s z każdych 60, a pojedynczy tick sięgał 5,1 s — na ten czas rdzeń
 nie obsługuje nikogo, więc każdy gracz na jego mapach zamiera. W środku
@@ -10476,7 +10467,7 @@ Tylko serwer (ZAINSTALUJ AKTUALIZACJE); klient bez zmian.
 
 ### Boty łowią ryby na mt2009
 
-„Boty nie łowią ryb, brakuje ulepszaczy” (sizowski). Na tych plikach
+„Boty nie łowią ryb, brakuje ulepszaczy”. Na tych plikach
 łowienie wymaga poziomu 50, flagi ukończonego wprowadzenia u Rybaka,
 przynęty na wędce i **karty wędkarskiej** — przedmiotu unikalnego na dobę,
 którego nikt nie sprzedaje, bo pochodzi z questa. Bot flagę ustawiał sobie
@@ -10523,7 +10514,7 @@ po niej; ulepszeń noszonych części tyle samo co wcześniej.
 ### Wyszukiwarka oznacza stragany botów kolumną światła
 
 „Znaleziono sklepy, ale nie są ani podświetlane, ani zaznaczone na mapie”
-(sizowski, po 2.0.13). Klient tych plików podświetla i rysuje na mapie
+(po 2.0.13). Klient tych plików podświetla i rysuje na mapie
 tylko byty sklepów offline — trzyma ich listę z własnego pakietu systemu
 ikarus — a stragan bota to zwykły sklep prywatny na postaci, więc numer z
 listy wyników niczego mu nie wskazywał. Nad każdym znalezionym straganem
@@ -10645,7 +10636,7 @@ rozpakowanych na miejsce, `.env` nietknięty, tryb `watch` odpowiada na
 ### Skrzynie nie wysypują się na ziemię
 
 „Postać nadal źle sprawdza zajętość ekwipunku: otwierając skrzynię, wypada
-to na ziemię” (sizowski, zrzut z Zieloną Siłą i Skrzynią Eksperta I na
+to na ziemię” (zrzut z Zieloną Siłą i Skrzynią Eksperta I na
 trawie). Na mt2009 stała `INVENTORY_MAX_NUM` to 135 komórek: dwie strony
 plecaka plus strona ekwipunku konia, do której silnik nie wkłada niczego,
 dopóki postać jej nie odblokuje — bot nigdy tego nie robi. Każde liczenie
@@ -10658,7 +10649,7 @@ po `INVENTORY_DEFAULT_MAX_NUM` (90) — 84 miejsca w kodzie, jedna stała
 ### Wyszukiwarka przedmiotów widzi stragany botów
 
 „Wyszukiwarka pokazuje 0 sklepów, mimo że przedmioty na pewno są na
-straganach” (sizowski). Wyszukiwarka z tych plików przeszukiwała tylko
+straganach”. Wyszukiwarka z tych plików przeszukiwała tylko
 sklepy offline (system ikarus); stragan bota to zwykły sklep prywatny, więc
 plac z trzystoma straganami odpowiadał „Znaleziono 0 sklepów”. Ten sam
 przełącznik kategorii pyta teraz także lady każdego bota z otwartym
@@ -10723,7 +10714,7 @@ Tylko serwer (ZAINSTALUJ AKTUALIZACJE); klient bez zmian.
 ### Logowanie nie wisi przy dużej liczbie botów
 
 „Po aktualizacji 2.0.11 ciągle wisi na ekranie logowania”, „po zmniejszeniu
-botów do 1500 działa” (sizowski). Odtworzone na stosie testowym z 2482
+botów do 1500 działa”. Odtworzone na stosie testowym z 2482
 botami: rdzeń db odpowiadał na logowanie po 14–28 sekundach, klient dawał
 sobie spokój wcześniej, a w logu rdzenia kanału zostawało
 `LoginSuccess - cannot find handle [admin]`. Powód: tabele gry są na tej
@@ -10743,7 +10734,7 @@ rdzeniami to ponowne logowanie kluczem, które czekało w tej samej kolejce.
 
 ### Boty na mt2009 wystawiają stragany
 
-„2500 botów — 0 sklepów” (sizowski), „u mnie nie ma sklepów” (namiot_,
+„2500 botów — 0 sklepów”, „u mnie nie ma sklepów” (namiot_,
 pasywnezarabianie, mlodszygie). Dwie przyczyny, obie po stronie tego silnika:
 
 - Siatka prywatnego sklepu ma tu dziesięć kolumn (`SHOP_PLAYER_WIDTH`), a
@@ -10837,13 +10828,13 @@ Tylko serwer (ZAINSTALUJ AKTUALIZACJE); klient bez zmian.
 
 „W królestwie czerwonym i niebieskim boty na 5 lv się bugują”, „stoją przy
 kowalu i handlarzach”, „2500 botów — 0 sklepów” (greess, martynka19cm,
-mrgixon, sizowski). Od 2.0.8 Yongan i Pyongmoo idą do NPC „wprost”, jak
+mrgixon). Od 2.0.8 Yongan i Pyongmoo idą do NPC „wprost”, jak
 Bokjung — ale lista faz „wprost” była listą Bokjung, gdzie nie ma trenera ani
 Starszej Pani. Bot na 5 poziomie potrzebuje trenera (wybór grupy
 umiejętności), zaczynał więc wizytę z pustą listą, kończył ją w tym samym
 ticku i zaczynał od nowa w następnym: stał na placu z celem „wybór profesji”,
 resetowany przez watchdoga co 90 sekund, i nigdy nie wyszedł poza 5 poziom.
-W paczce logów sizowskiego: 500 takich botów na rdzeń. Lista „wprost” ma
+W paczce logów jednego ze światów: 500 takich botów na rdzeń. Lista „wprost” ma
 teraz trenera i Starszą Panią na początku, jak lista Joan, a wizyta, której
 lista nie ma czym obsłużyć, w ogóle się nie zaczyna (z linią w logu). Bokjung
 tego nie dotyczy — w drugiej wiosce potrzeba trenera nigdy nie jest ustawiana.
@@ -11053,7 +11044,7 @@ Bez zmian w danych; patrz 2.0.7.
 
 ### Risk mode naprawdę znika (2.0.6 tylko usunęło plik)
 
-Sizowski po 2.0.6: „risk mode nadal jest”. Aktualizacja nigdy nie kasuje
+Po 2.0.6: „risk mode nadal jest”. Aktualizacja nigdy nie kasuje
 plików, więc każde drzewo z 2.0.0–2.0.5 wciąż ma `quest/high_risk.quest`, a
 pętla kompilacji w obrazie gry nadal miała `high_risk` na liście — 2.0.6
 zdjęło plik z repozytorium i nic więcej, więc u graczy quest kompilował się
@@ -11322,7 +11313,7 @@ poza zakresem seeda botów.
 ### Nowa postać gracza dostaje Skrzynię Ucznia
 
 Boty zaczynają ze Skrzynią Ucznia I w plecaku, gracz zaczynał z niczym
-(„gracz jest gorszy niż bot” — sizowski). Quest `starter_chest` daje ją przy
+(„gracz jest gorszy niż bot”). Quest `starter_chest` daje ją przy
 pierwszym wejściu do gry postaci do 5 poziomu, według klasy (wojownik i sura
 50187, ninja 50212, szaman 50213) — dalsze skrzynie łańcucha otwierają się jak
 u botów, od 10 poziomu. Bot do 5 poziomu też dostanie jedną przy najbliższym
@@ -11351,7 +11342,7 @@ sprawdzenia `GetPremiumRemainSeconds`. Ważne pięć lat od każdego startu.
 
 Postać z uprawnieniami GM nie widziała nazwy ani statystyk żadnego
 przedmiotu po najechaniu („Nie widać nazw itemów” — davids998; „tylko gdy
-jesteś GM” — sizowski). Gałąź GM w tooltipie klienta iteruje po
+jesteś GM”). Gałąź GM w tooltipie klienta iteruje po
 `auxiliaryDict.items()`, a `auxiliaryDict` jest w tym roocie pustym napisem
 (jego przypisanie jest wykomentowane), więc każdy tooltip umierał na
 `AttributeError`, zanim został pokazany. Gałąź jest teraz strzeżona; GM
@@ -11381,7 +11372,7 @@ kiedykolwiek miał własnego GM, zostaje jak był.
 ### „Doładuj SM!” prowadzi na buycoffee, nie na mt2009.pl
 
 Przycisk „Doładuj SM!” w sklepie z przedmiotami i przycisk w oknie
-abonamentu otwierały stronę publicznego serwera mt2009 (sizowski, matthaeu;
+abonamentu otwierały stronę publicznego serwera mt2009 (matthaeu;
 „powinno przenosić na buycoffee” — kuszaa). Oba prowadzą teraz na
 https://buycoffee.to/metin2-playerbots, a „Wsparcie” w menu systemowym na nasz
 Discord. To zmiana w kliencie: w launcherze kliknij „AKTUALIZUJ KLIENTA”.
