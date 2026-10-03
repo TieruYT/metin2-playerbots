@@ -1,19 +1,19 @@
 {
   "schema": 1,
   "channel": "stable",
-  "publishedAt": "2026-10-03T15:19:57Z",
-  "statusMessage": "2.2.64 i klient 2.0.73: plynne animacje przy 250 FPS, trzymane klawisze po kliknieciu poza gre, zapamietana widocznosc sklepow.",
+  "publishedAt": "2026-10-03T16:00:27Z",
+  "statusMessage": "2.2.65 i klient 2.0.74: plynny ruch postaci przy wysokim FPS.",
   "server": {
-    "version": "2.2.64",
-    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.64/metin2-server-protected-migration-2.2.64.zip",
-    "sha256": "9D9CE8E104D775E209D637D630D01050B834851DCB7DB0AE337C8C272A55B100",
-    "size": 148274375
+    "version": "2.2.65",
+    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.65/metin2-server-protected-migration-2.2.65.zip",
+    "sha256": "CE28427223A99BD0E753703AA2546F695FE395CFB22F6A70AF660BA447D01317",
+    "size": 148274515
   },
   "serverProtected": {
-    "version": "2.2.64",
-    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.64/metin2-server-protected-update-2.2.64.zip",
-    "sha256": "9050571CEC0FF8459593FA17F8F32F1D87290F4B56A3B98C4313FCDF63F647EB",
-    "size": 138138648
+    "version": "2.2.65",
+    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.65/metin2-server-protected-update-2.2.65.zip",
+    "sha256": "53A553F48530EC1A5DCFEA37CA14DD2899AECA6A9D0C040CAD51DF8BA81CCED1",
+    "size": 138138788
   },
   "protectedFrom": "2.2.39",
   "support": {
@@ -22,16 +22,16 @@
     "reportUrl": "https://script.google.com/macros/s/AKfycbweM8tWcvm59Va8BJxnS1z0o9L2GgtL0NXj6Yu_olAvJ7sPjnpckyGY6JB5fXH3lJYisA/exec?k=m2-7f3k9q"
   },
   "client": {
-    "version": "2.0.73",
-    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.64/metin2-client-update-2.0.73.zip",
-    "sha256": "5E6B78E0E294C24172CACDE4B1A9DAC073CC0FB691C806E7A6E53D82851EFC57",
-    "size": 106217384,
+    "version": "2.0.74",
+    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.65/metin2-client-update-2.0.74.zip",
+    "sha256": "3FD4711214E1F507FE2026B622138965852C7889A0FC524FCEBA6583C3010451",
+    "size": 106217428,
     "requiresClientExe": true
   },
   "clientExe": {
-    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.64/metin2client.exe",
-    "sha256": "7AC9D8C760E817B980F3CB9E2F07971CE95DFACDE0B2CB348EB09F18AF56F3DB",
-    "size": 13831680,
+    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.65/metin2client.exe",
+    "sha256": "FABE181A117A2FA1793620AAD834AE699A036E38C5F5C6DC4C811622786AB1BB",
+    "size": 13832704,
     "replaces": [
       "8263F81BFACDFA4A664C1F2A8CE846AEE14F19E584DB40A43F3184FEF1A59531",
       "752623560AB54E2F3F84FF9ADB8961D73E2E289634075118D3FBEA984CFCEFB1",
@@ -46,7 +46,8 @@
       "C3B0D519C4847E6F32BF7FF1E1F96999BBAED8C7498C68825C66E56A8C6C84C3",
       "1A516078445379F76453D079E9543164652B93CF0B26091C028232500131D766",
       "D2E93371D58F176E17397361CC59076AAED28760F61EB2520050E7246AB7E8F5",
-      "4710D2100A54492DEBCEFE4E644B692F63E9731E17CAF46B1C797C6D644C7080"
+      "4710D2100A54492DEBCEFE4E644B692F63E9731E17CAF46B1C797C6D644C7080",
+      "7AC9D8C760E817B980F3CB9E2F07971CE95DFACDE0B2CB348EB09F18AF56F3DB"
     ]
   }
 }
