@@ -17,6 +17,22 @@ every version here.
 
 ---
 
+## 2.2.63 — 2026-10-03
+
+Serwer 2.2.63 i klient 2.0.72: zaktualizuj oba. Zawiera wszystko z 2.2.62.
+
+- **Boty**: można się z nimi targować o przedmioty z ich lady, szybciej
+  odpowiadają na szepty i reagują, gdy ktoś zabierze im potwora.
+- **Sława** pod F11 działa od pierwszych minut po starcie świata.
+- **Towarzysz**: poprawka okna ekwipunku przy alchemii.
+- **Klient**: postać zachowuje się poprawnie po przełączeniu okna (Alt+Tab).
+- **Ruch postaci**: płynniejszy przy wysokim FPS.
+
+Aktualizację serwera i klienta zaproponuje launcher przy starcie. Świat,
+postacie i ustawienia są nietknięte.
+
+---
+
 ## 2.2.62 — 2026-10-03
 
 Serwer 2.2.62 i klient 2.0.71: zaktualizuj oba. Zawiera wszystko z 2.2.61.
@@ -10521,8 +10537,8 @@ postaci GM z konta `admin` i, gdy wersja profilu postaci jest starsza,
 doprowadza ją do profilu przez własne ścieżki silnika: poziom 90, 500 mln
 yang, grupa umiejętności 1 i umiejętności profesji na P (40), wspólne na
 własnych sufitach (jazda 21, przywołanie konia 10, języki i konne 20),
-koń 21, komplet +9 klasy z bonusami z audytu (`docs/codex-audits/admin-gm-
-mt2009-20260912`) założony na postać, druga broń, 1000 strzał dla ninja,
+koń 21, komplet +9 klasy z bonusami z audytu
+założony na postać, druga broń, 1000 strzał dla ninja,
 plecak (księga wojskowego konia 50053, po 200 dużych eliksirów, zwoje po 20,
 pierścień teleportacji, pełne automatyczne eliksiry 72726/72730 po dwie
 sztuki), a kilka sekund po zalogowaniu włącza po jednym eliksirze każdego
