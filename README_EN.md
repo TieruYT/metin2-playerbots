@@ -119,7 +119,6 @@ Versions up to and including 2.2.16 are under the MIT licence ([LICENSE-MIT.txt]
 - **ĹŌŞƬĒĶ**: the login screen and Discord Rich Presence, the language pack, whispered conversations with the bots and the personality row over a bot.
 - **Colide**: the Auto Hunt window.
 - **OskarPWA**: the bot depot window, the skill icons and the F9 GM panel.
-- **SIZOWSKI**: the design of the bots' dynamic split between channels.
 - **Tyrion**: searching the offline shops for one particular item.
 - **Uxìĕ [DSO]**: the Dom Towarowy and the Cape of Courage pulling monsters from the whole screen.
 - **Gibon**: previews of what a chest holds and what a monster drops.

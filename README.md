@@ -118,7 +118,6 @@ Wersje do 2.2.16 włącznie są na licencji MIT ([LICENSE-MIT.txt](LICENSE-MIT.t
 - **ĹŌŞƬĒĶ**: ekran logowania i Discord Rich Presence, pakiet językowy, rozmowy z botami przez szepty i wiersz osobowości nad botem.
 - **Colide**: okno Auto Łowów.
 - **OskarPWA**: okno magazynu bota, ikony umiejętności i panel GM pod F9.
-- **SIZOWSKI**: projekt dynamicznego podziału botów między kanały.
 - **Tyrion**: wyszukiwanie konkretnego przedmiotu w sklepach offline.
 - **Uxìĕ [DSO]**: Dom Towarowy i Peleryna Męstwa przyciągająca potwory z całego ekranu.
 - **Gibon**: podgląd zawartości skrzyń i dropu potworów.
