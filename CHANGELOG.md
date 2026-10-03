@@ -17,6 +17,23 @@ every version here.
 
 ---
 
+## 2.2.66 — 2026-10-03
+
+Serwer 2.2.66 i klient 2.0.75: zaktualizuj oba. Zawiera wszystko z 2.2.65.
+
+- **Klient**: poziomy mgły 1-3 działają i zostają po restarcie (blipu,
+  Piciu713); klient nie wyrzuca już błędu przy zamykaniu (Frelik).
+- **Dom Towarowy**: nowe, większe okno z podglądem średnich cen (Uxìĕ [DSO]).
+- **Boty**: dalsza rozbudowa żywego czatu - więcej rozmów, pytań i reakcji
+  opartych na tym, co naprawdę dzieje się w grze (Iwakura, Patch 7).
+- **Panel**: wiadomości botów z czatu trafiają do podglądu czatu w panelu
+  zaawansowanym (seban latino).
+
+Aktualizację serwera i klienta zaproponuje launcher przy starcie. Świat,
+postacie i ustawienia są nietknięte.
+
+---
+
 ## 2.2.65 — 2026-10-03
 
 Serwer 2.2.65 i klient 2.0.74: zaktualizuj oba. Zawiera wszystko z 2.2.64.
