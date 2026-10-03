@@ -17,6 +17,21 @@ every version here.
 
 ---
 
+## 2.2.64 — 2026-10-03
+
+Serwer 2.2.64 i klient 2.0.73: zaktualizuj oba. Zawiera wszystko z 2.2.63.
+
+- **Klient**: płynne animacje postaci przy 250 FPS; trzymany klawisz ruchu lub
+  ataku działa dalej po kliknięciu poza okno gry; gra zapamiętuje ustawienie
+  widoczności sklepów.
+- **Panel**: poprawione napisy w ustawieniu obrony przed botami.
+- **Serwer**: poprawka zapisu logów.
+
+Aktualizację serwera i klienta zaproponuje launcher przy starcie. Świat,
+postacie i ustawienia są nietknięte.
+
+---
+
 ## 2.2.63 — 2026-10-03
 
 Serwer 2.2.63 i klient 2.0.72: zaktualizuj oba. Zawiera wszystko z 2.2.62.
