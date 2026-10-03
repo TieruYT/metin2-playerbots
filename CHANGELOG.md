@@ -17,6 +17,18 @@ every version here.
 
 ---
 
+## 2.2.65 — 2026-10-03
+
+Serwer 2.2.65 i klient 2.0.74: zaktualizuj oba. Zawiera wszystko z 2.2.64.
+
+- **Klient**: płynny ruch postaci przy wysokim FPS - postać nie drga już
+  podczas biegu, pieszo ani na koniu.
+
+Aktualizację serwera i klienta zaproponuje launcher przy starcie. Świat,
+postacie i ustawienia są nietknięte.
+
+---
+
 ## 2.2.64 — 2026-10-03
 
 Serwer 2.2.64 i klient 2.0.73: zaktualizuj oba. Zawiera wszystko z 2.2.63.
