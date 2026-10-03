@@ -17,6 +17,30 @@ every version here.
 
 ---
 
+## 2.2.62 — 2026-10-03
+
+Serwer 2.2.62 i klient 2.0.71: zaktualizuj oba. Zawiera wszystko z 2.2.61.
+
+- **Żywy czat**: boty rozmawiają na czacie ogólnym, w pobliżu, w drużynie i
+  w gildii jak gracze, odpowiadają na szepty, a sława postaci jest pod F11.
+  W panelu suwak „Żywy czat” (0 wyłącza).
+- **Towarzysz**: nowe zlecenia i opcje w oknie towarzysza (P), lepsza obrona
+  właściciela, smocze kamienie w jego ekwipunku.
+- **Boty**: poprawki ruchu w drużynie, dropu, rynku i cen, zmian ekwipunku;
+  boty przyjmują zaproszenia do znajomych.
+- **Smocza Alchemia**: nowy balans kamieni i ulepszania; poprawki okna.
+- **Auto Łowy**: lepsze omijanie ścian i jazda na koniu bojowym.
+- **Klient**: płynniejsza gra, nowe opcje systemu, auto-cena w sklepach,
+  okno pomocy pod H, modele broni i zbroi wysokich poziomów, poprawione
+  nazwy przedmiotów w innych językach.
+- **Panel i VPS**: nowa wersja panelu Sebana, nowe ustawienia w panelu, poprawki
+  instalatora na VPS.
+
+Aktualizację serwera i klienta zaproponuje launcher przy starcie. Świat,
+postacie i ustawienia są nietknięte.
+
+---
+
 ## 2.2.61 — 2026-10-02
 
 Serwer 2.2.61 i klient 2.0.70: zaktualizuj oba. Zawiera wszystko z 2.2.60.
