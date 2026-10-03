@@ -17,6 +17,23 @@ every version here.
 
 ---
 
+## 2.2.67 — 2026-10-03
+
+Serwer 2.2.67 i klient 2.0.76: zaktualizuj oba. Zawiera wszystko z 2.2.66.
+
+- **Klient**: ekran nie trzęsie się już, gdy potwory biją postać (mateusz_w1,
+  iceBeeg, NerrVoVy).
+- **Auto Łowy**: skille także podczas łowów na koniu, peleryny czekają na
+  powrót HP po wskrzeszeniu, potwory blokujące drogę są atakowane, kolejne
+  skille idą szybciej, a powrót na koniu jest płynniejszy (Colide).
+- **Serwer na VPS**: nowe ustawienie `M2_ONLY_CH1=1` w `.env` - zawsze tylko
+  kanał CH1, bez względu na panel i inne ustawienia (Ziółek).
+
+Aktualizację serwera i klienta zaproponuje launcher przy starcie. Świat,
+postacie i ustawienia są nietknięte.
+
+---
+
 ## 2.2.66 — 2026-10-03
 
 Serwer 2.2.66 i klient 2.0.75: zaktualizuj oba. Zawiera wszystko z 2.2.65.
