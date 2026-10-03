@@ -1,19 +1,19 @@
 {
   "schema": 1,
   "channel": "stable",
-  "publishedAt": "2026-10-03T16:00:27Z",
-  "statusMessage": "2.2.65 i klient 2.0.74: plynny ruch postaci przy wysokim FPS.",
+  "publishedAt": "2026-10-03T17:45:47Z",
+  "statusMessage": "2.2.66 i klient 2.0.75: mgla, zamykanie klienta, Dom Towarowy, zywy czat botow.",
   "server": {
-    "version": "2.2.65",
-    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.65/metin2-server-protected-migration-2.2.65.zip",
-    "sha256": "CE28427223A99BD0E753703AA2546F695FE395CFB22F6A70AF660BA447D01317",
-    "size": 148274515
+    "version": "2.2.66",
+    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.66/metin2-server-protected-migration-2.2.66.zip",
+    "sha256": "9869313AC6B18234F4ED3F57DD8D9D05B3BB71BDD7D521C83EF58093664F6850",
+    "size": 148415099
   },
   "serverProtected": {
-    "version": "2.2.65",
-    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.65/metin2-server-protected-update-2.2.65.zip",
-    "sha256": "53A553F48530EC1A5DCFEA37CA14DD2899AECA6A9D0C040CAD51DF8BA81CCED1",
-    "size": 138138788
+    "version": "2.2.66",
+    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.66/metin2-server-protected-update-2.2.66.zip",
+    "sha256": "F54CF0A98A35800712154E17C644ECB408AF82C4284B18F0F7C278C7669BBC77",
+    "size": 138279372
   },
   "protectedFrom": "2.2.39",
   "support": {
@@ -22,16 +22,16 @@
     "reportUrl": "https://script.google.com/macros/s/AKfycbweM8tWcvm59Va8BJxnS1z0o9L2GgtL0NXj6Yu_olAvJ7sPjnpckyGY6JB5fXH3lJYisA/exec?k=m2-7f3k9q"
   },
   "client": {
-    "version": "2.0.74",
-    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.65/metin2-client-update-2.0.74.zip",
-    "sha256": "3FD4711214E1F507FE2026B622138965852C7889A0FC524FCEBA6583C3010451",
-    "size": 106217428,
+    "version": "2.0.75",
+    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.66/metin2-client-update-2.0.75.zip",
+    "sha256": "7C19DED7CBEE4022B6C9B2C2AFF1BC4324DBAE975B8A9FC20D43FBF5FA5A2D51",
+    "size": 106333160,
     "requiresClientExe": true
   },
   "clientExe": {
-    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.65/metin2client.exe",
-    "sha256": "FABE181A117A2FA1793620AAD834AE699A036E38C5F5C6DC4C811622786AB1BB",
-    "size": 13832704,
+    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.66/metin2client.exe",
+    "sha256": "F8633F7380592F54FE8AF1694280F4033215F71BB276D80A8709A7F7A325D04E",
+    "size": 13833728,
     "replaces": [
       "8263F81BFACDFA4A664C1F2A8CE846AEE14F19E584DB40A43F3184FEF1A59531",
       "752623560AB54E2F3F84FF9ADB8961D73E2E289634075118D3FBEA984CFCEFB1",
@@ -47,7 +47,8 @@
       "1A516078445379F76453D079E9543164652B93CF0B26091C028232500131D766",
       "D2E93371D58F176E17397361CC59076AAED28760F61EB2520050E7246AB7E8F5",
       "4710D2100A54492DEBCEFE4E644B692F63E9731E17CAF46B1C797C6D644C7080",
-      "7AC9D8C760E817B980F3CB9E2F07971CE95DFACDE0B2CB348EB09F18AF56F3DB"
+      "7AC9D8C760E817B980F3CB9E2F07971CE95DFACDE0B2CB348EB09F18AF56F3DB",
+      "FABE181A117A2FA1793620AAD834AE699A036E38C5F5C6DC4C811622786AB1BB"
     ]
   }
 }
