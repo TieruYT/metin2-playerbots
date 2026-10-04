@@ -17,6 +17,36 @@ every version here.
 
 ---
 
+## 2.2.70 — 2026-10-04
+
+Serwer 2.2.70 i klient 2.0.79: zaktualizuj oba. Zawiera wszystko z 2.2.69.
+
+- **Wiki w grze**: nowa Wikipedia Kiciamola dostępna z menu ESC oraz Pomocy,
+  z informacjami o przedmiotach, potworach, skrzyniach i ulepszaniu.
+- **Klient i gra**: poprawki Auto Łowów, mapy Czerwonego Lasu, nazw w innych
+  językach, linków do przedmiotów i podglądu wyposażenia. Księgi Dowodzenia
+  można układać po 200 sztuk. Peleryna Męstwa jest dostępna od 30 poziomu,
+  a dodatkowy bonus broni 70 poziomu można wyłączyć w ustawieniach świata.
+- **Boty i Towarzysz**: poprawki początku walki, blokowania szeptów i kamieni
+  w Wieży Demonów. Towarzysz grający samodzielnie wraca do świata także
+  wtedy, gdy jego właściciel się nie zalogował.
+- **Panele**: nowa strona główna od LOSTKA, panel Sebana 1.111.1 oraz
+  poprawki wyszukiwania przedmiotów.
+- **Launcher i VPS**: osobny przycisk Uruchom klienta, wygodniejsze stosowanie
+  ustawień na VPS oraz lepsze wskazówki przy problemach z Dockerem.
+  Poprawiona aktualizacja klienta umieszczonego razem z serwerem.
+- **Klient znajomego**: ostrzeżenie o wymaganej aktualizacji i osobny
+  Aktualizuj.bat do aktualizowania klienta.
+
+Dziękujemy twórcom i zgłaszającym: Kiciamol, LOSTEK, Seban, Colide, Edi,
+Nannato, Sosna, Kordyl13, MonsterMuuch, xXxDaronxXx, Uxìĕ [DSO], Piciu713,
+Tysiek, magicznytomasz, blasty i Nihil.
+
+Aktualizację serwera i klienta zaproponuje launcher przy starcie. Nowa Wiki
+wymaga również aktualnego pliku gry, który pobierze launcher lub Aktualizuj.bat.
+
+---
+
 ## 2.2.69 — 2026-10-04
 
 Serwer 2.2.69 i klient 2.0.78: zaktualizuj oba. Zawiera wszystko z 2.2.68.

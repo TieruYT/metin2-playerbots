@@ -106,10 +106,10 @@ i na niej zostają. Ich historia jest w tym repozytorium.
 - **Iwakura**: system osobowości botów, cennik, tiery przedmiotów, nazwy
   sklepów i gildii, nicki botów i Community Patche.
 - **ĹŌŞƬĒĶ**: ekran logowania i Discord Rich Presence, pakiet językowy,
-  rozmowy z botami przez szepty, wiersz osobowości nad botem.
+  rozmowy z botami przez szepty, wiersz osobowości nad botem, publiczna strona
+  CMS klasycznego panelu.
 - **Colide**: okno Auto Łowów w kliencie.
 - **OskarPWA**: okno magazynu bota, ikony umiejętności i panel GM pod F9.
-- **SIZOWSKI**: projekt dynamicznego podziału botów między kanały.
 - **Tyrion**: wyszukiwanie konkretnego przedmiotu w sklepach offline.
 - **Kenny, Pabloo, Mur4s**: poprawki podnoszenia przedmiotów w drużynie, zadań
   botów w drużynie gracza, questu niedźwiedzi i Pierścienia Teleportacji.
@@ -251,10 +251,10 @@ this repository.
 - **Iwakura**: the bots' personality system, the price list, the item tiers,
   the shop and guild names, the bots' nicknames and the Community Patches.
 - **ĹŌŞƬĒĶ**: the login screen and Discord Rich Presence, the language pack,
-  whispered conversations with the bots, the personality row over a bot.
+  whispered conversations with the bots, the personality row over a bot,
+  the classic panel's public CMS page.
 - **Colide**: the client's Auto Hunt window.
 - **OskarPWA**: the bot depot window, the skill icons and the F9 GM panel.
-- **SIZOWSKI**: the design of the bots' dynamic split between channels.
 - **Tyrion**: searching the offline shops for one particular item.
 - **Kenny, Pabloo, Mur4s**: fixes to party pickups, to bots' errands in a
   player's party, to the bear quest and to the Teleport Ring.
