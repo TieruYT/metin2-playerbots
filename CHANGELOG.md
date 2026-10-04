@@ -17,6 +17,27 @@ every version here.
 
 ---
 
+## 2.2.68 — 2026-10-04
+
+Serwer 2.2.68 i klient 2.0.77: zaktualizuj oba. Zawiera wszystko z 2.2.67.
+
+- **Lochy**: po zabiciu Kosiarza gra znowu wyprowadza graczy z Wieży Demonów,
+  tak samo jak z innych lochów (Kordyl13).
+- **Wieża Demonów**: boty poniżej 75 poziomu nie przechodzą już z graczem za
+  kowala na dalsze piętra (Virgo).
+- **Klient**: kamera nie trzęsie się przy limicie 60 FPS (Kordyl13, Uxìĕ [DSO]).
+- **Klient**: Księgi Misji po angielsku i poprawny Sprint w kliencie
+  niemieckim i w innych językach (Nannato).
+- **Automatyczne ceny**: czat mówi, że ceny się pobierają, ile już pobrano
+  i kiedy sklep ma nowe ceny (Piciu713).
+- **Boty**: bot w drużynie mówi, kiedy idzie do kupca albo kowala (pomysł
+  Nannato), a szaman nie zostaje bez naszyjnika po buffach (sosen, Malina).
+
+Aktualizację serwera i klienta zaproponuje launcher przy starcie. Świat,
+postacie i ustawienia są nietknięte.
+
+---
+
 ## 2.2.67 — 2026-10-03
 
 Serwer 2.2.67 i klient 2.0.76: zaktualizuj oba. Zawiera wszystko z 2.2.66.
