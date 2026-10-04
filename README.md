@@ -27,7 +27,7 @@ Boty nie są zewnętrznymi programami. To pełnoprawne postacie sterowane przez 
 
 O nowej wersji serwera lub klienta launcher sam zapyta przy starcie. Możesz też sprawdzić ją przyciskiem **SPRAWDZ AKTUALIZACJE**. Paczki pobierają się z [wydań w tym repozytorium](https://github.com/TieruYT/metin2-playerbots/releases). Serwer na Linuksie aktualizujesz poleceniem `sh linux-port/tools/update.sh` w folderze serwera, a serwer na VPS możesz założyć i aktualizować z launchera (**SERWER NA VPS**). Na VPS-ie serwer też składa się z gotowych plików, bez kompilacji.
 
-Błąd albo pomysł? Przycisk **ZGŁOŚ BŁĄD / POMYSŁ** w launcherze wysyła Twój opis razem z logami prosto do nas.
+Błąd? Przycisk **ZGŁOŚ BŁĄD** w launcherze wysyła Twój opis razem z logami prosto do nas. Pomysły i propozycje zgłaszaj na Discordzie w kanale propozycji.
 
 Wymagania, instrukcja krok po kroku i odpowiedzi na częste pytania są na stronie [metin2singleplayer.com](https://metin2singleplayer.com) i na kanałach pomocy na Discordzie.
 

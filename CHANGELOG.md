@@ -17,6 +17,34 @@ every version here.
 
 ---
 
+## 2.2.69 — 2026-10-04
+
+Serwer 2.2.69 i klient 2.0.78: zaktualizuj oba. Zawiera wszystko z 2.2.68.
+
+- **Towarzysz**: może prowadzić własny sklep z rzeczami ze swojej torby -
+  prezenty od właściciela nigdy nie trafiają na ladę, a niesprzedane rzeczy
+  z czasem tanieją (pomysł JFK). Gdy oddajesz quest u Biologa, Towarzysz
+  zalicza go razem z Tobą. W walce z innym graczem pomaga Ci atakować
+  (prodnathin).
+- **Boty**: biją równo także na koniu (Kordyl13), ogłuszenie działa na boty
+  (DimitriASM), na wojnie gildii nie przechodzą przez palisady (Edi), a na
+  rynku kupują biżuterię i buty z dobrymi bonusami już od +0 (Iwakura, sosen).
+- **Seon-Pyeong**: ulepszenie przenosi bonusy i kamienie tak jak na Metin2 PL
+  (Piciu713).
+- **Klient**: płynna kamera przy chodzeniu (iceBeeg), nowa wersja Auto Łowów
+  od Colide'a z buffami przed walką, a postać nie biega już do zwłok.
+- **Panel**: przedmioty i yang wysłane z panelu docierają do botów (Tomasz).
+- **Launcher**: przycisk ZGŁOŚ BŁĄD służy tylko do błędów - pomysły zgłaszaj
+  na Discordzie, a okno zgłoszenia nie zamraża się przy pisaniu (Piciu713).
+  Gra na VPS: klient na PC aktualizuje się razem z VPS, liczbę botów można
+  ustawić dla VPS (xXxDaronxXx), a zgłoszenie błędu zawiera logi z VPS
+  (Urtopy).
+
+Aktualizację serwera i klienta zaproponuje launcher przy starcie. Świat,
+postacie i ustawienia są nietknięte.
+
+---
+
 ## 2.2.68 — 2026-10-04
 
 Serwer 2.2.68 i klient 2.0.77: zaktualizuj oba. Zawiera wszystko z 2.2.67.

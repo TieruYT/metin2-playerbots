@@ -27,7 +27,7 @@ The bots are not external programs. They are first-class characters driven by AI
 
 The launcher offers a new server or client version by itself when it starts, and **CHECK FOR UPDATES** looks for one at any time. The packages come from [the releases in this repository](https://github.com/TieruYT/metin2-playerbots/releases). A server on Linux is updated with `sh linux-port/tools/update.sh` in the server folder, and a server on a VPS can be set up and updated from the launcher (**SERVER ON A VPS**). On a VPS, too, the server is assembled from ready-made files, with nothing compiled.
 
-A bug or an idea? The **REPORT A BUG / IDEA** button in the launcher sends your description together with the logs straight to us.
+A bug? The **REPORT A BUG** button in the launcher sends your description together with the logs straight to us. Send ideas and suggestions to the proposals channel on Discord.
 
 Requirements, a step-by-step guide and answers to common questions are on [metin2singleplayer.com](https://metin2singleplayer.com) and in the help channels on Discord.
 
