@@ -1,19 +1,19 @@
 {
   "schema": 1,
   "channel": "stable",
-  "publishedAt": "2026-10-03T19:33:23Z",
-  "statusMessage": "2.2.67 i klient 2.0.76: ekran nie trzesie sie przy ciosach, Auto Lowy od Colide'a, tryb tylko CH1.",
+  "publishedAt": "2026-10-04T00:47:41Z",
+  "statusMessage": "2.2.68 i klient 2.0.77: wyjscie z lochow, kamera przy 60 FPS, ksiegi misji po angielsku, teksty botow.",
   "server": {
-    "version": "2.2.67",
-    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.67/metin2-server-protected-migration-2.2.67.zip",
-    "sha256": "188D00B7E3522CB7C986CAB716388A6005A561C4C88533E9B3F961F962E170AD",
-    "size": 148416157
+    "version": "2.2.68",
+    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.68/metin2-server-protected-migration-2.2.68.zip",
+    "sha256": "DF80D3FF38D7067BC40FE90800E133B3027316B259FF8AB3DF4DFF2D7690817C",
+    "size": 148426395
   },
   "serverProtected": {
-    "version": "2.2.67",
-    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.67/metin2-server-protected-update-2.2.67.zip",
-    "sha256": "1D17EE641650E6206A58D79749A4154E08CE896458FEB0498EF99FAE9B3E4E8C",
-    "size": 138280430
+    "version": "2.2.68",
+    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.68/metin2-server-protected-update-2.2.68.zip",
+    "sha256": "B169FAD96E3A04E34717FC6E3E6BC6878BD4797C4DC51A5FFE0D8FF262058019",
+    "size": 138290668
   },
   "protectedFrom": "2.2.39",
   "support": {
@@ -22,15 +22,15 @@
     "reportUrl": "https://script.google.com/macros/s/AKfycbweM8tWcvm59Va8BJxnS1z0o9L2GgtL0NXj6Yu_olAvJ7sPjnpckyGY6JB5fXH3lJYisA/exec?k=m2-7f3k9q"
   },
   "client": {
-    "version": "2.0.76",
-    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.67/metin2-client-update-2.0.76.zip",
-    "sha256": "82F7DBC5A441705A25DB62C2339FCA45286B0C916998EFAF937D6AEBAD18A282",
-    "size": 106335018,
+    "version": "2.0.77",
+    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.68/metin2-client-update-2.0.77.zip",
+    "sha256": "C1AE67D8925785C2C6347D28F4422727CA15C75652B4848E08A6D3FE2C03D9CA",
+    "size": 106336523,
     "requiresClientExe": true
   },
   "clientExe": {
-    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.67/metin2client.exe",
-    "sha256": "ED673A6F02C66D505183942AAC24B941A07E30A24F507F4F54E627A8C2D098F8",
+    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.68/metin2client.exe",
+    "sha256": "A4AE236009E8D95C1C8F7D7421C5ABF3401365F821621ABED9A8846100B387E0",
     "size": 13833728,
     "replaces": [
       "8263F81BFACDFA4A664C1F2A8CE846AEE14F19E584DB40A43F3184FEF1A59531",
@@ -49,7 +49,8 @@
       "4710D2100A54492DEBCEFE4E644B692F63E9731E17CAF46B1C797C6D644C7080",
       "7AC9D8C760E817B980F3CB9E2F07971CE95DFACDE0B2CB348EB09F18AF56F3DB",
       "FABE181A117A2FA1793620AAD834AE699A036E38C5F5C6DC4C811622786AB1BB",
-      "F8633F7380592F54FE8AF1694280F4033215F71BB276D80A8709A7F7A325D04E"
+      "F8633F7380592F54FE8AF1694280F4033215F71BB276D80A8709A7F7A325D04E",
+      "ED673A6F02C66D505183942AAC24B941A07E30A24F507F4F54E627A8C2D098F8"
     ]
   }
 }
