@@ -1,19 +1,19 @@
 {
   "schema": 1,
   "channel": "stable",
-  "publishedAt": "2026-10-05T07:07:33Z",
-  "statusMessage": "2.2.71 i klient 2.0.80: nowe udogodnienia, usprawnienia botów, Wiki, magazynu i interfejsu oraz poprawki stabilności.",
+  "publishedAt": "2026-10-05T19:56:08Z",
+  "statusMessage": "2.2.72 i klient 2.0.81: poprawki stabilności, Wieży Demonów, ekwipunku, Towarzysza, panelu, aktualizacji i tłumaczeń.",
   "server": {
-    "version": "2.2.71",
-    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.71/metin2-server-protected-migration-2.2.71.zip",
-    "sha256": "4C8CD6EFB572D376E67D709EF48496D13F141CA1F5DE3D02971189F10545601C",
-    "size": 153249491
+    "version": "2.2.72",
+    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.72/metin2-server-protected-migration-2.2.72.zip",
+    "sha256": "DDAFB96854724E7DD6A5B9B0C17BD565D392C24D8A9A5B73C1A5E98B8D1ECD00",
+    "size": 153251717
   },
   "serverProtected": {
-    "version": "2.2.71",
-    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.71/metin2-server-protected-update-2.2.71.zip",
-    "sha256": "069C74BCF80A4684143C992FED5E71F48E04AC3D7E44BCDD364892D4E4D3CEE0",
-    "size": 143293011
+    "version": "2.2.72",
+    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.72/metin2-server-protected-update-2.2.72.zip",
+    "sha256": "769A63775DF2EA1141FA64656C5B6CA06ED4F08A14470623C424852666027C24",
+    "size": 143295237
   },
   "protectedFrom": "2.2.39",
   "support": {
@@ -22,16 +22,16 @@
     "reportUrl": "https://script.google.com/macros/s/AKfycbweM8tWcvm59Va8BJxnS1z0o9L2GgtL0NXj6Yu_olAvJ7sPjnpckyGY6JB5fXH3lJYisA/exec?k=m2-7f3k9q"
   },
   "client": {
-    "version": "2.0.80",
-    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.71/metin2-client-update-2.0.80.zip",
-    "sha256": "3BDEBF17CDE36A3D42B5DBA9B2B1B77B92E8561D0CA11C4495F613713DBA3EA3",
-    "size": 113161710,
+    "version": "2.0.81",
+    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.72/metin2-client-update-2.0.81.zip",
+    "sha256": "373585C95E0F4E8EAB9FF751E47AC770F18C4A05D1B8194AFD0F487CDE7D3DC0",
+    "size": 113203177,
     "requiresClientExe": true
   },
   "clientExe": {
-    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.71/metin2client.exe",
-    "sha256": "746FDE56EF08ADCC344234EC4C523CDEB3B3952128481DE97FFDA53D21C3F4FF",
-    "size": 13889536,
+    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.72/metin2client.exe",
+    "sha256": "78523FF32A087C8C463396475DB9547EFA1635F4481421F232993D4F34D5074B",
+    "size": 11297280,
     "replaces": [
       "8263F81BFACDFA4A664C1F2A8CE846AEE14F19E584DB40A43F3184FEF1A59531",
       "752623560AB54E2F3F84FF9ADB8961D73E2E289634075118D3FBEA984CFCEFB1",
@@ -53,7 +53,9 @@
       "ED673A6F02C66D505183942AAC24B941A07E30A24F507F4F54E627A8C2D098F8",
       "A4AE236009E8D95C1C8F7D7421C5ABF3401365F821621ABED9A8846100B387E0",
       "49868B06256851E5EF602F013303D790831F2EC579A837805E918D67F204E1B1",
-      "413E9A053841DCD291090F2BCC9A4B36F243A2181C7A58EA01D19110BE4F35C0"
+      "413E9A053841DCD291090F2BCC9A4B36F243A2181C7A58EA01D19110BE4F35C0",
+      "746FDE56EF08ADCC344234EC4C523CDEB3B3952128481DE97FFDA53D21C3F4FF"
     ]
-  }
+  },
+  "statusMessageEn": "2.2.72 and client 2.0.81: fixes for stability, the Demon Tower, inventory, the companion, panel, updates and translations."
 }
