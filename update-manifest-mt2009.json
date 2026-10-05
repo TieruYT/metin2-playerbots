@@ -1,19 +1,19 @@
 {
   "schema": 1,
   "channel": "stable",
-  "publishedAt": "2026-10-04T19:57:47Z",
-  "statusMessage": "2.2.70 i klient 2.0.79: Wiki w grze, poprawki botów, Towarzysza i klienta, nowe panele oraz wygodniejsze ustawienia VPS.",
+  "publishedAt": "2026-10-05T07:07:33Z",
+  "statusMessage": "2.2.71 i klient 2.0.80: nowe udogodnienia, usprawnienia botów, Wiki, magazynu i interfejsu oraz poprawki stabilności.",
   "server": {
-    "version": "2.2.70",
-    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.70/metin2-server-protected-migration-2.2.70.zip",
-    "sha256": "FD9BE4594CC79F86187152CE89B767DB088A89DA6BF186AA53CC82529B67776D",
-    "size": 153154975
+    "version": "2.2.71",
+    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.71/metin2-server-protected-migration-2.2.71.zip",
+    "sha256": "4C8CD6EFB572D376E67D709EF48496D13F141CA1F5DE3D02971189F10545601C",
+    "size": 153249491
   },
   "serverProtected": {
-    "version": "2.2.70",
-    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.70/metin2-server-protected-update-2.2.70.zip",
-    "sha256": "CA5C6A1C38747B4F77671FBA75926379E28F5988852A9DF1D91C02E486EAFAD6",
-    "size": 143197935
+    "version": "2.2.71",
+    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.71/metin2-server-protected-update-2.2.71.zip",
+    "sha256": "069C74BCF80A4684143C992FED5E71F48E04AC3D7E44BCDD364892D4E4D3CEE0",
+    "size": 143293011
   },
   "protectedFrom": "2.2.39",
   "support": {
@@ -22,16 +22,16 @@
     "reportUrl": "https://script.google.com/macros/s/AKfycbweM8tWcvm59Va8BJxnS1z0o9L2GgtL0NXj6Yu_olAvJ7sPjnpckyGY6JB5fXH3lJYisA/exec?k=m2-7f3k9q"
   },
   "client": {
-    "version": "2.0.79",
-    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.70/metin2-client-update-2.0.79.zip",
-    "sha256": "9DD6B39028D4E08A5996D00A28530B86AF0E780BC77F2D300B83B613C57C032D",
-    "size": 113117746,
+    "version": "2.0.80",
+    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.71/metin2-client-update-2.0.80.zip",
+    "sha256": "3BDEBF17CDE36A3D42B5DBA9B2B1B77B92E8561D0CA11C4495F613713DBA3EA3",
+    "size": 113161710,
     "requiresClientExe": true
   },
   "clientExe": {
-    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.70/metin2client.exe",
-    "sha256": "413E9A053841DCD291090F2BCC9A4B36F243A2181C7A58EA01D19110BE4F35C0",
-    "size": 13889024,
+    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.71/metin2client.exe",
+    "sha256": "746FDE56EF08ADCC344234EC4C523CDEB3B3952128481DE97FFDA53D21C3F4FF",
+    "size": 13889536,
     "replaces": [
       "8263F81BFACDFA4A664C1F2A8CE846AEE14F19E584DB40A43F3184FEF1A59531",
       "752623560AB54E2F3F84FF9ADB8961D73E2E289634075118D3FBEA984CFCEFB1",
@@ -52,7 +52,8 @@
       "F8633F7380592F54FE8AF1694280F4033215F71BB276D80A8709A7F7A325D04E",
       "ED673A6F02C66D505183942AAC24B941A07E30A24F507F4F54E627A8C2D098F8",
       "A4AE236009E8D95C1C8F7D7421C5ABF3401365F821621ABED9A8846100B387E0",
-      "49868B06256851E5EF602F013303D790831F2EC579A837805E918D67F204E1B1"
+      "49868B06256851E5EF602F013303D790831F2EC579A837805E918D67F204E1B1",
+      "413E9A053841DCD291090F2BCC9A4B36F243A2181C7A58EA01D19110BE4F35C0"
     ]
   }
 }
