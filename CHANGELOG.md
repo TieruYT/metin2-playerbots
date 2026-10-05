@@ -17,6 +17,15 @@ every version here.
 
 ---
 
+## 2.2.71 — 2026-10-05
+
+Serwer 2.2.71 i klient 2.0.80: zaktualizuj oba. Zawiera wszystko z 2.2.70.
+
+- Nowe udogodnienia w grze i wygodniejsza obsługa ekwipunku.
+- Usprawnienia zachowania, rozmów i aktywności botów.
+- Poprawki Wiki, interfejsu, magazynu oraz aktualizacji klienta.
+- Poprawki stabilności i postępu zadań.
+
 ## 2.2.70 — 2026-10-04
 
 Serwer 2.2.70 i klient 2.0.79: zaktualizuj oba. Zawiera wszystko z 2.2.69.
