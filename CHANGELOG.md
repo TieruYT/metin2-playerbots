@@ -17,6 +17,15 @@ every version here.
 
 ---
 
+## 2.2.72 — 2026-10-05
+
+Serwer 2.2.72 i klient 2.0.81: zaktualizuj oba. Zawiera wszystko z 2.2.71.
+
+- Poprawki stabilności klienta podczas zmiany map i obsługi interfejsu.
+- Usprawnienia Wieży Demonów i postępu zadań.
+- Wygodniejsze ulepszanie, poprawki ekwipunku i zapamiętywania ustawień Towarzysza.
+- Poprawki panelu, aktualizacji i tłumaczeń.
+
 ## 2.2.71 — 2026-10-05
 
 Serwer 2.2.71 i klient 2.0.80: zaktualizuj oba. Zawiera wszystko z 2.2.70.
