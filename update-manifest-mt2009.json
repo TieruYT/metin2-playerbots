@@ -1,19 +1,19 @@
 {
   "schema": 1,
   "channel": "stable",
-  "publishedAt": "2026-10-06T07:07:15Z",
-  "statusMessage": "2.2.73 i klient 2.0.82: usprawnienia botów, rynku i panelu oraz poprawki bonusów przedmiotów i aktualizacji.",
+  "publishedAt": "2026-10-06T11:51:23Z",
+  "statusMessage": "2.2.74: poprawki rozwoju ekwipunku botów i ochrony wartościowych bonusów. Klient 2.0.82 pozostaje aktualny.",
   "server": {
-    "version": "2.2.73",
-    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.73/metin2-server-protected-migration-2.2.73.zip",
-    "sha256": "ACB8E2667E358F20CB5FDE9A09EAB253BAC6C69BF9C031C593CFF912F8118386",
-    "size": 153318531
+    "version": "2.2.74",
+    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.74/metin2-server-protected-migration-2.2.74.zip",
+    "sha256": "4C1397461BC56CA3B51CD6C8A2D45D519937F8AC9463FF44EDC4F4029B6ABE00",
+    "size": 153320246
   },
   "serverProtected": {
-    "version": "2.2.73",
-    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.73/metin2-server-protected-update-2.2.73.zip",
-    "sha256": "C385AA9AD87FF0FE70BC80618F8975CEB31901CEC92558AE671F7F77D66F8818",
-    "size": 143362051
+    "version": "2.2.74",
+    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.74/metin2-server-protected-update-2.2.74.zip",
+    "sha256": "4154C8FC9A2E043EF31B950D186FA993246FA4A88D6804EB905D798481130102",
+    "size": 143363766
   },
   "protectedFrom": "2.2.39",
   "support": {
@@ -23,13 +23,13 @@
   },
   "client": {
     "version": "2.0.82",
-    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.73/metin2-client-update-2.0.82.zip",
+    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.74/metin2-client-update-2.0.82.zip",
     "sha256": "DD4D9BED14DA9B1ED2165766EC77269D8886F28F638AA563B17A950C42330A94",
     "size": 113203281,
     "requiresClientExe": true
   },
   "clientExe": {
-    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.73/metin2client.exe",
+    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.74/metin2client.exe",
     "sha256": "78523FF32A087C8C463396475DB9547EFA1635F4481421F232993D4F34D5074B",
     "size": 11297280,
     "replaces": [
@@ -57,5 +57,5 @@
       "746FDE56EF08ADCC344234EC4C523CDEB3B3952128481DE97FFDA53D21C3F4FF"
     ]
   },
-  "statusMessageEn": "2.2.73 and client 2.0.82: improved bots, market and panel, plus item bonus display and update fixes."
+  "statusMessageEn": "2.2.74: fixes for bot equipment progression and preservation of valuable bonuses. Client 2.0.82 remains current."
 }
