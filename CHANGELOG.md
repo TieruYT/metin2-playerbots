@@ -17,6 +17,15 @@ every version here.
 
 ---
 
+## 2.2.73 — 2026-10-06
+
+Serwer 2.2.73 i klient 2.0.82: zaktualizuj oba. Zawiera wszystko z 2.2.72.
+
+- Usprawnienia współpracy, rozwoju i wyposażenia botów.
+- Poprawki rynku oraz wymiany towarów.
+- Nowe informacje i narzędzia kontroli w panelu.
+- Poprawki wyświetlania bonusów przedmiotów i aktualizacji launchera/VPS.
+
 ## 2.2.72 — 2026-10-05
 
 Serwer 2.2.72 i klient 2.0.81: zaktualizuj oba. Zawiera wszystko z 2.2.71.
