@@ -17,6 +17,15 @@ every version here.
 
 ---
 
+## 2.2.74 — 2026-10-06
+
+Serwer 2.2.74, klient 2.0.82. Zawiera wszystko z 2.2.73.
+
+- Poprawiono zachowanie botów podczas rozwijania ekwipunku i ochronę wartościowych bonusów.
+- Uzupełnianie brakujących bonusów pozostaje dostępne.
+
+Zaktualizuj serwer przez launcher. Klient 2.0.82 pozostaje aktualny.
+
 ## 2.2.73 — 2026-10-06
 
 Serwer 2.2.73 i klient 2.0.82: zaktualizuj oba. Zawiera wszystko z 2.2.72.
