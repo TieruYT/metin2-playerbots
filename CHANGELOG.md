@@ -17,6 +17,38 @@ every version here.
 
 ---
 
+## 2.2.75 — 2026-10-07
+
+Serwer 2.2.75 i klient 2.0.83: zaktualizuj oba. Zawiera wszystko z 2.2.74.
+
+**🛠️ Edytor bazy danych (Lostek)**
+W panelu administratora jest nowy edytor danych gry. Lostek pracował nad nim ponad tydzień i jest gotowy do udostępnienia wszystkim. Przez przeglądarkę zmienisz m.in. przedmioty, potwory i bossów, drop specjalny, ulepszenia, bonusy, sklepy NPC, umiejętności, tabelę doświadczenia, wytwarzanie, nagrody questów, ItemShop i prawa GM. Każdy zapis pokazuje najpierw podgląd zmian, a każda zmiana trafia do historii, z której cofniesz ją jednym kliknięciem. Zawartość skrzynek i grup dropu zmienisz w osobnej karcie „Skrzynki i drop”, która sama wraca do poprzednich ustawień, gdyby serwer nie przyjął zmiany.
+
+**🤖 Boty żyją jeszcze bardziej (Patch 10 od Iwakury)**
+- Cel Dnia: część botów losuje cel na sesję (Metiny, poziom, yang, boss, ulepszenie…) z poziomem trudności; widać go nad głową na niebiesko, a sukces lub porażka zmienia ich nastrój.
+- Pierwszy na serwerze: kto pierwszy osiągnie kolejne progi poziomu, trafia do kroniki, a boty komentują to na czacie.
+- Handel na czacie: boty pytają innych o ceny rzadkich przedmiotów, przebijają się cenami przy sprzedaży i potrafią wymienić się przedmiotem – między sobą i z graczem, przez zwykłe okno wymiany.
+- Rynek materiałów: gdy światu brakuje jakiegoś ulepszacza, boty częściej wystawiają go z magazynu, a zalegające najtańsze materiały powoli schodzą z rynku (opcja testowa).
+- Panel: przycisk „Odblokuj exp” na stronie bota (prośba Iwakury) i eksport statystyk ekonomii.
+
+**🌍 Świat i trudność**
+- Nowy przełącznik w trudności: yang gracza wpada do ekwipunku albo na ziemię (Nannato). Boty zawsze zbierają go do sakiewki.
+- Ustawienia respawnów z panelu działają od razu po starcie serwera i od razu po zmianie (Adijhos).
+- Wojny gildii: gildia gracza może wyzwać gildię botów z innego królestwa, a gracze w gildiach prowadzonych przez boty biorą udział w wojnie.
+- Rajdy na Żółwia i lepsze przygotowanie botów do Wieży Demonów.
+- Klasyczny wygląd Domu Towarowego (Uxìĕ [DSO]).
+
+**🔧 Poprawki**
+- Teleport GM-a do bota w lochu (np. w Wieży Demonów) już nie wyrzuca (Tieru).
+- Śmierć w Grocie Wygnańców 2 i „Rozpocznij w mieście” stawia postać przy wyjściu z Groty (Tieru).
+- Kolczyki Miłości działają (Malina). Grinder w drużynie z graczem zdobywa poziomy (zhask9431).
+- Wiele poprawek angielskiego klienta: tytuł GM, pomoc pod H, opisy mikstur i umiejętności, przyciski Towarzysza, aktywacja Alchemii, komendy botów gildii, Płomień Ducha (Edi).
+- Opisy buffów szamana w innych językach (Tyrion), ikony ksiąg umiejętności i opcja śniegu Wł./Wył./Auto (zgłoszenia z launchera), dymek sklepu w podpowiedzi (blipu).
+- ItemShop nie sprzedaje niczego za prawdziwe pieniądze; z ekranu logowania zniknął przycisk „Facebook”.
+- Magazyn kolekcjonera po ponownym otwarciu (danutzy1993), ceny Tarczy Tytana (OCTODAN), wędkarz blokujący się u zbrojmistrza.
+- Mapa świata w panelu pokazuje boty na piętrach Wieży Demonów.
+- Launcher: „Zatrzymaj i zapisz” zapisuje świat przed wyłączeniem bazy, a zgłoszenie błędu zabiera informacje z klienta gry.
+
 ## 2.2.74 — 2026-10-06
 
 Serwer 2.2.74, klient 2.0.82. Zawiera wszystko z 2.2.73.
