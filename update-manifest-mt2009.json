@@ -1,19 +1,19 @@
 {
   "schema": 1,
   "channel": "stable",
-  "publishedAt": "2026-10-07T20:45:16Z",
-  "statusMessage": "2.2.76 i klient 2.0.84: nowe okno Alchemii i Eliksiry Czasu (Kiciamol), switcher bonusów blastego, szansa na bonusy w dropie i wiele poprawek.",
+  "publishedAt": "2026-10-07T22:05:35Z",
+  "statusMessage": "2.2.77 i klient 2.0.85: dane przedmiotów z edytora w kliencie (Kordyl13), reset cen bez wstrzymywania rynku i poprawki.",
   "server": {
-    "version": "2.2.76",
-    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.76/metin2-server-protected-migration-2.2.76.zip",
-    "sha256": "FB4B54D8BE103CCEC25B0988FF16FF9FD28BBEC67411674DC49A8F55E37B06D8",
-    "size": 154014716
+    "version": "2.2.77",
+    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.77/metin2-server-protected-migration-2.2.77.zip",
+    "sha256": "D5C57F70A1F4201879A1820CFF129EE54EABAF6DBEDF4750A1C4CF137C13520C",
+    "size": 154635063
   },
   "serverProtected": {
-    "version": "2.2.76",
-    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.76/metin2-server-protected-update-2.2.76.zip",
-    "sha256": "91A62108F28E48C7E91DDD01E993635B5325D6A5FA1DFC5740A2847771ABDF46",
-    "size": 144058236
+    "version": "2.2.77",
+    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.77/metin2-server-protected-update-2.2.77.zip",
+    "sha256": "3C1329BB439438C5C9173F4FEF405ACC9993A4DD7B28FF55029754E26B556070",
+    "size": 144678583
   },
   "protectedFrom": "2.2.39",
   "support": {
@@ -22,14 +22,14 @@
     "reportUrl": "https://script.google.com/macros/s/AKfycbweM8tWcvm59Va8BJxnS1z0o9L2GgtL0NXj6Yu_olAvJ7sPjnpckyGY6JB5fXH3lJYisA/exec?k=m2-7f3k9q"
   },
   "client": {
-    "version": "2.0.84",
-    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.76/metin2-client-update-2.0.84.zip",
-    "sha256": "62A118C64AE82B5978328E3EB111F6CE70C8F02BF7D07EF81D5D9CF5A96E8997",
-    "size": 113372317,
+    "version": "2.0.85",
+    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.77/metin2-client-update-2.0.85.zip",
+    "sha256": "F03CF295EBB9FC590A5FE3654038493E41F4F117CE0D782DE3C1D67F73A04E5A",
+    "size": 113372326,
     "requiresClientExe": true
   },
   "clientExe": {
-    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.76/metin2client.exe",
+    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.77/metin2client.exe",
     "sha256": "785EFC4CCDAE8CDD8B78D445C1C1C39CD93DD8B003F1E90B02D41B66521505EF",
     "size": 11297280,
     "replaces": [
@@ -58,5 +58,5 @@
       "78523FF32A087C8C463396475DB9547EFA1635F4481421F232993D4F34D5074B"
     ]
   },
-  "statusMessageEn": "2.2.76 and client 2.0.84: new Alchemy window and Time Elixirs (Kiciamol), blasty's bonus switcher, bonus chance on drops and many fixes."
+  "statusMessageEn": "2.2.77 and client 2.0.85: item data from the editor in the client (Kordyl13), a price reset that no longer stops the market, and fixes."
 }
