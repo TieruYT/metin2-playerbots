@@ -25,3 +25,7 @@
 
 # Wiki pack inputs preserve the donor's bytes, including .sub descriptor EOLs.
 /linux-port-mt2009/client-patch-wiki/** -text
+
+# The published client's gamedata pack the panel builds the client's item and
+# monster tables over (files/client_protos.py): its bytes are compared by SHA-256.
+/files/client_base/gamedata.* binary

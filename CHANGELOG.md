@@ -17,6 +17,23 @@ every version here.
 
 ---
 
+## 2.2.77 — 2026-10-08
+
+Serwer 2.2.77 i klient 2.0.85: zaktualizuj oba. Zawiera wszystko z 2.2.76.
+
+**🧾 Dane przedmiotów w kliencie (Kordyl13)**
+- Zmiany przedmiotów i potworów z edytora bazy (np. bonusy, atak, ceny) trafiają teraz także do klienta gry. W launcherze: „Otwórz panel” → „Synchronizuj dane przedmiotów z klientem”. Po pierwszej synchronizacji launcher odświeża je sam przy GRAJ i po aktualizacji klienta.
+- Znajomy w COOP albo gracz na VPS: w panelu jest strona „Dane dla klienta gry” z paczką ZIP do wgrania w kliencie, z kopią oryginałów i możliwością przywrócenia.
+
+**🛒 Rynek**
+- Reset cen sklepów botów nie wstrzymuje już wszystkich zakupów na czas trwania, nie zaczyna się od nowa po restarcie serwera i nie zatrzymuje się przez jedną ofertę (Kordyl13, blasty).
+- Oferty z zakładki Smocze Znaki przestawione w edytorze na Smocze Monety nie znikają z ItemShopu (Nihil).
+
+**🔧 Poprawki**
+- Boty każdej rasy wybierają specjalizację niezależnie od płci, a panel klasyczny pokazuje płeć ninja i szamanów poprawnie (DeeJaz).
+- Edytor bazy otwiera się z launchera także przy świecie na VPS (FanFar, Kordyl13).
+- Aktualizacja przy grze na VPS nie myli już wersji plików launchera z wersją serwera (seban latino).
+
 ## 2.2.76 — 2026-10-07
 
 Serwer 2.2.76 i klient 2.0.84: zaktualizuj oba, launcher pobierze też nowy plik gry. Zawiera wszystko z 2.2.75.
