@@ -17,6 +17,45 @@ every version here.
 
 ---
 
+## 2.2.76 — 2026-10-07
+
+Serwer 2.2.76 i klient 2.0.84: zaktualizuj oba, launcher pobierze też nowy plik gry. Zawiera wszystko z 2.2.75.
+
+**🐉 Alchemia (Kiciamol)**
+- Nowe okno Alchemii: stopnie kamieni na swoich miejscach, podświetlona aktywna talia i odliczanie czasu noszonego kamienia.
+- Alchemik sprzedaje Eliksiry Czasu za Cor Draconis; eliksiry ładują 25, 50 i 100% dnia, a każdy Smoczy Kamień zużywa się przez jeden dzień.
+- Grafika interfejsu jest wyraźniejsza, bo obrazki nie są już rozciągane.
+
+**🎲 Switcher bonusów (blasty)**
+- Rozbudowany switcher bonusów blastego z otwieraniem skrzynek i dzieleniem stosów, z zakładkami, żeby mieścił się na małym ekranie (na bazie okna Uxìĕ [DSO]).
+- W ItemShopie jest paczka 20 kamieni zmiany bonusu.
+
+**🌍 Świat i trudność**
+- Nowe ustawienie w trudności: szansa na bonusy w wydropionej broni i zbroi (Tysiek).
+- Gracz z gildii w wojnie z gildią botów dostaje pytanie, czy dołączyć do wojny (Derpsonkowy95).
+- Nowe ceny Perłowej Bransolety (Iwakura).
+
+**🛠️ Panel i edytor bazy**
+- Edytor bazy danych po angielsku, z wyborem języka u góry (Klimo).
+- Dodawanie i usuwanie przepisów wytwarzania w edytorze oraz podgląd, gdzie używany jest przepis ulepszenia (Edi).
+- Usuwanie przedmiotu z karty bota w panelu i z torby Towarzysza (sosen).
+- Edytor mówi, że ceny w sklepach NPC klient pokazuje ze swoich plików.
+- Reset cen sklepów botów działa w panelu bez hasła (Frelik).
+
+**🔧 Poprawki**
+- Postacie w Hwang (np. Szamanka w zbroi Sang-Hwang) nie podmieniają już sobie animacji (Piciu713, Edi).
+- Otwarcie ItemShopu z ofertą o zerowym przedmiocie nie wyłącza już serwera (Drip).
+- Boty nie idą na wojnę gildii z wędką w ręce (azzyl5021).
+- Okno masowej zmiany cen mówi, co trzeba najpierw wybrać (iceBeeg).
+- Auto Łowy mają pomoc pod „?”, a własny buff umiejętności zdejmiesz prawym kliknięciem ikony (Edi).
+- Poprawione angielskie teksty w oknach Uxìĕ [DSO].
+- Boty lepiej dobierają ekwipunek do walki z potworami (Tieru).
+
+**🚀 Launcher**
+- Hasło panelu jest w nagłówku okna, a edytor bazy w wyborze „Otwórz panel” (Nihil).
+- Launcher mierzy obciążenie serwera na VPS i ostrzega, gdy rdzeń nie nadąża z botami (blipu, xXxDaronxXx).
+- Zgłoszenie błędu zabiera log klienta także przy działającej grze, a chwilowy błąd Dockera przy starcie nie jest już zgłaszany jako awaria (blipu, Drip, Jasny).
+
 ## 2.2.75 — 2026-10-07
 
 Serwer 2.2.75 i klient 2.0.83: zaktualizuj oba. Zawiera wszystko z 2.2.74.
