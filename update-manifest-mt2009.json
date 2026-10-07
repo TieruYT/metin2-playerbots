@@ -1,19 +1,19 @@
 {
   "schema": 1,
   "channel": "stable",
-  "publishedAt": "2026-10-06T11:51:23Z",
-  "statusMessage": "2.2.74: poprawki rozwoju ekwipunku botów i ochrony wartościowych bonusów. Klient 2.0.82 pozostaje aktualny.",
+  "publishedAt": "2026-10-07T12:51:25Z",
+  "statusMessage": "2.2.75 i klient 2.0.83: edytor bazy danych (Lostek), Patch 10 od Iwakury (Cel Dnia, handel botów na czacie, barter) i wiele poprawek.",
   "server": {
-    "version": "2.2.74",
-    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.74/metin2-server-protected-migration-2.2.74.zip",
-    "sha256": "4C1397461BC56CA3B51CD6C8A2D45D519937F8AC9463FF44EDC4F4029B6ABE00",
-    "size": 153320246
+    "version": "2.2.75",
+    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.75/metin2-server-protected-migration-2.2.75.zip",
+    "sha256": "3B18FCA7432D90B9783AF3AD9036A3E0669EA9FAD0B83BA3D8E04BA1F96BDAE6",
+    "size": 153883015
   },
   "serverProtected": {
-    "version": "2.2.74",
-    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.74/metin2-server-protected-update-2.2.74.zip",
-    "sha256": "4154C8FC9A2E043EF31B950D186FA993246FA4A88D6804EB905D798481130102",
-    "size": 143363766
+    "version": "2.2.75",
+    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.75/metin2-server-protected-update-2.2.75.zip",
+    "sha256": "D893B10576A279B391CFF7B1F4229021A1D79306B4B5EC6D6F57B8331A3B5F7A",
+    "size": 143926535
   },
   "protectedFrom": "2.2.39",
   "support": {
@@ -22,14 +22,14 @@
     "reportUrl": "https://script.google.com/macros/s/AKfycbweM8tWcvm59Va8BJxnS1z0o9L2GgtL0NXj6Yu_olAvJ7sPjnpckyGY6JB5fXH3lJYisA/exec?k=m2-7f3k9q"
   },
   "client": {
-    "version": "2.0.82",
-    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.74/metin2-client-update-2.0.82.zip",
-    "sha256": "DD4D9BED14DA9B1ED2165766EC77269D8886F28F638AA563B17A950C42330A94",
-    "size": 113203281,
+    "version": "2.0.83",
+    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.75/metin2-client-update-2.0.83.zip",
+    "sha256": "4A3FC0BFD2A94E93E1A82FE35B7213DE16553240BB8ED7C4C7C897B230FEBAEB",
+    "size": 113305992,
     "requiresClientExe": true
   },
   "clientExe": {
-    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.74/metin2client.exe",
+    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.75/metin2client.exe",
     "sha256": "78523FF32A087C8C463396475DB9547EFA1635F4481421F232993D4F34D5074B",
     "size": 11297280,
     "replaces": [
@@ -57,5 +57,5 @@
       "746FDE56EF08ADCC344234EC4C523CDEB3B3952128481DE97FFDA53D21C3F4FF"
     ]
   },
-  "statusMessageEn": "2.2.74: fixes for bot equipment progression and preservation of valuable bonuses. Client 2.0.82 remains current."
+  "statusMessageEn": "2.2.75 and client 2.0.83: database editor (Lostek), Iwakura's Patch 10 (Daily Goal, bots trading on chat, barter) and many fixes."
 }
