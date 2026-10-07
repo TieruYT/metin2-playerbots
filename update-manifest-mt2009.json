@@ -1,19 +1,19 @@
 {
   "schema": 1,
   "channel": "stable",
-  "publishedAt": "2026-10-07T12:51:25Z",
-  "statusMessage": "2.2.75 i klient 2.0.83: edytor bazy danych (Lostek), Patch 10 od Iwakury (Cel Dnia, handel botów na czacie, barter) i wiele poprawek.",
+  "publishedAt": "2026-10-07T20:45:16Z",
+  "statusMessage": "2.2.76 i klient 2.0.84: nowe okno Alchemii i Eliksiry Czasu (Kiciamol), switcher bonusów blastego, szansa na bonusy w dropie i wiele poprawek.",
   "server": {
-    "version": "2.2.75",
-    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.75/metin2-server-protected-migration-2.2.75.zip",
-    "sha256": "3B18FCA7432D90B9783AF3AD9036A3E0669EA9FAD0B83BA3D8E04BA1F96BDAE6",
-    "size": 153883015
+    "version": "2.2.76",
+    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.76/metin2-server-protected-migration-2.2.76.zip",
+    "sha256": "FB4B54D8BE103CCEC25B0988FF16FF9FD28BBEC67411674DC49A8F55E37B06D8",
+    "size": 154014716
   },
   "serverProtected": {
-    "version": "2.2.75",
-    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.75/metin2-server-protected-update-2.2.75.zip",
-    "sha256": "D893B10576A279B391CFF7B1F4229021A1D79306B4B5EC6D6F57B8331A3B5F7A",
-    "size": 143926535
+    "version": "2.2.76",
+    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.76/metin2-server-protected-update-2.2.76.zip",
+    "sha256": "91A62108F28E48C7E91DDD01E993635B5325D6A5FA1DFC5740A2847771ABDF46",
+    "size": 144058236
   },
   "protectedFrom": "2.2.39",
   "support": {
@@ -22,15 +22,15 @@
     "reportUrl": "https://script.google.com/macros/s/AKfycbweM8tWcvm59Va8BJxnS1z0o9L2GgtL0NXj6Yu_olAvJ7sPjnpckyGY6JB5fXH3lJYisA/exec?k=m2-7f3k9q"
   },
   "client": {
-    "version": "2.0.83",
-    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.75/metin2-client-update-2.0.83.zip",
-    "sha256": "4A3FC0BFD2A94E93E1A82FE35B7213DE16553240BB8ED7C4C7C897B230FEBAEB",
-    "size": 113305992,
+    "version": "2.0.84",
+    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.76/metin2-client-update-2.0.84.zip",
+    "sha256": "62A118C64AE82B5978328E3EB111F6CE70C8F02BF7D07EF81D5D9CF5A96E8997",
+    "size": 113372317,
     "requiresClientExe": true
   },
   "clientExe": {
-    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.75/metin2client.exe",
-    "sha256": "78523FF32A087C8C463396475DB9547EFA1635F4481421F232993D4F34D5074B",
+    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.76/metin2client.exe",
+    "sha256": "785EFC4CCDAE8CDD8B78D445C1C1C39CD93DD8B003F1E90B02D41B66521505EF",
     "size": 11297280,
     "replaces": [
       "8263F81BFACDFA4A664C1F2A8CE846AEE14F19E584DB40A43F3184FEF1A59531",
@@ -54,8 +54,9 @@
       "A4AE236009E8D95C1C8F7D7421C5ABF3401365F821621ABED9A8846100B387E0",
       "49868B06256851E5EF602F013303D790831F2EC579A837805E918D67F204E1B1",
       "413E9A053841DCD291090F2BCC9A4B36F243A2181C7A58EA01D19110BE4F35C0",
-      "746FDE56EF08ADCC344234EC4C523CDEB3B3952128481DE97FFDA53D21C3F4FF"
+      "746FDE56EF08ADCC344234EC4C523CDEB3B3952128481DE97FFDA53D21C3F4FF",
+      "78523FF32A087C8C463396475DB9547EFA1635F4481421F232993D4F34D5074B"
     ]
   },
-  "statusMessageEn": "2.2.75 and client 2.0.83: database editor (Lostek), Iwakura's Patch 10 (Daily Goal, bots trading on chat, barter) and many fixes."
+  "statusMessageEn": "2.2.76 and client 2.0.84: new Alchemy window and Time Elixirs (Kiciamol), blasty's bonus switcher, bonus chance on drops and many fixes."
 }
