@@ -1,19 +1,19 @@
 {
   "schema": 1,
   "channel": "stable",
-  "publishedAt": "2026-10-07T22:05:35Z",
-  "statusMessage": "2.2.77 i klient 2.0.85: dane przedmiotów z edytora w kliencie (Kordyl13), reset cen bez wstrzymywania rynku i poprawki.",
+  "publishedAt": "2026-10-08T11:49:45Z",
+  "statusMessage": "2.2.78 i klient 2.0.86: Patch 11 Iwakury i Tyriona (gospodarka botów), łowienie i „Najpierw dystans” u Towarzysza, nowe nazwy botów i poprawki.",
   "server": {
-    "version": "2.2.77",
-    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.77/metin2-server-protected-migration-2.2.77.zip",
-    "sha256": "D5C57F70A1F4201879A1820CFF129EE54EABAF6DBEDF4750A1C4CF137C13520C",
-    "size": 154635063
+    "version": "2.2.78",
+    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.78/metin2-server-protected-migration-2.2.78.zip",
+    "sha256": "A5B3571EFE3679FBDF583894ED20B8BD437DD8EE43FB0C1307817BF6D67D2721",
+    "size": 154819973
   },
   "serverProtected": {
-    "version": "2.2.77",
-    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.77/metin2-server-protected-update-2.2.77.zip",
-    "sha256": "3C1329BB439438C5C9173F4FEF405ACC9993A4DD7B28FF55029754E26B556070",
-    "size": 144678583
+    "version": "2.2.78",
+    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.78/metin2-server-protected-update-2.2.78.zip",
+    "sha256": "7718F70B9245810AA515F7E389FC026EB3288FEE172D49C26C97A47EE1BEE832",
+    "size": 144863493
   },
   "protectedFrom": "2.2.39",
   "support": {
@@ -22,14 +22,14 @@
     "reportUrl": "https://script.google.com/macros/s/AKfycbweM8tWcvm59Va8BJxnS1z0o9L2GgtL0NXj6Yu_olAvJ7sPjnpckyGY6JB5fXH3lJYisA/exec?k=m2-7f3k9q"
   },
   "client": {
-    "version": "2.0.85",
-    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.77/metin2-client-update-2.0.85.zip",
-    "sha256": "F03CF295EBB9FC590A5FE3654038493E41F4F117CE0D782DE3C1D67F73A04E5A",
-    "size": 113372326,
+    "version": "2.0.86",
+    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.78/metin2-client-update-2.0.86.zip",
+    "sha256": "C07F92766E09431E574D80AFE17C088DB50E4BE5CDF9ABFDBEF5204E38F7C22B",
+    "size": 113375533,
     "requiresClientExe": true
   },
   "clientExe": {
-    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.77/metin2client.exe",
+    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.78/metin2client.exe",
     "sha256": "785EFC4CCDAE8CDD8B78D445C1C1C39CD93DD8B003F1E90B02D41B66521505EF",
     "size": 11297280,
     "replaces": [
@@ -58,5 +58,5 @@
       "78523FF32A087C8C463396475DB9547EFA1635F4481421F232993D4F34D5074B"
     ]
   },
-  "statusMessageEn": "2.2.77 and client 2.0.85: item data from the editor in the client (Kordyl13), a price reset that no longer stops the market, and fixes."
+  "statusMessageEn": "2.2.78 and client 2.0.86: Iwakura and Tyrion's Patch 11 (the bots' economy), fishing and \"Ranged first\" for the Companion, new bot names and fixes."
 }
