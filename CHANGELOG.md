@@ -17,6 +17,35 @@ every version here.
 
 ---
 
+## 2.2.78 — 2026-10-08
+
+Serwer 2.2.78 i klient 2.0.86: zaktualizuj oba. Zawiera wszystko z 2.2.77.
+
+**📈 Gospodarka botów — Patch 11 Iwakury i Tyriona, część pierwsza**
+- Ceny ulepszaczy zależą od tego, ile ich leży na rynku, i zmieniają się płynniej, a boty nie stoją wszystkie na jednej cenie.
+- Wraca inflacja cen w nowej, łagodniejszej postaci; w panelu widać „Indeks cen”.
+- Kantor przyjmuje mieszane partie ulepszaczy bez dziennego limitu, także od biedniejszych botów.
+- Boty nie trzymają już stert ekwipunku w plecakach: nadmiar ulepszają, wystawiają albo sprzedają, a zapchane kategorie rynku (tanie księgi, bronie na 30 lvl, marchewki, instrukcje konne, pieczone ryby, mikstury) mają limity.
+- Boty dużo więcej ulepszają, część z nich jako Rzemieślnicy na sprzedaż; na rynku pojawia się ekwipunek +7, +8 i +9. Udział Rzemieślników ustawisz w panelu.
+- Bonowanie rusza od +6, a część botów bonuje przedmioty na sprzedaż.
+- Osobowości i nastrój: Perfekcjonista działa naprawdę, Rybak nie łowi w drużynie z graczem, nastrój spada wolniej, a Cel Dnia nie blokuje botów na godziny.
+- Czat botów: ogłoszenia pisane jak przez graczy, bot pamięta swoje ogłoszenie, odpowiada, na jakim jest kanale, i nie zdradza się odpowiedziami „z menu”.
+- Eksport statystyk dla Iwakury z nowymi danymi o sprzedaży, sklepach, Kantorze i ulepszaniu.
+
+**🏷️ Nazwy**
+- Nowe nazwy botów i gildii od Ediego obok list Iwakury - dla botów i gildii, które dopiero powstaną; istniejące zachowują swoje.
+
+**🤝 Towarzysz**
+- Nowy rozkaz „Łowienie”: Towarzysz idzie nad wodę i łowi, dopóki go nie zawołasz, a ryby trafiają do jego plecaka. Kiedy sam łowisz, Towarzysz staje obok i łowi razem z tobą (prodnathin).
+- „Najpierw dystans”: Towarzysz najpierw bije łuczników i magów, którzy atakują ciebie, jego albo grupę - na przykład tych, którzy wychodzą z Metina. Opcję wyłączysz w oknie Towarzysza.
+
+**🔧 Poprawki**
+- Prawy klik na ikonie przemiany kończy polimorfię (Buby, Remigiusz).
+- Panel klasyczny pokazuje misję Biologa, którą bot naprawdę robi, a misje odłożone na później wypisuje osobno (sosen).
+- Zmiana Bonusów: wybór powiadomienia (okno, PW albo oba), pytanie przed wczytaniem i usunięciem presetu oraz okna dopasowane do małego okna gry (blasty).
+- Ninja ze sztyletami kupuje na 30 poziom koziki zamiast Miecza Pełni Księżyca (Piciu713).
+- Podgląd postaci w panelu Sebana nie zawiesza już komputera przy wielu botach; to samo w panelu klasycznym (Jasny).
+
 ## 2.2.77 — 2026-10-08
 
 Serwer 2.2.77 i klient 2.0.85: zaktualizuj oba. Zawiera wszystko z 2.2.76.
