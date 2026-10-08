@@ -1,19 +1,19 @@
 {
   "schema": 1,
   "channel": "stable",
-  "publishedAt": "2026-10-08T14:43:31Z",
-  "statusMessage": "Serwer 2.2.79 (klient bez zmian, 2.0.86): poprawki Iwakury do Patcha 11, szybkość ruchu graczy, łowienie Towarzysza na moście, angielskie nazwy w panelach i poprawki.",
+  "publishedAt": "2026-10-08T17:48:36Z",
+  "statusMessage": "2.2.80 i klient 2.0.87: nowy panel GM pod F9 od Kiciamola, szybkość ruchu także dla botów i Towarzysza, pasek umiejętności po przywołaniu Towarzysza z listu i wersja serwera na PC grającym na VPS.",
   "server": {
-    "version": "2.2.79",
-    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.79/metin2-server-protected-migration-2.2.79.zip",
-    "sha256": "9F9BCF88FDB552C31A8330225CD3A3193B705C2F9B65AB70A33BAB47EA1E5EC8",
-    "size": 155030731
+    "version": "2.2.80",
+    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.80/metin2-server-protected-migration-2.2.80.zip",
+    "sha256": "4DD4AE55080C15C81E65ED561230DAAAB6B7EACDE0D856EF25241C847BC8852B",
+    "size": 155033004
   },
   "serverProtected": {
-    "version": "2.2.79",
-    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.79/metin2-server-protected-update-2.2.79.zip",
-    "sha256": "37588CE386EE4731B956805C03292891656FDC146A776BABF7A66FD32884338F",
-    "size": 145074251
+    "version": "2.2.80",
+    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.80/metin2-server-protected-update-2.2.80.zip",
+    "sha256": "06C748FA39DB4DDCE5F7148A2C1CAF253B481BE935FF8D6BE7A534BBB4C101F9",
+    "size": 145076524
   },
   "protectedFrom": "2.2.39",
   "support": {
@@ -22,14 +22,14 @@
     "reportUrl": "https://script.google.com/macros/s/AKfycbweM8tWcvm59Va8BJxnS1z0o9L2GgtL0NXj6Yu_olAvJ7sPjnpckyGY6JB5fXH3lJYisA/exec?k=m2-7f3k9q"
   },
   "client": {
-    "version": "2.0.86",
-    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.78/metin2-client-update-2.0.86.zip",
-    "sha256": "C07F92766E09431E574D80AFE17C088DB50E4BE5CDF9ABFDBEF5204E38F7C22B",
-    "size": 113375533,
+    "version": "2.0.87",
+    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.80/metin2-client-update-2.0.87.zip",
+    "sha256": "6F007CDB55C22933CAA9F7859514C751E06C06DBDCE37DCE9481DE5DEE632EC0",
+    "size": 113411601,
     "requiresClientExe": true
   },
   "clientExe": {
-    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.78/metin2client.exe",
+    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.80/metin2client.exe",
     "sha256": "785EFC4CCDAE8CDD8B78D445C1C1C39CD93DD8B003F1E90B02D41B66521505EF",
     "size": 11297280,
     "replaces": [
@@ -58,5 +58,5 @@
       "78523FF32A087C8C463396475DB9547EFA1635F4481421F232993D4F34D5074B"
     ]
   },
-  "statusMessageEn": "Server 2.2.79 (client unchanged, 2.0.86): Iwakura's fixes to Patch 11, the players' movement speed, the Companion fishing on a bridge, English names in the panels and fixes."
+  "statusMessageEn": "2.2.80 and client 2.0.87: Kiciamol's new GM panel under F9, the movement speed for the bots and the Companion too, the skill bar after calling the Companion from its letter, and the server version on a PC that plays on a VPS."
 }
