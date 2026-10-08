@@ -17,6 +17,35 @@ every version here.
 
 ---
 
+## 2.2.79 — 2026-10-08
+
+Serwer 2.2.79; klient bez zmian (2.0.86). Zawiera wszystko z 2.2.78.
+
+**📈 Gospodarka botów — poprawki Iwakury do Patcha 11**
+- Boty nie palą już u zwykłego kowala broni, którą walczą, ani noszonego ekwipunku: ulepszają je tylko z zapasową bronią w plecaku albo ze zwojem, a młode boty bez zapasu najwyżej do +4.
+- Dobre bonusy są lepiej chronione, także te przydatne w PvP, a kamienie dodania i zmiany idą najpierw na noszony ekwipunek. Bonowacz działa od 30 lvl i korzysta tylko z nadwyżki.
+- Dodania i zmianki mają cenę zależną od tego, ile ich jest na rynku, i trafiają tam po kilka sztuk. Wzmocnienie Przedmiotu kosztuje w cenniku 3 mln.
+- Indeks cen może zejść niżej, a na nowym świecie szybciej znajduje właściwą wartość.
+- Boty trzymają najwyżej dwa hełmy jednego typu i od razu sprzedają resztę; nadmiar ekwipunku nie czeka już na barter.
+- Boty trzymają zapas ulepszaczy na trzy kolejne plusy, Kantor zostawia im 15% yang, a dopłatę w barterze bot może pokryć z utargu swojego sklepu.
+- Nastrój: nowe boty zaczynają w dobrym albo zwykłym nastroju, nastrój poprawia się najwyżej raz na pół godziny, a bardzo dobry mija po 2-3 godzinach. Bot w drużynie nie zostaje Rybakiem.
+- Boty nie zużywają już kamieni dodania i zmiany na bronie w plecaku, których nie noszą: najpierw bonują własny ekwipunek, a przedmioty na sprzedaż dostają tylko nadwyżkę (sosen).
+
+**🏰 Wieża Demonów**
+- Kowal w Wieży ulepsza przedmioty botów dopiero od +4 (sosen).
+
+**🤝 Towarzysz**
+- „Łowienie” działa przy wodzie, przy której Towarzysz albo ty stoicie, także na moście; z własną wędką i robakami Towarzysz łowi od razu (Malina).
+
+**⚙️ Świat**
+- Nowa opcja: szybkość ruchu graczy (50-200%) w oknie trudności launchera i w panelu. Boty i Towarzysz poruszają się jak dotąd (RapLow).
+
+**🖥️ Panel**
+- Panel i edytor bazy danych pokazują przedmioty i potwory pod oficjalnymi angielskimi nazwami, gdy panel jest w innym języku niż polski, a wyszukiwarka znajduje je po obu nazwach (Blind).
+
+**🧰 Launcher**
+- Zgłoszenia błędów wysyłane z launchera znów zawierają logi botów (sosen).
+
 ## 2.2.78 — 2026-10-08
 
 Serwer 2.2.78 i klient 2.0.86: zaktualizuj oba. Zawiera wszystko z 2.2.77.
