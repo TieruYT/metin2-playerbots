@@ -1,19 +1,19 @@
 {
   "schema": 1,
   "channel": "stable",
-  "publishedAt": "2026-10-08T11:49:45Z",
-  "statusMessage": "2.2.78 i klient 2.0.86: Patch 11 Iwakury i Tyriona (gospodarka botów), łowienie i „Najpierw dystans” u Towarzysza, nowe nazwy botów i poprawki.",
+  "publishedAt": "2026-10-08T14:43:31Z",
+  "statusMessage": "Serwer 2.2.79 (klient bez zmian, 2.0.86): poprawki Iwakury do Patcha 11, szybkość ruchu graczy, łowienie Towarzysza na moście, angielskie nazwy w panelach i poprawki.",
   "server": {
-    "version": "2.2.78",
-    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.78/metin2-server-protected-migration-2.2.78.zip",
-    "sha256": "A5B3571EFE3679FBDF583894ED20B8BD437DD8EE43FB0C1307817BF6D67D2721",
-    "size": 154819973
+    "version": "2.2.79",
+    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.79/metin2-server-protected-migration-2.2.79.zip",
+    "sha256": "9F9BCF88FDB552C31A8330225CD3A3193B705C2F9B65AB70A33BAB47EA1E5EC8",
+    "size": 155030731
   },
   "serverProtected": {
-    "version": "2.2.78",
-    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.78/metin2-server-protected-update-2.2.78.zip",
-    "sha256": "7718F70B9245810AA515F7E389FC026EB3288FEE172D49C26C97A47EE1BEE832",
-    "size": 144863493
+    "version": "2.2.79",
+    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.79/metin2-server-protected-update-2.2.79.zip",
+    "sha256": "37588CE386EE4731B956805C03292891656FDC146A776BABF7A66FD32884338F",
+    "size": 145074251
   },
   "protectedFrom": "2.2.39",
   "support": {
@@ -58,5 +58,5 @@
       "78523FF32A087C8C463396475DB9547EFA1635F4481421F232993D4F34D5074B"
     ]
   },
-  "statusMessageEn": "2.2.78 and client 2.0.86: Iwakura and Tyrion's Patch 11 (the bots' economy), fishing and \"Ranged first\" for the Companion, new bot names and fixes."
+  "statusMessageEn": "Server 2.2.79 (client unchanged, 2.0.86): Iwakura's fixes to Patch 11, the players' movement speed, the Companion fishing on a bridge, English names in the panels and fixes."
 }
