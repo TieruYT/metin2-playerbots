@@ -17,6 +17,23 @@ every version here.
 
 ---
 
+## 2.2.80 — 2026-10-08
+
+Serwer 2.2.80 i klient 2.0.87: zaktualizuj oba. Zawiera wszystko z 2.2.79.
+
+**⚙️ Świat**
+- Szybkość ruchu z okna poziomu trudności i panelu zmienia teraz tempo nie tylko graczy, ale też botów i Towarzysza, więc cały świat porusza się w jednym rytmie (pomysł RapLowa).
+
+**🛡️ Panel GM**
+- Nowy panel GM pod F9: gracz, własna postać, świat i eventy, przedmioty, konta, spawn, teleport, serwer i komendy GM, cztery rozmiary okna oraz przyciski „Informacja” i „Ban” w oknie celu. Panel przygotował Kiciamol - dziękujemy!
+
+**🤝 Towarzysz**
+- Po przywołaniu Towarzysza z listu nie znikają już pasek umiejętności, czat i minimapa (Jasny).
+
+**🧰 Launcher**
+- Launcher na komputerze grającym tylko na VPS pokazuje wersję serwera z VPS zamiast starej wersji plików lokalnych i nie proponuje zbędnej aktualizacji (Urtopy).
+- Zastosowanie ustawień na VPS nie kończy się już fałszywym błędem, gdy serwer po restarcie jeszcze chwilę uruchamia kanały (IRON).
+
 ## 2.2.79 — 2026-10-08
 
 Serwer 2.2.79; klient bez zmian (2.0.86). Zawiera wszystko z 2.2.78.
