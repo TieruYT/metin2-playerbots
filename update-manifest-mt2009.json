@@ -1,19 +1,19 @@
 {
   "schema": 1,
   "channel": "stable",
-  "publishedAt": "2026-10-09T16:14:48Z",
-  "statusMessage": "2.2.84 i klient 2.0.90: nowy panel boczny ekwipunku od Uxie (Wiki, wyszukiwanie sklepów, nowe ikony) i poprawka kolczyków botów po uwagach Iwakury.",
+  "publishedAt": "2026-10-09T19:29:30Z",
+  "statusMessage": "2.2.85 i klient 2.0.91: boty zbierają się na więcej bossów i biorą szamanów z gildii na mocne mapy (sosen), poprawki panelu F9 i zielony pasek otrutego celu (Kiciamol), instalacja na VPS (xvipper).",
   "server": {
-    "version": "2.2.84",
-    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.84/metin2-server-protected-migration-2.2.84.zip",
-    "sha256": "13EC40958B6B4F54AE3C5D377609DE2632E6806531E81663798B49F6C5D76D5E",
-    "size": 155627168
+    "version": "2.2.85",
+    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.85/metin2-server-protected-migration-2.2.85.zip",
+    "sha256": "24AF2665162A64E472EB14E16D9E2E3479BC8B136CC7E2C0171155D65BDABB53",
+    "size": 155653202
   },
   "serverProtected": {
-    "version": "2.2.84",
-    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.84/metin2-server-protected-update-2.2.84.zip",
-    "sha256": "855D3907D1AE2076C29BEA54037B9F350DCE7F60E4B5F022B27AAF9C10B24E51",
-    "size": 145670688
+    "version": "2.2.85",
+    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.85/metin2-server-protected-update-2.2.85.zip",
+    "sha256": "9C4A48B114DAF66D371B67B36D7C79D1986061010B3EB3431D1617FA660676D8",
+    "size": 145696722
   },
   "protectedFrom": "2.2.39",
   "support": {
@@ -22,14 +22,14 @@
     "reportUrl": "https://script.google.com/macros/s/AKfycbweM8tWcvm59Va8BJxnS1z0o9L2GgtL0NXj6Yu_olAvJ7sPjnpckyGY6JB5fXH3lJYisA/exec?k=m2-7f3k9q"
   },
   "client": {
-    "version": "2.0.90",
-    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.84/metin2-client-update-2.0.90.zip",
-    "sha256": "619CD4F93F42BB674487451476F5B60E6B46C39CBF13356ABECDAEBA36C3BD94",
-    "size": 113437513,
+    "version": "2.0.91",
+    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.85/metin2-client-update-2.0.91.zip",
+    "sha256": "D20EB659C42078E44D6214DF4AB52F9E31C2B0FA70E4A55FC782D9144F44C848",
+    "size": 113439056,
     "requiresClientExe": true
   },
   "clientExe": {
-    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.84/metin2client.exe",
+    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.85/metin2client.exe",
     "sha256": "785EFC4CCDAE8CDD8B78D445C1C1C39CD93DD8B003F1E90B02D41B66521505EF",
     "size": 11297280,
     "replaces": [
@@ -58,5 +58,5 @@
       "78523FF32A087C8C463396475DB9547EFA1635F4481421F232993D4F34D5074B"
     ]
   },
-  "statusMessageEn": "2.2.84 and client 2.0.90: Uxie's new inventory side panel (Wiki, shop search, new icons) and the bots' earrings fixed after Iwakura's notes."
+  "statusMessageEn": "2.2.85 and client 2.0.91: bots raid more bosses and take a guild shaman to strong maps (sosen), F9 panel fixes and a green bar for a poisoned target (Kiciamol), VPS installation fixed (xvipper)."
 }
