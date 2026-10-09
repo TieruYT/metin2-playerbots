@@ -17,6 +17,20 @@ every version here.
 
 ---
 
+## 2.2.84 — 2026-10-09
+
+Serwer 2.2.84 i klient 2.0.90: zaktualizuj oba. Zawiera wszystko z 2.2.83.
+
+**🧰 Panel boczny ekwipunku (Uxìĕ [DSO])**
+- Nowe ikony w jednym stylu i krótsze nazwy przycisków.
+- Przycisk Wiki i wyszukiwanie sklepów prosto z panelu.
+- Kliknięcie w tło panelu nie rusza już postaci.
+- Przycisk Dozorcy usunięty - magazyn i Magazyn kolekcjonera otwierasz u Dozorcy w wiosce; magazyn ItemShopu zostaje w panelu.
+
+**🔧 Poprawki (Iwakura)**
+- Ebonitowe Kolczyki są pierwszym wyborem tylko części botów (tych, które trzymają się listy wyposażenia), i tylko u Wojownika i Ninja - reszta wybiera po swojemu, jak dawniej. Sura znów woli swoje kolczyki.
+
+
 ## 2.2.83 — 2026-10-09
 
 Serwer 2.2.83 i klient 2.0.89: zaktualizuj oba. Zawiera wszystko z 2.2.82.
