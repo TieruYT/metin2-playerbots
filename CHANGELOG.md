@@ -17,6 +17,34 @@ every version here.
 
 ---
 
+## 2.2.83 — 2026-10-09
+
+Serwer 2.2.83 i klient 2.0.89: zaktualizuj oba. Zawiera wszystko z 2.2.82.
+
+**🛠️ Patch 14 Iwakury**
+- Lochy Pająków V1 i V2: boty 48–75 lvl realnie tam expią - losują mapę przy każdym wejściu do gry i powrocie z miasta, idą tylko z odpowiednim sprzętem, a w V2 chętniej łączą się w drużyny.
+- Peleryny Męstwa: boty używają ich także solo na wybranych mapach, przy odpowiednim sprzęcie, z ostrożnym limitem ściągniętych potworów, który rośnie z doświadczeniem.
+- Nowy Dropek M2: Wojownik Ciała 35 lvl na koniu bojowym bije Metiny i Bestie w drugiej wiosce, dopóki nie skompletuje sprzętu +8.
+- Tarcze i hełmy dobierane do poziomu bota - boty zakładają i ulepszają właściwą tarczę i hełm zamiast trzymać Bojową Tarczę, a nadmiar hełmów sprzedają.
+- Tarcze bonowane pod Niewrażliwość na omdlenie i rasę mapy.
+- Zwój Błogosławieństwa nie jest używany na przedmiot tańszy od niego.
+- Bronie 30 lvl +0…+3 tanieją w starszym świecie i przy nadmiarze na rynku; nowa cena Tarczy Tytanów.
+- Marchewka i Czerwony Żeń-szeń wymieniane na Czerwone Mikstury, z limitem 300 sztuk na rynku królestwa.
+- Kupno przedmiotu z ogłoszenia na czacie: bot podaje cenę i miejsce spotkania, przychodzi i handluje, także przedmiotem ze swojego sklepu.
+- Osobowości botów są zawsze włączone, a suwak Zwojów zniknął z panelu.
+- Podgląd rynku: etykieta bonusów, okienko „?” przy okazjach i poprawiona cena odniesienia.
+
+**🛒 Dom Towarowy (Uxìĕ [DSO])**
+- Kategorie Smocza Alchemia i Polimorfia, Cory w kolejności, filtry poziomu, liczby sztuk, ulepszenia, klasy i płci.
+
+**🔧 Poprawki (sosen)**
+- Boty mieszają średnie w broniach 30 lvl.
+- Przedmioty dane botom z panelu GM nie są sprzedawane ani wystawiane.
+- Ebonitowe Kolczyki są pierwszym wyborem Wojownika, Ninja i Sury broni.
+- Boty dużo chętniej robią Biologa - kupują potrzebne przedmioty na rynku albo je dropią.
+- Na wojnie gildii zwycięzcy rundy zostają na środku areny.
+
+
 ## 2.2.82 — 2026-10-09
 
 Serwer 2.2.82, tylko aktualizacja serwera - klient zostaje 2.0.88. Zawiera wszystko z 2.2.81.
