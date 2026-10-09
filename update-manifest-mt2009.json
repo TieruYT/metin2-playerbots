@@ -1,19 +1,19 @@
 {
   "schema": 1,
   "channel": "stable",
-  "publishedAt": "2026-10-09T09:36:37Z",
-  "statusMessage": "Serwer 2.2.82 (klient bez zmian, 2.0.88): Patch 13 i 13.5 Iwakury (Kantor z ryzykiem, przedmioty rzadkie, Koziki, kupony SM, nowe ceny, limit dzwonów, tańsza Szkatułka na starcie świata) i poprawki Towarzysza.",
+  "publishedAt": "2026-10-09T15:10:33Z",
+  "statusMessage": "2.2.83 i klient 2.0.89: Patch 14 Iwakury (Lochy Pająków, Peleryny Męstwa solo, Dropek M2, tarcze i hełmy wg poziomu, marchewka na mikstury), nowy Dom Towarowy od Uxie i poprawki od sosena.",
   "server": {
-    "version": "2.2.82",
-    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.82/metin2-server-protected-migration-2.2.82.zip",
-    "sha256": "0293F651F51050E743A27B7646E395094E9A285A7D0C6C6C7E47BFA1310518BC",
-    "size": 155526371
+    "version": "2.2.83",
+    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.83/metin2-server-protected-migration-2.2.83.zip",
+    "sha256": "FC7DF69B4F6EAF13A3A193B889BC8066E8E953483EA2EBA8EF22F4C5BAF9B03D",
+    "size": 155627137
   },
   "serverProtected": {
-    "version": "2.2.82",
-    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.82/metin2-server-protected-update-2.2.82.zip",
-    "sha256": "897979DA1F1168C76BD26F67801AB18AD422B159A7B9A945AB3AF38B9F5FEB77",
-    "size": 145569891
+    "version": "2.2.83",
+    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.83/metin2-server-protected-update-2.2.83.zip",
+    "sha256": "3A9925041637031FFE2F0E7498971C828E04B553A27DA5221B9C64A007BDC732",
+    "size": 145670657
   },
   "protectedFrom": "2.2.39",
   "support": {
@@ -22,14 +22,14 @@
     "reportUrl": "https://script.google.com/macros/s/AKfycbweM8tWcvm59Va8BJxnS1z0o9L2GgtL0NXj6Yu_olAvJ7sPjnpckyGY6JB5fXH3lJYisA/exec?k=m2-7f3k9q"
   },
   "client": {
-    "version": "2.0.88",
-    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.81/metin2-client-update-2.0.88.zip",
-    "sha256": "B50E32D940920DDF8E181DC981D0BD79B7326FC71EF7D45A85D4B08056850F4E",
-    "size": 113411843,
+    "version": "2.0.89",
+    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.83/metin2-client-update-2.0.89.zip",
+    "sha256": "7491DA1E7EEABBB3E95BFDECF0ABCB17DC2E10C8EC67A977A3E224B746BFE84E",
+    "size": 113414905,
     "requiresClientExe": true
   },
   "clientExe": {
-    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.81/metin2client.exe",
+    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.83/metin2client.exe",
     "sha256": "785EFC4CCDAE8CDD8B78D445C1C1C39CD93DD8B003F1E90B02D41B66521505EF",
     "size": 11297280,
     "replaces": [
@@ -58,5 +58,5 @@
       "78523FF32A087C8C463396475DB9547EFA1635F4481421F232993D4F34D5074B"
     ]
   },
-  "statusMessageEn": "Server 2.2.82 (client unchanged, 2.0.88): Iwakura's Patch 13 and 13.5 (a Kantor that can fail, rare items, Koziki, SM coupons, new prices, a cap on bells, a cheaper Moonlight chest in a new world) and Companion fixes."
+  "statusMessageEn": "2.2.83 and client 2.0.89: Iwakura's Patch 14 (the Spider Dungeons, solo Bravery Capes, the M2 dropper, shields and helmets by level, carrots into potions), Uxie's new Dom Towarowy and sosen's fixes."
 }
