@@ -1,19 +1,19 @@
 {
   "schema": 1,
   "channel": "stable",
-  "publishedAt": "2026-10-09T15:10:33Z",
-  "statusMessage": "2.2.83 i klient 2.0.89: Patch 14 Iwakury (Lochy Pająków, Peleryny Męstwa solo, Dropek M2, tarcze i hełmy wg poziomu, marchewka na mikstury), nowy Dom Towarowy od Uxie i poprawki od sosena.",
+  "publishedAt": "2026-10-09T16:14:48Z",
+  "statusMessage": "2.2.84 i klient 2.0.90: nowy panel boczny ekwipunku od Uxie (Wiki, wyszukiwanie sklepów, nowe ikony) i poprawka kolczyków botów po uwagach Iwakury.",
   "server": {
-    "version": "2.2.83",
-    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.83/metin2-server-protected-migration-2.2.83.zip",
-    "sha256": "FC7DF69B4F6EAF13A3A193B889BC8066E8E953483EA2EBA8EF22F4C5BAF9B03D",
-    "size": 155627137
+    "version": "2.2.84",
+    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.84/metin2-server-protected-migration-2.2.84.zip",
+    "sha256": "13EC40958B6B4F54AE3C5D377609DE2632E6806531E81663798B49F6C5D76D5E",
+    "size": 155627168
   },
   "serverProtected": {
-    "version": "2.2.83",
-    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.83/metin2-server-protected-update-2.2.83.zip",
-    "sha256": "3A9925041637031FFE2F0E7498971C828E04B553A27DA5221B9C64A007BDC732",
-    "size": 145670657
+    "version": "2.2.84",
+    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.84/metin2-server-protected-update-2.2.84.zip",
+    "sha256": "855D3907D1AE2076C29BEA54037B9F350DCE7F60E4B5F022B27AAF9C10B24E51",
+    "size": 145670688
   },
   "protectedFrom": "2.2.39",
   "support": {
@@ -22,14 +22,14 @@
     "reportUrl": "https://script.google.com/macros/s/AKfycbweM8tWcvm59Va8BJxnS1z0o9L2GgtL0NXj6Yu_olAvJ7sPjnpckyGY6JB5fXH3lJYisA/exec?k=m2-7f3k9q"
   },
   "client": {
-    "version": "2.0.89",
-    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.83/metin2-client-update-2.0.89.zip",
-    "sha256": "7491DA1E7EEABBB3E95BFDECF0ABCB17DC2E10C8EC67A977A3E224B746BFE84E",
-    "size": 113414905,
+    "version": "2.0.90",
+    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.84/metin2-client-update-2.0.90.zip",
+    "sha256": "619CD4F93F42BB674487451476F5B60E6B46C39CBF13356ABECDAEBA36C3BD94",
+    "size": 113437513,
     "requiresClientExe": true
   },
   "clientExe": {
-    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.83/metin2client.exe",
+    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.84/metin2client.exe",
     "sha256": "785EFC4CCDAE8CDD8B78D445C1C1C39CD93DD8B003F1E90B02D41B66521505EF",
     "size": 11297280,
     "replaces": [
@@ -58,5 +58,5 @@
       "78523FF32A087C8C463396475DB9547EFA1635F4481421F232993D4F34D5074B"
     ]
   },
-  "statusMessageEn": "2.2.83 and client 2.0.89: Iwakura's Patch 14 (the Spider Dungeons, solo Bravery Capes, the M2 dropper, shields and helmets by level, carrots into potions), Uxie's new Dom Towarowy and sosen's fixes."
+  "statusMessageEn": "2.2.84 and client 2.0.90: Uxie's new inventory side panel (Wiki, shop search, new icons) and the bots' earrings fixed after Iwakura's notes."
 }
