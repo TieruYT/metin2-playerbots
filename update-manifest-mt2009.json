@@ -1,19 +1,19 @@
 {
   "schema": 1,
   "channel": "stable",
-  "publishedAt": "2026-10-09T05:53:39Z",
-  "statusMessage": "2.2.81 i klient 2.0.88: Patch 12 Iwakury i Tyriona (podgląd rynku w panelu, respawn Metinów i bossów osobno, boty nie palą noszonego ekwipunku, ryby na Zwoje), druga część Patcha 11, panel Sebana 1.114 i poprawki.",
+  "publishedAt": "2026-10-09T09:36:37Z",
+  "statusMessage": "Serwer 2.2.82 (klient bez zmian, 2.0.88): Patch 13 i 13.5 Iwakury (Kantor z ryzykiem, przedmioty rzadkie, Koziki, kupony SM, nowe ceny, limit dzwonów, tańsza Szkatułka na starcie świata) i poprawki Towarzysza.",
   "server": {
-    "version": "2.2.81",
-    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.81/metin2-server-protected-migration-2.2.81.zip",
-    "sha256": "3348EFFA77E84F6CF769B01178CC124C75BE66FC4A5462E460DD0033AD5BF9A4",
-    "size": 155438080
+    "version": "2.2.82",
+    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.82/metin2-server-protected-migration-2.2.82.zip",
+    "sha256": "0293F651F51050E743A27B7646E395094E9A285A7D0C6C6C7E47BFA1310518BC",
+    "size": 155526371
   },
   "serverProtected": {
-    "version": "2.2.81",
-    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.81/metin2-server-protected-update-2.2.81.zip",
-    "sha256": "E089D780FD7524C673A5031E1171E8C5CA95E2C09FDC602176875525F89D86AD",
-    "size": 145481600
+    "version": "2.2.82",
+    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.82/metin2-server-protected-update-2.2.82.zip",
+    "sha256": "897979DA1F1168C76BD26F67801AB18AD422B159A7B9A945AB3AF38B9F5FEB77",
+    "size": 145569891
   },
   "protectedFrom": "2.2.39",
   "support": {
@@ -58,5 +58,5 @@
       "78523FF32A087C8C463396475DB9547EFA1635F4481421F232993D4F34D5074B"
     ]
   },
-  "statusMessageEn": "2.2.81 and client 2.0.88: Iwakura and Tyrion's Patch 12 (a market preview in the panel, Metin and boss respawns apart, bots no longer burn their worn gear, fish into Blessing Scrolls), the second part of Patch 11, Seban's panel 1.114 and fixes."
+  "statusMessageEn": "Server 2.2.82 (client unchanged, 2.0.88): Iwakura's Patch 13 and 13.5 (a Kantor that can fail, rare items, Koziki, SM coupons, new prices, a cap on bells, a cheaper Moonlight chest in a new world) and Companion fixes."
 }
