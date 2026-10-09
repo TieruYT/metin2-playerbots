@@ -1,19 +1,19 @@
 {
   "schema": 1,
   "channel": "stable",
-  "publishedAt": "2026-10-08T17:48:36Z",
-  "statusMessage": "2.2.80 i klient 2.0.87: nowy panel GM pod F9 od Kiciamola, szybkość ruchu także dla botów i Towarzysza, pasek umiejętności po przywołaniu Towarzysza z listu i wersja serwera na PC grającym na VPS.",
+  "publishedAt": "2026-10-09T05:53:39Z",
+  "statusMessage": "2.2.81 i klient 2.0.88: Patch 12 Iwakury i Tyriona (podgląd rynku w panelu, respawn Metinów i bossów osobno, boty nie palą noszonego ekwipunku, ryby na Zwoje), druga część Patcha 11, panel Sebana 1.114 i poprawki.",
   "server": {
-    "version": "2.2.80",
-    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.80/metin2-server-protected-migration-2.2.80.zip",
-    "sha256": "4DD4AE55080C15C81E65ED561230DAAAB6B7EACDE0D856EF25241C847BC8852B",
-    "size": 155033004
+    "version": "2.2.81",
+    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.81/metin2-server-protected-migration-2.2.81.zip",
+    "sha256": "3348EFFA77E84F6CF769B01178CC124C75BE66FC4A5462E460DD0033AD5BF9A4",
+    "size": 155438080
   },
   "serverProtected": {
-    "version": "2.2.80",
-    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.80/metin2-server-protected-update-2.2.80.zip",
-    "sha256": "06C748FA39DB4DDCE5F7148A2C1CAF253B481BE935FF8D6BE7A534BBB4C101F9",
-    "size": 145076524
+    "version": "2.2.81",
+    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.81/metin2-server-protected-update-2.2.81.zip",
+    "sha256": "E089D780FD7524C673A5031E1171E8C5CA95E2C09FDC602176875525F89D86AD",
+    "size": 145481600
   },
   "protectedFrom": "2.2.39",
   "support": {
@@ -22,14 +22,14 @@
     "reportUrl": "https://script.google.com/macros/s/AKfycbweM8tWcvm59Va8BJxnS1z0o9L2GgtL0NXj6Yu_olAvJ7sPjnpckyGY6JB5fXH3lJYisA/exec?k=m2-7f3k9q"
   },
   "client": {
-    "version": "2.0.87",
-    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.80/metin2-client-update-2.0.87.zip",
-    "sha256": "6F007CDB55C22933CAA9F7859514C751E06C06DBDCE37DCE9481DE5DEE632EC0",
-    "size": 113411601,
+    "version": "2.0.88",
+    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.81/metin2-client-update-2.0.88.zip",
+    "sha256": "B50E32D940920DDF8E181DC981D0BD79B7326FC71EF7D45A85D4B08056850F4E",
+    "size": 113411843,
     "requiresClientExe": true
   },
   "clientExe": {
-    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.80/metin2client.exe",
+    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.81/metin2client.exe",
     "sha256": "785EFC4CCDAE8CDD8B78D445C1C1C39CD93DD8B003F1E90B02D41B66521505EF",
     "size": 11297280,
     "replaces": [
@@ -58,5 +58,5 @@
       "78523FF32A087C8C463396475DB9547EFA1635F4481421F232993D4F34D5074B"
     ]
   },
-  "statusMessageEn": "2.2.80 and client 2.0.87: Kiciamol's new GM panel under F9, the movement speed for the bots and the Companion too, the skill bar after calling the Companion from its letter, and the server version on a PC that plays on a VPS."
+  "statusMessageEn": "2.2.81 and client 2.0.88: Iwakura and Tyrion's Patch 12 (a market preview in the panel, Metin and boss respawns apart, bots no longer burn their worn gear, fish into Blessing Scrolls), the second part of Patch 11, Seban's panel 1.114 and fixes."
 }
