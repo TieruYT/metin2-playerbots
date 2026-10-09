@@ -17,6 +17,40 @@ every version here.
 
 ---
 
+## 2.2.81 — 2026-10-09
+
+Serwer 2.2.81 i klient 2.0.88: zaktualizuj oba. Zawiera wszystko z 2.2.80.
+
+**📈 Gospodarka botów — Patch 11 Iwakury i Tyriona, część druga**
+- Spotkania i wymiany: boty umawiają się na czacie na kanał, mapę i miejsce, przychodzą tam i wymieniają się w oknie handlu - między sobą i z graczami.
+- Boty mają jasną kolejność zajęć: przetrwanie, rajd z drużyną, umówione spotkanie i pełny plecak idą przed resztą.
+- Barter: obie strony wyceniane jedną miarą, ochrona dobrych bonusów i limit dopłaty.
+- Nowe zachowania na rynku: łowcy okazji, prośby „Kupię”, ogłoszenia pisane jak przez graczy, drobne zakupy z impulsu i ulepszanie z ciekawości.
+- Eksperymentalnie, domyślnie wyłączone: drugi ekwipunek botów pod PvP oraz suwak realizmu sesji (boty, które czasem odchodzą na dłużej).
+
+**🛠️ Patch 12 Iwakury i Tyriona**
+- Nowa karta „Podgląd rynku” w panelu (wersja eksperymentalna): wszystkie oferty sklepów offline ze wszystkich królestw, kategorie, filtry, okazje cenowe i teleport do sklepu.
+- Respawn: Metiny i bossowie mają osobne ustawienia czasu i liczby w obu panelach; dotychczasowe wartości przechodzą do obu.
+- Zielona Smocza Fasola wypada z Metinów od 50 lvl i trafia na sklepy botów.
+- Boty trzymają najwyżej dwie tarcze jednego typu, a nadmiar sprzedają albo wystawiają.
+- Boty nie palą już noszonego ekwipunku: ulepszają go tylko ze Zwojem Błogosławieństwa albo kują drugą sztukę, a u kowala ulepszają też tarcze, hełmy, biżuterię i buty.
+- Pieczone ryby boty wymieniają na Zwoje Błogosławieństwa.
+- Cel Dnia losuje się co jakiś czas w trakcie gry, boty rzadziej piszą o swojej śmierci, a bot, który ciągle ginie na M3, schodzi na łatwiejszą mapę i najpierw odwiedza kowala.
+
+**🔧 Poprawki**
+- Boty nie palą u kowala przedmiotów z czterema bonusami - ulepszają je tylko ze Zwojem Błogosławieństwa (sosen).
+- Kowal w Wieży Demonów: boty z rajdu przynoszą przedmioty dla każdego z trzech kowali, a Towarzysz też ma swoją kolejkę (Frelik).
+- Towarzysz zbiera odłamki do Cor Draconis (Setnil) i na wojnie gildii walczy u boku właściciela; Towarzysz, którego właściciel nie gra, na wojnę nie idzie (xXxDaronxXx).
+- Komunikaty kowala i Wieży Demonów są po angielsku dla graczy w angielskiej wersji (danutzy1993).
+- Panel GM pod F9: lista Metinów i potworów otwiera się w widoku (Tatko Šmoula), a klasy postaci są poprawne (Kordyl13).
+- Ogłoszenia ryb ze sklepów botów znów pojawiają się na czacie.
+
+**🧰 Launcher i VPS**
+- Aktualizacja sprawdza wolne miejsce przed startem i sama usuwa stare obrazy Dockera oraz pamięć podręczną budowania - na VPS i na komputerze; świat zostaje nietknięty (Ziółek).
+
+**🖥️ Panel Sebana**
+- Panel Sebana 1.114.1 z nowym wyglądem „Łąka i Złoto”, nowymi rankingami i kartami botów - dziękujemy, Seban! Do tego osobne ustawienia respawnu Metinów i bossów.
+
 ## 2.2.80 — 2026-10-08
 
 Serwer 2.2.80 i klient 2.0.87: zaktualizuj oba. Zawiera wszystko z 2.2.79.
