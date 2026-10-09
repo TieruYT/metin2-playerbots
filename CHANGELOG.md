@@ -17,6 +17,30 @@ every version here.
 
 ---
 
+## 2.2.85 — 2026-10-09
+
+Serwer 2.2.85 i klient 2.0.91: zaktualizuj oba. Zawiera wszystko z 2.2.84.
+
+**⚔️ Bossowie i drużyny botów (sosen)**
+- Boty zbierają się teraz także na bossów, których dotąd pomijały: Skalistą Małpę, Chodzącą Małpę, Lorda Małp i Olbrzymiego Ducha Drzewa w Czerwonym Lesie.
+- Na Królową Pająków przychodzą też boty spoza lochu.
+- Bot, który pierwszy zobaczy bossa, woła na pomoc swoje królestwo, nie tylko gildię.
+- Bot idący expić na mocną mapę (Lochy Pająków, Hwang, Sohan, Lasy, Doyyumhwaji, Groty) bierze ze sobą wolnego szamana ze swojej gildii i expią razem w drużynie.
+
+**🛠️ Panel F9 i cel (Kiciamol)**
+- Lista teleportów w F9 nie pokazuje już miejsc, których klient nie ma.
+- Przedmiot, bonus i kamień mają osobne wyszukiwanie, a „Wróć” przywraca poprzednią listę.
+- Wybór bota, potwora lub metina do przywołania zamyka listę.
+- Pasek życia celu robi się zielony, gdy cel jest otruty.
+
+**🖥️ Serwer na VPS (xvipper)**
+- Instalacja na VPS-ie, którego sieć ma mniejsze pakiety niż Docker, nie zawiesza się już przy budowaniu gry.
+- Zmiana liczby botów i kanałów działa także przed pierwszym uruchomieniem świata na VPS-ie.
+
+**📊 Statystyki (Iwakura)**
+- Paczka statystyk z panelu zawiera teraz pełne wyjaśnienia wycen botów i ich decyzji o ekwipunku.
+
+
 ## 2.2.84 — 2026-10-09
 
 Serwer 2.2.84 i klient 2.0.90: zaktualizuj oba. Zawiera wszystko z 2.2.83.
