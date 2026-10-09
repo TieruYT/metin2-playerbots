@@ -17,6 +17,32 @@ every version here.
 
 ---
 
+## 2.2.82 — 2026-10-09
+
+Serwer 2.2.82, tylko aktualizacja serwera - klient zostaje 2.0.88. Zawiera wszystko z 2.2.81.
+
+**📈 Gospodarka botów — Patch 13 Iwakury**
+- Kantor i wymiana ryb mogą się nie udać, a opłata jest wyższa.
+- Jednorazowo boty oddają połowę zapasu kamieni dodania i zmiany oraz Zwojów Błogosławieństwa.
+- Przedmioty rzadkie na rynku: to, czego jest bardzo mało, boty kupują drożej i wystawiają drożej, z powolną obniżką.
+- Koziki: boty pozbywają się nadmiaru, dopóki na świecie jest ich za dużo.
+- Kupony SM: boty wystawiają je na sklepy, kiedy nie potrzebują ich w ItemShopie.
+- Nowe ceny z cennika Iwakury i nowe limity rynku.
+- Zwoje Błogosławieństwa na przedmiotach do 18 lvl boty kładą tylko w kilku opłacalnych przypadkach.
+- Panel: przy każdej linii sklepu offline bota jest krzyżyk, który ją kasuje; ikony w podglądzie rynku wyświetlają się poprawnie.
+
+**📈 Patch 13.5 Iwakury**
+- Jadeitowy Dzwon i Dzwon Fontanny (+0…+3) mają limit sztuk na rynku każdego królestwa; nadmiar boty sprzedają Handlarce.
+- Maks. PŻ od 1500 liczy się jako bonus w wartości maksymalnej, a panel zaznacza go tym samym kolorem.
+- Przedmiot +0…+3 z dwoma lub więcej bonusami boty wyceniają od ceny +6.
+- Szkatułka Blasku Księżyca jest tańsza w pierwszej dobie nowego świata.
+- Marmur Polimorfii pokazuje w panelu i w ogłoszeniach botów, jakiego potwora dotyczy.
+
+**🔧 Poprawki**
+- Kamienie duchowe Towarzysza kosztują tyle co u gracza, a Owoc Życia i Fasolki Zen pokrywają brakującą rangę (GorącyDelfin).
+- Towarzysz wysłany na ryby rzuca wędkę we własnym rytmie, a jego sklep czeka, aż skończy łowić (Malina).
+
+
 ## 2.2.81 — 2026-10-09
 
 Serwer 2.2.81 i klient 2.0.88: zaktualizuj oba. Zawiera wszystko z 2.2.80.
