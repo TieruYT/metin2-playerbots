@@ -1,19 +1,19 @@
 {
   "schema": 1,
   "channel": "stable",
-  "publishedAt": "2026-10-10T06:44:34Z",
-  "statusMessage": "2.2.86 i klient 2.0.92: bardzo duża aktualizacja - boty robią questy z gry (Patch 15 Iwakury), poprawki peleryn, Celu Dnia i cen, nowa Wiki i Skrzynie Ucznia (Kiciamol). Prosimy o testy i zgłaszanie błędów przez launcher.",
+  "publishedAt": "2026-10-10T12:27:35Z",
+  "statusMessage": "2.2.87 i klient 2.0.93: poprawki ze zgłoszeń - boty mieszają broń 30 lvl (sosen), Towarzysz kupuje mikstury i otwiera ladę (magicznytomasz, NerrVoVy), Auto Łowy nie gubią buffów, aktualizacja na VPS z małą ilością pamięci (IRON).",
   "server": {
-    "version": "2.2.86",
-    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.86/metin2-server-protected-migration-2.2.86.zip",
-    "sha256": "680E36709B208D9BDF8CCFFA827408BF1FFDE9B1DC2E801F8D99D2C6BE51BD8D",
-    "size": 155832938
+    "version": "2.2.87",
+    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.87/metin2-server-protected-migration-2.2.87.zip",
+    "sha256": "FA8D9A9B71BC4B9CA0C6EB2302D1955DAF98555B5E975F61C2224ACFDC09B38B",
+    "size": 155839459
   },
   "serverProtected": {
-    "version": "2.2.86",
-    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.86/metin2-server-protected-update-2.2.86.zip",
-    "sha256": "5A2F358608C3ED06CF44A87C661A938BDE46B4FC5B78E0102D5B43EA6C9521C7",
-    "size": 145876458
+    "version": "2.2.87",
+    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.87/metin2-server-protected-update-2.2.87.zip",
+    "sha256": "04E6A0864AF9FEFD89455BC4DAC82894564F184B7F9CF39A9F37054573A42ED5",
+    "size": 145882979
   },
   "protectedFrom": "2.2.39",
   "support": {
@@ -22,14 +22,14 @@
     "reportUrl": "https://script.google.com/macros/s/AKfycbweM8tWcvm59Va8BJxnS1z0o9L2GgtL0NXj6Yu_olAvJ7sPjnpckyGY6JB5fXH3lJYisA/exec?k=m2-7f3k9q"
   },
   "client": {
-    "version": "2.0.92",
-    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.86/metin2-client-update-2.0.92.zip",
-    "sha256": "C6A63A7834A8C649BA39C92FC284F5D670FF1BE4AEF733FD4D6EE8BB491D2924",
-    "size": 113484070,
+    "version": "2.0.93",
+    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.87/metin2-client-update-2.0.93.zip",
+    "sha256": "CD4ABC65B11CC4D71D219387EB2A13E28B072E5109558100E7DC0BF9670E90FE",
+    "size": 113484867,
     "requiresClientExe": true
   },
   "clientExe": {
-    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.86/metin2client.exe",
+    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.87/metin2client.exe",
     "sha256": "785EFC4CCDAE8CDD8B78D445C1C1C39CD93DD8B003F1E90B02D41B66521505EF",
     "size": 11297280,
     "replaces": [
@@ -58,5 +58,5 @@
       "78523FF32A087C8C463396475DB9547EFA1635F4481421F232993D4F34D5074B"
     ]
   },
-  "statusMessageEn": "2.2.86 and client 2.0.92: a very large update - the bots do the game's quests (Iwakura's Patch 15), capes, Daily Goal and price fixes, a new Wiki and apprentice chests (Kiciamol). Please test and report bugs through the launcher."
+  "statusMessageEn": "2.2.87 and client 2.0.93: fixes from your reports - the bots mix their level-30 weapons (sosen), the companion buys potions and opens its stand (magicznytomasz, NerrVoVy), Auto Hunt keeps its buffs, updating a VPS short of memory (IRON)."
 }
