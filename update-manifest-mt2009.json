@@ -1,19 +1,19 @@
 {
   "schema": 1,
   "channel": "stable",
-  "publishedAt": "2026-10-09T19:29:30Z",
-  "statusMessage": "2.2.85 i klient 2.0.91: boty zbierają się na więcej bossów i biorą szamanów z gildii na mocne mapy (sosen), poprawki panelu F9 i zielony pasek otrutego celu (Kiciamol), instalacja na VPS (xvipper).",
+  "publishedAt": "2026-10-10T06:44:34Z",
+  "statusMessage": "2.2.86 i klient 2.0.92: bardzo duża aktualizacja - boty robią questy z gry (Patch 15 Iwakury), poprawki peleryn, Celu Dnia i cen, nowa Wiki i Skrzynie Ucznia (Kiciamol). Prosimy o testy i zgłaszanie błędów przez launcher.",
   "server": {
-    "version": "2.2.85",
-    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.85/metin2-server-protected-migration-2.2.85.zip",
-    "sha256": "24AF2665162A64E472EB14E16D9E2E3479BC8B136CC7E2C0171155D65BDABB53",
-    "size": 155653202
+    "version": "2.2.86",
+    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.86/metin2-server-protected-migration-2.2.86.zip",
+    "sha256": "680E36709B208D9BDF8CCFFA827408BF1FFDE9B1DC2E801F8D99D2C6BE51BD8D",
+    "size": 155832938
   },
   "serverProtected": {
-    "version": "2.2.85",
-    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.85/metin2-server-protected-update-2.2.85.zip",
-    "sha256": "9C4A48B114DAF66D371B67B36D7C79D1986061010B3EB3431D1617FA660676D8",
-    "size": 145696722
+    "version": "2.2.86",
+    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.86/metin2-server-protected-update-2.2.86.zip",
+    "sha256": "5A2F358608C3ED06CF44A87C661A938BDE46B4FC5B78E0102D5B43EA6C9521C7",
+    "size": 145876458
   },
   "protectedFrom": "2.2.39",
   "support": {
@@ -22,14 +22,14 @@
     "reportUrl": "https://script.google.com/macros/s/AKfycbweM8tWcvm59Va8BJxnS1z0o9L2GgtL0NXj6Yu_olAvJ7sPjnpckyGY6JB5fXH3lJYisA/exec?k=m2-7f3k9q"
   },
   "client": {
-    "version": "2.0.91",
-    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.85/metin2-client-update-2.0.91.zip",
-    "sha256": "D20EB659C42078E44D6214DF4AB52F9E31C2B0FA70E4A55FC782D9144F44C848",
-    "size": 113439056,
+    "version": "2.0.92",
+    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.86/metin2-client-update-2.0.92.zip",
+    "sha256": "C6A63A7834A8C649BA39C92FC284F5D670FF1BE4AEF733FD4D6EE8BB491D2924",
+    "size": 113484070,
     "requiresClientExe": true
   },
   "clientExe": {
-    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.85/metin2client.exe",
+    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.86/metin2client.exe",
     "sha256": "785EFC4CCDAE8CDD8B78D445C1C1C39CD93DD8B003F1E90B02D41B66521505EF",
     "size": 11297280,
     "replaces": [
@@ -58,5 +58,5 @@
       "78523FF32A087C8C463396475DB9547EFA1635F4481421F232993D4F34D5074B"
     ]
   },
-  "statusMessageEn": "2.2.85 and client 2.0.91: bots raid more bosses and take a guild shaman to strong maps (sosen), F9 panel fixes and a green bar for a poisoned target (Kiciamol), VPS installation fixed (xvipper)."
+  "statusMessageEn": "2.2.86 and client 2.0.92: a very large update - the bots do the game's quests (Iwakura's Patch 15), capes, Daily Goal and price fixes, a new Wiki and apprentice chests (Kiciamol). Please test and report bugs through the launcher."
 }
