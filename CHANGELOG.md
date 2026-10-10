@@ -17,6 +17,19 @@ every version here.
 
 ---
 
+## 2.2.87 — 2026-10-10
+
+Serwer 2.2.87 i klient 2.0.93: zaktualizuj oba. Zawiera wszystko z 2.2.86.
+
+**🔧 Poprawki ze zgłoszeń**
+- Boty znowu mieszają średnie obrażenia na broni 30 poziomu od +7 do +9, zamiast zostawiać ją ze słabymi średnimi (sosen).
+- Towarzysz wysłany po mikstury nie poddaje się już tuż przed sklepikarzem (magicznytomasz).
+- Towarzysz otwiera ladę w M1, a gdy nie może - mówi właścicielowi dlaczego, zamiast udawać, że obsługuje sklep (NerrVoVy).
+- Auto Łowy nie gubią już buffów takich jak Czarowana Zbroja - skill rzucony w tej samej chwili, w której kończy się odnowienie, czasem nie wchodził (magicznytomasz).
+- Bot łucznik nie przełącza już łuku i sztyletu w kółko przy Metinie.
+- Aktualizacja świata na VPS nie zawiesza już serwera z małą ilością pamięci: paczka trafia na dysk, a na VPS-ie bez swapu zakłada się on sam (IRON).
+
+
 ## 2.2.86 — 2026-10-10
 
 Serwer 2.2.86 i klient 2.0.92: zaktualizuj oba. Zawiera wszystko z 2.2.85. To bardzo duża aktualizacja - prosimy o testy i zgłaszanie błędów przez launcher.
