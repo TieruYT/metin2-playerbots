@@ -17,6 +17,29 @@ every version here.
 
 ---
 
+## 2.2.86 — 2026-10-10
+
+Serwer 2.2.86 i klient 2.0.92: zaktualizuj oba. Zawiera wszystko z 2.2.85. To bardzo duża aktualizacja - prosimy o testy i zgłaszanie błędów przez launcher.
+
+**📜 Boty robią questy (Iwakura)**
+- Boty biorą i wykonują questy z gry tak jak gracze: rozmawiają z NPC, wybierają odpowiedzi, biją potwory, zbierają przedmioty i oddają questy po nagrodę.
+- Część botów skupia się na questach, część robi je przy okazji expienia, a część je pomija - jak prawdziwi gracze. Nowy suwak w panelu ustawia, ile botów skupia się na questach.
+- Boty jeżdżą po cel questa na inne mapy, łączą się w drużyny do trudniejszych questów i rozmawiają o questach na czacie: pytają, gdzie co jest, odpowiadają graczom, narzekają i chwalą się nagrodami.
+- Ukończenie questa od 40 poziomu jest ogłaszane na czacie globalnym - także dla graczy.
+- Nowy rodzaj Celu Dnia związany z questami. Na karcie bota w panelu widać jego obecny quest.
+
+**🔧 Poprawki (Iwakura)**
+- Boty z odpowiednim sprzętem kupują Peleryny Męstwa i ich używają, a nadmiar wystawiają; cena peleryn spada, gdy jest ich dużo na rynku.
+- Cel Dnia nie przepada przy zmianie kanału ani wylogowaniu.
+- Podgląd rynku pokazuje prawdziwe okazje - ceny botów i panelu liczone są tak samo.
+- Usunięte zawyżone ceny wystawiane czasem przez boty.
+- Zestaw PvP botów jest teraz zwykłą, domyślnie włączoną opcją.
+
+**📚 Wiki i Skrzynie Ucznia (Kiciamol)**
+- Nowy wygląd Wiki: menu z ikonami, karty potworów i przedmiotów, drop z szansą, wszystkie Smocze Kamienie z bonusami.
+- Nowa zawartość łańcucha Skrzyń Ucznia.
+
+
 ## 2.2.85 — 2026-10-09
 
 Serwer 2.2.85 i klient 2.0.91: zaktualizuj oba. Zawiera wszystko z 2.2.84.
