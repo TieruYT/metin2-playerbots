@@ -1,6 +1,6 @@
 # ⚔️ Metin2 Playerbots
 
-**Polski** | [English (README_EN.md)](README_EN.md)
+**Polski** | [English (README_EN.md)](README_EN.md) | [Türkçe (README_TR.md)](README_TR.md)
 
 [![Strona](https://img.shields.io/badge/Strona-metin2singleplayer.com-2EA44F?style=for-the-badge&logo=firefoxbrowser&logoColor=white)](https://metin2singleplayer.com)
 [![Discord](https://img.shields.io/badge/Discord-Dołącz_do_społeczności-5865F2?style=for-the-badge&logo=discord&logoColor=white)](https://discord.gg/DyCxXdZtnV)
