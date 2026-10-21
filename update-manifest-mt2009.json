@@ -1,19 +1,19 @@
 {
   "schema": 1,
   "channel": "stable",
-  "publishedAt": "2026-10-19T14:13:26Z",
-  "statusMessage": "2.2.111 / klient 2.0.115 x64: poprawki teleportu, zmiany kanału, wyjścia z gry oraz przenoszenia przedmiotów w jukach. Zamknij grę, zaktualizuj serwer i launcher, uruchom launcher ponownie i zaktualizuj klienta.",
+  "publishedAt": "2026-10-21T05:54:41Z",
+  "statusMessage": "2.2.112 / klient 2.0.116 x64 z nowym EXE: nowe Auto Łowy od Colide'a, wygodniejszy launcher (pomysły z Easy Launchera Saida, kopie świata), poprawki Waszych zgłoszeń i wersji tureckiej. Zamknij grę, zaktualizuj serwer i launcher, uruchom launcher ponownie, a następnie zaktualizuj klienta i EXE.",
   "server": {
-    "version": "2.2.111",
-    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.111/metin2-server-protected-migration-2.2.111.zip",
-    "sha256": "1893D5B98965D0E83F64486783293760B10E8F0745721A3A88D744A50D12C53B",
-    "size": 166348981
+    "version": "2.2.112",
+    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.112/metin2-server-protected-migration-2.2.112.zip",
+    "sha256": "0E5F653D06215EF0C7F401D15320F22F3482A3682A42BA4A4AA760F09F0F9135",
+    "size": 166527866
   },
   "serverProtected": {
-    "version": "2.2.111",
-    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.111/metin2-server-protected-update-2.2.111.zip",
-    "sha256": "B53BACFEDB2945FA4C104497501A1BEE02254F9402753ABB657207DFE88BC3BD",
-    "size": 156392501
+    "version": "2.2.112",
+    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.112/metin2-server-protected-update-2.2.112.zip",
+    "sha256": "233525BC7E8C59194EAD301C1850D903AAC8F1A0A02E6AE623BB0676613D866F",
+    "size": 156571386
   },
   "protectedFrom": "2.2.39",
   "support": {
@@ -22,10 +22,10 @@
     "reportUrl": "https://script.google.com/macros/s/AKfycbweM8tWcvm59Va8BJxnS1z0o9L2GgtL0NXj6Yu_olAvJ7sPjnpckyGY6JB5fXH3lJYisA/exec?k=m2-7f3k9q"
   },
   "client": {
-    "version": "2.0.115",
-    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.111/metin2-client-update-2.0.115.zip",
-    "sha256": "E1D606FFA628615440C2E44D26904847BC07F2582A034923761A1943A93ED2AC",
-    "size": 136199529,
+    "version": "2.0.116",
+    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.112/metin2-client-update-2.0.116.zip",
+    "sha256": "3A0D58DF5FA97993E611E168E0DD025DD87CE927A1847997B6A534AE52C46D11",
+    "size": 136182053,
     "requiresClientExe": true,
     "architecture": "x64",
     "nativeRuntime": [
@@ -109,12 +109,22 @@
         "path": "config.exe",
         "sha256": "C6A01520F80DB8B2E3477841CC014F0F38FE4BC3F4238974B68A50FF92025D4D"
       }
-    ]
+    ],
+    "supplement": {
+      "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.112/metin2-client-update-2.0.116-supplement.zip",
+      "sha256": "CC638AE60C0957580B456DE765E23E1066186E25A15E5D32C3FCA64EC18D0271",
+      "size": 4060,
+      "files": [
+        "pack\\root.json",
+        "COOP - arkadasinla nasil oynanir.txt",
+        "Turkce-Yap.bat"
+      ]
+    }
   },
   "clientExe": {
-    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.111/metin2client.exe",
-    "sha256": "A0E7DC83286FE6627E221CE17E57BF12B5DEC1D841F287D786FDA9F092612B77",
-    "size": 10110976,
+    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.112/metin2client.exe",
+    "sha256": "A5760F627D097FAEA71E6804E01198BFBCD15C821AB6414EEBA00113D81FAFB3",
+    "size": 10884096,
     "replaces": [
       "8263F81BFACDFA4A664C1F2A8CE846AEE14F19E584DB40A43F3184FEF1A59531",
       "752623560AB54E2F3F84FF9ADB8961D73E2E289634075118D3FBEA984CFCEFB1",
@@ -148,8 +158,9 @@
       "B0B4DE84EF1C0B0D456DE75EFC93FE18E096B7925E7C907CC16DFF0037931D5F",
       "FD9B5C4AD5FA950BD0618B26FFDCC0CA7E11180F1D4044E102F036F8A8E87CD7",
       "E368172A1B981F20272B6E2450EC7246C505307DFB2AA7A6CB2D2C5CECB04869",
-      "0F2E1DEEA943C28EF9246C89B736C15AED72380834C29393DCA8D3A74AFB7662"
+      "0F2E1DEEA943C28EF9246C89B736C15AED72380834C29393DCA8D3A74AFB7662",
+      "A0E7DC83286FE6627E221CE17E57BF12B5DEC1D841F287D786FDA9F092612B77"
     ]
   },
-  "statusMessageEn": "2.2.111 / client 2.0.115 x64: fixes for teleporting, channel changes, game exit and saddlebag item transfers. Close the game, update the server and launcher, restart the launcher, then update the client."
+  "statusMessageEn": "2.2.112 / client 2.0.116 x64 with a new EXE: Colide's new Auto Hunt, a handier launcher (ideas from Said's Easy Launcher, world backups), fixes of your reports and of the Turkish version. Close the game, update the server and launcher, restart the launcher, then update the client and the EXE."
 }
