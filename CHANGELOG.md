@@ -17,6 +17,25 @@ every version here.
 
 ---
 
+## 2.2.114 — 2026-10-21
+
+Większa aktualizacja z klientem 2.0.118 (plik gry bez zmian):
+
+- Turecki (Said): kolejne tureckie teksty w kliencie, panelu i ItemShopie. Boty piszą na czacie tureckie nazwy przedmiotów, potworów, map i umiejętności. Przed nickiem w czacie gracz turecki, angielski i rumuński widzi [PM] zamiast [PW] (niemiecki [PN], francuski i portugalski [MP]).
+- Nicki botów według języka świata (Said): nowy świat z klientem po turecku dostaje tureckie nicki botów. Istniejący świat zachowuje swoje, a zmienić je można w panelu.
+- ItemShop (Said): nowe oferty, wyszukiwarka rozumiejąca polskie i tureckie litery, strona z miksturami i start na stronie z ofertami. Stary sklep w przeglądarce nie przyjmuje już zakupów - kupuje się w sklepie w grze.
+- Towarzysz (zgłosił javierwxw): po zmianie królestwa przez właściciela Towarzysz grający sam wraca do królestwa właściciela, a jego stoisko przenosi się do tamtejszej wioski.
+- Boty: zdejmują z lady i dokupują księgi Polimorfii i Dowodzenia, które mogą przeczytać. Ulepszają też przedmioty wysłane im z panelu w starszych wersjach, bo ochrona takiego daru trwa 24 godziny.
+- Boty (Tyrion): rozważniej dobierają kamienie duchowe i zwoje przy najlepszym sprzęcie oraz nie ponawiają w kółko nieudanych zakupów materiałów.
+- Klient: pasek życia przeciwnika-gracza pokazuje się od razu po uderzeniu (zgłosił Drip). Wybór kamery Bliżej/Dalej zostaje zapamiętany po restarcie gry.
+- Panel: w panelu GM (F9) jest Kamień Witalności. Edytor dropu pokazuje prawdziwą szansę każdej linii i zawartość grup oraz szkatułek.
+- Serwer (zgłosił magicznytomasz): koniec okresowych przycięć przy wielu sklepach botów.
+- Launcher: serwer stojący w sieci domowej działa w kliencie na tym samym komputerze (zgłosił Dog Food). Pełna paczka ma Launcher.bat w głównym folderze, a launcher raz proponuje skrót na pulpicie (pomysł Saida).
+
+Dziękujemy Saidowi i Tyrionowi oraz javierwxw, Dripowi, Dog Food i magicznytomaszowi za zgłoszenia!
+
+Zamknij grę, zaktualizuj serwer i launcher do 2.2.114, uruchom launcher ponownie, a następnie zaktualizuj klienta do 2.0.118. Wydanie chronione; postacie i ustawienia zostają zachowane. Błędy zgłaszaj z opisem i logami przez „Zgłoś błąd” w launcherze.
+
 ## 2.2.113 — 2026-10-21
 
 Aktualizacja naprawcza z klientem 2.0.117 (plik gry bez zmian):

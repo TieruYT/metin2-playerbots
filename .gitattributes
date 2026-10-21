@@ -46,3 +46,8 @@
 # Colide's native Auto Lowy sources stay his bytes (some generated files are
 # CRLF); clientify copies them into the client tree unchanged.
 /linux-port-mt2009/port/client/UserInterface/autohunt/** -text
+# The full package's own root (#89): Launcher.bat is read by cmd.exe, whose
+# goto and call to a label miss in a file of bare LF lines, and the three
+# notes open in Notepad. CRLF on checkout, as the package carries them.
+/files/full-package-root/*.bat text eol=crlf
+/files/full-package-root/*.txt text eol=crlf
