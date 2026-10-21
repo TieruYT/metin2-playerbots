@@ -17,6 +17,18 @@ every version here.
 
 ---
 
+## 2.2.113 — 2026-10-21
+
+Aktualizacja naprawcza z klientem 2.0.117 (plik gry bez zmian):
+
+- Auto Łowy (Colide, zgłosili DaTemox i iahgod): gra nie zamyka się już podczas teleportu, np. pierścieniem teleportacji, gdy w tej sesji otwierano okna Auto Łowów; po zmianie mapy Auto Łowy znów otwierają się klawiszem K i przyciskiem; przy wychodzeniu z gry nie wyskakuje już okienko z błędem; okno dodawania przedmiotu do „Własnych” otwiera się poprawnie i zamyka przyciskiem X oraz ESC; przełącznik „Filtr dla Z i `” od razu pokazuje swój stan.
+- Auto Łowy: przedmiot dopisany ręcznie do „Własnych” jest podnoszony, jeśli leży na ziemi i zwykłe podnoszenie go bierze - także gdy nie ma go w podstawowym katalogu filtra.
+- Panel (zgłosił Said): na światach założonych od wersji 2.2.91 polecenia z panelu - wysłanie przedmiotu lub yang, usunięcie przedmiotu, odblokowanie EXP, zakończenie questa i inne - znów docierają do gry. Naprawa dzieje się sama przy pierwszym starcie po aktualizacji.
+
+Dziękujemy Colide'owi za poprawki oraz DaTemox, iahgod i Saidowi za zgłoszenia!
+
+Zamknij grę, zaktualizuj serwer i launcher do 2.2.113, uruchom launcher ponownie, a następnie zaktualizuj klienta do 2.0.117. Wydanie chronione; postacie i ustawienia zostają zachowane. Błędy zgłaszaj z opisem i logami przez „Zgłoś błąd” w launcherze.
+
 ## 2.2.112 — 2026-10-21
 
 Duża porcja poprawek Waszych zgłoszeń, nowe Auto Łowy od Colide'a, wygodniejszy launcher z pomysłami z Easy Launchera Saida i poprawki wersji tureckiej. Klient 2.0.116 x64 zawiera nowe EXE.
