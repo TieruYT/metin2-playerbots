@@ -1,19 +1,19 @@
 {
   "schema": 1,
   "channel": "stable",
-  "publishedAt": "2026-10-21T14:15:06Z",
-  "statusMessage": "2.2.113 / klient 2.0.117: poprawki Auto Łowów od Colide'a (zamykanie gry, teleport, okno „Własne”) i panelu (polecenia znów docierają do gry). Zamknij grę, zaktualizuj serwer i launcher, uruchom launcher ponownie, a następnie zaktualizuj klienta.",
+  "publishedAt": "2026-10-21T20:18:13Z",
+  "statusMessage": "2.2.114 / klient 2.0.118: turecki od Saida (teksty, czat botów, nicki), ItemShop, Towarzysz wraca do królestwa właściciela, poprawki zgłoszeń (pasek życia, kamera, przycięcia przy sklepach botów, serwer w sieci domowej). Zamknij grę, zaktualizuj serwer i launcher, uruchom launcher ponownie, a następnie zaktualizuj klienta.",
   "server": {
-    "version": "2.2.113",
-    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.113/metin2-server-protected-migration-2.2.113.zip",
-    "sha256": "C2AE2F970A5BE47CA0524F324F497146226C9F776068C1BD847DBD182A70C63F",
-    "size": 166529680
+    "version": "2.2.114",
+    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.114/metin2-server-protected-migration-2.2.114.zip",
+    "sha256": "1C8BD5353E975B59A03DE50AB7FE3653ADCCC86353184B717719F55978CB5631",
+    "size": 166772318
   },
   "serverProtected": {
-    "version": "2.2.113",
-    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.113/metin2-server-protected-update-2.2.113.zip",
-    "sha256": "48C0CAB66C69ED469B9548BD482631BF34B1E8B17CC8D8B0B4FF314B8718EBDA",
-    "size": 156573200
+    "version": "2.2.114",
+    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.114/metin2-server-protected-update-2.2.114.zip",
+    "sha256": "F434F08A5F3F7F56724BBF667E34E02874CE69E0F6B92CF049E85E6DECD48858",
+    "size": 156815838
   },
   "protectedFrom": "2.2.39",
   "support": {
@@ -22,10 +22,10 @@
     "reportUrl": "https://script.google.com/macros/s/AKfycbweM8tWcvm59Va8BJxnS1z0o9L2GgtL0NXj6Yu_olAvJ7sPjnpckyGY6JB5fXH3lJYisA/exec?k=m2-7f3k9q"
   },
   "client": {
-    "version": "2.0.117",
-    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.113/metin2-client-update-2.0.117.zip",
-    "sha256": "69FC7BD4E4582206343308A6F01E1D3AF91F8A6196ACCD56DC5CA92A04E3CEFB",
-    "size": 136184495,
+    "version": "2.0.118",
+    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.114/metin2-client-update-2.0.118.zip",
+    "sha256": "DC1D2BF4D2A7239F6C12467DE40EB4A76000577E625CE3AEF6092261E9856A79",
+    "size": 136186788,
     "requiresClientExe": true,
     "architecture": "x64",
     "nativeRuntime": [
@@ -111,8 +111,8 @@
       }
     ],
     "supplement": {
-      "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.113/metin2-client-update-2.0.117-supplement.zip",
-      "sha256": "77BB3EE2E3D080D4544F4FBDFF609089A7F00823CF4479110EF4FC43F0A6B0CF",
+      "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.114/metin2-client-update-2.0.118-supplement.zip",
+      "sha256": "8466E8AD5D7456C574DD494B19ADF81F5C048785B777E513D12D5A2B426345C0",
       "size": 4060,
       "files": [
         "pack\\root.json",
@@ -162,5 +162,5 @@
       "A0E7DC83286FE6627E221CE17E57BF12B5DEC1D841F287D786FDA9F092612B77"
     ]
   },
-  "statusMessageEn": "2.2.113 / client 2.0.117: Colide's Auto Hunt fixes (quitting the game, teleports, the \"Custom\" window) and panel fixes (its commands reach the game again). Close the game, update the server and launcher, restart the launcher, then update the client."
+  "statusMessageEn": "2.2.114 / client 2.0.118: Said's Turkish (texts, bot chat, bot names), the ItemShop, a companion returns to its owner's kingdom, fixes from your reports (enemy health bar, camera, lag with many bot shops, a server on the home network). Close the game, update the server and launcher, restart the launcher, then update the client."
 }
