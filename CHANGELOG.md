@@ -17,6 +17,26 @@ every version here.
 
 ---
 
+## 2.2.112 — 2026-10-21
+
+Duża porcja poprawek Waszych zgłoszeń, nowe Auto Łowy od Colide'a, wygodniejszy launcher z pomysłami z Easy Launchera Saida i poprawki wersji tureckiej. Klient 2.0.116 x64 zawiera nowe EXE.
+
+- Auto Łowy (Colide): nowa wersja Auto Łowów, wbudowana bezpośrednio w plik gry - te same okna, ustawienia i filtry, sprawniejsze działanie. Klient i plik gry muszą być z tej samej wersji.
+- Klient (Kiciamol): wyraźniejsze teksty i grafika przy skali interfejsu innej niż 100%, także nazwy nad postaciami; przy 100% wygląd bez zmian. Po zmianie skali czarny pasek u góry ekranu nie zostaje już po rozmowie z NPC. Gra zamyka się do końca i nie zostawia zawieszonego procesu, który blokował aktualizację klienta (zgłosił Piciu713).
+- Umiejętności (pomysł Saida): od 17 punktu domyślnie obowiązuje reguła z oficjalnych serwerów - każdy kolejny punkt daje szansę na Mistrza, a 20. punkt to pewny M1. Dawną blokadę na 17 włączysz przełącznikiem w oknie trudności launchera albo w panelu. Boty i Towarzysze stosują regułę wybraną w świecie.
+- Towarzysz (zgłosił Neutro): przy czytaniu Kamieni Duchowych korzysta z fasolek i owoców, które mu dasz (chyba że zablokujesz jego ekwipunek), a na czacie mówi, ile kosztowało czytanie i na co czeka.
+- Konie (Kiciamol, zgłosił MajkeLLowsky): stajenny pokazuje szkolenie konia także wtedy, gdy medal konny zdobyłeś w tej samej sesji.
+- Wędkarstwo (zgłosił a.8808): ukończenie wstępu u Rybaka narzędziami GM odblokowuje łowienie; postacie zablokowane wcześniej odblokują się same przy następnym logowaniu.
+- Boty (Tyrion): boty nie utykają już w mieście przy zakupie materiałów do ulepszania i spokojnie kończą pozostałe sprawy.
+- Serwer: zbyt wiele przedmiotów dodanych do sklepu NPC w edytorze bazy nie blokuje już startu serwera - edytor ostrzega przed przekroczeniem limitu, a launcher podpowiada, co zrobić, gdy serwer nie wstaje.
+- Launcher (pomysły z Easy Launchera Saida): przy pierwszym uruchomieniu język według Windows, osobny wybór języka gry w Narzędziach, komputer nie usypia w trakcie długich akcji, jedno okno launchera na folder; polecana liczba botów dla Twojego komputera, instalacja Docker Desktop i WSL jednym kliknięciem, dołączanie do znajomego po adresie; automatyczna kopia świata przed aktualizacją serwera i raz dziennie przy „Zatrzymaj i zapisz” oraz lista kopii z przywracaniem i usuwaniem.
+- Launcher (zgłosili therizzy i kaethasger): czytelna podpowiedź, gdy Docker nie może pobrać obrazów albo gdy w folderze klienta brakuje plików potrzebnych do startu gry; starsze launchery znów mogą zaktualizować samego klienta; raport błędu zbiera więcej informacji do diagnozy.
+- Turecki (Said, zgłosił a.8808): kilkaset nowych i poprawionych tekstów klienta, questów i paneli, tureckie nazwy NPC nad głowami i wiadomości wędkarskie w języku gracza.
+
+Dziękujemy Colide'owi, Kiciamolowi, Tyrionowi i Saidowi oraz wszystkim zgłaszającym i testującym!
+
+Zamknij grę, zaktualizuj serwer i launcher do 2.2.112, uruchom launcher ponownie, a następnie zaktualizuj klienta i EXE do 2.0.116. Wydanie chronione; postacie i ustawienia zostają zachowane. Błędy zgłaszaj z opisem i logami przez „Zgłoś błąd” w launcherze.
+
 ## 2.2.111 — 2026-10-19
 
 Aktualizacja naprawcza z klientem 2.0.115 x64:

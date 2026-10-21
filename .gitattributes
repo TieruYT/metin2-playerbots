@@ -30,6 +30,19 @@
 /linux-port-mt2009/client-coop/Turkce-Yap.bat -text
 /linux-port-mt2009/client-coop/COOP*arkadasinla*.txt -text
 
+# Translation tables whose trailing spaces and tabs are text: a label a value
+# is appended to ("Full skip: "), the locale's empty third column. git's
+# whitespace check would have them taken away (Said's Turkish, 20 October).
+/linux-port-mt2009/client-locale/locale/** -whitespace
+/data/playerbot_quest_texts_*.tsv -whitespace
+# A stock root module rendered whole for a donor keeps its bytes, trailing
+# tabs included, so the renderer's replay over the published root stays exact
+# (uiquest.py for Kiciamol's quest curtain, #59).
+/linux-port-mt2009/client-root/uiquest.py -whitespace
+
 # The published client's gamedata pack the panel builds the client's item and
 # monster tables over (files/client_protos.py): its bytes are compared by SHA-256.
 /files/client_base/gamedata.* binary
+# Colide's native Auto Lowy sources stay his bytes (some generated files are
+# CRLF); clientify copies them into the client tree unchanged.
+/linux-port-mt2009/port/client/UserInterface/autohunt/** -text
