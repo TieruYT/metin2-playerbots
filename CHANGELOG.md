@@ -17,6 +17,29 @@ every version here.
 
 ---
 
+## 2.2.116 — 2026-10-22
+
+Aktualizacja z klientem 2.0.120 i nowym plikiem gry:
+
+- Rotacja botów (zgłosił _antycheat): gdy w grze jest za mało botów względem ustawionego celu, rotacja budzi te, którym odpoczynek kończy się najwcześniej, więc świat nie zostaje daleko pod celem. Panel pisze przy liczbie botów w grze, ile ma ich być teraz i za godzinę, ilu odpoczywa i kiedy wracają, a każde ustawienie rotacji ma krótki opis.
+- Towarzysz (zgłosił javierwxw): na `/towarzysz sklep` mówi, na co czeka jego sklep. Grając sam w obcej wiosce, wraca do swojej także wtedy, gdy jego wioskę obsługuje inny rdzeń serwera.
+- Tureckie szepty (Said): boty rozumieją szepty pisane po turecku, także z tureckimi literami.
+- Klient: ikony efektów nad paskiem są znowu gładkie, bronie 70 lvl (np. Złodziej Dusz) pokazują wbudowany bonus jako wbudowany, a Wiki ma poprawione miniaturki kilku potworów.
+- Czcionka (Kiciamol): przy pomniejszonym interfejsie tekst jest wyraźniejszy.
+- Auto Łowy: teleport nie przerywa sesji, a po błędzie sesji autologowanie wie, że gra została zamknięta.
+- Rynek i ekwipunek botów (Tyrion): boty odzyskują własne zwoje z lady przed kupnem cudzych, sprzedają bezwartościowe nadwyżki, nie trzymają towaru do ulepszania bez materiałów, a sklepy wygasłe w czasie gry na innym kanale wracają same.
+- Wieża Demonów (Tyrion): kowal na 6. piętrze bierze rzeczy z poziomu bota, najbliższy poziom najpierw.
+- Buffy szamana (pomysł Dripa): wsparcie szamana dla drużyny działa na członków w pobliżu, około 30 m, a nie na pół mapy; Leczenie działa na wybraną osobę albo na samego szamana.
+- Dane dla klienta gry (zgłosił Urtopy): zmienione w bazie wartości umiejętności (mana, odnowienie, czas działania, zasięg) trafiają do klienta razem z przedmiotami i potworami, a panel pokazuje, które umiejętności różnią się od klienta.
+- Boty 30–47 lvl (zgłosił sosen) nie tłoczą się już w Dolinie Orków i nie krążą po niej od miejsca do miejsca, gdy wszystkie potwory są zajęte.
+- Biolog: boty od 80 lvl robią misję z Certyfikatem Tugyisa i chodzą po niego do Krainy Gigantów.
+- Grota Wygnańców: Podziemny Lodowy Golem ma niższą odporność na broń białą, więc nie odstaje już tak bardzo od reszty mapy.
+- Nowe ustawienie (domyślnie wyłączone): limit długości walk PvP botów z przerwą po walce.
+
+Dziękujemy Kiciamolowi, Tyrionowi, Saidowi i Colide'owi oraz Dripowi, Urtopy'emu, sosenowi, _antycheat i javierwxw za zgłoszenia i pomysły!
+
+Zamknij grę, zaktualizuj serwer i launcher do 2.2.116, uruchom launcher ponownie, a następnie zaktualizuj klienta do 2.0.120. Wydanie chronione; postacie i ustawienia zostają zachowane. Błędy zgłaszaj z opisem i logami przez „Zgłoś błąd” w launcherze.
+
 ## 2.2.115 — 2026-10-22
 
 Aktualizacja z klientem 2.0.119 i nowym plikiem gry:
