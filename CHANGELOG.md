@@ -17,6 +17,22 @@ every version here.
 
 ---
 
+## 2.2.115 — 2026-10-22
+
+Aktualizacja z klientem 2.0.119 i nowym plikiem gry:
+
+- Okno gry (Kiciamol): w trybie okienkowym rozmiar okna zmienia się przeciągnięciem krawędzi albo maksymalizacją, a pasek zadań i okna gry dopasowują się do nowego rozmiaru. Skala interfejsu dalej ustawia się w opcjach.
+- Launcher (zgłosili rash.me i cago07): GRAJ czeka, aż serwer gry naprawdę odpowiada, a ekran logowania sam ponawia sprawdzenie kanałów, więc CH1 nie zostaje „off” po starcie świata.
+- Towarzysz (zgłosił a.8808): zsiada z konia, gdy walczy albo gdy właściciel jest pieszo obok.
+- Kopanie (zgłosił Dekri): górnicy, w tym Towarzysz, ulepszają pełny kilof.
+- Baza danych (zgłosił magicznytomasz): bufor bazy dobiera się do pamięci komputera lub VPS, co zmniejsza obciążenie dysku i procesora na dużych światach.
+- Wiki: opis, dlaczego niektóre przedmioty (np. Pazur Małpy) wypadają rzadko przy dużej przewadze poziomu nad potworem.
+- Klient: Dzwon Burzowego Ptaka pokazuje w opisie 15% szybkości ataku, tak jak działa na serwerze.
+
+Dziękujemy Kiciamolowi oraz rash.me, cago07, a.8808, Dekriemu i magicznytomaszowi za zgłoszenia!
+
+Zamknij grę, zaktualizuj serwer i launcher do 2.2.115, uruchom launcher ponownie, a następnie zaktualizuj klienta do 2.0.119. Wydanie chronione; postacie i ustawienia zostają zachowane. Błędy zgłaszaj z opisem i logami przez „Zgłoś błąd” w launcherze.
+
 ## 2.2.114 — 2026-10-21
 
 Większa aktualizacja z klientem 2.0.118 (plik gry bez zmian):
