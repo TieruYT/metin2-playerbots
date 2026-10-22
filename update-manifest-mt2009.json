@@ -1,19 +1,19 @@
 {
   "schema": 1,
   "channel": "stable",
-  "publishedAt": "2026-10-22T07:25:31Z",
-  "statusMessage": "2.2.115 / klient 2.0.119: zmiana rozmiaru okna gry krawędzią (Kiciamol), GRAJ czeka na gotowy serwer, Towarzysz zsiada z konia, ulepszanie kilofa, bufor bazy dopasowany do pamięci, poprawki opisów. Zamknij grę, zaktualizuj serwer i launcher, uruchom launcher ponownie, a następnie zaktualizuj klienta.",
+  "publishedAt": "2026-10-22T14:50:05Z",
+  "statusMessage": "2.2.116 / klient 2.0.120: rotacja botów nie zostawia świata pod celem, buffy szamana w pobliżu, tureckie szepty, czytelniejsza czcionka, Auto Łowy po teleporcie, Biolog 80 lvl, poprawki zgłoszeń. Zamknij grę, zaktualizuj serwer i launcher, uruchom launcher ponownie, a następnie zaktualizuj klienta.",
   "server": {
-    "version": "2.2.115",
-    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.115/metin2-server-protected-migration-2.2.115.zip",
-    "sha256": "DB727DF849FBAD332FD840FC59F1967798BFEC6E00B9B132C7922993BFD99161",
-    "size": 166779299
+    "version": "2.2.116",
+    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.116/metin2-server-protected-migration-2.2.116.zip",
+    "sha256": "F5AF5CE8D077C7C30D5B57AF3886E8174D5C6B9529ED969FBD92D1CDDC2E9856",
+    "size": 166850384
   },
   "serverProtected": {
-    "version": "2.2.115",
-    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.115/metin2-server-protected-update-2.2.115.zip",
-    "sha256": "D950E2CB5C3547465E9CD07DBDB2C1F72B43C1D3D3564CD2D622B8EBBBA3FBD7",
-    "size": 156822819
+    "version": "2.2.116",
+    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.116/metin2-server-protected-update-2.2.116.zip",
+    "sha256": "F45879229AAF96640020AD1DC23A4E3A0CE31B7B6E7082C8F431887391B7F7B4",
+    "size": 156893904
   },
   "protectedFrom": "2.2.39",
   "support": {
@@ -22,10 +22,10 @@
     "reportUrl": "https://script.google.com/macros/s/AKfycbweM8tWcvm59Va8BJxnS1z0o9L2GgtL0NXj6Yu_olAvJ7sPjnpckyGY6JB5fXH3lJYisA/exec?k=m2-7f3k9q"
   },
   "client": {
-    "version": "2.0.119",
-    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.115/metin2-client-update-2.0.119.zip",
-    "sha256": "55C0195984B9B373DC0736DA4FCE0A1EE8611B38D1E46646A0E4BEA3C51752FA",
-    "size": 136189151,
+    "version": "2.0.120",
+    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.116/metin2-client-update-2.0.120.zip",
+    "sha256": "335C9018EE08228F9E447FC7C54B7A505EA5C78A086E996E4AC1DC59F079449A",
+    "size": 136217834,
     "requiresClientExe": true,
     "architecture": "x64",
     "nativeRuntime": [
@@ -111,8 +111,8 @@
       }
     ],
     "supplement": {
-      "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.115/metin2-client-update-2.0.119-supplement.zip",
-      "sha256": "8466E8AD5D7456C574DD494B19ADF81F5C048785B777E513D12D5A2B426345C0",
+      "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.116/metin2-client-update-2.0.120-supplement.zip",
+      "sha256": "2A2E78505B8F5F85A3AB49EDBE7C68DC4816A4947D245FE51D5C98760C48C446",
       "size": 4060,
       "files": [
         "pack\\root.json",
@@ -122,9 +122,9 @@
     }
   },
   "clientExe": {
-    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.115/metin2client.exe",
-    "sha256": "4F7DBC84ABBEB8F6EEC23BDB89E9199A96AEB864A74279099EBF3A3266FBECA3",
-    "size": 10885632,
+    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.116/metin2client.exe",
+    "sha256": "D3266C87CEA858650DFD7AE50B95A3E5B56BF0A9E7202A96F3A958AB4043A4DC",
+    "size": 10888704,
     "replaces": [
       "8263F81BFACDFA4A664C1F2A8CE846AEE14F19E584DB40A43F3184FEF1A59531",
       "752623560AB54E2F3F84FF9ADB8961D73E2E289634075118D3FBEA984CFCEFB1",
@@ -160,8 +160,9 @@
       "E368172A1B981F20272B6E2450EC7246C505307DFB2AA7A6CB2D2C5CECB04869",
       "0F2E1DEEA943C28EF9246C89B736C15AED72380834C29393DCA8D3A74AFB7662",
       "A0E7DC83286FE6627E221CE17E57BF12B5DEC1D841F287D786FDA9F092612B77",
-      "A5760F627D097FAEA71E6804E01198BFBCD15C821AB6414EEBA00113D81FAFB3"
+      "A5760F627D097FAEA71E6804E01198BFBCD15C821AB6414EEBA00113D81FAFB3",
+      "4F7DBC84ABBEB8F6EEC23BDB89E9199A96AEB864A74279099EBF3A3266FBECA3"
     ]
   },
-  "statusMessageEn": "2.2.115 / client 2.0.119: resize the game window by its edge (Kiciamol), PLAY waits for a ready server, the companion gets off its horse, pickaxe upgrades, a database buffer sized to the memory, description fixes. Close the game, update the server and launcher, restart the launcher, then update the client."
+  "statusMessageEn": "2.2.116 / client 2.0.120: the bot rotation no longer leaves the world under its target, shaman buffs nearby, Turkish whispers, sharper small text, Auto Hunt after a teleport, the level-80 Biologist, report fixes. Close the game, update the server and launcher, restart the launcher, then update the client."
 }
