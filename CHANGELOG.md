@@ -17,6 +17,20 @@ every version here.
 
 ---
 
+## 2.2.117 — 2026-10-22
+
+Aktualizacja z klientem 2.0.121 (plik gry bez zmian):
+
+- Ulepszanie z magazynu (pomysł Dekriego): w pierwszej i drugiej wiosce kowal sam bierze brakujące materiały z magazynu kolekcjonera, a okno ulepszania pokazuje, ile ich zostało w magazynie. Wystarczy raz po wejściu do gry otworzyć magazyn u Dozorcy.
+- Przetopy (pomysł Dekriego): gdy biżuteria ma już 3 przetopy, kolejny przetop tego samego rodzaju zawsze wchodzi i odnawia ich czas działania.
+- Kłódka na stronach ekwipunku (pomysł CosTeiiRa): Lewy Alt + Shift + klik na zakładkę strony blokuje ją przed „Scal i uporządkuj” - nic z niej nie wychodzi i nic do niej nie trafia.
+- Towarzysz (zgłosił javierwxw): po zamknięciu i ponownym otwarciu sklepu wystawia znowu zwrócony towar.
+- Towarzysz (zgłosił blasty): sam zakłada pierścienie i rękawice w sloty specjalne tylko wtedy, gdy dostał je od właściciela, a nie z dropu.
+
+Dziękujemy Dekriemu, CosTeiiRa, javierwxw i blasty za zgłoszenia i pomysły!
+
+Zamknij grę, zaktualizuj serwer i launcher do 2.2.117, uruchom launcher ponownie, a następnie zaktualizuj klienta do 2.0.121. Wydanie chronione; postacie i ustawienia zostają zachowane. Błędy zgłaszaj z opisem i logami przez „Zgłoś błąd” w launcherze.
+
 ## 2.2.116 — 2026-10-22
 
 Aktualizacja z klientem 2.0.120 i nowym plikiem gry:
