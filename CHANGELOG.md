@@ -17,6 +17,19 @@ every version here.
 
 ---
 
+## 2.2.118 — 2026-10-22
+
+Aktualizacja z klientem 2.0.122 (plik gry bez zmian):
+
+- Mniej lagów przy wielu botach: boty z dużą liczbą broni w torbie nie spowalniają już serwera przy każdym przeglądzie ekwipunku.
+- Boty powyżej 70 poziomu nie krążą już bez celu po Sohan: dostają swoje miejsca do polowania (zgłosił sosen).
+- Launcher pokazuje, co robi: przycisk „Szczegóły” pulsuje, gdy trwa start, aktualizacja albo inna czynność, a stan serwera mówi np. „URUCHAMIA SIĘ” zamiast „Zatrzymany”.
+- ItemShop ma przycisk „Wesprzyj projekt”: dobrowolne wsparcie, które nic nie daje w grze.
+
+Dziękujemy sosenowi i wszystkim, którzy wysłali zgłoszenia o lagach!
+
+Zamknij grę, zaktualizuj serwer i launcher do 2.2.118, uruchom launcher ponownie, a następnie zaktualizuj klienta do 2.0.122. Wydanie chronione; postacie i ustawienia zostają zachowane. Błędy zgłaszaj z opisem i logami przez „Zgłoś błąd” w launcherze.
+
 ## 2.2.117 — 2026-10-22
 
 Aktualizacja z klientem 2.0.121 (plik gry bez zmian):
