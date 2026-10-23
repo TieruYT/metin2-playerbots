@@ -17,6 +17,20 @@ every version here.
 
 ---
 
+## 2.2.119 — 2026-10-23
+
+Aktualizacja z klientem 2.0.123 (plik gry bez zmian):
+
+- Towarzysz walczy z konia bojowego obok właściciela, który jedzie konno, zamiast schodzić z konia i odwoływać go przy każdym ataku (zgłosił Ziółek).
+- Sklep Towarzysza: stoisko, które zostało bez towarów, nie blokuje już sklepu ani odprawienia Towarzysza, a po włączeniu sklepu Towarzysz mówi, czemu nic nie wystawia (zgłosił JavierWxw).
+- Okno kowala mówi na czacie, czemu magazyn nie pokrywa brakującego materiału (zgłosił Hiob).
+- Launcher nie pokazuje już „Serwer: ZATRZYMANY”, gdy świat działa (zgłosił Charlie).
+- Panel „Dlaczego tyle botów?” mówi też o botach, które dołączają później, i o tym, za ile minut rotacja dojdzie do celu.
+
+Dziękujemy Ziółkowi, JavierWxw, Hiobowi, Charliemu i wszystkim, którzy wysłali zgłoszenia!
+
+Zamknij grę, zaktualizuj serwer i launcher do 2.2.119, uruchom launcher ponownie, a następnie zaktualizuj klienta do 2.0.123. Wydanie chronione; postacie i ustawienia zostają zachowane. Błędy zgłaszaj z opisem i logami przez „Zgłoś błąd” w launcherze.
+
 ## 2.2.118 — 2026-10-22
 
 Aktualizacja z klientem 2.0.122 (plik gry bez zmian):
