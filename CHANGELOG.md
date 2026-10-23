@@ -17,6 +17,20 @@ every version here.
 
 ---
 
+## 2.2.121 — 2026-10-23
+
+Aktualizacja serwera (klient 2.0.123 i plik gry bez zmian):
+
+- Pierścień Teleportacji mieści się w oknie dialogu: pięć stron (poniżej 60 poziomu cztery) po najwyżej cztery mapy. Ceny i cele bez zmian. Podpowiedź Teleportera też już nie wychodzi poza okno (zgłosił DaTemox).
+- Boty rozwijają dalej bransolety, naszyjniki, kolczyki i buty od 70-75 poziomu oraz hełm 41 poziomu od 60 poziomu, zamiast zatrzymywać je na +4.
+- Towarzysz wysłany na ryby mówi dokładnie, dlaczego nie może łowić, a kartę wędkarską opłaca z całej swojej sakiewki (zgłosił Blind).
+- Poprawki sklepów offline i logowania: przedmiot sprzedany albo zdjęty z lady jest od razu zapisywany w nowym miejscu, logowania kilku postaci zapisują się bez błędu, a komunikat o za małym oknie sklepu mówi, którego sklepu dotyczy.
+- Panel pokazuje wartości broni (atak, szybkość ataku, magiczny atak) tak jak gra.
+
+Dziękujemy DaTemox, Blind, Ziółkowi, a.8808 i wszystkim, którzy wysłali zgłoszenia!
+
+Zamknij grę i zaktualizuj serwer do 2.2.121. Klient zostaje w wersji 2.0.123. Wydanie chronione; postacie i ustawienia zostają zachowane. Błędy zgłaszaj z opisem i logami przez „Zgłoś błąd” w launcherze.
+
 ## 2.2.120 — 2026-10-23
 
 Aktualizacja serwera (klient 2.0.123 i plik gry bez zmian):

@@ -16,6 +16,9 @@
 # The port patch must survive byte for byte -- `patch` counts characters, and a
 # rewritten line ending makes every hunk fail to apply.
 *.patch -text
+# A patch for another repository keeps that repository's own context lines,
+# trailing spaces included, so the whitespace check reads none of it.
+docs/patches/*.patch -whitespace
 
 # Binary, never transform.
 *.png binary
