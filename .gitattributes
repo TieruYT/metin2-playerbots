@@ -38,6 +38,10 @@ docs/patches/*.patch -whitespace
 # whitespace check would have them taken away (Said's Turkish, 20 October).
 /linux-port-mt2009/client-locale/locale/** -whitespace
 /data/playerbot_quest_texts_*.tsv -whitespace
+# Item texts whose empty optional columns end a row in tabs (the Manny Seal,
+# 23 October), and the Turkish reply table exported for Said (said-1023).
+/data/item_texts_en.tsv -whitespace
+/docs/codex-audits/said-1023/conv_replies_for_tr.tsv -whitespace
 # A stock root module rendered whole for a donor keeps its bytes, trailing
 # tabs included, so the renderer's replay over the published root stays exact
 # (uiquest.py for Kiciamol's quest curtain, #59).

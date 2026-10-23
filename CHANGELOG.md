@@ -17,6 +17,26 @@ every version here.
 
 ---
 
+## 2.2.122 — 2026-10-24
+
+Aktualizacja serwera i klienta 2.0.124 (plik gry bez zmian):
+
+- Naprawiony błąd wierzchowców – dzięki NerrVoVy!
+- Gwiazdka ulubionego przedmiotu nie znika już, gdy założony przedmiot przypadkiem upuścisz na inny przedmiot w torbie, a potem go zdejmiesz.
+- Okno kowala mówi wprost, gdy serwer jest starszy niż klient i kowal nie sięga do magazynu.
+- Towarzysz przywołuje się od razu także przy włączonej rotacji botów.
+- Stoisko Towarzysza staje w pierwszej wiosce, w której stoi przy nim właściciel, także po zmianie królestwa.
+- Bot przejęty Przemianą zawsze wraca do gry, także gdy Przemiana nie została zakończona, a jego gildia jest widoczna w panelach.
+- Po restarcie świata z dwoma kanałami grają te same boty co przed nim.
+- Mapy, których klient nie potrafi narysować (Wyspa Smoka i forteca Razadora), nie są już uruchamiane – koniec z niewidzialnymi potworami. Postać zapisana na nich zaczyna w stolicy królestwa.
+- Nowy przełącznik świata: kara za różnicę poziomów przy dropie (domyślnie jak w grze; ustawiany w panelu, w panelu Sebana i w oknie poziomu trudności launchera).
+- Boty mogą odpowiadać na szepty w języku czytelnika z pliku tłumaczeń (przygotowanie pod pełny turecki).
+- Panel zużywa dużo mniej procesora i bazy, gdy jest otwarty, pasek przeciążenia nie bije na alarm z powodu samego zajętego pliku wymiany, a logi na karcie bota pokazują tylko linie tego bota.
+
+Dziękujemy NerrVoVy, Kordylowi13, JavierWxw, Hiobowi, Karemu, oixbeht, Saidowi i wszystkim, którzy wysłali zgłoszenia!
+
+Zamknij grę i zaktualizuj serwer do 2.2.122 oraz klienta do 2.0.124. Wydanie chronione; postacie i ustawienia zostają zachowane. Błędy zgłaszaj z opisem i logami przez „Zgłoś błąd” w launcherze.
+
 ## 2.2.121 — 2026-10-23
 
 Aktualizacja serwera (klient 2.0.123 i plik gry bez zmian):
