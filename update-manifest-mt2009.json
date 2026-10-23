@@ -1,19 +1,19 @@
 {
   "schema": 1,
   "channel": "stable",
-  "publishedAt": "2026-10-23T10:15:43Z",
-  "statusMessage": "2.2.120: rozszerzony Pierścień Teleportacji (z każdej mapy, cztery strony) i mniejsze obciążenie bazy danych i procesora przy wielu botach. Zamknij grę i zaktualizuj serwer; klient zostaje w wersji 2.0.123.",
+  "publishedAt": "2026-10-23T17:29:45Z",
+  "statusMessage": "2.2.121: Pierścień Teleportacji mieści się w oknie, boty rozwijają biżuterię i buty, Towarzysz mówi, czemu nie łowi, poprawki sklepów offline i logowania. Zamknij grę i zaktualizuj serwer; klient zostaje w wersji 2.0.123.",
   "server": {
-    "version": "2.2.120",
-    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.120/metin2-server-protected-migration-2.2.120.zip",
-    "sha256": "07BD11D48BF341FAE68E722C58F8F59967BFBEC25612B683F8A036B8D9BE2598",
-    "size": 166878456
+    "version": "2.2.121",
+    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.121/metin2-server-protected-migration-2.2.121.zip",
+    "sha256": "65F1921342ADDC9F753BABFD0C9D8779A7DB9683A431DCA8E12BD4B240A068AA",
+    "size": 166885548
   },
   "serverProtected": {
-    "version": "2.2.120",
-    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.120/metin2-server-protected-update-2.2.120.zip",
-    "sha256": "E87B24C29B264F0F12920AD0E2F9D03B1D3FE16DA3C7224B0C40B35C658C2FF6",
-    "size": 156921976
+    "version": "2.2.121",
+    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.121/metin2-server-protected-update-2.2.121.zip",
+    "sha256": "301F96FC0A5EAA794FBD4D159554E1A223FF0D0CFFC42250DF847D50EF489E59",
+    "size": 156929068
   },
   "protectedFrom": "2.2.39",
   "support": {
@@ -164,5 +164,5 @@
       "4F7DBC84ABBEB8F6EEC23BDB89E9199A96AEB864A74279099EBF3A3266FBECA3"
     ]
   },
-  "statusMessageEn": "2.2.120: a bigger Teleport Ring (from every map, four pages) and less load on the database and the CPU with many bots. Close the game and update the server; the client stays on 2.0.123."
+  "statusMessageEn": "2.2.121: the Teleport Ring fits its window, bots keep upgrading jewellery and boots, the companion says why it can't fish, offline shop and login fixes. Close the game and update the server; the client stays on 2.0.123."
 }
