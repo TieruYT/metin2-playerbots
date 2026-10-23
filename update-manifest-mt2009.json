@@ -1,19 +1,19 @@
 {
   "schema": 1,
   "channel": "stable",
-  "publishedAt": "2026-10-23T17:29:45Z",
-  "statusMessage": "2.2.121: Pierścień Teleportacji mieści się w oknie, boty rozwijają biżuterię i buty, Towarzysz mówi, czemu nie łowi, poprawki sklepów offline i logowania. Zamknij grę i zaktualizuj serwer; klient zostaje w wersji 2.0.123.",
+  "publishedAt": "2026-10-23T22:43:12Z",
+  "statusMessage": "2.2.122 / klient 2.0.124: naprawiony błąd wierzchowców, Towarzysz od razu przy rotacji i jego stoisko w wiosce właściciela, przejęty bot zawsze wraca, te same boty po restarcie, lżejszy panel. Zamknij grę, zaktualizuj serwer i launcher, uruchom launcher ponownie, a następnie zaktualizuj klienta.",
   "server": {
-    "version": "2.2.121",
-    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.121/metin2-server-protected-migration-2.2.121.zip",
-    "sha256": "65F1921342ADDC9F753BABFD0C9D8779A7DB9683A431DCA8E12BD4B240A068AA",
-    "size": 166885548
+    "version": "2.2.122",
+    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.122/metin2-server-protected-migration-2.2.122.zip",
+    "sha256": "7A753E73AE108C7841530B10D18724E01244F0A7A5B521D7C14E64B192FD2453",
+    "size": 166935287
   },
   "serverProtected": {
-    "version": "2.2.121",
-    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.121/metin2-server-protected-update-2.2.121.zip",
-    "sha256": "301F96FC0A5EAA794FBD4D159554E1A223FF0D0CFFC42250DF847D50EF489E59",
-    "size": 156929068
+    "version": "2.2.122",
+    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.122/metin2-server-protected-update-2.2.122.zip",
+    "sha256": "CE7CA61D6D3945E48DE5993B731300D337F3158162FB7FF21E5AB144AEACE2F3",
+    "size": 156978807
   },
   "protectedFrom": "2.2.39",
   "support": {
@@ -22,10 +22,10 @@
     "reportUrl": "https://script.google.com/macros/s/AKfycbweM8tWcvm59Va8BJxnS1z0o9L2GgtL0NXj6Yu_olAvJ7sPjnpckyGY6JB5fXH3lJYisA/exec?k=m2-7f3k9q"
   },
   "client": {
-    "version": "2.0.123",
-    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.119/metin2-client-update-2.0.123.zip",
-    "sha256": "EC9BDDC4E4FBA10C939672DE744F6CCD9C99A765BC907D975EC882F868D3F984",
-    "size": 136234784,
+    "version": "2.0.124",
+    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.122/metin2-client-update-2.0.124.zip",
+    "sha256": "D4EFBBAA9D6980F5C01E708ACC3EA4EFF34B088682978A06E7F1C352A47F4B24",
+    "size": 136235933,
     "requiresClientExe": true,
     "architecture": "x64",
     "nativeRuntime": [
@@ -111,7 +111,7 @@
       }
     ],
     "supplement": {
-      "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.119/metin2-client-update-2.0.123-supplement.zip",
+      "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.122/metin2-client-update-2.0.124-supplement.zip",
       "sha256": "C2B5A6A605DE22FFCD89E740F54F68CD9F2BFB6F6BABF827A4FDA64782F6E2E4",
       "size": 4060,
       "files": [
@@ -164,5 +164,5 @@
       "4F7DBC84ABBEB8F6EEC23BDB89E9199A96AEB864A74279099EBF3A3266FBECA3"
     ]
   },
-  "statusMessageEn": "2.2.121: the Teleport Ring fits its window, bots keep upgrading jewellery and boots, the companion says why it can't fish, offline shop and login fixes. Close the game and update the server; the client stays on 2.0.123."
+  "statusMessageEn": "2.2.122 / client 2.0.124: a mount bug fixed, the companion comes at once with the rotation and its stand opens in its owner's village, a possessed bot always comes back, the same bots after a restart, a lighter panel. Close the game, update the server and launcher, restart the launcher, then update the client."
 }
