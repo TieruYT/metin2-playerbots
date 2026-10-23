@@ -17,6 +17,17 @@ every version here.
 
 ---
 
+## 2.2.120 — 2026-10-23
+
+Aktualizacja serwera (klient 2.0.123 i plik gry bez zmian):
+
+- Pierścień Teleportacji działa z każdej mapy i ma cztery strony: miasta i podstawowe mapy, lochy, pozostałe tereny oraz mapy od 60 poziomu. Nazwy map są w języku gracza (propozycja Piciu713, o wprowadzenie poprosił blipu).
+- Mniejsze obciążenie bazy danych i procesora przy wielu botach: serwer wykonuje dużo mniej zapytań i zapisów, co najbardziej odczują starsze, rozbudowane światy.
+
+Dziękujemy Piciu713, blipu i wszystkim, którzy wysłali zgłoszenia!
+
+Zamknij grę i zaktualizuj serwer do 2.2.120. Klient zostaje w wersji 2.0.123. Wydanie chronione; postacie i ustawienia zostają zachowane. Błędy zgłaszaj z opisem i logami przez „Zgłoś błąd” w launcherze.
+
 ## 2.2.119 — 2026-10-23
 
 Aktualizacja z klientem 2.0.123 (plik gry bez zmian):
