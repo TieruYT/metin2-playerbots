@@ -1,19 +1,19 @@
 {
   "schema": 1,
   "channel": "stable",
-  "publishedAt": "2026-10-22T21:40:26Z",
-  "statusMessage": "2.2.118 / klient 2.0.122: mniej lagów przy wielu botach, boty 70+ nie krążą po Sohan, launcher pokazuje, co robi, i przycisk wsparcia w ItemShopie. Zamknij grę, zaktualizuj serwer i launcher, uruchom launcher ponownie, a następnie zaktualizuj klienta.",
+  "publishedAt": "2026-10-23T06:45:47Z",
+  "statusMessage": "2.2.119 / klient 2.0.123: Towarzysz walczy z konia bojowego, poprawki jego sklepu, okno kowala mówi, czemu magazyn nie pomaga, i launcher bez fałszywego statusu ZATRZYMANY. Zamknij grę, zaktualizuj serwer i launcher, uruchom launcher ponownie, a następnie zaktualizuj klienta.",
   "server": {
-    "version": "2.2.118",
-    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.118/metin2-server-protected-migration-2.2.118.zip",
-    "sha256": "29C116763C33CC66446610324B18C52891DC94BA946E957AC7524389D7F6BE21",
-    "size": 166860752
+    "version": "2.2.119",
+    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.119/metin2-server-protected-migration-2.2.119.zip",
+    "sha256": "E10D170528DD50B5E89A3F6366D6F5C1ABDF669798AAF972A3A71D764BD0763D",
+    "size": 166867721
   },
   "serverProtected": {
-    "version": "2.2.118",
-    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.118/metin2-server-protected-update-2.2.118.zip",
-    "sha256": "399F0A10DDDD5F968F52180DBE9A278C3E8E8A9D5B0E6AD88834C457C6F4E3A9",
-    "size": 156904272
+    "version": "2.2.119",
+    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.119/metin2-server-protected-update-2.2.119.zip",
+    "sha256": "C6203E8D3F11EF86E645597270886C56542958239C5A529B80225812F7778677",
+    "size": 156911241
   },
   "protectedFrom": "2.2.39",
   "support": {
@@ -22,10 +22,10 @@
     "reportUrl": "https://script.google.com/macros/s/AKfycbweM8tWcvm59Va8BJxnS1z0o9L2GgtL0NXj6Yu_olAvJ7sPjnpckyGY6JB5fXH3lJYisA/exec?k=m2-7f3k9q"
   },
   "client": {
-    "version": "2.0.122",
-    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.118/metin2-client-update-2.0.122.zip",
-    "sha256": "86535F644FB04EAA7EFE573EB022156FEED34C007D61489E807DA3C2896AF5D8",
-    "size": 136234003,
+    "version": "2.0.123",
+    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.119/metin2-client-update-2.0.123.zip",
+    "sha256": "EC9BDDC4E4FBA10C939672DE744F6CCD9C99A765BC907D975EC882F868D3F984",
+    "size": 136234784,
     "requiresClientExe": true,
     "architecture": "x64",
     "nativeRuntime": [
@@ -111,7 +111,7 @@
       }
     ],
     "supplement": {
-      "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.118/metin2-client-update-2.0.122-supplement.zip",
+      "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.119/metin2-client-update-2.0.123-supplement.zip",
       "sha256": "C2B5A6A605DE22FFCD89E740F54F68CD9F2BFB6F6BABF827A4FDA64782F6E2E4",
       "size": 4060,
       "files": [
@@ -164,5 +164,5 @@
       "4F7DBC84ABBEB8F6EEC23BDB89E9199A96AEB864A74279099EBF3A3266FBECA3"
     ]
   },
-  "statusMessageEn": "2.2.118 / client 2.0.122: less lag with many bots, bots 70+ no longer wander around Sohan, the launcher shows what it is doing and a support button in the ItemShop. Close the game, update the server and launcher, restart the launcher, then update the client."
+  "statusMessageEn": "2.2.119 / client 2.0.123: the companion fights from its battle horse, fixes to its shop, the blacksmith window says why the warehouse does not help, and no false STOPPED status in the launcher. Close the game, update the server and launcher, restart the launcher, then update the client."
 }
