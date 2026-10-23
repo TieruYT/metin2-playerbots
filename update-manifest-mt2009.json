@@ -1,19 +1,19 @@
 {
   "schema": 1,
   "channel": "stable",
-  "publishedAt": "2026-10-23T06:45:47Z",
-  "statusMessage": "2.2.119 / klient 2.0.123: Towarzysz walczy z konia bojowego, poprawki jego sklepu, okno kowala mówi, czemu magazyn nie pomaga, i launcher bez fałszywego statusu ZATRZYMANY. Zamknij grę, zaktualizuj serwer i launcher, uruchom launcher ponownie, a następnie zaktualizuj klienta.",
+  "publishedAt": "2026-10-23T10:15:43Z",
+  "statusMessage": "2.2.120: rozszerzony Pierścień Teleportacji (z każdej mapy, cztery strony) i mniejsze obciążenie bazy danych i procesora przy wielu botach. Zamknij grę i zaktualizuj serwer; klient zostaje w wersji 2.0.123.",
   "server": {
-    "version": "2.2.119",
-    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.119/metin2-server-protected-migration-2.2.119.zip",
-    "sha256": "E10D170528DD50B5E89A3F6366D6F5C1ABDF669798AAF972A3A71D764BD0763D",
-    "size": 166867721
+    "version": "2.2.120",
+    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.120/metin2-server-protected-migration-2.2.120.zip",
+    "sha256": "07BD11D48BF341FAE68E722C58F8F59967BFBEC25612B683F8A036B8D9BE2598",
+    "size": 166878456
   },
   "serverProtected": {
-    "version": "2.2.119",
-    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.119/metin2-server-protected-update-2.2.119.zip",
-    "sha256": "C6203E8D3F11EF86E645597270886C56542958239C5A529B80225812F7778677",
-    "size": 156911241
+    "version": "2.2.120",
+    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.120/metin2-server-protected-update-2.2.120.zip",
+    "sha256": "E87B24C29B264F0F12920AD0E2F9D03B1D3FE16DA3C7224B0C40B35C658C2FF6",
+    "size": 156921976
   },
   "protectedFrom": "2.2.39",
   "support": {
@@ -164,5 +164,5 @@
       "4F7DBC84ABBEB8F6EEC23BDB89E9199A96AEB864A74279099EBF3A3266FBECA3"
     ]
   },
-  "statusMessageEn": "2.2.119 / client 2.0.123: the companion fights from its battle horse, fixes to its shop, the blacksmith window says why the warehouse does not help, and no false STOPPED status in the launcher. Close the game, update the server and launcher, restart the launcher, then update the client."
+  "statusMessageEn": "2.2.120: a bigger Teleport Ring (from every map, four pages) and less load on the database and the CPU with many bots. Close the game and update the server; the client stays on 2.0.123."
 }
