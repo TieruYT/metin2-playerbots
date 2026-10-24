@@ -17,6 +17,22 @@ every version here.
 
 ---
 
+## 2.2.123 — 2026-10-24
+
+Aktualizacja serwera i klienta 2.0.125 (plik gry bez zmian):
+
+- Certyfikat Tugyisa i Notatka Przywódcy u Biologa wpadają do stosu – nie trzeba już mieć pustej torby, żeby wypadł kolejny.
+- Nazwa ryby na haczyku i po wyłowieniu jest w języku Twojego klienta.
+- Boty z Twojej drużyny nie odchodzą już co chwilę do miasta: idą tam z Tobą albo wtedy, gdy naprawdę muszą (pełna torba, brak broni lub mikstur).
+- Szybki spawn w panelu GM (F9) i event Zuo nie przywołują już potworów, których klient nie potrafi narysować.
+- Okno F10: przyciski szybkich akcji już się nie nakładają – dzięki NerrVoVy za poprawkę!
+- Gdy stoisko Towarzysza się nie otwiera, komenda /towarzysz sklep mówi dlaczego.
+- Baza danych: stare logi są czyszczone według osobnego ustawienia (aktualizacja dopisze je do ustawień serwera), wolniej i w małych porcjach, panele nie czytają już całej tabeli logów, a zapis logów nie czeka na odczyty.
+
+Dziękujemy Tomaszowi i Dekriemu za analizę bazy, NerrVoVy, Blindowi, oixbeht, JavierWxw i wszystkim, którzy wysłali zgłoszenia!
+
+Zamknij grę i zaktualizuj serwer do 2.2.123 oraz klienta do 2.0.125. Wydanie chronione; postacie i ustawienia zostają zachowane. Błędy zgłaszaj z opisem i logami przez „Zgłoś błąd” w launcherze.
+
 ## 2.2.122 — 2026-10-24
 
 Aktualizacja serwera i klienta 2.0.124 (plik gry bez zmian):
