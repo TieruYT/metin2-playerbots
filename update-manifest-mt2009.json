@@ -1,19 +1,19 @@
 {
   "schema": 1,
   "channel": "stable",
-  "publishedAt": "2026-10-24T08:06:35Z",
-  "statusMessage": "2.2.123 / klient 2.0.125: boty z drużyny nie odchodzą co chwilę do miasta, przedmioty Biologa do stosu, nazwy ryb w języku klienta, poprawki panelu GM i lżejsza baza. Zamknij grę, zaktualizuj serwer i launcher, uruchom launcher ponownie, a następnie zaktualizuj klienta.",
+  "publishedAt": "2026-10-24T14:56:28Z",
+  "statusMessage": "2.2.124 / klient 2.0.126 (nowy plik gry): Auto Łowy częściej odnawiają buffy, Towarzysz z opcją walki z konia, burzenie budynku gildii, dropki medali nie stoją na „Planuje: poziom”. Zamknij grę, zaktualizuj serwer i launcher, uruchom launcher ponownie, a następnie zaktualizuj klienta.",
   "server": {
-    "version": "2.2.123",
-    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.123/metin2-server-protected-migration-2.2.123.zip",
-    "sha256": "FDCCBDB69AA04FE4C91AA160F18F315CE81BD9B157CF8BCCBE71D669A25A7E3B",
-    "size": 166946353
+    "version": "2.2.124",
+    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.124/metin2-server-protected-migration-2.2.124.zip",
+    "sha256": "CB992B09A2548721F286BE9E14D4A0F193EBFC1CE29FD53310544D3FCA4A80D9",
+    "size": 167039411
   },
   "serverProtected": {
-    "version": "2.2.123",
-    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.123/metin2-server-protected-update-2.2.123.zip",
-    "sha256": "424AA8088087485B98AEFA58F78CD7CC83E56C5D3144284AE4BFE71A5683AB1B",
-    "size": 156989873
+    "version": "2.2.124",
+    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.124/metin2-server-protected-update-2.2.124.zip",
+    "sha256": "7B88385387E9FEEFF9BB9FDC8DDEEDDE9333B7230CF0B04C7AF0B85B0B3CDDF2",
+    "size": 157082931
   },
   "protectedFrom": "2.2.39",
   "support": {
@@ -22,10 +22,10 @@
     "reportUrl": "https://script.google.com/macros/s/AKfycbweM8tWcvm59Va8BJxnS1z0o9L2GgtL0NXj6Yu_olAvJ7sPjnpckyGY6JB5fXH3lJYisA/exec?k=m2-7f3k9q"
   },
   "client": {
-    "version": "2.0.125",
-    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.123/metin2-client-update-2.0.125.zip",
-    "sha256": "8CF3745AA389D1AAEF2F4499DE9327F9566E21441C823B3F6CBB2865038D2D0C",
-    "size": 136235695,
+    "version": "2.0.126",
+    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.124/metin2-client-update-2.0.126.zip",
+    "sha256": "53CCB76BF725E40EA66E261F0C36025684311E3EC800BBC141D9CA94D43BDB17",
+    "size": 136240361,
     "requiresClientExe": true,
     "architecture": "x64",
     "nativeRuntime": [
@@ -111,7 +111,7 @@
       }
     ],
     "supplement": {
-      "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.123/metin2-client-update-2.0.125-supplement.zip",
+      "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.124/metin2-client-update-2.0.126-supplement.zip",
       "sha256": "C2B5A6A605DE22FFCD89E740F54F68CD9F2BFB6F6BABF827A4FDA64782F6E2E4",
       "size": 4060,
       "files": [
@@ -122,9 +122,9 @@
     }
   },
   "clientExe": {
-    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.116/metin2client.exe",
-    "sha256": "D3266C87CEA858650DFD7AE50B95A3E5B56BF0A9E7202A96F3A958AB4043A4DC",
-    "size": 10888704,
+    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.124/metin2client.exe",
+    "sha256": "ECE10CBDFBE731EBEACD66145124888FD056F552E6A951F1C6FD7148FEFF724A",
+    "size": 10889216,
     "replaces": [
       "8263F81BFACDFA4A664C1F2A8CE846AEE14F19E584DB40A43F3184FEF1A59531",
       "752623560AB54E2F3F84FF9ADB8961D73E2E289634075118D3FBEA984CFCEFB1",
@@ -161,8 +161,9 @@
       "0F2E1DEEA943C28EF9246C89B736C15AED72380834C29393DCA8D3A74AFB7662",
       "A0E7DC83286FE6627E221CE17E57BF12B5DEC1D841F287D786FDA9F092612B77",
       "A5760F627D097FAEA71E6804E01198BFBCD15C821AB6414EEBA00113D81FAFB3",
-      "4F7DBC84ABBEB8F6EEC23BDB89E9199A96AEB864A74279099EBF3A3266FBECA3"
+      "4F7DBC84ABBEB8F6EEC23BDB89E9199A96AEB864A74279099EBF3A3266FBECA3",
+      "D3266C87CEA858650DFD7AE50B95A3E5B56BF0A9E7202A96F3A958AB4043A4DC"
     ]
   },
-  "statusMessageEn": "2.2.123 / client 2.0.125: party bots no longer keep running off to town, Biologist items stack, fish named in your language, GM panel fixes and a lighter database. Close the game, update the server and launcher, restart the launcher, then update the client."
+  "statusMessageEn": "2.2.124 / client 2.0.126 (new game file): Auto Hunt renews buffs sooner, a \"Mounted\" option for the Companion, demolishing a guild building, medal droppers no longer stuck. Close the game, update the server and launcher, restart the launcher, then update the client."
 }
