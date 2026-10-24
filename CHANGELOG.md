@@ -17,6 +17,21 @@ every version here.
 
 ---
 
+## 2.2.125 — 2026-10-24
+
+Aktualizacja serwera i klienta 2.0.127:
+
+- Medal Szczęścia pokazuje w opisie efektu szansę na yang ×1.5 zamiast ×50.0 (działał dobrze, mylił tylko opis).
+- Boty: cios z siodła trafia też potwory po bokach konia, więc paczka przy Metinie obrywa tak jak u gracza na koniu.
+- Boty: nie stoją już na „Regeneruje HP” z pełnym paskiem zdrowia po śmierci, a napis mówi, na co bot czeka podczas odpoczynku.
+- Boty: łączą zapasowe Smocze Kamienie u Alchemika (najpierw klasa, potem stopień), więc ich talie wreszcie rosną.
+- Boty: plan ulepszeń kupuje materiał także w paczce po 2 sztuki, gdy potrzebuje 1 - tarcze botów 21–40 przestają stać na +4.
+- Rotacja botów: po restarcie świat zapełnia się szybciej (boty nie wychodzą zaraz po wejściu), a panel pokazuje, ile botów powinno teraz grać i dlaczego.
+
+Dziękujemy Klimo, oixbeht, blipu, Ziółkowi, danutzy1993 i wszystkim, którzy wysłali zgłoszenia!
+
+Zamknij grę i zaktualizuj serwer do 2.2.125 oraz klienta do 2.0.127. Wydanie chronione; postacie i ustawienia zostają zachowane. Błędy zgłaszaj z opisem i logami przez „Zgłoś błąd” w launcherze.
+
 ## 2.2.124 — 2026-10-24
 
 Aktualizacja serwera i klienta 2.0.126 z nowym plikiem gry:
