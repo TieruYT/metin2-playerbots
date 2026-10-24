@@ -42,6 +42,8 @@ docs/patches/*.patch -whitespace
 # 23 October), and the Turkish reply table exported for Said (said-1023).
 /data/item_texts_en.tsv -whitespace
 /docs/codex-audits/said-1023/conv_replies_for_tr.tsv -whitespace
+# The Turkish reply file keeps the English rows' trailing spaces (#277).
+/linux-port/overlays/playerbot/src/game/src/playerbot_live_chat_replies_tr.tsv -whitespace
 # A stock root module rendered whole for a donor keeps its bytes, trailing
 # tabs included, so the renderer's replay over the published root stays exact
 # (uiquest.py for Kiciamol's quest curtain, #59).

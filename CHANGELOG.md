@@ -17,6 +17,27 @@ every version here.
 
 ---
 
+## 2.2.124 — 2026-10-24
+
+Aktualizacja serwera i klienta 2.0.126 z nowym plikiem gry:
+
+- Auto Łowy odnawiają aktywny buff kilkadziesiąt sekund przed jego końcem, więc Strach Sury i Szał lub Aura wojownika są używane częściej.
+- Ulepszanie zwojem i Magicznym Metalem w wiosce bierze brakujące materiały z magazynu kolekcjonera, tak jak okno kowala.
+- Mistrz gildii może zburzyć własny budynek gildii przyciskiem „Zniszcz” (z potwierdzeniem, bez zwrotu kosztów) i postawić go w innym miejscu.
+- Ctrl + klik na statystykę z liczbą większą niż wolne punkty dodaje wszystkie wolne punkty zamiast nic.
+- Reset statystyk i zmiana poziomu przez GM lub panel dają tyle punktów statystyk, ile dałoby zwykłe granie (jak w grze: punkty przychodzą do poziomu 90).
+- Wkładanie kamienia duszy do przedmiotu, który go nie przyjmuje, pokazuje komunikat zamiast błędu w kliencie.
+- Towarzysz: nowa opcja „Z konia” (auto / zawsze / nigdy); w trybie auto szaman i sura czarnej magii schodzą z konia do walki. Komenda /towarzysz saddle auto|always|never.
+- Towarzysz: zamknięcie jego sklepu już nie wisi w „zamykam”, a Towarzysz i boty z kilofem nie kopią w kółko rudy, którą już mają.
+- Boty: dropki medali nie stoją już godzinami na „Planuje: poziom” – szukanie ksiąg na straganach ma limit czasu.
+- Boty: po drugiej śmierci w krótkim czasie na zwykłej mapie wstają w mieście, a kowal i sprzedaż nadwyżek działają sprawniej.
+- Odpowiedzi botów na szepty po turecku – dzięki, Said!
+- Panel zaawansowany: zbieranie danych co kilka minut nie blokuje już zapisu przedmiotów w grze.
+
+Dziękujemy Saidowi, Rade, Tomaszowi i Dekriemu, Ziółkowi, Chimpianowi, NxcK_Os, IRON-owi i wszystkim, którzy wysłali zgłoszenia!
+
+Zamknij grę i zaktualizuj serwer do 2.2.124 oraz klienta do 2.0.126 (launcher podmieni też plik gry). Wydanie chronione; postacie i ustawienia zostają zachowane. Błędy zgłaszaj z opisem i logami przez „Zgłoś błąd” w launcherze.
+
 ## 2.2.123 — 2026-10-24
 
 Aktualizacja serwera i klienta 2.0.125 (plik gry bez zmian):
