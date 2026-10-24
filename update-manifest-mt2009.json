@@ -1,19 +1,19 @@
 {
   "schema": 1,
   "channel": "stable",
-  "publishedAt": "2026-10-23T22:43:12Z",
-  "statusMessage": "2.2.122 / klient 2.0.124: naprawiony błąd wierzchowców, Towarzysz od razu przy rotacji i jego stoisko w wiosce właściciela, przejęty bot zawsze wraca, te same boty po restarcie, lżejszy panel. Zamknij grę, zaktualizuj serwer i launcher, uruchom launcher ponownie, a następnie zaktualizuj klienta.",
+  "publishedAt": "2026-10-24T08:06:35Z",
+  "statusMessage": "2.2.123 / klient 2.0.125: boty z drużyny nie odchodzą co chwilę do miasta, przedmioty Biologa do stosu, nazwy ryb w języku klienta, poprawki panelu GM i lżejsza baza. Zamknij grę, zaktualizuj serwer i launcher, uruchom launcher ponownie, a następnie zaktualizuj klienta.",
   "server": {
-    "version": "2.2.122",
-    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.122/metin2-server-protected-migration-2.2.122.zip",
-    "sha256": "7A753E73AE108C7841530B10D18724E01244F0A7A5B521D7C14E64B192FD2453",
-    "size": 166935287
+    "version": "2.2.123",
+    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.123/metin2-server-protected-migration-2.2.123.zip",
+    "sha256": "FDCCBDB69AA04FE4C91AA160F18F315CE81BD9B157CF8BCCBE71D669A25A7E3B",
+    "size": 166946353
   },
   "serverProtected": {
-    "version": "2.2.122",
-    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.122/metin2-server-protected-update-2.2.122.zip",
-    "sha256": "CE7CA61D6D3945E48DE5993B731300D337F3158162FB7FF21E5AB144AEACE2F3",
-    "size": 156978807
+    "version": "2.2.123",
+    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.123/metin2-server-protected-update-2.2.123.zip",
+    "sha256": "424AA8088087485B98AEFA58F78CD7CC83E56C5D3144284AE4BFE71A5683AB1B",
+    "size": 156989873
   },
   "protectedFrom": "2.2.39",
   "support": {
@@ -22,10 +22,10 @@
     "reportUrl": "https://script.google.com/macros/s/AKfycbweM8tWcvm59Va8BJxnS1z0o9L2GgtL0NXj6Yu_olAvJ7sPjnpckyGY6JB5fXH3lJYisA/exec?k=m2-7f3k9q"
   },
   "client": {
-    "version": "2.0.124",
-    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.122/metin2-client-update-2.0.124.zip",
-    "sha256": "D4EFBBAA9D6980F5C01E708ACC3EA4EFF34B088682978A06E7F1C352A47F4B24",
-    "size": 136235933,
+    "version": "2.0.125",
+    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.123/metin2-client-update-2.0.125.zip",
+    "sha256": "8CF3745AA389D1AAEF2F4499DE9327F9566E21441C823B3F6CBB2865038D2D0C",
+    "size": 136235695,
     "requiresClientExe": true,
     "architecture": "x64",
     "nativeRuntime": [
@@ -111,7 +111,7 @@
       }
     ],
     "supplement": {
-      "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.122/metin2-client-update-2.0.124-supplement.zip",
+      "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.123/metin2-client-update-2.0.125-supplement.zip",
       "sha256": "C2B5A6A605DE22FFCD89E740F54F68CD9F2BFB6F6BABF827A4FDA64782F6E2E4",
       "size": 4060,
       "files": [
@@ -164,5 +164,5 @@
       "4F7DBC84ABBEB8F6EEC23BDB89E9199A96AEB864A74279099EBF3A3266FBECA3"
     ]
   },
-  "statusMessageEn": "2.2.122 / client 2.0.124: a mount bug fixed, the companion comes at once with the rotation and its stand opens in its owner's village, a possessed bot always comes back, the same bots after a restart, a lighter panel. Close the game, update the server and launcher, restart the launcher, then update the client."
+  "statusMessageEn": "2.2.123 / client 2.0.125: party bots no longer keep running off to town, Biologist items stack, fish named in your language, GM panel fixes and a lighter database. Close the game, update the server and launcher, restart the launcher, then update the client."
 }
