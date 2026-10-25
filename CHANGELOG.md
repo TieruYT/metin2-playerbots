@@ -17,6 +17,17 @@ every version here.
 
 ---
 
+## 2.2.127 (2026-10-25)
+
+- **Rotacja botów:** poprawiono odtwarzanie aktywnej puli po restarcie rdzeni serwera. Usunięto przypadek, w którym liczba grających botów pozostawała daleko od ustawionego celu.
+- **Trening koni:** boty sprawdzają środki przed wizytą u Stajennego. Poprawiono ponowny wybór celu po odmowie i opisy czynności; posiadany medal nie powoduje niepotrzebnej kolejnej wyprawy po medale.
+- **Panel GM F9:** poprawiono wyświetlanie i wyszukiwanie list przedmiotów, w tym przypadek Magicznego Kamienia, który potrafił wywołać błąd panelu.
+- **Klasyczny panel WWW:** poprawiono wybór atlasów Groty Wygnańców, Lochu Pająków i Katakumb, także dla prywatnych instancji. Motyw korzysta teraz z właściwych obrazów dostarczonych w poprzedniej aktualizacji.
+
+**Aktualizacja:** zamknij grę, zaktualizuj serwer i launcher, uruchom launcher ponownie, a następnie zaktualizuj klienta do 2.0.129. Wydanie zachowuje dotychczasowy plik EXE.
+
+---
+
 ## 2.2.126 (2026-10-25)
 
 - **Ekwipunek botów:** bot może wykorzystać posiadaną tarczę na 41. poziom jako etap przejściowy w drodze do docelowego wyposażenia.
