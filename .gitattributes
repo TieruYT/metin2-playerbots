@@ -28,6 +28,13 @@ docs/patches/*.patch -whitespace
 
 # Wiki pack inputs preserve the donor's bytes, including .sub descriptor EOLs.
 /linux-port-mt2009/client-patch-wiki/** -text
+# Beran source assets are hash-checked, including CRLF map descriptors.
+/linux-port-mt2009/client-patch-beran/** -text -whitespace
+/linux-port-mt2009/client-patch-beran/**/*.raw binary
+/linux-port-mt2009/client-patch-beran/**/*.atr binary
+/linux-port-mt2009/client-patch-beran/**/*.dds binary
+/linux-port-mt2009/client-patch-beran/**/*.wtr binary
+/linux-port-mt2009/client-patch-beran/**/*.tga binary
 # Said's Turkish helper and COOP guide ship in the client package as he wrote
 # them (CRLF; cmd.exe reads the .bat), not normalised to LF.
 /linux-port-mt2009/client-coop/Turkce-Yap.bat -text
@@ -60,3 +67,5 @@ docs/patches/*.patch -whitespace
 # notes open in Notepad. CRLF on checkout, as the package carries them.
 /files/full-package-root/*.bat text eol=crlf
 /files/full-package-root/*.txt text eol=crlf
+# Reviewed Beran proposal: preserve the donor's original CRLF regen bytes/hash.
+/linux-port-mt2009/docker/game/beran/regen.txt -text -whitespace

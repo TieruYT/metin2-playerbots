@@ -17,6 +17,21 @@ every version here.
 
 ---
 
+## 2.2.126 (2026-10-25)
+
+- **Ekwipunek botów:** bot może wykorzystać posiadaną tarczę na 41. poziom jako etap przejściowy w drodze do docelowego wyposażenia.
+- **Przedmioty i ulepszanie:** naprawiono działanie bonusu Rękawicy Złodzieja oraz kontrolę wymaganej praktyki przy ulepszaniu Nożyka Zielarskiego.
+- **Wierzchowce:** poprawiono działanie Ctrl+G, gdy miejsca na przedmioty unikatowe są zajęte.
+- **Okno gry:** poprawiono odświeżanie rozmiaru interfejsu po maksymalizacji okna. Zmiana wymaga nowego pliku gry dostarczanego z aktualizacją klienta.
+- **Mapy i nazwy:** poprawiono atlasy Groty Wygnańców, Lochu Pająków i Katakumb w panelach WWW oraz podgląd prywatnych instancji Katakumb. Portale Groty mają czytelne nazwy.
+- **Uruchamianie serwera:** launcher może jednokrotnie ponowić nieudane pobieranie pakietów z domyślnego repozytorium, zachowując ręcznie ustawione opcje.
+- **Drop:** zmniejszono szanse zdobycia broni na 75. poziom w wariantach +3 i +4 u Kosiarza oraz Azraela, zgodnie z decyzją zespołu balansu.
+- **Beran-Setaou:** przygotowano zawartość wersji testowej. Wejście do lochu pozostaje wyłączone; jego udostępnienie wymaga osobnej weryfikacji.
+
+**Aktualizacja:** zamknij grę, zaktualizuj serwer i launcher, uruchom launcher ponownie, a następnie zaktualizuj klienta do 2.0.128 wraz z nowym plikiem gry.
+
+---
+
 ## 2.2.125 — 2026-10-24
 
 Aktualizacja serwera i klienta 2.0.127:
