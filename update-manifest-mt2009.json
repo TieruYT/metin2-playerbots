@@ -1,19 +1,19 @@
 {
   "schema": 1,
   "channel": "stable",
-  "publishedAt": "2026-10-24T21:27:05Z",
-  "statusMessage": "2.2.125 / klient 2.0.127: boty łączą Smocze Kamienie, cios z konia trafia paczkę przy Metinie, boty nie stoją na „Regeneruje HP”, szybsza rotacja po restarcie. Zamknij grę, zaktualizuj serwer i klienta.",
+  "publishedAt": "2026-10-25T15:52:03Z",
+  "statusMessage": "2.2.126 / klient 2.0.128: poprawki stabilności gry, botów i launchera oraz nowy plik gry. Zamknij grę, zaktualizuj serwer i launcher, uruchom launcher ponownie, następnie zaktualizuj klienta.",
   "server": {
-    "version": "2.2.125",
-    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.125/metin2-server-protected-migration-2.2.125.zip",
-    "sha256": "E65E13E1CB7C0D3D33666D7974C9D0E9DF93C3925DB16CB499FD8559A950D092",
-    "size": 167046586
+    "version": "2.2.126",
+    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.126/metin2-server-protected-migration-2.2.126.zip",
+    "sha256": "91E8702F6279D3AEC4517E2458D9064400EABEC3275692ABF251F8E5E8A78B01",
+    "size": 170010736
   },
   "serverProtected": {
-    "version": "2.2.125",
-    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.125/metin2-server-protected-update-2.2.125.zip",
-    "sha256": "040B69902C98C720B4F7785E66F06E5494755416622BA5510413DF3F2F209145",
-    "size": 157090106
+    "version": "2.2.126",
+    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.126/metin2-server-protected-update-2.2.126.zip",
+    "sha256": "B6FF56CC86FECAFD15BCE3523D497EEB61002C8B3ED76518D6D167E12EC00916",
+    "size": 160054256
   },
   "protectedFrom": "2.2.39",
   "support": {
@@ -22,10 +22,10 @@
     "reportUrl": "https://script.google.com/macros/s/AKfycbweM8tWcvm59Va8BJxnS1z0o9L2GgtL0NXj6Yu_olAvJ7sPjnpckyGY6JB5fXH3lJYisA/exec?k=m2-7f3k9q"
   },
   "client": {
-    "version": "2.0.127",
-    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.125/metin2-client-update-2.0.127.zip",
-    "sha256": "999724AC0FE22B0DAEA8F817CB5C8C44EF0FC47FF774951BDF75857036A2ED16",
-    "size": 136240634,
+    "version": "2.0.128",
+    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.126/metin2-client-update-2.0.128.zip",
+    "sha256": "1C5C4F3AEDB712789B2279CAAA2A094A177F439F3F2367AB00DE11694AB2103F",
+    "size": 136271115,
     "requiresClientExe": true,
     "architecture": "x64",
     "nativeRuntime": [
@@ -111,8 +111,8 @@
       }
     ],
     "supplement": {
-      "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.125/metin2-client-update-2.0.127-supplement.zip",
-      "sha256": "C2B5A6A605DE22FFCD89E740F54F68CD9F2BFB6F6BABF827A4FDA64782F6E2E4",
+      "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.126/metin2-client-update-2.0.128-supplement.zip",
+      "sha256": "6F759656A668B0CBAF951BE4926BD61259BCA4172F7F98EAEA1DC4C0A13F28C0",
       "size": 4060,
       "files": [
         "pack\\root.json",
@@ -122,8 +122,8 @@
     }
   },
   "clientExe": {
-    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.124/metin2client.exe",
-    "sha256": "ECE10CBDFBE731EBEACD66145124888FD056F552E6A951F1C6FD7148FEFF724A",
+    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.126/metin2client.exe",
+    "sha256": "D07CD4AAF6857BC3DDD9199B6AE590C8268C4F9CB36DA939525CF8F900F48721",
     "size": 10889216,
     "replaces": [
       "8263F81BFACDFA4A664C1F2A8CE846AEE14F19E584DB40A43F3184FEF1A59531",
@@ -162,8 +162,9 @@
       "A0E7DC83286FE6627E221CE17E57BF12B5DEC1D841F287D786FDA9F092612B77",
       "A5760F627D097FAEA71E6804E01198BFBCD15C821AB6414EEBA00113D81FAFB3",
       "4F7DBC84ABBEB8F6EEC23BDB89E9199A96AEB864A74279099EBF3A3266FBECA3",
-      "D3266C87CEA858650DFD7AE50B95A3E5B56BF0A9E7202A96F3A958AB4043A4DC"
+      "D3266C87CEA858650DFD7AE50B95A3E5B56BF0A9E7202A96F3A958AB4043A4DC",
+      "ECE10CBDFBE731EBEACD66145124888FD056F552E6A951F1C6FD7148FEFF724A"
     ]
   },
-  "statusMessageEn": "2.2.125 / client 2.0.127: bots combine Dragon Stones, a mounted swing hits a Metin's pack, bots no longer stuck on \"Regenerating HP\", a faster rotation after a restart. Close the game, update the server and the client."
+  "statusMessageEn": "2.2.126 / client 2.0.128: game, bot and launcher stability fixes and a new game executable. Close the game, update the server and launcher, restart the launcher, then update the client."
 }
