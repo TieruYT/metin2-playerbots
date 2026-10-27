@@ -17,6 +17,25 @@ every version here.
 
 ---
 
+## 2.2.129 (2026-10-27)
+
+Duża aktualizacja: nowa zawartość od NerrVoVy, poprawki walki, bonusów i cen, mądrzejsze boty i Towarzysz, który sam radzi sobie z pełną torbą na rybach.
+
+- **Nowa zawartość:** Loch Berana-Setaou jest otwarty dla graczy (boty i Towarzysze do niego nie wchodzą). Można go wyłączyć w ustawieniach świata w launcherze i w panelu. Grota Wygnańców V2 ma gęstsze spoty potworów w komnatach. Dziękujemy NerrVoVy.
+- **Walka:** gracz znów odpycha potwory, które bije razem z botami. Opisy Zasadzki i Szybkiego Ataku Ninja mówią to, co naprawdę liczy serwer (dzięki Drip).
+- **Bonusy:** dodawanie i zmiana bonusów 6 i 7 trafia we właściwy bonus, a przedmiot bez wystarczającej puli bonusów nie traci dotychczasowych ani zwoju. Złote wyróżnienie maksymalnej wartości obejmuje też odporności tarczy.
+- **Boty i ekonomia:** boty zmieniają bonusy już na przedmiotach z trzema bonusami, gdy nie mają kamieni dodających; masowe ulepszanie i Rzemieślnik pracują tylko na przedmiotach bliskich poziomowi bota; młode boty w sesji Perfekcjonisty planują +9; boty nie odkładają w torbie wielu przyszłych kopii tego samego slotu.
+- **Alchemia:** bot wcześniej zakłada Smoczy Kamień wyraźnie lepszej klasy, zamiast czekać do końca czasu noszonego.
+- **Rynek i ceny:** niski plus z bonusem nie jest już wyceniany jak +7 - cena rośnie razem z wartością bonusów. Wyceny ekwipunku botów są zaokrąglane jak u graczy.
+- **Towarzysz:** filtr zbierania obowiązuje też dla dropu przekazywanego przez boty z drużyny. Towarzysz wysłany na ryby przy pełnej torbie idzie do handlarza sprzedać zbędne rzeczy i wraca łowić.
+- **Klient:** nowe flagi królestw przed nickiem w czacie i poprawione polskie nazwy przedmiotów i potworów od NerrVoVy.
+- **Panel:** zakładka Fun ładuje się od razu.
+- Pule nicków botów zawierają nicki osób wspierających projekt.
+
+Zamknijcie grę, zaktualizujcie serwer i launcher do 2.2.129, uruchomcie launcher ponownie i zaktualizujcie klienta do 2.0.131. Plik gry (EXE) się nie zmienia.
+
+---
+
 ## 2.2.128 (2026-10-26)
 
 Aktualizacja poprawia zgodność Wiki i opisów przedmiotów z ustawieniami Waszego świata oraz rozszerza obsługę języka tureckiego.
