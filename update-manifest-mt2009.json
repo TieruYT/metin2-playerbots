@@ -1,18 +1,18 @@
 {
   "schema": 1,
   "channel": "stable",
-  "statusMessage": "2.2.127 / klient 2.0.129: poprawiono listy przedmiotów F9, atlasy panelu, dołączanie botów w rotacji i wizyty u stajennego. Zamknij grę, zaktualizuj serwer i launcher, uruchom launcher ponownie, następnie zaktualizuj klienta.",
+  "statusMessage": "2.2.128 / klient 2.0.130: poprawiono Wiki, opisy bonusów, Leczenie i tłumaczenia; dodano ustawienie siły ataku potworów, domyślnie 100%. Zamknij grę, zaktualizuj serwer i launcher, uruchom launcher ponownie, następnie zaktualizuj klienta.",
   "server": {
-    "version": "2.2.127",
-    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.127/metin2-server-protected-migration-2.2.127.zip",
-    "sha256": "7FC863E4D80D4C44E24A8F35C778EF4B0596FFF4633B166254448A9F5ADE1E9C",
-    "size": 170011913
+    "version": "2.2.128",
+    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.128/metin2-server-protected-migration-2.2.128.zip",
+    "sha256": "65CF733EF635235936C986E16638BD7A1FCBF7B3BF3E337D1B0AA562E51C2114",
+    "size": 170098941
   },
   "serverProtected": {
-    "version": "2.2.127",
-    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.127/metin2-server-protected-update-2.2.127.zip",
-    "sha256": "49134F679A6670D54E432DEA08B699625C8B361B11CFE25F920A44EEF82B5475",
-    "size": 160055433
+    "version": "2.2.128",
+    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.128/metin2-server-protected-update-2.2.128.zip",
+    "sha256": "106A51682D4F484A49D4DBE8B7678C15A3A9C7A7B139B5355DEB9D3DE46D6313",
+    "size": 160142461
   },
   "protectedFrom": "2.2.39",
   "support": {
@@ -21,10 +21,10 @@
     "reportUrl": "https://script.google.com/macros/s/AKfycbweM8tWcvm59Va8BJxnS1z0o9L2GgtL0NXj6Yu_olAvJ7sPjnpckyGY6JB5fXH3lJYisA/exec?k=m2-7f3k9q"
   },
   "client": {
-    "version": "2.0.129",
-    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.127/metin2-client-update-2.0.129.zip",
-    "sha256": "5E2F6E9AF6BDA7131AB32BE8F484B7C27F0D541E6C70D20B4EF9E744BFE7AE35",
-    "size": 136271286,
+    "version": "2.0.130",
+    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.128/metin2-client-update-2.0.130.zip",
+    "sha256": "3B1B23D56B2027AAF732070AABA27318EA72C44497DACCDA179200EACA9C7B94",
+    "size": 136276330,
     "requiresClientExe": true,
     "architecture": "x64",
     "nativeRuntime": [
@@ -110,7 +110,7 @@
       }
     ],
     "supplement": {
-      "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.127/metin2-client-update-2.0.129-supplement.zip",
+      "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.128/metin2-client-update-2.0.130-supplement.zip",
       "sha256": "6F759656A668B0CBAF951BE4926BD61259BCA4172F7F98EAEA1DC4C0A13F28C0",
       "size": 4060,
       "files": [
@@ -165,6 +165,6 @@
       "ECE10CBDFBE731EBEACD66145124888FD056F552E6A951F1C6FD7148FEFF724A"
     ]
   },
-  "statusMessageEn": "2.2.127 / client 2.0.129: fixes for F9 item lists, panel atlases, bot rotation arrivals and stable visits. Close the game, update the server and launcher, restart the launcher, then update the client.",
-  "publishedAt": "2026-10-25T23:03:49Z"
+  "statusMessageEn": "2.2.128 / client 2.0.130: fixes for Wiki, bonus descriptions, Cure and translations; configurable monster attack strength, default 100%. Close the game, update the server and launcher, restart the launcher, then update the client.",
+  "publishedAt": "2026-10-27T04:46:06Z"
 }
