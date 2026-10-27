@@ -1,18 +1,18 @@
 {
   "schema": 1,
   "channel": "stable",
-  "statusMessage": "2.2.128 / klient 2.0.130: poprawiono Wiki, opisy bonusów, Leczenie i tłumaczenia; dodano ustawienie siły ataku potworów, domyślnie 100%. Zamknij grę, zaktualizuj serwer i launcher, uruchom launcher ponownie, następnie zaktualizuj klienta.",
+  "statusMessage": "2.2.129 / klient 2.0.131: loch Berana otwarty dla graczy, gęstsza Grota V2, poprawki bonusów 6/7, cen i walki obok botów, Towarzysz sprzedaje zbędne rzeczy przy łowieniu. Zamknij grę, zaktualizuj serwer i launcher, uruchom launcher ponownie, następnie zaktualizuj klienta.",
   "server": {
-    "version": "2.2.128",
-    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.128/metin2-server-protected-migration-2.2.128.zip",
-    "sha256": "65CF733EF635235936C986E16638BD7A1FCBF7B3BF3E337D1B0AA562E51C2114",
-    "size": 170098941
+    "version": "2.2.129",
+    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.129/metin2-server-protected-migration-2.2.129.zip",
+    "sha256": "49F8CBB3EB80A7170D5FE08529579232D3708FBC39CF4E015C195DB497A20FFB",
+    "size": 170127860
   },
   "serverProtected": {
-    "version": "2.2.128",
-    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.128/metin2-server-protected-update-2.2.128.zip",
-    "sha256": "106A51682D4F484A49D4DBE8B7678C15A3A9C7A7B139B5355DEB9D3DE46D6313",
-    "size": 160142461
+    "version": "2.2.129",
+    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.129/metin2-server-protected-update-2.2.129.zip",
+    "sha256": "9AB80AD9A0E3A8496EC4316D52284A9A5D5C88E002E6A8E8B0900D75B4DBFE0E",
+    "size": 160171380
   },
   "protectedFrom": "2.2.39",
   "support": {
@@ -21,10 +21,10 @@
     "reportUrl": "https://script.google.com/macros/s/AKfycbweM8tWcvm59Va8BJxnS1z0o9L2GgtL0NXj6Yu_olAvJ7sPjnpckyGY6JB5fXH3lJYisA/exec?k=m2-7f3k9q"
   },
   "client": {
-    "version": "2.0.130",
-    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.128/metin2-client-update-2.0.130.zip",
-    "sha256": "3B1B23D56B2027AAF732070AABA27318EA72C44497DACCDA179200EACA9C7B94",
-    "size": 136276330,
+    "version": "2.0.131",
+    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.129/metin2-client-update-2.0.131.zip",
+    "sha256": "0EC8358B9DBC2628C374D9184447EE495F3512B1A3C71BD4C3D8A62565C4A393",
+    "size": 136278942,
     "requiresClientExe": true,
     "architecture": "x64",
     "nativeRuntime": [
@@ -110,8 +110,8 @@
       }
     ],
     "supplement": {
-      "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.128/metin2-client-update-2.0.130-supplement.zip",
-      "sha256": "6F759656A668B0CBAF951BE4926BD61259BCA4172F7F98EAEA1DC4C0A13F28C0",
+      "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.129/metin2-client-update-2.0.131-supplement.zip",
+      "sha256": "A4B77A9772514B42C679448CDD55D2389A69BA89B2EA5F8937FC2EEE1C4DF380",
       "size": 4060,
       "files": [
         "pack\\root.json",
@@ -165,6 +165,6 @@
       "ECE10CBDFBE731EBEACD66145124888FD056F552E6A951F1C6FD7148FEFF724A"
     ]
   },
-  "statusMessageEn": "2.2.128 / client 2.0.130: fixes for Wiki, bonus descriptions, Cure and translations; configurable monster attack strength, default 100%. Close the game, update the server and launcher, restart the launcher, then update the client.",
-  "publishedAt": "2026-10-27T04:46:06Z"
+  "statusMessageEn": "2.2.129 / client 2.0.131: Beran's dungeon open to players, a denser Grotto V2, fixes for bonuses 6/7, prices and fighting next to bots, the Companion sells junk while fishing. Close the game, update the server and launcher, restart the launcher, then update the client.",
+  "publishedAt": "2026-10-27T23:18:27Z"
 }
