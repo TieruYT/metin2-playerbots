@@ -17,6 +17,22 @@ every version here.
 
 ---
 
+## 2.2.128 (2026-10-26)
+
+Aktualizacja poprawia zgodność Wiki i opisów przedmiotów z ustawieniami Waszego świata oraz rozszerza obsługę języka tureckiego.
+
+- Wiki z bocznego panelu pobiera możliwy drop potworów i zawartość szkatułek z danych używanych przez serwer. Po wczytaniu zmian dropu otwórzcie stronę ponownie. Podgląd pokazuje możliwe przedmioty i ilości; odwrotne źródła pozostają oznaczonym katalogiem podstawowym.
+- Złote wyróżnienie maksymalnego bonusa uwzględnia limity aktywnego świata.
+- Potwierdzenie resetu umiejętności towarzysza pokazuje pełne wymagania. Dotychczasowe koszty się nie zmieniają.
+- Poprawiono wybór celu Leczenia szamana w niemieckiej i włoskiej wersji językowej.
+- Oba panele WWW otrzymały ustawienie siły ataku potworów, domyślnie 100%, z przywracaniem wartości standardowej. Zmiana wymaga pełnego zatrzymania i ponownego uruchomienia serwera gry.
+- Dodano setki tureckich komunikatów i wypowiedzi potworów oraz poprawki tekstów w zadaniach, kliencie, launcherze i panelach. Dziękujemy Saidowi za tłumaczenia.
+- Naprawiono bazę eksportu danych świata i błędne odrzucanie oficjalnego źródła pakietów przy budowie serwera.
+
+Zamknijcie grę, zaktualizujcie serwer i launcher do 2.2.128, uruchomcie launcher ponownie i zaktualizujcie klienta do 2.0.130. Nowe podglądy wymagają zgodnej aktualizacji obu części.
+
+---
+
 ## 2.2.127 (2026-10-25)
 
 - **Rotacja botów:** poprawiono odtwarzanie aktywnej puli po restarcie rdzeni serwera. Usunięto przypadek, w którym liczba grających botów pozostawała daleko od ustawionego celu.
