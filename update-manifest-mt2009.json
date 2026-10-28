@@ -1,18 +1,18 @@
 {
   "schema": 1,
   "channel": "stable",
-  "statusMessage": "2.2.129 / klient 2.0.131: loch Berana otwarty dla graczy, gęstsza Grota V2, poprawki bonusów 6/7, cen i walki obok botów, Towarzysz sprzedaje zbędne rzeczy przy łowieniu. Zamknij grę, zaktualizuj serwer i launcher, uruchom launcher ponownie, następnie zaktualizuj klienta.",
+  "statusMessage": "2.2.130 / klient 2.0.132: Deszcz Strzał wraca do łucznika, Żądza Krwi i Szybki Atak Ninja jak w oryginale, wierzchowiec z pieczęci w walce jak koń, boty w evencie Skrzyń Heksagonalnych i lepsze boty na rynku. Zamknij grę, zaktualizuj serwer i launcher, uruchom launcher ponownie, następnie zaktualizuj klienta.",
   "server": {
-    "version": "2.2.129",
-    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.129/metin2-server-protected-migration-2.2.129.zip",
-    "sha256": "49F8CBB3EB80A7170D5FE08529579232D3708FBC39CF4E015C195DB497A20FFB",
-    "size": 170127860
+    "version": "2.2.130",
+    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.130/metin2-server-protected-migration-2.2.130.zip",
+    "sha256": "FCB89327F9D83073EE34D3E8A42C16DB23807A25B86056D96AA25A43DF6133B9",
+    "size": 170154047
   },
   "serverProtected": {
-    "version": "2.2.129",
-    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.129/metin2-server-protected-update-2.2.129.zip",
-    "sha256": "9AB80AD9A0E3A8496EC4316D52284A9A5D5C88E002E6A8E8B0900D75B4DBFE0E",
-    "size": 160171380
+    "version": "2.2.130",
+    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.130/metin2-server-protected-update-2.2.130.zip",
+    "sha256": "0F7A372B794EAF95F003D1A533F6DB345AD320249FDF0CED5DAD25EF110D69F1",
+    "size": 160197567
   },
   "protectedFrom": "2.2.39",
   "support": {
@@ -21,10 +21,10 @@
     "reportUrl": "https://script.google.com/macros/s/AKfycbweM8tWcvm59Va8BJxnS1z0o9L2GgtL0NXj6Yu_olAvJ7sPjnpckyGY6JB5fXH3lJYisA/exec?k=m2-7f3k9q"
   },
   "client": {
-    "version": "2.0.131",
-    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.129/metin2-client-update-2.0.131.zip",
-    "sha256": "0EC8358B9DBC2628C374D9184447EE495F3512B1A3C71BD4C3D8A62565C4A393",
-    "size": 136278942,
+    "version": "2.0.132",
+    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.130/metin2-client-update-2.0.132.zip",
+    "sha256": "D284538E7D9523E14C4E4F9699A3AC66AC9F301CADAB4D57A2F8B9E8E55F5C61",
+    "size": 136279301,
     "requiresClientExe": true,
     "architecture": "x64",
     "nativeRuntime": [
@@ -110,8 +110,8 @@
       }
     ],
     "supplement": {
-      "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.129/metin2-client-update-2.0.131-supplement.zip",
-      "sha256": "A4B77A9772514B42C679448CDD55D2389A69BA89B2EA5F8937FC2EEE1C4DF380",
+      "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.130/metin2-client-update-2.0.132-supplement.zip",
+      "sha256": "8A09063484E7C99408B3AF37994C0B1FF763BADCC29B9E1CB42E2E1EFC5DE997",
       "size": 4060,
       "files": [
         "pack\\root.json",
@@ -165,6 +165,6 @@
       "ECE10CBDFBE731EBEACD66145124888FD056F552E6A951F1C6FD7148FEFF724A"
     ]
   },
-  "statusMessageEn": "2.2.129 / client 2.0.131: Beran's dungeon open to players, a denser Grotto V2, fixes for bonuses 6/7, prices and fighting next to bots, the Companion sells junk while fishing. Close the game, update the server and launcher, restart the launcher, then update the client.",
-  "publishedAt": "2026-10-27T23:18:27Z"
+  "statusMessageEn": "2.2.130 / client 2.0.132: Arrow Shower is back for archers, Ninja Bloodthirst and Fast Attack as in the original, mount seals in combat like the horse, bots in the Hexagonal Chest event and smarter bots on the market. Close the game, update the server and launcher, restart the launcher, then update the client.",
+  "publishedAt": "2026-10-28T18:58:00Z"
 }
