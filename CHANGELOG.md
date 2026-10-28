@@ -17,6 +17,25 @@ every version here.
 
 ---
 
+## 2.2.130 (2026-10-28)
+
+Deszcz Strzał wraca do łucznika, Ninja walczy jak w oryginalnym mt2009, a boty lepiej radzą sobie z rynkiem, tarczami i eventem Skrzyń Heksagonalnych.
+
+- **Umiejętności:** Deszcz Strzał wraca jako szósty skill łucznika, obok Iskrzącego Uderzenia - z czasem odnowienia i liczbą celów jak w oryginale; jego księgi znów wypadają. Żądza Krwi Ninja liczy się jak w oryginalnym mt2009, a Szybki Atak może na chwilę uziemić trafiony cel (nie Metina ani bossa). Dzięki Drip.
+- **Wierzchowce:** wierzchowca z pieczęci można dosiąść w trakcie walki, tak samo jak konia (dzięki blipu).
+- **Towarzysz:** poprawnie korzysta z Ksiąg Zapomnienia od właściciela przy kolejnej próbie mistrzostwa umiejętności (dzięki Colide).
+- **Boty i rynek:** boty wystawiają na ladę Kamienie Duszy +4, których same nie osadzą. Nie trzymają już w torbach wszystkich hełmów i tarcz czekających na miejsce na ladzie - najwyżej dwa z rodziny i nie dłużej niż kilka godzin, reszta trafia do kupca. Limit złomu broni na rynku jest liczony dla wszystkich kanałów razem. Zwój Błogosławieństwa w Kantorze kosztuje 15 smażonych ryb zamiast 30.
+- **Tarcze botów:** bot bez tarczy (także łucznik i postać z bronią dwuręczną) może kupić tymczasową tarczę u NPC, a ostatniej tarczy nie ryzykuje u kowala, dopóki nie ma zapasowej.
+- **Event Skrzyń Heksagonalnych:** boty biorą w nim udział - z Metinów rozbitych przez boty wypadają skrzynie, część botów wyrusza na Metiny, a handlarze wystawiają skrzynie na ladę (pomysł Rade).
+- **Panel:** czas gry na karcie bota (prośba Kordyl13), numery stron nad listą w edytorze bazy i powrót na tę samą stronę (prośba michau.ke), wygodniejszy panel na telefonie.
+- **Launcher:** zawieszony Docker Desktop nie blokuje już przycisków Start i Logi - launcher mówi, co się dzieje, i próbuje go podnieść.
+
+Dziękujemy Tyrionowi za poprawki botów w tym wydaniu.
+
+Zamknijcie grę, zaktualizujcie serwer i launcher do 2.2.130, uruchomcie launcher ponownie i zaktualizujcie klienta do 2.0.132 (nowy skill łucznika w oknie umiejętności). Plik gry (EXE) się nie zmienia.
+
+---
+
 ## 2.2.129 (2026-10-27)
 
 Duża aktualizacja: nowa zawartość od NerrVoVy, poprawki walki, bonusów i cen, mądrzejsze boty i Towarzysz, który sam radzi sobie z pełną torbą na rybach.
