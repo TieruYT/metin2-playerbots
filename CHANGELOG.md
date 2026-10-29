@@ -17,6 +17,19 @@ every version here.
 
 ---
 
+## 2.2.133 (2026-10-29)
+
+Magiczny Metal i Kamień Kowala z dropu i z łowienia nadają się do handlu, Towarzysz sam chodzi na ryby, kiedy gra bez właściciela, a misje Biologa na 92 i 94 poziom wreszcie działają.
+
+- **Przedmioty:** Magiczny Metal z bossów i z łowienia oraz Kamień Kowala z łowienia można wymieniać i sprzedawać innym graczom, a opis takiego przedmiotu w torbie mówi, że nadaje się do handlu (zgłoszenie blipu).
+- **Biolog:** misje Seon-Pyeonga na 92 i 94 poziom działają, z nagrodami jak w oryginale; dostaną je też postacie, które po misji na 90 poziom czekały na następną.
+- **Towarzysz:** grając bez właściciela, od czasu do czasu sam idzie na ryby i po Twoim powrocie mówi, ile złowił (pomysł javierwxw). Nie sprzedaje handlarzowi cennych towarów (ulepszaczy, małży, pereł, Fasolek Zen), a księgi innych klas i ścieżek wystawia na swoim sklepie.
+- **Boty:** po upadku bossa każdy uczestnik rajdu ma czas zebrać swój łup; boty zachowują i kupują przedmioty do czyszczenia pękniętych gniazd kamieni duszy; boty handlujące surowcami znów odnawiają Smoczą Alchemię; boty nie kupują już sprzętu, którego nie założą; przecena sprzętu na ladach robi przerwy między rundami.
+- **Okno postaci:** pokazuje prędkość ruchu ustawioną dla świata.
+- **Launcher:** sam naprawia obraz Dockera uszkodzony po awarii Docker Desktop (zgłoszenie JanoKO).
+
+Zamknij grę, zaktualizuj serwer i launcher do 2.2.133, uruchom launcher ponownie i zaktualizuj klienta do 2.0.134 (opis przedmiotów do handlu). Plik gry (EXE) się nie zmienia. Wydanie chronione; postacie i ustawienia zostają zachowane. Błędy zgłaszaj z opisem i logami przez „Zgłoś błąd” w launcherze.
+
 ## 2.2.132 (2026-10-29)
 
 Aktualizacja serwera (klient 2.0.133 i plik gry bez zmian):
