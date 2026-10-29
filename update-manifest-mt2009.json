@@ -1,18 +1,18 @@
 {
   "schema": 1,
   "channel": "stable",
-  "statusMessage": "2.2.131 / klient 2.0.133: rozsądniejsze ceny sprzętu na ladach botów, nowe wejście do Groty Wygnańców, Beran-Setaou od NerrVoVy, poprawione okno łucznika i poprawki Towarzysza oraz botów gildii. Zamknij grę, zaktualizuj serwer i launcher, uruchom launcher ponownie, następnie zaktualizuj klienta.",
+  "statusMessage": "2.2.132: nowe ceny sprzętu docierają na wszystkie lady botów, a sklepy offline szybciej oddają przedmioty bez ceny. Zamknij grę i zaktualizuj serwer; klient 2.0.133 bez zmian.",
   "server": {
-    "version": "2.2.131",
-    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.131/metin2-server-protected-migration-2.2.131.zip",
-    "sha256": "53F029B951634687676454CD2528F3B6F55610B39940AA1238C98821E2B98196",
-    "size": 170185280
+    "version": "2.2.132",
+    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.132/metin2-server-protected-migration-2.2.132.zip",
+    "sha256": "BEE4DEA5FC7090FB8BE74D13B1F1E8D787326B3CC8E4BE921D9DB4D356A48DF0",
+    "size": 170186984
   },
   "serverProtected": {
-    "version": "2.2.131",
-    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.131/metin2-server-protected-update-2.2.131.zip",
-    "sha256": "FA3A1904DBCA20459E52661014E9D5F5592E97E49EF2A688DE82D778F2D9945E",
-    "size": 160228800
+    "version": "2.2.132",
+    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.132/metin2-server-protected-update-2.2.132.zip",
+    "sha256": "F44A7DD060D1E08154B1D93645E43518DC03D21C3391CD8AF3094AF1230D80F1",
+    "size": 160230504
   },
   "protectedFrom": "2.2.39",
   "support": {
@@ -165,6 +165,6 @@
       "ECE10CBDFBE731EBEACD66145124888FD056F552E6A951F1C6FD7148FEFF724A"
     ]
   },
-  "statusMessageEn": "2.2.131 / client 2.0.133: fairer gear prices on bot counters, a new Grotto of Exile entrance, Beran-Setaou by NerrVoVy, a fixed archer skill window and fixes for the companion and guild bots. Close the game, update the server and launcher, restart the launcher, then update the client.",
-  "publishedAt": "2026-10-29T12:11:18Z"
+  "statusMessageEn": "2.2.132: the new gear prices reach every bot counter and offline shops hand back unpriced items faster. Close the game and update the server; client 2.0.133 is unchanged.",
+  "publishedAt": "2026-10-29T14:46:49Z"
 }
