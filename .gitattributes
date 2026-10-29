@@ -35,6 +35,11 @@ docs/patches/*.patch -whitespace
 /linux-port-mt2009/client-patch-beran/**/*.dds binary
 /linux-port-mt2009/client-patch-beran/**/*.wtr binary
 /linux-port-mt2009/client-patch-beran/**/*.tga binary
+# Map overrides (patch_maps) and their inputs: hash-checked, CRLF areadata.
+/linux-port-mt2009/client-patch-maps/** -text -whitespace
+/linux-port-mt2009/client-patch-maps/**/*.raw binary
+/linux-port-mt2009/client-map-sources/** -text -whitespace
+/linux-port-mt2009/client-map-sources/**/*.raw binary
 # Said's Turkish helper and COOP guide ship in the client package as he wrote
 # them (CRLF; cmd.exe reads the .bat), not normalised to LF.
 /linux-port-mt2009/client-coop/Turkce-Yap.bat -text
@@ -71,3 +76,5 @@ docs/patches/*.patch -whitespace
 /files/full-package-root/*.txt text eol=crlf
 # Reviewed Beran proposal: preserve the donor's original CRLF regen bytes/hash.
 /linux-port-mt2009/docker/game/beran/regen.txt -text -whitespace
+# NerrVoVy's v4 BlueDragon.lua: the Dockerfile installs it by its SHA256.
+/linux-port-mt2009/docker/game/beran/BlueDragon.lua -text -whitespace

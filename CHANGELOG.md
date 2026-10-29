@@ -17,6 +17,23 @@ every version here.
 
 ---
 
+## 2.2.131 (2026-10-29)
+
+Rozsądniejsze ceny sprzętu na ladach botów, nowe wejście do Groty Wygnańców, Beran-Setaou od NerrVoVy i poprawione okno umiejętności łucznika.
+
+- **Ceny sprzętu:** boty liczą, ile sztuk danej rodziny stoi na ladach, i tanieją, gdy jest ich za dużo. Sprzęt +0..+5 z bonusem nie jest już wyceniany jak +7, a sztuka z bonusami kosztuje najwyżej trzy razy tyle co taka sama bez bonusów. Niesprzedane linie znów tanieją z czasem.
+- **Beran-Setaou (NerrVoVy):** wejście jednym teleportem od NPC w Grocie, smok śpi do przebudzenia, a przed walką z nim trzeba pokonać jego strażników.
+- **Grota Wygnańców (NerrVoVy):** nowy wygląd wejścia do Groty w Dolinie Orków.
+- **Łucznik:** umiejętności w oknie w tej samej kolejności co u Gameforge, opis Powtarzalnego Strzału mówi, że podane obrażenia są za jedną strzałę, a opis Ognistej Strzały podaje te same obrażenia co serwer (zgłoszenie .yxzi).
+- **Towarzysz:** nie płaci Stajennemu za Medal Konny ani za konia wojskowego, a koń bojowy kosztuje go 500 000 yang, tyle co gracza (prośba nxck_os).
+- **Boty gildii:** wezwany bot walczy obok gracza także wtedy, gdy czekała go wizyta w mieście - nie stoi już na koniu obok walki (zgłoszenie nxck_os).
+- **Boty:** dropki medali nie utykają w mieście, a bot bez butów kupuje je z lady albo u NPC. Rotacja botów nie gubi miejsc, gdy boty przechodzą między kanałami, więc świat trzyma ustawioną liczbę botów (zgłoszenie blipu).
+- **Sklepy offline:** przedmioty, które zostały na ladach bez ceny, wracają do kupującego albo do właściciela (do skrzynki sklepu), a przedmiot wyjmowany ze skrzynki w chwili wyłączenia serwera już nie ginie.
+
+Zamknijcie grę, zaktualizujcie serwer i launcher do 2.2.131, uruchomcie launcher ponownie i zaktualizujcie klienta do 2.0.133 (nowe wejście do Groty, okno łucznika). Plik gry (EXE) się nie zmienia.
+
+---
+
 ## 2.2.130 (2026-10-28)
 
 Deszcz Strzał wraca do łucznika, Ninja walczy jak w oryginalnym mt2009, a boty lepiej radzą sobie z rynkiem, tarczami i eventem Skrzyń Heksagonalnych.
