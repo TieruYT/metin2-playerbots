@@ -17,6 +17,15 @@ every version here.
 
 ---
 
+## 2.2.132 (2026-10-29)
+
+Aktualizacja serwera (klient 2.0.133 i plik gry bez zmian):
+
+- **Ceny sprzętu:** nowe ceny z 2.2.131 trafiają teraz na wszystkie lady botów, także te, których właściciel dawno nie odwiedzał. Wcześniej po uruchomieniu serwera przecena takich lad mogła czekać godzinami.
+- **Sklepy offline:** szybsze oddawanie przedmiotów, które zostały na ladach bez ceny. Pierwsze uruchomienie po aktualizacji może potrwać kilka sekund dłużej.
+
+Zamknij grę i zaktualizuj serwer do 2.2.132. Klient zostaje w wersji 2.0.133. Wydanie chronione; postacie i ustawienia zostają zachowane. Błędy zgłaszaj z opisem i logami przez „Zgłoś błąd” w launcherze.
+
 ## 2.2.131 (2026-10-29)
 
 Rozsądniejsze ceny sprzętu na ladach botów, nowe wejście do Groty Wygnańców, Beran-Setaou od NerrVoVy i poprawione okno umiejętności łucznika.
