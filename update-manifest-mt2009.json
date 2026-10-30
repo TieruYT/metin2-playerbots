@@ -1,18 +1,18 @@
 {
   "schema": 1,
   "channel": "stable",
-  "statusMessage": "2.2.133 / klient 2.0.134: Magiczny Metal i Kamień Kowala z dropu i z łowienia do handlu, Towarzysz sam chodzi na ryby, misje Biologa na 92 i 94 poziom oraz poprawki botów i launchera. Zamknij grę, zaktualizuj serwer i launcher, uruchom launcher ponownie, następnie zaktualizuj klienta.",
+  "statusMessage": "2.2.134 / klient 2.0.135: nowe Kupony SM 10, 30, 2000 i 5000, niszczenie założonego przedmiotu, którego nie da się zdjąć, krótsza przerwa między wojnami z gildiami botów i ryby Towarzysza pod przełącznikiem Skrzynki. Zamknij grę, zaktualizuj serwer i launcher, uruchom launcher ponownie, następnie zaktualizuj klienta.",
   "server": {
-    "version": "2.2.133",
-    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.133/metin2-server-protected-migration-2.2.133.zip",
-    "sha256": "FA9D285E9651D03A689B17DDC9A2F4E26587473C42B029FC1547A473BFEDFA51",
-    "size": 170210406
+    "version": "2.2.134",
+    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.134/metin2-server-protected-migration-2.2.134.zip",
+    "sha256": "6AC9F10BF4E41B87F764C3EFA003BCB91A8E25B553306109F72C763C61180A01",
+    "size": 170226624
   },
   "serverProtected": {
-    "version": "2.2.133",
-    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.133/metin2-server-protected-update-2.2.133.zip",
-    "sha256": "13D860A2B0F5CD4C28C95F9339185DEA24165FC83F48F6D1548EDFC25283708A",
-    "size": 160253926
+    "version": "2.2.134",
+    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.134/metin2-server-protected-update-2.2.134.zip",
+    "sha256": "E70BBECA45899AAD502874B8F22E2C22E97BE98255DABE241A31E39E20A70EF6",
+    "size": 160270144
   },
   "protectedFrom": "2.2.39",
   "support": {
@@ -21,10 +21,10 @@
     "reportUrl": "https://script.google.com/macros/s/AKfycbweM8tWcvm59Va8BJxnS1z0o9L2GgtL0NXj6Yu_olAvJ7sPjnpckyGY6JB5fXH3lJYisA/exec?k=m2-7f3k9q"
   },
   "client": {
-    "version": "2.0.134",
-    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.133/metin2-client-update-2.0.134.zip",
-    "sha256": "D205424F4AC2D77A9E8C51D83808E92F79A8DC1C862BEEFE907824AE560C4ED9",
-    "size": 136329334,
+    "version": "2.0.135",
+    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.134/metin2-client-update-2.0.135.zip",
+    "sha256": "32B6ED5203CC98EB9ADFD2A58CC5C9193F1F30A380C7FB5C62CC8DE5735B0809",
+    "size": 136339998,
     "requiresClientExe": true,
     "architecture": "x64",
     "nativeRuntime": [
@@ -110,8 +110,8 @@
       }
     ],
     "supplement": {
-      "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.133/metin2-client-update-2.0.134-supplement.zip",
-      "sha256": "76BEABDB88A3440583EC376BA6351F0E96BF22F77F20E9A4247519B6263E2A0D",
+      "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.134/metin2-client-update-2.0.135-supplement.zip",
+      "sha256": "932FBD8839D1475A80FE03DBD4F772428C0E140161AB8DF60AC77E6A2CAD5E63",
       "size": 4060,
       "files": [
         "pack\\root.json",
@@ -165,6 +165,6 @@
       "ECE10CBDFBE731EBEACD66145124888FD056F552E6A951F1C6FD7148FEFF724A"
     ]
   },
-  "statusMessageEn": "2.2.133 / client 2.0.134: tradeable Magic Iron Ore and Stone of the Blacksmith from drops and fishing, a companion that goes fishing on its own, the Biologist missions at levels 92 and 94, and fixes for bots and the launcher. Close the game, update the server and launcher, restart the launcher, then update the client.",
-  "publishedAt": "2026-10-29T22:21:49Z"
+  "statusMessageEn": "2.2.134 / client 2.0.135: new DR Vouchers 10, 30, 2000 and 5000, destroying a worn item that cannot be taken off, a shorter wait between wars with bot guilds and the companion keeping its fish with Chests off. Close the game, update the server and launcher, restart the launcher, then update the client.",
+  "publishedAt": "2026-10-30T09:55:41Z"
 }
