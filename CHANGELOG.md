@@ -17,6 +17,15 @@ every version here.
 
 ---
 
+## 2.2.134 (2026-10-30)
+
+Nowe Kupony SM 10, 30, 2000 i 5000, zniszczenie założonego przedmiotu, którego nie da się zdjąć, krótsza przerwa między wojnami z gildiami botów i ryby Towarzysza pod przełącznikiem „Skrzynki”.
+
+- **Kupony SM:** cztery nowe nominały - 10, 30, 2000 i 5000 Smoczych Monet - z ikonami od Dripa. Działają jak dotychczasowe kupony, a boty też je wymieniają i wystawiają na ladach. Auto Łowy nauczą się zbierać nowe kupony z jedną z kolejnych wersji klienta (pomysł Drip).
+- **Przedmioty:** założony przedmiot, którego nie da się zdjąć, np. Pierścień Doświadczenia, można zniszczyć prawym kliknięciem w oknie ekwipunku, po potwierdzeniu (pomysł Drip, poprawka NerrVoVy).
+- **Wojny gildii:** godzina przerwy obowiązuje tylko przy ponownym wyzwaniu tej samej gildii botów - inną gildię botów można wyzwać od razu (propozycja Blind).
+- **Towarzysz:** wyłączony przycisk „Skrzynki” zatrzymuje też złowione ryby - Towarzysz ich nie otwiera, nie piecze i nie sprzedaje (pomysł mythicalgods).
+
 ## 2.2.133 (2026-10-29)
 
 Magiczny Metal i Kamień Kowala z dropu i z łowienia nadają się do handlu, Towarzysz sam chodzi na ryby, kiedy gra bez właściciela, a misje Biologa na 92 i 94 poziom wreszcie działają.
