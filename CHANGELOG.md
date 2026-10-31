@@ -17,6 +17,17 @@ every version here.
 
 ---
 
+## 2.2.135 (2026-10-31)
+
+Ranking graczy bez botów, natychmiastowy napis [AI] nad botami, działające bonusy Pierścienia Radości i Medalu Bohatera, przycisk łączenia stosów w ekwipunku i filtr poziomu w Domu Towarowym.
+
+- **Strona serwera:** ranking pokazuje teraz samych graczy, a w osobnej zakładce wszystkich razem z botami (oznaczonymi [AI]). Obok widać osobno graczy i boty w grze (prośba Kiciamola i Tieru).
+- **Napis [AI]:** pokazuje się nad botem od razu, gdy ten pojawi się w polu widzenia, a nie dopiero po kilku sekundach. Napis bota, który się wylogował, nie przechodzi już na innego gracza.
+- **Przedmioty:** Pierścień Półksiężyca, Lizak Potęgi, Pierścień Radości i Medal Bohatera dają swoje bonusy, a podpowiedź i opis mówią, jakie (wartości Kiciamola, zgłoszenie Tyriona i Kiciamola).
+- **Ekwipunek:** nowy przycisk obok sortowania łączy tylko stosy, np. medale konne z dwóch stron, i niczego innego nie przestawia. Przedmioty nie świecą się już po sortowaniu jak nowo podniesione (pomysł Tieru).
+- **Towarzysz:** okno jego ekwipunku ma te same dwa przyciski: sortowanie i łączenie stosów.
+- **Dom Towarowy:** filtr poziomu (np. broń od 65 lvl) pokazuje oferty od razu, bez sortowania od najdroższych.
+
 ## 2.2.134 (2026-10-30)
 
 Nowe Kupony SM 10, 30, 2000 i 5000, zniszczenie założonego przedmiotu, którego nie da się zdjąć, krótsza przerwa między wojnami z gildiami botów i ryby Towarzysza pod przełącznikiem „Skrzynki”.
