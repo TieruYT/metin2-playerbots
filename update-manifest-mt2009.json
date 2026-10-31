@@ -1,18 +1,18 @@
 {
   "schema": 1,
   "channel": "stable",
-  "statusMessage": "2.2.134 / klient 2.0.135: nowe Kupony SM 10, 30, 2000 i 5000, niszczenie założonego przedmiotu, którego nie da się zdjąć, krótsza przerwa między wojnami z gildiami botów i ryby Towarzysza pod przełącznikiem Skrzynki. Zamknij grę, zaktualizuj serwer i launcher, uruchom launcher ponownie, następnie zaktualizuj klienta.",
+  "statusMessage": "2.2.135 / klient 2.0.136: ranking graczy bez botów, napis [AI] od razu nad botami, bonusy Pierścienia Radości i Medalu Bohatera, przycisk łączenia stosów w ekwipunku i u Towarzysza, filtr poziomu w Domu Towarowym. Zamknij grę, zaktualizuj serwer i launcher, uruchom launcher ponownie, następnie zaktualizuj klienta.",
   "server": {
-    "version": "2.2.134",
-    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.134/metin2-server-protected-migration-2.2.134.zip",
-    "sha256": "6AC9F10BF4E41B87F764C3EFA003BCB91A8E25B553306109F72C763C61180A01",
-    "size": 170226624
+    "version": "2.2.135",
+    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.135/metin2-server-protected-migration-2.2.135.zip",
+    "sha256": "8D48DDB01CB84B960C72488FF2171D32198D35B2A34A48E29DAAC55FF10005AA",
+    "size": 170232837
   },
   "serverProtected": {
-    "version": "2.2.134",
-    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.134/metin2-server-protected-update-2.2.134.zip",
-    "sha256": "E70BBECA45899AAD502874B8F22E2C22E97BE98255DABE241A31E39E20A70EF6",
-    "size": 160270144
+    "version": "2.2.135",
+    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.135/metin2-server-protected-update-2.2.135.zip",
+    "sha256": "CBF5870EBC016B9F605BA5828BB7694E143A687CA0309C5D9BA53134004E2811",
+    "size": 160276357
   },
   "protectedFrom": "2.2.39",
   "support": {
@@ -21,10 +21,10 @@
     "reportUrl": "https://script.google.com/macros/s/AKfycbweM8tWcvm59Va8BJxnS1z0o9L2GgtL0NXj6Yu_olAvJ7sPjnpckyGY6JB5fXH3lJYisA/exec?k=m2-7f3k9q"
   },
   "client": {
-    "version": "2.0.135",
-    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.134/metin2-client-update-2.0.135.zip",
-    "sha256": "32B6ED5203CC98EB9ADFD2A58CC5C9193F1F30A380C7FB5C62CC8DE5735B0809",
-    "size": 136339998,
+    "version": "2.0.136",
+    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.135/metin2-client-update-2.0.136.zip",
+    "sha256": "639DCBBCB5870034BB8C30E8E675DDEE1E5A7A16D49008DD5E316FE54F3759F3",
+    "size": 136345476,
     "requiresClientExe": true,
     "architecture": "x64",
     "nativeRuntime": [
@@ -110,8 +110,8 @@
       }
     ],
     "supplement": {
-      "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.134/metin2-client-update-2.0.135-supplement.zip",
-      "sha256": "932FBD8839D1475A80FE03DBD4F772428C0E140161AB8DF60AC77E6A2CAD5E63",
+      "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.135/metin2-client-update-2.0.136-supplement.zip",
+      "sha256": "2B4A113F7FE64DAA4FD1AA404BE0CF0E12793A4CE71E177DCC0E02E7D900431F",
       "size": 4060,
       "files": [
         "pack\\root.json",
@@ -165,6 +165,6 @@
       "ECE10CBDFBE731EBEACD66145124888FD056F552E6A951F1C6FD7148FEFF724A"
     ]
   },
-  "statusMessageEn": "2.2.134 / client 2.0.135: new DR Vouchers 10, 30, 2000 and 5000, destroying a worn item that cannot be taken off, a shorter wait between wars with bot guilds and the companion keeping its fish with Chests off. Close the game, update the server and launcher, restart the launcher, then update the client.",
-  "publishedAt": "2026-10-30T09:55:41Z"
+  "statusMessageEn": "2.2.135 / client 2.0.136: a players-only ranking, the [AI] tag over bots at once, the Ring of Joy and Hero Medal bonuses, a stack-only button in the inventory and the companion's bag, and the Trade House level filter. Close the game, update the server and launcher, restart the launcher, then update the client.",
+  "publishedAt": "2026-10-31T16:23:28Z"
 }
