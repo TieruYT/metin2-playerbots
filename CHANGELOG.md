@@ -17,6 +17,21 @@ every version here.
 
 ---
 
+## 2.2.136 (2026-11-02)
+
+Boty mądrzej wybierają, gdzie expią i co wystawiają, częstsze rajdy na Wieżę Demonów, ogłoszenia poziomu od 30 i boss z nickiem zabójcy, a launcher pokazuje postęp pobierania aktualizacji.
+
+- **Boty w świecie:** wysokie boty czekające w pierwszej wiosce spacerują po placu zamiast krążyć po łące, boty od 90 lvl expią tylko w Grocie Wygnańców V2, a rajd botów na Wieżę Demonów wraca co 30 minut zamiast co 90 (zgłoszenia z launchera).
+- **Lady botów:** goły sprzęt poniżej 30 lvl bez bonusów i poniżej +6 nie trafia już na lady (Tieru).
+- **Ekwipunek botów:** boty mieszają broń na 30 lvl do lepszych średnich i dokupują do tego kamienie, mniej marnują kamienie na niski sprzęt, a Loteria i Bonowacz nie przeszkadzają sobie nawzajem (jaksiezabic, zgłoszenia z launchera).
+- **Ogłoszenia:** „Gracz X wbił N poziom!” pojawia się od 30 lvl, a ogłoszenie pokonania bossa podaje nick zabójcy (Tieru, Kiciamol).
+- **Nazwy botów:** boty nie noszą już nicków prawdziwych graczy (Dekri, gregoszky).
+- **Towarzysz:** Shift + prawy klik na przedmiocie w jego torbie zdejmuje albo nakłada status prezentu (lastjudicator).
+- **Panel:** stały drop Kuponu SM z Metinów i bossów da się ustawić w panelu (Drip).
+- **Panel GM (F9):** tworzenie przedmiotu daje tyle sztuk, ile mieści jego stos, np. 5000 strzał (zgłoszenie z launchera).
+- **Katakumby Diabła:** GM teleportowany do bota w lochu zostaje w lochu (sosen).
+- **Launcher:** aktualizacja pokazuje postęp pobierania paczki, a na jednym świecie naraz działa tylko jedna operacja, także po zamknięciu okna (zgłoszenia z launchera).
+
 ## 2.2.135 (2026-10-31)
 
 Ranking graczy bez botów, natychmiastowy napis [AI] nad botami, działające bonusy Pierścienia Radości i Medalu Bohatera, przycisk łączenia stosów w ekwipunku i filtr poziomu w Domu Towarowym.
