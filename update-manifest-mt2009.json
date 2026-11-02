@@ -1,18 +1,18 @@
 {
   "schema": 1,
   "channel": "stable",
-  "statusMessage": "2.2.135 / klient 2.0.136: ranking graczy bez botów, napis [AI] od razu nad botami, bonusy Pierścienia Radości i Medalu Bohatera, przycisk łączenia stosów w ekwipunku i u Towarzysza, filtr poziomu w Domu Towarowym. Zamknij grę, zaktualizuj serwer i launcher, uruchom launcher ponownie, następnie zaktualizuj klienta.",
+  "statusMessage": "2.2.136 / klient 2.0.137: boty mądrzej wybierają, gdzie expią i co wystawiają, częstsze rajdy botów na Wieżę Demonów, ogłoszenia poziomu od 30 i boss z nickiem zabójcy, skrót prezentu u Towarzysza i postęp pobierania w launcherze. Zamknij grę, zaktualizuj serwer i launcher, uruchom launcher ponownie, następnie zaktualizuj klienta.",
   "server": {
-    "version": "2.2.135",
-    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.135/metin2-server-protected-migration-2.2.135.zip",
-    "sha256": "8D48DDB01CB84B960C72488FF2171D32198D35B2A34A48E29DAAC55FF10005AA",
-    "size": 170232837
+    "version": "2.2.136",
+    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.136/metin2-server-protected-migration-2.2.136.zip",
+    "sha256": "2EE2402182566F82B0368F92FA3A3B129E1E635062EB0F290AA440CC1079E995",
+    "size": 170281234
   },
   "serverProtected": {
-    "version": "2.2.135",
-    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.135/metin2-server-protected-update-2.2.135.zip",
-    "sha256": "CBF5870EBC016B9F605BA5828BB7694E143A687CA0309C5D9BA53134004E2811",
-    "size": 160276357
+    "version": "2.2.136",
+    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.136/metin2-server-protected-update-2.2.136.zip",
+    "sha256": "A5A28C7ABD642BE10334B4EFA47FFC91A578AA86F814BB3C873E9E2014773285",
+    "size": 160324754
   },
   "protectedFrom": "2.2.39",
   "support": {
@@ -21,10 +21,10 @@
     "reportUrl": "https://script.google.com/macros/s/AKfycbweM8tWcvm59Va8BJxnS1z0o9L2GgtL0NXj6Yu_olAvJ7sPjnpckyGY6JB5fXH3lJYisA/exec?k=m2-7f3k9q"
   },
   "client": {
-    "version": "2.0.136",
-    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.135/metin2-client-update-2.0.136.zip",
-    "sha256": "639DCBBCB5870034BB8C30E8E675DDEE1E5A7A16D49008DD5E316FE54F3759F3",
-    "size": 136345476,
+    "version": "2.0.137",
+    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.136/metin2-client-update-2.0.137.zip",
+    "sha256": "D8107205357CF6B05D224707E4CFE76FE8216F93FC26BE665F1DD23908F54744",
+    "size": 136346045,
     "requiresClientExe": true,
     "architecture": "x64",
     "nativeRuntime": [
@@ -110,8 +110,8 @@
       }
     ],
     "supplement": {
-      "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.135/metin2-client-update-2.0.136-supplement.zip",
-      "sha256": "2B4A113F7FE64DAA4FD1AA404BE0CF0E12793A4CE71E177DCC0E02E7D900431F",
+      "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.136/metin2-client-update-2.0.137-supplement.zip",
+      "sha256": "F1C4AE560F931B2FA44948AF054ADC3B05871481E6108F28D0857B1F6E5ECC33",
       "size": 4060,
       "files": [
         "pack\\root.json",
@@ -165,6 +165,6 @@
       "ECE10CBDFBE731EBEACD66145124888FD056F552E6A951F1C6FD7148FEFF724A"
     ]
   },
-  "statusMessageEn": "2.2.135 / client 2.0.136: a players-only ranking, the [AI] tag over bots at once, the Ring of Joy and Hero Medal bonuses, a stack-only button in the inventory and the companion's bag, and the Trade House level filter. Close the game, update the server and launcher, restart the launcher, then update the client.",
-  "publishedAt": "2026-10-31T16:23:28Z"
+  "statusMessageEn": "2.2.136 / client 2.0.137: bots choose better where to level and what to sell, more frequent Demon Tower raids, level notices from 30 and the boss killer's name, a gift shortcut in the companion's bag and download progress in the launcher. Close the game, update the server and launcher, restart the launcher, then update the client.",
+  "publishedAt": "2026-11-02T06:58:37Z"
 }
