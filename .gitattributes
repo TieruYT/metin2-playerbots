@@ -78,3 +78,5 @@ docs/patches/*.patch -whitespace
 /linux-port-mt2009/docker/game/beran/regen.txt -text -whitespace
 # NerrVoVy's v4 BlueDragon.lua: the Dockerfile installs it by its SHA256.
 /linux-port-mt2009/docker/game/beran/BlueDragon.lua -text -whitespace
+# Halloween source assets are hash-checked (client-halloween-assets.json).
+/linux-port-mt2009/client-patch-halloween/** -text -whitespace binary

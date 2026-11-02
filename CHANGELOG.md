@@ -17,6 +17,18 @@ every version here.
 
 ---
 
+## 2.2.137 (2026-11-02)
+
+Event Halloween „Noc Bladego Księżyca” w grze dla wszystkich, magazyn, alchemia i plan offline Towarzysza, nicki wspierających wracają do botów jako podziękowanie, a wierzchowiec bije dopiero od 11 lvl konia.
+
+- **Halloween:** event „Noc Bladego Księżyca” – trumny z Piekielnymi na mapach, Jack Pumpkin i Strach na Dynie ze sklepami i polowaniami na bossów, cukierki, dynie i karty jako waluty. Uruchamia się go z panelu, mówi w każdym języku gry, a boty biorą w nim udział i same podchodzą do NPC eventu (Tyrion, Kiciamol).
+- **Towarzysz:** własny magazyn, alchemia Smoczych Kamieni (Auto / Zawsze / Wyłączona), plan zadań na czas, gdy jesteś poza grą, i nowe okna (Colide).
+- **Nazwy botów:** w zwykłej grze nicki wspierających i osób z Discorda wracają do botów jako podziękowanie; serwer może je wyłączyć przełącznikiem (Tieru).
+- **Wierzchowce:** z wierzchowca z pieczęci da się atakować dopiero od 11 lvl konia, tak jak ze zwykłego konia (charliee9239, mythicalgods).
+- **Skrzynie:** Skrzynię Królów, Wiecznej Zimy, Szczeniaka, Świąt i Burzy Pustynnej da się otworzyć, a boty też je otwierają (liqu2056).
+- **Dom Towarowy:** podpowiedzi pokazują wszystkie Kupony SM, a Magiczny Metal do handlu ma właściwą ikonę (blipu, Drip).
+- **Edytor bazy:** lista bonusów przedmiotu zawiera wszystkie bonusy silnika (Drip).
+
 ## 2.2.136 (2026-11-02)
 
 Boty mądrzej wybierają, gdzie expią i co wystawiają, częstsze rajdy na Wieżę Demonów, ogłoszenia poziomu od 30 i boss z nickiem zabójcy, a launcher pokazuje postęp pobierania aktualizacji.
