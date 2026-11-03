@@ -80,3 +80,16 @@ docs/patches/*.patch -whitespace
 /linux-port-mt2009/docker/game/beran/BlueDragon.lua -text -whitespace
 # Halloween source assets are hash-checked (client-halloween-assets.json).
 /linux-port-mt2009/client-patch-halloween/** -text -whitespace binary
+# NerrVoVy's Plague Dungeon: the client's assets and property files are
+# hash-checked (client-plague-assets.json); the server's map, regens and
+# motions are the addon's bytes, CRLF and all.
+/linux-port-mt2009/client-patch-plague/** -text -whitespace binary
+/linux-port-mt2009/client-plague-property/** -text -whitespace binary
+/linux-port-mt2009/docker/game/plague/** -text -whitespace
+/linux-port-mt2009/docker/game/plague/map/server_attr binary
+# NerrVoVy's Christmas event: the client's assets are hash-checked
+# (client-christmas-assets.json), msm/msa/mse text and CRLF included.
+/linux-port-mt2009/client-patch-christmas/** -text -whitespace binary
+# NerrVoVy's Christmas event: the server's groups, drops and motions are the
+# addon's bytes, CRLF and all (port/christmas_content.py).
+/linux-port-mt2009/docker/game/christmas/** -text -whitespace

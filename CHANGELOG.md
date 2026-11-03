@@ -17,6 +17,20 @@ every version here.
 
 ---
 
+## 2.2.138 (2026-11-03)
+
+Dwa nowe dodatki do włączenia w panelu - Loch Zarazy i Kuźnia Łowcy - beta Kiciamola z Polem Węży, dziennikiem zadań i Kołem Fortuny, aukcje błyskawiczne w ItemShopie z udziałem botów i nowe opcje Towarzysza.
+
+- **Loch Zarazy:** nowy loch dla poziomów 45-120 za Strażnikiem Zarazy na Górze Sohan - osiem sal, solo albo w grupie, klucze do drzwi, Smok Zarazy na końcu. Domyślnie wyłączony, włącza się go w panelu (NerrVoVy).
+- **Kuźnia Łowcy:** sześć rodzin broni na 50 poziom robionych z broni +9 na 30 poziom. Domyślnie wyłączona, ustawienia w panelu zaawansowanym (NerrVoVy).
+- **Beta Kiciamola:** Pole Węży i koń szturmowy, dziennik zadań z panelem bocznym, Koło Fortuny w ItemShopie z Kuponem Losu (tarcza Lostka), odświeżona Wiki z portretami, łowienie ryb w Auto Łowach (Kiciamol, Lostek).
+- **Aukcje błyskawiczne:** czasowe oferty ItemShopu z limitem sztuk i oknem sprzedaży, przygotowywane w panelu zaawansowanym; boty też w nich kupują (NerrVoVy).
+- **Towarzysz:** może trzymać się za plecami właściciela i tylko go wspierać buffami, może zbierać własny EXP, gdy właściciel nosi Pierścień Anty-Exp (do +30 poziomów ponad właściciela), a kosz w jego torbie usuwa kilka przedmiotów naraz (blipu, Piciu97, Dekri, Colide, Sudak).
+- **Panel:** podatek od sprzedaży na ladach osobno dla graczy i botów, strona z czasem odrodzenia bossów i Metinów na każdym kanale, historia każdego przedmiotu bota pod „?”, hurtowa edycja zaznaczonych wierszy w edytorze bazy i edytor bazowych szans ulepszania u Kowala (Kordyl13, Malina, Iwakura, Mythicalgods, NerrVoVy).
+- **Skrzynia Berana-Setaou:** prawy klik pokazuje jej zawartość w podglądzie skrzyń (NerrVoVy).
+- **Halloween:** Maska Dyni od Stracha na Dynie trwa pięć dni od pierwszego założenia zamiast znikać po chwili (Kiciamol).
+- **Poprawki:** boty po wojnie gildii nie są już resetowane przez strażnika bezczynności, aktualizacja nieuruchomionego jeszcze folderu serwera nie kończy się błędem przy pliku ustawień, a launcher nazywa brakujący plik danych serwera zamiast przerywać budowę.
+
 ## 2.2.137 (2026-11-02)
 
 Event Halloween „Noc Bladego Księżyca” w grze dla wszystkich, magazyn, alchemia i plan offline Towarzysza, nicki wspierających wracają do botów jako podziękowanie, a wierzchowiec bije dopiero od 11 lvl konia.
