@@ -1,18 +1,18 @@
 {
   "schema": 1,
   "channel": "stable",
-  "statusMessage": "2.2.137 / klient 2.0.138: event Halloween „Noc Bladego Księżyca” (uruchamiany z panelu), magazyn, alchemia i plan offline Towarzysza, nicki wspierających wracają do botów, wierzchowiec bije od 11 lvl konia, skrzynie i poprawki Domu Towarowego. Zamknij grę, zaktualizuj serwer i launcher, uruchom launcher ponownie, następnie zaktualizuj klienta.",
+  "statusMessage": "2.2.138 / klient 2.0.139: Loch Zarazy i Kuźnia Łowcy (włączane w panelu), beta Kiciamola z Polem Węży, dziennikiem zadań i Kołem Fortuny, aukcje błyskawiczne w ItemShopie, nowe opcje Towarzysza i panelu. Zamknij grę, zaktualizuj serwer i launcher, uruchom launcher ponownie, następnie zaktualizuj klienta.",
   "server": {
-    "version": "2.2.137",
-    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.137/metin2-server-protected-migration-2.2.137.zip",
-    "sha256": "88ED33D91BF53045BBEDED1CE4D5F70B18FACDCA9AC0C9F72861698A1E469DF6",
-    "size": 170520396
+    "version": "2.2.138",
+    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.138/metin2-server-protected-migration-2.2.138.zip",
+    "sha256": "4A7864E94343A67ACE739B86A2C68F2E0B8EAC1DBA665CED335A872975AAF7C4",
+    "size": 170926226
   },
   "serverProtected": {
-    "version": "2.2.137",
-    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.137/metin2-server-protected-update-2.2.137.zip",
-    "sha256": "70625908FD3AC4E0F72D8AC32B573F54DDF0AEEBD0E545D98BDDEB676593C10F",
-    "size": 160563916
+    "version": "2.2.138",
+    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.138/metin2-server-protected-update-2.2.138.zip",
+    "sha256": "0EB76649129353493CF0CC53A0A14AFA32331E7388060212C6E584E72592D190",
+    "size": 160969746
   },
   "protectedFrom": "2.2.39",
   "support": {
@@ -21,10 +21,10 @@
     "reportUrl": "https://script.google.com/macros/s/AKfycbweM8tWcvm59Va8BJxnS1z0o9L2GgtL0NXj6Yu_olAvJ7sPjnpckyGY6JB5fXH3lJYisA/exec?k=m2-7f3k9q"
   },
   "client": {
-    "version": "2.0.138",
-    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.137/metin2-client-update-2.0.138.zip",
-    "sha256": "BDE321DF508C74EF7B0F136672B09E5DE5B6117047A79852DECA952D8CFA5659",
-    "size": 138693739,
+    "version": "2.0.139",
+    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.138/metin2-client-update-2.0.139.zip",
+    "sha256": "18084052FCE923B26C57EC0656E3477F30388FDDE33660088E3F811BEFA43721",
+    "size": 166909295,
     "requiresClientExe": true,
     "architecture": "x64",
     "nativeRuntime": [
@@ -110,8 +110,8 @@
       }
     ],
     "supplement": {
-      "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.137/metin2-client-update-2.0.138-supplement.zip",
-      "sha256": "C16D17CF10D9A9FACFB5D43DACCB078CF7745BEB10FBEB7F4C758ABE97F2797A",
+      "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.138/metin2-client-update-2.0.139-supplement.zip",
+      "sha256": "AC05CEA6D9C267F2FC8D6D0DEC650AC0C1B45B408E1C91C8F6284737CC271CA8",
       "size": 4060,
       "files": [
         "pack\\root.json",
@@ -165,6 +165,6 @@
       "ECE10CBDFBE731EBEACD66145124888FD056F552E6A951F1C6FD7148FEFF724A"
     ]
   },
-  "statusMessageEn": "2.2.137 / client 2.0.138: the Halloween event 'Night of the Pale Moon' (started from the panel), the companion's storage, alchemy and offline plan, supporters' nicknames back on the bots, mounts attack from horse level 11, chests and market fixes. Close the game, update the server and launcher, restart the launcher, then update the client.",
-  "publishedAt": "2026-11-02T12:33:35Z"
+  "statusMessageEn": "2.2.138 / client 2.0.139: the Plague Dungeon and the Hunter's Forge (switched on in the panel), Kiciamol's beta with the Snakefield, a quest journal and the Wheel of Fortune, ItemShop flash auctions, new companion and panel options. Close the game, update the server and launcher, restart the launcher, then update the client.",
+  "publishedAt": "2026-11-03T07:01:04Z"
 }
