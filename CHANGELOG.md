@@ -17,6 +17,17 @@ every version here.
 
 ---
 
+## 2.2.140 (2026-11-04)
+
+Nowe okno Społeczności, ulepszanie u Kowala do wybranego plusa i poprawki dla botów, Towarzysza i Wiki.
+
+- **Społeczność:** okno Znajomych zastąpiło okno Społeczności, z ustawieniami prywatności i statusu oraz zgłaszaniem graczy (Colide).
+- **Kowal:** opcja „Ulepszaj do +N” ulepsza automatycznie do wybranego plusa, a materiały z magazynu kolekcjonera są brane bez wpisywania hasła i ich liczba jest w oknie od razu.
+- **Boty:** bot czekający na turę przy NPC questa poluje w pobliżu zamiast stać (corbero), a boty z Bojową Tarczą poniżej +6 dostają zapasową tarczę i nie utykają już na Prawie Awansu.
+- **Towarzysz:** sortowanie torby układa także przedmioty nadane przez właściciela.
+- **Wiki:** ikony potworów to znów statyczne portrety, Złote i Srebrne Szkatułki pokazują zawartość, a przy wyłączonej Alchemii jej wpisy są ukryte (Drip).
+- **Poprawki:** wierzchowiec z pieczęci nie miesza się już z koniem od Stajennego, a Loch Zarazy jest na mapie botów w obu panelach (NerrVoVy).
+
 ## 2.2.139 (2026-11-03)
 
 Granie własnym Towarzyszem, Zwój Zmiany Profesji, pełny sklep offline gracza, wytwarzanie z magazynu kolekcjonera i spory pakiet poprawek dla botów, klienta i launchera.
