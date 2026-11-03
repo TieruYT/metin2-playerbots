@@ -1,18 +1,18 @@
 {
   "schema": 1,
   "channel": "stable",
-  "statusMessage": "2.2.139 / klient 2.0.140: granie własnym Towarzyszem, Zwój Zmiany Profesji, pełny sklep offline gracza, wytwarzanie z magazynu i poprawki botów, klienta i launchera. Zamknij grę, zaktualizuj serwer i launcher, uruchom launcher ponownie, następnie zaktualizuj klienta wraz z nowym plikiem gry.",
+  "statusMessage": "2.2.140 / klient 2.0.141: nowe okno Społeczności, ulepszanie u Kowala do wybranego plusa i poprawki botów, Towarzysza i Wiki. Zamknij grę, zaktualizuj serwer i launcher, uruchom launcher ponownie, następnie zaktualizuj klienta.",
   "server": {
-    "version": "2.2.139",
-    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.139/metin2-server-protected-migration-2.2.139.zip",
-    "sha256": "3C21822845E9672FFA12AC0A707D88C820BA391078504DC18DDEF8D874FAFBC1",
-    "size": 171091490
+    "version": "2.2.140",
+    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.140/metin2-server-protected-migration-2.2.140.zip",
+    "sha256": "CBAFFA6B365F7A0E382CCDF9CB8868B680D05860C1F82E65175F8C6AF886954B",
+    "size": 173035122
   },
   "serverProtected": {
-    "version": "2.2.139",
-    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.139/metin2-server-protected-update-2.2.139.zip",
-    "sha256": "7FA0778F1AFAF5A1E49A6AA877A45DC1CE6CD92986F8A6F53CB2D26FC8CF6237",
-    "size": 161135010
+    "version": "2.2.140",
+    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.140/metin2-server-protected-update-2.2.140.zip",
+    "sha256": "FCE15FCE5F00FB782BE24B17FC9A4B8060260EE1AB2527E0D718F48149A6F0FF",
+    "size": 163078642
   },
   "protectedFrom": "2.2.39",
   "support": {
@@ -21,10 +21,10 @@
     "reportUrl": "https://script.google.com/macros/s/AKfycbweM8tWcvm59Va8BJxnS1z0o9L2GgtL0NXj6Yu_olAvJ7sPjnpckyGY6JB5fXH3lJYisA/exec?k=m2-7f3k9q"
   },
   "client": {
-    "version": "2.0.140",
-    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.139/metin2-client-update-2.0.140.zip",
-    "sha256": "9AB195B9A8A5D1BB3EF757AA2C4D17598267350F8523AF360F3F04CEFB33C198",
-    "size": 166970635,
+    "version": "2.0.141",
+    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.140/metin2-client-update-2.0.141.zip",
+    "sha256": "37B94E7CF44B1FE0BF337C1035AA8B753A87C987AB2C33B494DCD75252F00082",
+    "size": 167330487,
     "requiresClientExe": true,
     "architecture": "x64",
     "nativeRuntime": [
@@ -110,8 +110,8 @@
       }
     ],
     "supplement": {
-      "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.139/metin2-client-update-2.0.140-supplement.zip",
-      "sha256": "8E2591D01D08BDC820945041069301BD2F4FC0C5D9F511F8A8B1B68EB181BB0B",
+      "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.140/metin2-client-update-2.0.141-supplement.zip",
+      "sha256": "325F053D8BECF30070E4D1BEBD161408A7770E7B1E11D1CFBE008F315CB13D51",
       "size": 4060,
       "files": [
         "pack\\root.json",
@@ -166,6 +166,6 @@
       "D07CD4AAF6857BC3DDD9199B6AE590C8268C4F9CB36DA939525CF8F900F48721"
     ]
   },
-  "statusMessageEn": "2.2.139 / client 2.0.140: play as your Companion, the Profession Change Scroll, a player's full offline shop, crafting from the warehouse and fixes for bots, the client and the launcher. Close the game, update the server and launcher, restart the launcher, then update the client together with the new game file.",
-  "publishedAt": "2026-11-03T19:13:46Z"
+  "statusMessageEn": "2.2.140 / client 2.0.141: a new Community window, refining at the blacksmith up to a chosen grade and fixes for bots, the Companion and the Wiki. Close the game, update the server and launcher, restart the launcher, then update the client.",
+  "publishedAt": "2026-11-03T23:29:15Z"
 }
