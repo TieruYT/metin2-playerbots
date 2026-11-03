@@ -1,18 +1,18 @@
 {
   "schema": 1,
   "channel": "stable",
-  "statusMessage": "2.2.138 / klient 2.0.139: Loch Zarazy i Kuźnia Łowcy (włączane w panelu), beta Kiciamola z Polem Węży, dziennikiem zadań i Kołem Fortuny, aukcje błyskawiczne w ItemShopie, nowe opcje Towarzysza i panelu. Zamknij grę, zaktualizuj serwer i launcher, uruchom launcher ponownie, następnie zaktualizuj klienta.",
+  "statusMessage": "2.2.139 / klient 2.0.140: granie własnym Towarzyszem, Zwój Zmiany Profesji, pełny sklep offline gracza, wytwarzanie z magazynu i poprawki botów, klienta i launchera. Zamknij grę, zaktualizuj serwer i launcher, uruchom launcher ponownie, następnie zaktualizuj klienta wraz z nowym plikiem gry.",
   "server": {
-    "version": "2.2.138",
-    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.138/metin2-server-protected-migration-2.2.138.zip",
-    "sha256": "4A7864E94343A67ACE739B86A2C68F2E0B8EAC1DBA665CED335A872975AAF7C4",
-    "size": 170926226
+    "version": "2.2.139",
+    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.139/metin2-server-protected-migration-2.2.139.zip",
+    "sha256": "3C21822845E9672FFA12AC0A707D88C820BA391078504DC18DDEF8D874FAFBC1",
+    "size": 171091490
   },
   "serverProtected": {
-    "version": "2.2.138",
-    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.138/metin2-server-protected-update-2.2.138.zip",
-    "sha256": "0EB76649129353493CF0CC53A0A14AFA32331E7388060212C6E584E72592D190",
-    "size": 160969746
+    "version": "2.2.139",
+    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.139/metin2-server-protected-update-2.2.139.zip",
+    "sha256": "7FA0778F1AFAF5A1E49A6AA877A45DC1CE6CD92986F8A6F53CB2D26FC8CF6237",
+    "size": 161135010
   },
   "protectedFrom": "2.2.39",
   "support": {
@@ -21,10 +21,10 @@
     "reportUrl": "https://script.google.com/macros/s/AKfycbweM8tWcvm59Va8BJxnS1z0o9L2GgtL0NXj6Yu_olAvJ7sPjnpckyGY6JB5fXH3lJYisA/exec?k=m2-7f3k9q"
   },
   "client": {
-    "version": "2.0.139",
-    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.138/metin2-client-update-2.0.139.zip",
-    "sha256": "18084052FCE923B26C57EC0656E3477F30388FDDE33660088E3F811BEFA43721",
-    "size": 166909295,
+    "version": "2.0.140",
+    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.139/metin2-client-update-2.0.140.zip",
+    "sha256": "9AB195B9A8A5D1BB3EF757AA2C4D17598267350F8523AF360F3F04CEFB33C198",
+    "size": 166970635,
     "requiresClientExe": true,
     "architecture": "x64",
     "nativeRuntime": [
@@ -110,8 +110,8 @@
       }
     ],
     "supplement": {
-      "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.138/metin2-client-update-2.0.139-supplement.zip",
-      "sha256": "AC05CEA6D9C267F2FC8D6D0DEC650AC0C1B45B408E1C91C8F6284737CC271CA8",
+      "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.139/metin2-client-update-2.0.140-supplement.zip",
+      "sha256": "8E2591D01D08BDC820945041069301BD2F4FC0C5D9F511F8A8B1B68EB181BB0B",
       "size": 4060,
       "files": [
         "pack\\root.json",
@@ -121,8 +121,8 @@
     }
   },
   "clientExe": {
-    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.126/metin2client.exe",
-    "sha256": "D07CD4AAF6857BC3DDD9199B6AE590C8268C4F9CB36DA939525CF8F900F48721",
+    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.139/metin2client.exe",
+    "sha256": "AA2CA4D6DF5A321BC1AC7D0F6AE4C4783F07194B7A0D7ACD6BDE2612AD7DFA4A",
     "size": 10889216,
     "replaces": [
       "8263F81BFACDFA4A664C1F2A8CE846AEE14F19E584DB40A43F3184FEF1A59531",
@@ -162,9 +162,10 @@
       "A5760F627D097FAEA71E6804E01198BFBCD15C821AB6414EEBA00113D81FAFB3",
       "4F7DBC84ABBEB8F6EEC23BDB89E9199A96AEB864A74279099EBF3A3266FBECA3",
       "D3266C87CEA858650DFD7AE50B95A3E5B56BF0A9E7202A96F3A958AB4043A4DC",
-      "ECE10CBDFBE731EBEACD66145124888FD056F552E6A951F1C6FD7148FEFF724A"
+      "ECE10CBDFBE731EBEACD66145124888FD056F552E6A951F1C6FD7148FEFF724A",
+      "D07CD4AAF6857BC3DDD9199B6AE590C8268C4F9CB36DA939525CF8F900F48721"
     ]
   },
-  "statusMessageEn": "2.2.138 / client 2.0.139: the Plague Dungeon and the Hunter's Forge (switched on in the panel), Kiciamol's beta with the Snakefield, a quest journal and the Wheel of Fortune, ItemShop flash auctions, new companion and panel options. Close the game, update the server and launcher, restart the launcher, then update the client.",
-  "publishedAt": "2026-11-03T07:01:04Z"
+  "statusMessageEn": "2.2.139 / client 2.0.140: play as your Companion, the Profession Change Scroll, a player's full offline shop, crafting from the warehouse and fixes for bots, the client and the launcher. Close the game, update the server and launcher, restart the launcher, then update the client together with the new game file.",
+  "publishedAt": "2026-11-03T19:13:46Z"
 }
