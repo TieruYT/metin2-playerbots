@@ -17,6 +17,17 @@ every version here.
 
 ---
 
+## 2.2.139 (2026-11-03)
+
+Granie własnym Towarzyszem, Zwój Zmiany Profesji, pełny sklep offline gracza, wytwarzanie z magazynu kolekcjonera i spory pakiet poprawek dla botów, klienta i launchera.
+
+- **Towarzysz:** w jego oknie (P → Polecenia) można zagrać nim jak zwykłą postacią i wrócić na swoją, a Twoja postać w tym czasie pomaga obok. Zwój Zmiany Profesji działa u gracza i u Towarzysza, do kupienia w ItemShopie (NerrVoVy, Colide).
+- **Sklep i rzemiosło:** sklep offline gracza ma od razu pełną siatkę i nie wygasa (6zmacko), a wytwarzanie u NPC w wioskach bierze brakujące materiały z magazynu kolekcjonera, tak jak Kowal (javierwxw).
+- **Interfejs:** klik na kulki EXP pokazuje procent do następnego poziomu (bolttton), komendy mają angielskie nazwy, a ich lista jest w pomocy pod H (.yxzi), klient znowu zna wszystkie przedmioty serwera, także pakiety VIP i bronie Kuźni Łowcy (kary3631, elkazett, Swordraiders, jonasz), a przycisk Koła Fortuny znów kręci kołem (jonasz, mlodszygie).
+- **Boty:** w pojedynku, na wojnie gildii i w Anti-PK biją też zwykłymi ciosami (sentbygods), czekają w kolejce przy NPC questa zamiast krążyć (Romeo), nie kręcą się długo przy Strażniku w pierwszej wiosce (kary3631), na maksymalnym poziomie dbają o ekwipunek do expienia i PvP, a na dużych serwerach mniej z nich zmienia kanał naraz.
+- **Auto Łowy:** w tłumie biorą cel zamiast stać i szukać, a filtr podnoszenia zna wszystkie Kupony SM.
+- **Poprawki:** Polowanie IV z Halloween zalicza Elitarną Zjawę i zabicie w drużynie (szuras), czas na księgę po zmianie trudności odlicza się poprawnie (Oxin), ranga GM nadana w panelu działa od razu, nowy świat tworzy tylko tyle kont botów, ile ustawiono (sosen94), a launcher sam przywraca zgubione dane gry i buduje serwer także przy niedostępnym serwerze pakietów (Kordyl13).
+
 ## 2.2.138 (2026-11-03)
 
 Dwa nowe dodatki do włączenia w panelu - Loch Zarazy i Kuźnia Łowcy - beta Kiciamola z Polem Węży, dziennikiem zadań i Kołem Fortuny, aukcje błyskawiczne w ItemShopie z udziałem botów i nowe opcje Towarzysza.
