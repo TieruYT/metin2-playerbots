@@ -1,18 +1,18 @@
 {
   "schema": 1,
   "channel": "stable",
-  "statusMessage": "2.2.140 / klient 2.0.141: nowe okno Społeczności, ulepszanie u Kowala do wybranego plusa i poprawki botów, Towarzysza i Wiki. Zamknij grę, zaktualizuj serwer i launcher, uruchom launcher ponownie, następnie zaktualizuj klienta.",
+  "statusMessage": "2.2.141 / klient 2.0.142: lista życzeń w Domu Towarowym, bezpieczniejsze boty na froncie, beta Wężowego Pola i poprawki botów, klienta i panelu. Zamknij grę, zaktualizuj serwer i launcher, uruchom launcher ponownie, następnie zaktualizuj klienta wraz z nowym plikiem gry.",
   "server": {
-    "version": "2.2.140",
-    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.140/metin2-server-protected-migration-2.2.140.zip",
-    "sha256": "CBAFFA6B365F7A0E382CCDF9CB8868B680D05860C1F82E65175F8C6AF886954B",
-    "size": 173035122
+    "version": "2.2.141",
+    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.141/metin2-server-protected-migration-2.2.141.zip",
+    "sha256": "17F5945309B4647B54F3B8B0E623F70C44792D86A1014EC43FB26BD7419D3167",
+    "size": 173140881
   },
   "serverProtected": {
-    "version": "2.2.140",
-    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.140/metin2-server-protected-update-2.2.140.zip",
-    "sha256": "FCE15FCE5F00FB782BE24B17FC9A4B8060260EE1AB2527E0D718F48149A6F0FF",
-    "size": 163078642
+    "version": "2.2.141",
+    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.141/metin2-server-protected-update-2.2.141.zip",
+    "sha256": "8CB97C037F4565A627C16547454C6EBAAC3AEB97ADA51A256A7499935BE7F742",
+    "size": 163184401
   },
   "protectedFrom": "2.2.39",
   "support": {
@@ -21,10 +21,10 @@
     "reportUrl": "https://script.google.com/macros/s/AKfycbweM8tWcvm59Va8BJxnS1z0o9L2GgtL0NXj6Yu_olAvJ7sPjnpckyGY6JB5fXH3lJYisA/exec?k=m2-7f3k9q"
   },
   "client": {
-    "version": "2.0.141",
-    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.140/metin2-client-update-2.0.141.zip",
-    "sha256": "37B94E7CF44B1FE0BF337C1035AA8B753A87C987AB2C33B494DCD75252F00082",
-    "size": 167330487,
+    "version": "2.0.142",
+    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.141/metin2-client-update-2.0.142.zip",
+    "sha256": "F5096E86D6FA4711C01403343FA297C1A9B9A4A9C8E0790EF1087106CE7ACCBF",
+    "size": 167378180,
     "requiresClientExe": true,
     "architecture": "x64",
     "nativeRuntime": [
@@ -110,7 +110,7 @@
       }
     ],
     "supplement": {
-      "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.140/metin2-client-update-2.0.141-supplement.zip",
+      "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.141/metin2-client-update-2.0.142-supplement.zip",
       "sha256": "325F053D8BECF30070E4D1BEBD161408A7770E7B1E11D1CFBE008F315CB13D51",
       "size": 4060,
       "files": [
@@ -121,8 +121,8 @@
     }
   },
   "clientExe": {
-    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.139/metin2client.exe",
-    "sha256": "AA2CA4D6DF5A321BC1AC7D0F6AE4C4783F07194B7A0D7ACD6BDE2612AD7DFA4A",
+    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.141/metin2client.exe",
+    "sha256": "7EFB6CBD6B5EE69756C969736CF3F2D141789D2BA911CDEF571AC2DEC8348700",
     "size": 10889216,
     "replaces": [
       "8263F81BFACDFA4A664C1F2A8CE846AEE14F19E584DB40A43F3184FEF1A59531",
@@ -163,9 +163,10 @@
       "4F7DBC84ABBEB8F6EEC23BDB89E9199A96AEB864A74279099EBF3A3266FBECA3",
       "D3266C87CEA858650DFD7AE50B95A3E5B56BF0A9E7202A96F3A958AB4043A4DC",
       "ECE10CBDFBE731EBEACD66145124888FD056F552E6A951F1C6FD7148FEFF724A",
-      "D07CD4AAF6857BC3DDD9199B6AE590C8268C4F9CB36DA939525CF8F900F48721"
+      "D07CD4AAF6857BC3DDD9199B6AE590C8268C4F9CB36DA939525CF8F900F48721",
+      "AA2CA4D6DF5A321BC1AC7D0F6AE4C4783F07194B7A0D7ACD6BDE2612AD7DFA4A"
     ]
   },
-  "statusMessageEn": "2.2.140 / client 2.0.141: a new Community window, refining at the blacksmith up to a chosen grade and fixes for bots, the Companion and the Wiki. Close the game, update the server and launcher, restart the launcher, then update the client.",
-  "publishedAt": "2026-11-03T23:29:15Z"
+  "statusMessageEn": "2.2.141 / client 2.0.142: a Trade House wish list, safer bots on the frontier, the Snakefield beta and fixes for bots, the client and the panel. Close the game, update the server and launcher, restart the launcher, then update the client together with the new game file.",
+  "publishedAt": "2026-11-04T19:54:38Z"
 }
