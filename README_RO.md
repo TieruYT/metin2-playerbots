@@ -114,6 +114,12 @@ neatinse. Apoi apasă GRAJ (Joacă) și autentifică-te din nou.
 
 Versiunile până la 2.2.16 inclusiv sunt sub licența MIT ([LICENSE-MIT.txt](LICENSE-MIT.txt)), iar versiunile de la 2.2.17 la 2.2.54 sub CC BY-NC-SA 4.0. Metin2 aparține Ymir Interactive și Webzen, iar pachetele de fișiere de server aparțin autorilor lor. Detaliile se află în fișierele [LICENSE](LICENSE) și [NOTICE.md](NOTICE.md).
 
+**Fișierele Metin2 din pachete.** Pachetele proiectului (pachetul complet și actualizările clientului și ale serverului) conțin și fișiere care nu sunt munca autorilor proiectului: clientul și datele jocului Metin2, care aparțin Ymir Interactive și Webzen, precum și fișierele pachetelor de fișiere de server (r40250 de TMP4, mt2009 de Martysama). Licența proiectului nu le acoperă și nu oferă niciun drept asupra lor. Permisiunea de a distribui pachetele nemodificate se referă doar la munca autorilor proiectului.
+
+### Cereri de eliminare
+
+Dacă ești deținătorul unor drepturi (Ymir Interactive, Webzen, Gameforge, autorul unui pachet de fișiere de server sau oricine altcineva) și vrei ca ceva de aici să fie eliminat, [deschide un issue](https://github.com/TieruYT/metin2-playerbots/issues) în acest repository sau scrie pe [Discordul proiectului](https://discord.gg/DyCxXdZtnV). Este suficient să indici fișierele sau versiunile. Le vom elimina imediat, fără discuții și fără să fie nevoie de o notificare DMCA formală, deși și aceasta este, desigur, posibilă.
+
 ## 🤝 Mulțumiri
 
 - **AzzlackSyndicate**: autorul bazei originale a portului pentru Linux, al instalatoarelor și al panoului pe care s-a construit proiectul (licența MIT, vezi [NOTICE.md](NOTICE.md)).

@@ -128,14 +128,22 @@ i na niej zostają. Ich historia jest w tym repozytorium.
   Connector/C, fragmenty Boost i inne). Mają własne licencje, zapisane w ich
   plikach.
 
+Paczki projektu (pełna paczka i aktualizacje klienta i serwera) zawierają też
+takie pliki: klienta i dane gry Metin2 oraz pliki pakietów serwerowych.
+Licencje projektu ich nie obejmują i nie dają do nich żadnych praw. Zgoda na
+udostępnianie paczek bez zmian dotyczy tylko pracy autorów projektu.
+
 ## W praktyce
 
 - Prowadzenie prywatnego serwera Metin2 w większości krajów narusza prawa
   autorskie Webzen, niezależnie od tego, co mówi jakikolwiek plik w tym
   repozytorium. Robisz to na własne ryzyko i żaden plik tego projektu tego nie
   zmienia. Nie pobieraj opłat za dostęp i nie podawaj się za oficjalny serwer.
-- Jeśli jesteś Ymir, Webzen lub innym właścicielem praw i chcesz coś stąd
-  usunąć, napisz na Discordzie projektu albo załóż zgłoszenie (issue). To
+- Jeśli jesteś Ymir, Webzen, Gameforge, autorem pakietu plików serwerowych
+  lub innym właścicielem praw i chcesz coś stąd usunąć, załóż zgłoszenie
+  (https://github.com/TieruYT/metin2-playerbots/issues) albo napisz na Discordzie projektu
+  (https://discord.gg/DyCxXdZtnV). Wystarczy wskazać pliki albo wydania. Usuniemy je
+  niezwłocznie, bez dyskusji i bez potrzeby formalnego zgłoszenia DMCA. To
   projekt hobbystyczny i nic tutaj nie jest warte sporu.
 
 ---
@@ -273,12 +281,22 @@ this repository.
   Connector/C, Boost fragments and others). They carry their own licences, in
   their own files.
 
+The project's packages (the full package and the client and server updates)
+also contain such files: the Metin2 client and game data, and the files of the
+server-file packages. The project's licences do not cover them and give no
+rights to them. The permission to share the packages unchanged covers only the
+work of the project's authors.
+
 ### In practice
 
 - Running a Metin2 private server is, in most jurisdictions, a copyright
   infringement against Webzen, whatever any file in this repository says. That
   is a risk you take, and no file of this project changes it. Do not charge
   for access and do not pretend to be official.
-- If you are Ymir, Webzen or another rights holder and want something here
-  removed, write on the project's Discord or open an issue. This is a hobby
-  project and nothing here is worth arguing about.
+- If you are Ymir, Webzen, Gameforge, the author of a server-file package or
+  another rights holder and want something here removed, open an issue
+  (https://github.com/TieruYT/metin2-playerbots/issues) or write on the project's Discord
+  (https://discord.gg/DyCxXdZtnV). Naming the files or releases is enough. We will
+  remove them promptly, without argument and without the need for a formal
+  DMCA notice. This is a hobby project and nothing here is worth arguing
+  about.

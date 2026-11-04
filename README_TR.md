@@ -112,6 +112,12 @@ eşyalara ve botlara dokunulmaz. Ardından OYNA düğmesine tıkla ve yeniden gi
 
 2.2.16 dahil önceki sürümler MIT lisansı ([LICENSE-MIT.txt](LICENSE-MIT.txt)), 2.2.17 ile 2.2.54 arasındaki sürümler ise CC BY-NC-SA 4.0 lisansı altındadır. Metin2, Ymir Interactive ve Webzen'e; sunucu dosyası paketleri ise kendi yazarlarına aittir. Ayrıntılar [LICENSE](LICENSE) ve [NOTICE.md](NOTICE.md) dosyalarındadır.
 
+**Paketlerdeki Metin2 dosyaları.** Projenin paketleri (tam paket ile istemci ve sunucu güncellemeleri), proje yazarlarının emeği olmayan dosyalar da içerir: Ymir Interactive ve Webzen'e ait Metin2 istemcisi ve oyun verileri ile sunucu dosyası paketlerinin dosyaları (TMP4'ün r40250'si, Martysama'nın mt2009'u). Projenin lisansı bunları kapsamaz ve bunlar üzerinde hiçbir hak vermez. Paketleri değiştirmeden paylaşma izni yalnızca proje yazarlarının emeği için geçerlidir.
+
+### Kaldırma talepleri
+
+Hak sahibiysen (Ymir Interactive, Webzen, Gameforge, bir sunucu dosyası paketinin yazarı ya da başka biri) ve buradaki bir şeyin kaldırılmasını istiyorsan, bu depoda [bir issue aç](https://github.com/TieruYT/metin2-playerbots/issues) ya da [projenin Discord sunucusuna](https://discord.gg/DyCxXdZtnV) yaz. Dosyaları ya da sürümleri belirtmen yeterli. Bunları tartışmadan ve resmî bir DMCA bildirimi gerekmeden hemen kaldırırız; elbette o da mümkündür.
+
 ## 🤝 Teşekkürler
 
 - **AzzlackSyndicate**: projenin üzerine kurulduğu orijinal Linux port tabanının, kurulum programlarının ve panelin yazarı (MIT lisansı, bkz. [NOTICE.md](NOTICE.md)).

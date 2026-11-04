@@ -31,6 +31,9 @@ w tym do trenowania modeli sztucznej inteligencji.
 Licencja obejmuje pracę autorów projektu: kod, skrypty, dane, grafiki
 i dokumentację. Nie obejmuje Metin2 (Ymir Interactive, Webzen), paczek plików
 serwerowych, bibliotek stron trzecich ani części, które mają własną licencję.
+Paczki projektu zawierają też takie pliki (klienta i dane gry Metin2, pliki
+pakietów serwerowych); zgoda na udostępnianie paczek bez zmian ich nie
+obejmuje i nie daje do nich żadnych praw.
 Wersje do 2.2.16 włącznie zostały wydane na licencji MIT (LICENSE-MIT.txt),
 a wersje od 2.2.17 do 2.2.54 na licencji CC BY-NC-SA 4.0, i na nich zostają.
 Szczegóły oraz dodatkowe zezwolenia autora (dodatki do projektu, dobrowolne
@@ -67,7 +70,10 @@ training of artificial intelligence models.
 The licence covers the work of the project's authors: code, scripts, data,
 graphics and documentation. It does not cover Metin2 (Ymir Interactive,
 Webzen), the server-file packages, third-party libraries or parts that carry a
-licence of their own. Versions up to and including 2.2.16 were released under
+licence of their own. The project's packages also contain such files (the
+Metin2 client and game data, the files of the server-file packages); the
+permission to share the packages unchanged does not cover them and gives no
+rights to them. Versions up to and including 2.2.16 were released under
 the MIT licence (LICENSE-MIT.txt), and versions 2.2.17 to 2.2.54 under CC
 BY-NC-SA 4.0, and they stay under them. Details and the author's additional
 permissions (add-ons to the project, voluntary donations towards a server,

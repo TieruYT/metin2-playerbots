@@ -114,6 +114,12 @@ A partir da versão 2.2.55, o projeto está sob a licença **[CC BY-NC-ND 4.0](h
 
 As versões até à 2.2.16, inclusive, estão sob a licença MIT ([LICENSE-MIT.txt](LICENSE-MIT.txt)), e as versões da 2.2.17 à 2.2.54 sob a CC BY-NC-SA 4.0. Metin2 pertence à Ymir Interactive e à Webzen, e os pacotes de ficheiros de servidor aos seus autores. Os pormenores estão nos ficheiros [LICENSE](LICENSE) e [NOTICE.md](NOTICE.md).
 
+**Ficheiros do Metin2 nos pacotes.** Os pacotes do projeto (o pacote completo e as atualizações do cliente e do servidor) contêm também ficheiros que não são obra dos autores do projeto: o cliente e os dados do jogo Metin2, que pertencem à Ymir Interactive e à Webzen, e os ficheiros dos pacotes de ficheiros de servidor (r40250 de TMP4, mt2009 de Martysama). A licença do projeto não os abrange e não dá quaisquer direitos sobre eles. A permissão para partilhar os pacotes sem alterações diz respeito apenas à obra dos autores do projeto.
+
+### Pedidos de remoção
+
+Se és titular de direitos (Ymir Interactive, Webzen, Gameforge, o autor de um pacote de ficheiros de servidor ou qualquer outra pessoa) e queres que algo seja retirado daqui, [abre uma issue](https://github.com/TieruYT/metin2-playerbots/issues) neste repositório ou escreve no [Discord do projeto](https://discord.gg/DyCxXdZtnV). Basta indicar os ficheiros ou as versões. Retirá-los-emos sem demora, sem discussão e sem necessidade de uma notificação DMCA formal, embora esta também seja, naturalmente, possível.
+
 ## 🤝 Agradecimentos
 
 - **AzzlackSyndicate**: autor da base original do port para Linux, dos instaladores e do painel sobre os quais o projeto nasceu (licença MIT, ver [NOTICE.md](NOTICE.md)).

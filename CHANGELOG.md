@@ -17,6 +17,17 @@ every version here.
 
 ---
 
+## 2.2.141 (2026-11-04)
+
+Lista życzeń w Domu Towarowym, bezpieczniejsze boty na froncie, beta Wężowego Pola i poprawki zgłoszone przez Was.
+
+- **Dom Towarowy i rynek:** lista życzeń daje znać, gdy ktoś wystawi szukany przedmiot (maantiiss); handlowy Magiczny Metal można wystawić na ladzie i w Domu Towarowym; Kamienie Duszy +0..+4 łączą się w stosy (_krucafuks).
+- **Boty:** boty, które giną raz za razem w Dolinie Orków, na pustyni i w Lochach Małp, wracają na spokojniejszy teren (romeo7043); w pojedynku i na wojnie biją też zwykłymi ciosami; lepiej używają zwojów premium, nie przetasowują dobrych bonusów broni i mądrzej wydają Smocze Monety (liqu2056); młode boty nie stoją już przy kowalu (Kiciamol).
+- **Klient:** bronie z Kuźni Łowcy są widoczne od razu (blipu), okno filtra Auto Łowów ma znów wszystkie strony, opcjonalny dziennik questów w stylu GF (NerrVoVy), przywołany koń pojawia się obok jeźdźca, a Wiki ukrywa Skrzynie Ucznia, gdy świat ich nie daje (Drip).
+- **Beta Wężowego Pola:** misje Zielonych Kłów u NPC, poprawny napis nad koniem 31 poziomu i widoczny Ji Jin (Kiciamol).
+- **Panel:** własne kody voucherów (Drip) i edycja Koła Fortuny (blipu).
+- **Poprawki:** kowal sięga po materiały ze starego magazynu, na świecie jednoosobowym usuniesz każdą swoją postać, a dane klienta po aktualizacji serwera na VPS są znów aktualne.
+
 ## 2.2.140 (2026-11-04)
 
 Nowe okno Społeczności, ulepszanie u Kowala do wybranego plusa i poprawki dla botów, Towarzysza i Wiki.
