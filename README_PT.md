@@ -2,7 +2,7 @@
 
 [Polski (README.md)](README.md) | [English (README_EN.md)](README_EN.md) | [Deutsch (README_DE.md)](README_DE.md) | [Română (README_RO.md)](README_RO.md) | **Português** | [Türkçe (README_TR.md)](README_TR.md)
 
-[![Site](https://img.shields.io/badge/Site-metin2singleplayer.com-2EA44F?style=for-the-badge&logo=firefoxbrowser&logoColor=white)](https://metin2singleplayer.com)
+[![Site](https://img.shields.io/badge/Site-mt2sp.com-2EA44F?style=for-the-badge&logo=firefoxbrowser&logoColor=white)](https://mt2sp.com)
 [![Discord](https://img.shields.io/badge/Discord-Entra_na_comunidade-5865F2?style=for-the-badge&logo=discord&logoColor=white)](https://discord.gg/DyCxXdZtnV)
 [![BuyCoffee](https://img.shields.io/badge/BuyCoffee-Oferece_um_café-FF813F?style=for-the-badge&logo=coffeescript&logoColor=white)](https://buycoffee.to/metin2-playerbots)
 [![Licença](https://img.shields.io/badge/Licença-CC_BY--NC--ND_4.0-EF9421?style=for-the-badge&logo=creativecommons&logoColor=white)](https://creativecommons.org/licenses/by-nc-nd/4.0/deed.pt)
@@ -33,11 +33,11 @@ O launcher pergunta sozinho por uma nova versão do servidor ou do cliente ao ar
 
 Um erro? O botão **ZGŁOŚ BŁĄD** (Comunicar um erro) no launcher envia a tua descrição, juntamente com os registos, diretamente para nós. Ideias e propostas envia-as no Discord, no canal de propostas.
 
-Os requisitos, as instruções passo a passo e as respostas às perguntas frequentes estão em [metin2singleplayer.com](https://metin2singleplayer.com) e nos canais de ajuda do Discord.
+Os requisitos, as instruções passo a passo e as respostas às perguntas frequentes estão em [mt2sp.com](https://mt2sp.com) e nos canais de ajuda do Discord.
 
 ## 💬 Comunidade e apoio ao projeto
 
-- **[Site do projeto — metin2singleplayer.com](https://metin2singleplayer.com)**: descrição do projeto, instruções de instalação e FAQ, em polaco, inglês, alemão e turco.
+- **[Site do projeto — mt2sp.com](https://mt2sp.com)**: descrição do projeto, instruções de instalação e FAQ, em polaco, inglês, alemão e turco.
 - **[Servidor de Discord](https://discord.gg/DyCxXdZtnV)**: o pacote completo para descarregar, ajuda, comunicação de erros, ideias e informações sobre novas versões.
 - **[Apoio no buycoffee.to](https://buycoffee.to/metin2-playerbots)**: os donativos voluntários ajudam a cobrir os custos das ferramentas, do servidor de testes e dos modelos de IA usados no desenvolvimento do projeto.
 

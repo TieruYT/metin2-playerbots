@@ -2,7 +2,7 @@
 
 [Polski (README.md)](README.md) | [English (README_EN.md)](README_EN.md) | [Deutsch (README_DE.md)](README_DE.md) | **Română** | [Português (README_PT.md)](README_PT.md) | [Türkçe (README_TR.md)](README_TR.md)
 
-[![Site](https://img.shields.io/badge/Site-metin2singleplayer.com-2EA44F?style=for-the-badge&logo=firefoxbrowser&logoColor=white)](https://metin2singleplayer.com)
+[![Site](https://img.shields.io/badge/Site-mt2sp.com-2EA44F?style=for-the-badge&logo=firefoxbrowser&logoColor=white)](https://mt2sp.com)
 [![Discord](https://img.shields.io/badge/Discord-Intră_în_comunitate-5865F2?style=for-the-badge&logo=discord&logoColor=white)](https://discord.gg/DyCxXdZtnV)
 [![BuyCoffee](https://img.shields.io/badge/BuyCoffee-Oferă_o_cafea-FF813F?style=for-the-badge&logo=coffeescript&logoColor=white)](https://buycoffee.to/metin2-playerbots)
 [![Licență](https://img.shields.io/badge/Licență-CC_BY--NC--ND_4.0-EF9421?style=for-the-badge&logo=creativecommons&logoColor=white)](https://creativecommons.org/licenses/by-nc-nd/4.0/deed.ro)
@@ -33,11 +33,11 @@ Despre o versiune nouă a serverului sau a clientului launcherul te întreabă s
 
 O eroare? Butonul **ZGŁOŚ BŁĄD** (Raportează o eroare) din launcher ne trimite descrierea ta împreună cu jurnalele direct nouă. Ideile și propunerile le trimiți pe Discord, în canalul de propuneri.
 
-Cerințele, instrucțiunile pas cu pas și răspunsurile la întrebările frecvente se găsesc pe [metin2singleplayer.com](https://metin2singleplayer.com) și în canalele de ajutor de pe Discord.
+Cerințele, instrucțiunile pas cu pas și răspunsurile la întrebările frecvente se găsesc pe [mt2sp.com](https://mt2sp.com) și în canalele de ajutor de pe Discord.
 
 ## 💬 Comunitatea și sprijinul pentru proiect
 
-- **[Site-ul proiectului — metin2singleplayer.com](https://metin2singleplayer.com)**: descrierea proiectului, instrucțiunile de instalare și FAQ, în poloneză, engleză, germană și turcă.
+- **[Site-ul proiectului — mt2sp.com](https://mt2sp.com)**: descrierea proiectului, instrucțiunile de instalare și FAQ, în poloneză, engleză, germană și turcă.
 - **[Serverul de Discord](https://discord.gg/DyCxXdZtnV)**: pachetul complet de descărcat, ajutor, raportarea erorilor, idei și informații despre versiunile noi.
 - **[Sprijin pe buycoffee.to](https://buycoffee.to/metin2-playerbots)**: donațiile voluntare ajută la acoperirea costurilor uneltelor, ale serverului de test și ale modelelor AI folosite la dezvoltarea proiectului.
 

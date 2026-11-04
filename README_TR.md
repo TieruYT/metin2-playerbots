@@ -2,7 +2,7 @@
 
 [Polski (README.md)](README.md) | [English (README_EN.md)](README_EN.md) | [Deutsch (README_DE.md)](README_DE.md) | [Română (README_RO.md)](README_RO.md) | [Português (README_PT.md)](README_PT.md) | **Türkçe**
 
-[![Web Sitesi](https://img.shields.io/badge/Web_Sitesi-metin2singleplayer.com-2EA44F?style=for-the-badge&logo=firefoxbrowser&logoColor=white)](https://metin2singleplayer.com)
+[![Web Sitesi](https://img.shields.io/badge/Web_Sitesi-mt2sp.com-2EA44F?style=for-the-badge&logo=firefoxbrowser&logoColor=white)](https://mt2sp.com)
 [![Discord](https://img.shields.io/badge/Discord-Topluluğa_katıl-5865F2?style=for-the-badge&logo=discord&logoColor=white)](https://discord.gg/DyCxXdZtnV)
 [![BuyCoffee](https://img.shields.io/badge/BuyCoffee-Bir_kahve_ısmarla-FF813F?style=for-the-badge&logo=coffeescript&logoColor=white)](https://buycoffee.to/metin2-playerbots)
 [![Lisans](https://img.shields.io/badge/Lisans-CC_BY--NC--ND_4.0-EF9421?style=for-the-badge&logo=creativecommons&logoColor=white)](https://creativecommons.org/licenses/by-nc-nd/4.0/deed.tr)
@@ -31,11 +31,11 @@ Sunucunun ya da istemcinin yeni bir sürümü çıktığında launcher bunu aç�
 
 Bir hata mı buldun? Launcher'daki **HATA BİLDİR** (Lehçe arayüzde: ZGŁOŚ BŁĄD) düğmesi açıklamanı günlüklerle birlikte doğrudan bize gönderir. Fikir ve önerilerini Discord'daki öneriler kanalına yazabilirsin.
 
-Sistem gereksinimleri, adım adım kurulum rehberi ve sık sorulan soruların yanıtları [metin2singleplayer.com](https://metin2singleplayer.com) sitesinde ve Discord'daki yardım kanallarında.
+Sistem gereksinimleri, adım adım kurulum rehberi ve sık sorulan soruların yanıtları [mt2sp.com](https://mt2sp.com) sitesinde ve Discord'daki yardım kanallarında.
 
 ## 💬 Topluluk ve projeye destek
 
-- **[Proje sitesi — metin2singleplayer.com](https://metin2singleplayer.com)**: projenin tanıtımı, kurulum rehberi ve SSS; Lehçe, İngilizce, Almanca ve Türkçe.
+- **[Proje sitesi — mt2sp.com](https://mt2sp.com)**: projenin tanıtımı, kurulum rehberi ve SSS; Lehçe, İngilizce, Almanca ve Türkçe.
 - **[Discord sunucusu](https://discord.gg/DyCxXdZtnV)**: indirilebilir tam paket, yardım, hata bildirimleri, fikirler ve yeni sürüm duyuruları.
 - **[buycoffee.to üzerinden destek](https://buycoffee.to/metin2-playerbots)**: gönüllü bağışlar; araçların, test sunucusunun ve projenin geliştirilmesinde kullanılan yapay zekâ modellerinin masraflarını karşılamaya yardımcı olur.
 

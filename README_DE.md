@@ -2,7 +2,7 @@
 
 [Polski (README.md)](README.md) | [English (README_EN.md)](README_EN.md) | **Deutsch** | [Română (README_RO.md)](README_RO.md) | [Português (README_PT.md)](README_PT.md) | [Türkçe (README_TR.md)](README_TR.md)
 
-[![Webseite](https://img.shields.io/badge/Webseite-metin2singleplayer.com-2EA44F?style=for-the-badge&logo=firefoxbrowser&logoColor=white)](https://metin2singleplayer.com)
+[![Webseite](https://img.shields.io/badge/Webseite-mt2sp.com-2EA44F?style=for-the-badge&logo=firefoxbrowser&logoColor=white)](https://mt2sp.com)
 [![Discord](https://img.shields.io/badge/Discord-Community_beitreten-5865F2?style=for-the-badge&logo=discord&logoColor=white)](https://discord.gg/DyCxXdZtnV)
 [![BuyCoffee](https://img.shields.io/badge/BuyCoffee-Spendier_einen_Kaffee-FF813F?style=for-the-badge&logo=coffeescript&logoColor=white)](https://buycoffee.to/metin2-playerbots)
 [![Lizenz](https://img.shields.io/badge/Lizenz-CC_BY--NC--ND_4.0-EF9421?style=for-the-badge&logo=creativecommons&logoColor=white)](https://creativecommons.org/licenses/by-nc-nd/4.0/deed.de)
@@ -33,11 +33,11 @@ Nach einer neuen Server- oder Client-Version fragt der Launcher beim Start von s
 
 Ein Fehler? Die Schaltfläche **ZGŁOŚ BŁĄD** (Fehler melden) im Launcher schickt deine Beschreibung zusammen mit den Logs direkt an uns. Ideen und Vorschläge meldest du auf Discord im Vorschlagskanal.
 
-Systemanforderungen, eine Schritt-für-Schritt-Anleitung und Antworten auf häufige Fragen findest du auf [metin2singleplayer.com](https://metin2singleplayer.com) und in den Hilfekanälen auf Discord.
+Systemanforderungen, eine Schritt-für-Schritt-Anleitung und Antworten auf häufige Fragen findest du auf [mt2sp.com](https://mt2sp.com) und in den Hilfekanälen auf Discord.
 
 ## 💬 Community und Unterstützung des Projekts
 
-- **[Projektseite — metin2singleplayer.com](https://metin2singleplayer.com)**: Beschreibung des Projekts, Installationsanleitung und FAQ, auf Polnisch, Englisch, Deutsch und Türkisch.
+- **[Projektseite — mt2sp.com](https://mt2sp.com)**: Beschreibung des Projekts, Installationsanleitung und FAQ, auf Polnisch, Englisch, Deutsch und Türkisch.
 - **[Discord-Server](https://discord.gg/DyCxXdZtnV)**: das vollständige Paket zum Herunterladen, Hilfe, Fehlermeldungen, Ideen und Informationen über neue Versionen.
 - **[Unterstützung über buycoffee.to](https://buycoffee.to/metin2-playerbots)**: Freiwillige Spenden helfen, die Kosten für die Werkzeuge, den Testserver und die KI-Modelle zu decken, die bei der Entwicklung des Projekts verwendet werden.
 
