@@ -17,6 +17,16 @@ every version here.
 
 ---
 
+## 2.2.143 (2026-11-05)
+
+Porządek w oknie misji, uczciwsza walka botów obok graczy i poprawki zgłoszone przez Was.
+
+- **Klient:** misje w oknie misji trafiają do właściwych kategorii, a ukończone znikają od razu (zgłoszenia z launchera i z Discorda); filtr dropu Auto Łowów ma księgi Deszczu Strzał; więcej tekstów po turecku.
+- **Boty:** samo zaznaczenie potwora przez gracza nie odpędza już botów, dopiero jego cios; gildia bota broni swojego członka rozsądną liczbą obrońców w zbliżonym poziomie; bot bity przez gracza nie znika na niewidzialny odpoczynek; w wojnie gildii gracza z gildią botów stają też boty gildii gracza z innych kanałów; mniej botów zawieszonych w Katakumbach, Wieży Demonów, na wojnie i na długo działających serwerach.
+- **Towarzysz:** mówi wprost, gdy ustawienie „Nie walcz” trzyma go z dala od walki, i jak to zmienić (gregoszky).
+- **Ekonomia:** Kantor częściej daje Zaczarowanie przedmiotu zamiast Wzmocnienia; poprawiona wycena broni z niskim plusem i wysoką średnią.
+- **Panel:** zmiany poziomu, złota i przedmiotów postaci i botów poza grą nie cofają się już po zalogowaniu (zgłoszenie z launchera); osobowość wybrana w panelu nie wyłącza zabezpieczeń bota.
+
 ## 2.2.142 (2026-11-05)
 
 Jedno okno misji, Kuźnia Łowcy z całego ekwipunku, uczciwsze boty i poprawki zgłoszone przez Was.
