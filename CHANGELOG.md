@@ -17,6 +17,16 @@ every version here.
 
 ---
 
+## 2.2.142 (2026-11-05)
+
+Jedno okno misji, Kuźnia Łowcy z całego ekwipunku, uczciwsze boty i poprawki zgłoszone przez Was.
+
+- **Klient:** okno misji w stylu GF jest teraz jedynym oknem misji (NerrVoVy); Kuźnia Łowcy bierze broń i materiały z każdej strony ekwipunku i mówi, dlaczego odmawia (blipu); linki do strony projektu prowadzą na mt2sp.com.
+- **Boty:** nie podbierają potworów, z którymi walczy gracz, i nie używają Peleryny Męstwa w drużynie z graczem; pojedynek bota trwa tyle, ile pojedynek w grze, a bot w odwrocie oddaje graczowi cios; boty z drużyny, z której gracz wyszedł, wracają do własnej gry; mniej botów stojących w miejscu; w targowaniu „k” i „kk” znów znaczą zgodę.
+- **Towarzysz:** odpowiada na rozkazy zgodnie z prawdą, nie gubi rozkazu podczas zakupów, a nazwy misji, sklep i rozkazy są w języku gracza.
+- **Rynek:** boty nie wystawiają przedmiotów taniej, niż zapłaciłby za nie handlarz.
+- **Wydajność:** serwer szybciej liczy decyzje botów.
+
 ## 2.2.141 (2026-11-04)
 
 Lista życzeń w Domu Towarowym, bezpieczniejsze boty na froncie, beta Wężowego Pola i poprawki zgłoszone przez Was.
