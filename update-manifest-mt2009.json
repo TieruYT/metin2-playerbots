@@ -1,18 +1,18 @@
 {
   "schema": 1,
   "channel": "stable",
-  "statusMessage": "2.2.141 / klient 2.0.142: lista życzeń w Domu Towarowym, bezpieczniejsze boty na froncie, beta Wężowego Pola i poprawki botów, klienta i panelu. Zamknij grę, zaktualizuj serwer i launcher, uruchom launcher ponownie, następnie zaktualizuj klienta wraz z nowym plikiem gry.",
+  "statusMessage": "2.2.142 / klient 2.0.143: okno misji w stylu GF jako jedyne, Kuźnia Łowcy z całego ekwipunku, poprawki botów, Towarzysza i rynku. Zamknij grę, zaktualizuj serwer i launcher, uruchom launcher ponownie, następnie zaktualizuj klienta.",
   "server": {
-    "version": "2.2.141",
-    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.141/metin2-server-protected-migration-2.2.141.zip",
-    "sha256": "17F5945309B4647B54F3B8B0E623F70C44792D86A1014EC43FB26BD7419D3167",
-    "size": 173140881
+    "version": "2.2.142",
+    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.142/metin2-server-protected-migration-2.2.142.zip",
+    "sha256": "BBB535431A627692373B2EDBF26F5F8D5F18AB1E35A0BD1B3816FD878F32B776",
+    "size": 173151143
   },
   "serverProtected": {
-    "version": "2.2.141",
-    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.141/metin2-server-protected-update-2.2.141.zip",
-    "sha256": "8CB97C037F4565A627C16547454C6EBAAC3AEB97ADA51A256A7499935BE7F742",
-    "size": 163184401
+    "version": "2.2.142",
+    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.142/metin2-server-protected-update-2.2.142.zip",
+    "sha256": "379E58E4D476B9C1120182A415AEA42193D67B8298DB65557BEFAF2F2037BACC",
+    "size": 163194663
   },
   "protectedFrom": "2.2.39",
   "support": {
@@ -21,10 +21,10 @@
     "reportUrl": "https://script.google.com/macros/s/AKfycbweM8tWcvm59Va8BJxnS1z0o9L2GgtL0NXj6Yu_olAvJ7sPjnpckyGY6JB5fXH3lJYisA/exec?k=m2-7f3k9q"
   },
   "client": {
-    "version": "2.0.142",
-    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.141/metin2-client-update-2.0.142.zip",
-    "sha256": "F5096E86D6FA4711C01403343FA297C1A9B9A4A9C8E0790EF1087106CE7ACCBF",
-    "size": 167378180,
+    "version": "2.0.143",
+    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.142/metin2-client-update-2.0.143.zip",
+    "sha256": "5D28DD633E4985BA14133E44009D9D55F58B2CC9F93574A7C4A2074D159FFBE2",
+    "size": 167374376,
     "requiresClientExe": true,
     "architecture": "x64",
     "nativeRuntime": [
@@ -110,7 +110,7 @@
       }
     ],
     "supplement": {
-      "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.141/metin2-client-update-2.0.142-supplement.zip",
+      "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.142/metin2-client-update-2.0.143-supplement.zip",
       "sha256": "325F053D8BECF30070E4D1BEBD161408A7770E7B1E11D1CFBE008F315CB13D51",
       "size": 4060,
       "files": [
@@ -167,6 +167,6 @@
       "AA2CA4D6DF5A321BC1AC7D0F6AE4C4783F07194B7A0D7ACD6BDE2612AD7DFA4A"
     ]
   },
-  "statusMessageEn": "2.2.141 / client 2.0.142: a Trade House wish list, safer bots on the frontier, the Snakefield beta and fixes for bots, the client and the panel. Close the game, update the server and launcher, restart the launcher, then update the client together with the new game file.",
-  "publishedAt": "2026-11-04T19:54:38Z"
+  "statusMessageEn": "2.2.142 / client 2.0.143: the GF-style quest window as the only one, the Hunter's Forge from the whole bag, fixes for bots, the Companion and the market. Close the game, update the server and launcher, restart the launcher, then update the client.",
+  "publishedAt": "2026-11-05T06:50:56Z"
 }
