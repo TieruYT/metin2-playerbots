@@ -17,6 +17,18 @@ every version here.
 
 ---
 
+## 2.2.144 (2026-11-06)
+
+Koniec niewidzialnych potworów, łowienie Towarzysza od nowa, sparingi botów w wioskach i dużo poprawek zachowania botów.
+
+- **Gra:** potwory, które podchodzą do stojącej postaci, są widoczne od razu (zgłoszenia z launchera i z Discorda); przerwany trening konia nie chowa już opcji u Stajennego; żaby w Hwangu znów dropią hełmy 60 poziomu.
+- **Dom Towarowy:** kupiony przedmiot trafia najpierw do stosu w ekwipunku, a zakup wielu linii zatrzymuje się na braku miejsca (zgłoszenie z launchera).
+- **Towarzysz:** łowienie przebudowane od podstaw - przynęty, otwieranie i pieczenie połowu, ulepszanie wędki, wybór, co robić z rybami, i podsumowania sesji (Colide).
+- **Klient:** nowy plik gry; podgląd bonusów i odporności zaznaczonego celu (NerrVoVy); filtr Auto Łowów ma Kupon Losu, a łowca podnosi klucze i pieczęcie Zarazy oraz skrzynie Berana i Heksagonalne.
+- **Boty:** robią sparingi w wioskach w obrębie swojego królestwa, mniej krążą bez celu po placu pierwszej wioski, dropery medali nie stoją godzinami w miejscu, chętniej wydają yang na własny sprzęt, piją Rosy na polowaniu i nie trzymają w magazynie Ksiąg Misji, farb ani Wybielacza; mogą osadzać kamienie duszy Przebicia i Uniku +3 (liqu2056).
+- **Nowe, domyślnie wyłączone:** Smocze Płomienie w Alchemii i fioletowa Skrzynia Zarazy w Lochu Zarazy - administrator włącza je w panelu (NerrVoVy).
+- **Panel:** ikony Kuźni Łowcy, bossowie ze stałych odrodzeń na stronie respawnów, sklepy specjalne w edytorze bazy.
+
 ## 2.2.143 (2026-11-05)
 
 Porządek w oknie misji, uczciwsza walka botów obok graczy i poprawki zgłoszone przez Was.
