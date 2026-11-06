@@ -1,18 +1,18 @@
 {
   "schema": 1,
   "channel": "stable",
-  "statusMessage": "2.2.143 / klient 2.0.144: porządek w oknie misji, uczciwsza walka botów obok graczy, poprawki Towarzysza, Kantoru i panelu. Zamknij grę, zaktualizuj serwer i launcher, uruchom launcher ponownie, następnie zaktualizuj klienta.",
+  "statusMessage": "2.2.144 / klient 2.0.145: koniec niewidzialnych potworów, nowe łowienie Towarzysza, sparingi botów i nowy plik gry. Zamknij grę, zaktualizuj serwer i launcher, uruchom launcher ponownie, następnie zaktualizuj klienta.",
   "server": {
-    "version": "2.2.143",
-    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.143/metin2-server-protected-migration-2.2.143.zip",
-    "sha256": "754A38818C6EF6D529680FB496235118D6201C6BE12346D51020A7A6935AEB59",
-    "size": 173193306
+    "version": "2.2.144",
+    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.144/metin2-server-protected-migration-2.2.144.zip",
+    "sha256": "E048B79BC14F0281080DF555BB2BA614B4689EEE4093CEE5D1291F3E8D358417",
+    "size": 173303805
   },
   "serverProtected": {
-    "version": "2.2.143",
-    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.143/metin2-server-protected-update-2.2.143.zip",
-    "sha256": "84F65C628F254D97ED5AD2C6245A41D58048338C8BFEF88CA1E6062D9A794599",
-    "size": 163236826
+    "version": "2.2.144",
+    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.144/metin2-server-protected-update-2.2.144.zip",
+    "sha256": "21927D6023568A1F505DD063FDD8BDB78A82EBAEB8BB27F1E527604F441F1702",
+    "size": 163347325
   },
   "protectedFrom": "2.2.39",
   "support": {
@@ -21,10 +21,10 @@
     "reportUrl": "https://script.google.com/macros/s/AKfycbweM8tWcvm59Va8BJxnS1z0o9L2GgtL0NXj6Yu_olAvJ7sPjnpckyGY6JB5fXH3lJYisA/exec?k=m2-7f3k9q"
   },
   "client": {
-    "version": "2.0.144",
-    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.143/metin2-client-update-2.0.144.zip",
-    "sha256": "31FAC83E230EEEFB8CFFCC85500533D61E0DC7E110DCBD3F75AB0C009FFC1E34",
-    "size": 167377369,
+    "version": "2.0.145",
+    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.144/metin2-client-update-2.0.145.zip",
+    "sha256": "87F50C3D5513F09AACDB6A4672F2BD7280AB76D2DFD95664079650AE21C60554",
+    "size": 167427829,
     "requiresClientExe": true,
     "architecture": "x64",
     "nativeRuntime": [
@@ -110,7 +110,7 @@
       }
     ],
     "supplement": {
-      "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.143/metin2-client-update-2.0.144-supplement.zip",
+      "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.144/metin2-client-update-2.0.145-supplement.zip",
       "sha256": "325F053D8BECF30070E4D1BEBD161408A7770E7B1E11D1CFBE008F315CB13D51",
       "size": 4060,
       "files": [
@@ -121,9 +121,9 @@
     }
   },
   "clientExe": {
-    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.141/metin2client.exe",
-    "sha256": "7EFB6CBD6B5EE69756C969736CF3F2D141789D2BA911CDEF571AC2DEC8348700",
-    "size": 10889216,
+    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.144/metin2client.exe",
+    "sha256": "48EA2F91981CC1A4E01126A3E8C98648458150C16B495413C99DB614E718B5E4",
+    "size": 10895872,
     "replaces": [
       "8263F81BFACDFA4A664C1F2A8CE846AEE14F19E584DB40A43F3184FEF1A59531",
       "752623560AB54E2F3F84FF9ADB8961D73E2E289634075118D3FBEA984CFCEFB1",
@@ -164,9 +164,10 @@
       "D3266C87CEA858650DFD7AE50B95A3E5B56BF0A9E7202A96F3A958AB4043A4DC",
       "ECE10CBDFBE731EBEACD66145124888FD056F552E6A951F1C6FD7148FEFF724A",
       "D07CD4AAF6857BC3DDD9199B6AE590C8268C4F9CB36DA939525CF8F900F48721",
-      "AA2CA4D6DF5A321BC1AC7D0F6AE4C4783F07194B7A0D7ACD6BDE2612AD7DFA4A"
+      "AA2CA4D6DF5A321BC1AC7D0F6AE4C4783F07194B7A0D7ACD6BDE2612AD7DFA4A",
+      "7EFB6CBD6B5EE69756C969736CF3F2D141789D2BA911CDEF571AC2DEC8348700"
     ]
   },
-  "statusMessageEn": "2.2.143 / client 2.0.144: a tidy quest window, fairer bot fights beside players, fixes for the Companion, the Kantor and the panel. Close the game, update the server and launcher, restart the launcher, then update the client.",
-  "publishedAt": "2026-11-05T19:30:02Z"
+  "statusMessageEn": "2.2.144 / client 2.0.145: no more invisible monsters, the Companion fishes anew, bot sparring and a new game file. Close the game, update the server and launcher, restart the launcher, then update the client.",
+  "publishedAt": "2026-11-06T22:30:24Z"
 }
