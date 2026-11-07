@@ -1,18 +1,18 @@
 {
   "schema": 1,
   "channel": "stable",
-  "statusMessage": "2.2.144 / klient 2.0.145: koniec niewidzialnych potworów, nowe łowienie Towarzysza, sparingi botów i nowy plik gry. Zamknij grę, zaktualizuj serwer i launcher, uruchom launcher ponownie, następnie zaktualizuj klienta.",
+  "statusMessage": "2.2.145 / klient 2.0.146: samodzielny Towarzysz, rynek całego świata, dropkowie Metinów i pomijanie polowań. Zamknij grę, zaktualizuj serwer i launcher, uruchom launcher ponownie, następnie zaktualizuj klienta.",
   "server": {
-    "version": "2.2.144",
-    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.144/metin2-server-protected-migration-2.2.144.zip",
-    "sha256": "E048B79BC14F0281080DF555BB2BA614B4689EEE4093CEE5D1291F3E8D358417",
-    "size": 173303805
+    "version": "2.2.145",
+    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.145/metin2-server-protected-migration-2.2.145.zip",
+    "sha256": "284E5F56CB348643E73346218BBDD95AF2198113A7E784436010AE8C792F7CD1",
+    "size": 173397267
   },
   "serverProtected": {
-    "version": "2.2.144",
-    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.144/metin2-server-protected-update-2.2.144.zip",
-    "sha256": "21927D6023568A1F505DD063FDD8BDB78A82EBAEB8BB27F1E527604F441F1702",
-    "size": 163347325
+    "version": "2.2.145",
+    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.145/metin2-server-protected-update-2.2.145.zip",
+    "sha256": "D5806D95B188D0C3D7B2DC9E4E5EE0B3158A555AD77269F654BC61C65E2C26AA",
+    "size": 163440787
   },
   "protectedFrom": "2.2.39",
   "support": {
@@ -21,10 +21,10 @@
     "reportUrl": "https://script.google.com/macros/s/AKfycbweM8tWcvm59Va8BJxnS1z0o9L2GgtL0NXj6Yu_olAvJ7sPjnpckyGY6JB5fXH3lJYisA/exec?k=m2-7f3k9q"
   },
   "client": {
-    "version": "2.0.145",
-    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.144/metin2-client-update-2.0.145.zip",
-    "sha256": "87F50C3D5513F09AACDB6A4672F2BD7280AB76D2DFD95664079650AE21C60554",
-    "size": 167427829,
+    "version": "2.0.146",
+    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.145/metin2-client-update-2.0.146.zip",
+    "sha256": "B19164EB9850445D87C1308FFCD73615EF4CC713A5AC2DF0459E6247DCED7205",
+    "size": 167455154,
     "requiresClientExe": true,
     "architecture": "x64",
     "nativeRuntime": [
@@ -110,7 +110,7 @@
       }
     ],
     "supplement": {
-      "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.144/metin2-client-update-2.0.145-supplement.zip",
+      "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.145/metin2-client-update-2.0.146-supplement.zip",
       "sha256": "325F053D8BECF30070E4D1BEBD161408A7770E7B1E11D1CFBE008F315CB13D51",
       "size": 4060,
       "files": [
@@ -168,6 +168,6 @@
       "7EFB6CBD6B5EE69756C969736CF3F2D141789D2BA911CDEF571AC2DEC8348700"
     ]
   },
-  "statusMessageEn": "2.2.144 / client 2.0.145: no more invisible monsters, the Companion fishes anew, bot sparring and a new game file. Close the game, update the server and launcher, restart the launcher, then update the client.",
-  "publishedAt": "2026-11-06T22:30:24Z"
+  "statusMessageEn": "2.2.145 / client 2.0.146: an independent Companion, a world-wide market, Metin droppers and hunting skips. Close the game, update the server and launcher, restart the launcher, then update the client.",
+  "publishedAt": "2026-11-07T20:37:16Z"
 }
