@@ -17,6 +17,17 @@ every version here.
 
 ---
 
+## 2.2.145 (2026-11-07)
+
+Towarzysz samodzielnie się rozwija i może prowadzić grupę, boty kupują z lad całego świata, nowi dropkowie kamieni Metin w wioskach i pomijanie zaległych polowań.
+
+- **Towarzysz:** sam czyta księgi i Kamienie Duchowe, a pod nieobecność właściciela kupuje na rynku, ulepsza u kowala, robi Biologa i questy, expi i łowi, a po powrocie właściciela zdaje raport; każdą z tych rzeczy można wyłączyć w oknie P. Może prowadzić grupę z właścicielem (Księgi Dowodzenia, bonus roli), jest zawsze w gildii właściciela albo w żadnej, szybciej dojeżdża do celu i bije pierwszy, a przy łowieniu nie rusza ryb od właściciela. Wiersz „Graj Towarzyszem” jest zawsze widoczny i mówi, dlaczego przycisk jest nieaktywny.
+- **Gra:** pomijanie zaległych polowań - dopasowanie misji do poziomu albo rezygnacja, bez nagród za pominięte, domyślnie wyłączone, włącza administrator w panelu (pomysł NerrVoVy); u Seon-Pyeonga Magnetyczne Ostrze +9 można przekuć w Ostrze Słońca; znaczniki [AUTO] i [AFK] nad graczami (pomysł Kiciamola, grafika Colide); budowa serwera nie zatrzymuje się już na zmienionym przez operatora pliku dropu.
+- **Klient:** napis na przycisku „Zgłoś” w oknie szeptu w każdym języku; księga w sklepie NPC ma swój opis (theramiadesux); zakładki Ulepszacze i Rudy w Domu Towarowym pokazują właściwe przedmioty (hiob_91327); Wachlarz z Kuźni Łowcy ma własny wygląd i ikonę (NerrVoVy).
+- **Boty:** kupują z lad wszystkich królestw (NerrVoVy); w M1 i M2 każdego królestwa chodzą dropkowie rozbijający kamienie Metin; dropkowie medali z pełnym zapasem rozbijają Metiny swojej wioski i w lochach małp zbierają Pazury i Ogon Małpy na ladę (hiob_91327); wystawiają nadmiar Smoczych Kamieni i ulepszają ich siłę (liqu2056); nie giną w kółko na mapach końcowych; wystawiają tarcze i hełmy 21 poziomu dla młodszych (behamoth_); mniej krążą bez celu na CH2 i nie zasypują lad tanimi Kamieniami Duszy (hiob_91327); serwer mniej pracuje przy wielu botach.
+- **Ekonomia:** rudy i przetopy droższe, bursztyn w cenniku botów (hiob_91327, behamoth_).
+- **Panel:** nowe ustawienia - pomijanie polowań, „Graj Towarzyszem” na serwerach publicznych, liczba dropków Metin, znaczniki [AUTO]/[AFK], rozmiar sklepu gracza (standardowy albo jak boty, także w launcherze); Skrzynia Zarazy włącza się tylko w panelu.
+
 ## 2.2.144 (2026-11-06)
 
 Koniec niewidzialnych potworów, łowienie Towarzysza od nowa, sparingi botów w wioskach i dużo poprawek zachowania botów.
