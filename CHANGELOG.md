@@ -17,6 +17,19 @@ every version here.
 
 ---
 
+## 2.2.146 (2026-11-08)
+
+Combo do 30 punktów, przewodniki zielarstwa w Wiki, pierwszeństwo graczy na rynku i nowy plik gry.
+
+- **Gra:** umiejętność Combo ma 30 punktów zamiast 2, a zdobyte już punkty przeliczają się same (1 na 10, 2 na 20). Trzy księgi Sztuki Combo wypadają z potworów, czyta się je jak inne księgi i mają nowe ceny (paczka Kiciamola).
+- **Wiki:** w Poradnikach trzy przewodniki zielarstwa z każdą recepturą Baek-Go (prośba Kiciamola, Ścieżka Zielarza od Saida).
+- **Rynek:** nowe zwoje, ulepszacze i księgi na ladach botów przez pierwsze 45 minut czekają na graczy i boty tego samego królestwa; handlarze zasobów wystawiają swoją nadwyżkę.
+- **Towarzysz:** robi zakupy z Lochu Pająków bez przeprawy przez pustynię, ma pierwszeństwo na obciążonym serwerze, gdy gra jego właściciel, a kliknięcie yang w jego torbie otwiera okno „Weź”.
+- **Boty:** realizują Kupony SM tylko wtedy, gdy brakuje im Smoczych Monet na zakup, a resztę wystawiają; Fasolka Zen kosztuje 250 tys.; Księgi Polimorfii kupują już tylko łucznicy i łowcy bossów.
+- **Auto Łowy:** reguły filtra podnoszenia obejmują też przedmioty, które dotąd pomijały.
+- **Panel:** ranking broni pokazuje założoną broń jako założoną.
+- **Klient:** nowy plik gry (EXE), potrzebny do nowego Combo.
+
 ## 2.2.145 (2026-11-07)
 
 Towarzysz samodzielnie się rozwija i może prowadzić grupę, boty kupują z lad całego świata, nowi dropkowie kamieni Metin w wioskach i pomijanie zaległych polowań.
