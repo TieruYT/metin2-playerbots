@@ -1,18 +1,18 @@
 {
   "schema": 1,
   "channel": "stable",
-  "statusMessage": "2.2.145 / klient 2.0.146: samodzielny Towarzysz, rynek całego świata, dropkowie Metinów i pomijanie polowań. Zamknij grę, zaktualizuj serwer i launcher, uruchom launcher ponownie, następnie zaktualizuj klienta.",
+  "statusMessage": "2.2.146 / klient 2.0.147: Combo do 30 punktów, przewodniki zielarstwa w Wiki, pierwszeństwo graczy na rynku i nowy plik gry. Zamknij grę, zaktualizuj serwer i launcher, uruchom launcher ponownie, następnie zaktualizuj klienta.",
   "server": {
-    "version": "2.2.145",
-    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.145/metin2-server-protected-migration-2.2.145.zip",
-    "sha256": "284E5F56CB348643E73346218BBDD95AF2198113A7E784436010AE8C792F7CD1",
-    "size": 173397267
+    "version": "2.2.146",
+    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.146/metin2-server-protected-migration-2.2.146.zip",
+    "sha256": "AC84255DA4BCB4A74179C02441CD66227B5BE04F45634FE40C7CE6A3FA2AA0E5",
+    "size": 173404401
   },
   "serverProtected": {
-    "version": "2.2.145",
-    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.145/metin2-server-protected-update-2.2.145.zip",
-    "sha256": "D5806D95B188D0C3D7B2DC9E4E5EE0B3158A555AD77269F654BC61C65E2C26AA",
-    "size": 163440787
+    "version": "2.2.146",
+    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.146/metin2-server-protected-update-2.2.146.zip",
+    "sha256": "CBD3202AEEBB75B19CAF19DAC22829B16DB68094BE61ABE2FE1AFA3FC9D7CC79",
+    "size": 163447921
   },
   "protectedFrom": "2.2.39",
   "support": {
@@ -21,10 +21,10 @@
     "reportUrl": "https://script.google.com/macros/s/AKfycbweM8tWcvm59Va8BJxnS1z0o9L2GgtL0NXj6Yu_olAvJ7sPjnpckyGY6JB5fXH3lJYisA/exec?k=m2-7f3k9q"
   },
   "client": {
-    "version": "2.0.146",
-    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.145/metin2-client-update-2.0.146.zip",
-    "sha256": "B19164EB9850445D87C1308FFCD73615EF4CC713A5AC2DF0459E6247DCED7205",
-    "size": 167455154,
+    "version": "2.0.147",
+    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.146/metin2-client-update-2.0.147.zip",
+    "sha256": "50B39880B53602B8225C5303BC260FD84D9CA150DBB96ED2AF07FC0B6929E2AA",
+    "size": 167475459,
     "requiresClientExe": true,
     "architecture": "x64",
     "nativeRuntime": [
@@ -110,7 +110,7 @@
       }
     ],
     "supplement": {
-      "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.145/metin2-client-update-2.0.146-supplement.zip",
+      "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.146/metin2-client-update-2.0.147-supplement.zip",
       "sha256": "325F053D8BECF30070E4D1BEBD161408A7770E7B1E11D1CFBE008F315CB13D51",
       "size": 4060,
       "files": [
@@ -121,9 +121,9 @@
     }
   },
   "clientExe": {
-    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.144/metin2client.exe",
-    "sha256": "48EA2F91981CC1A4E01126A3E8C98648458150C16B495413C99DB614E718B5E4",
-    "size": 10895872,
+    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.146/metin2client.exe",
+    "sha256": "C72FE67FF37A524859C3960FC848DA9ED29EF0F6FB3358E9485FCD58685DEE26",
+    "size": 10896384,
     "replaces": [
       "8263F81BFACDFA4A664C1F2A8CE846AEE14F19E584DB40A43F3184FEF1A59531",
       "752623560AB54E2F3F84FF9ADB8961D73E2E289634075118D3FBEA984CFCEFB1",
@@ -165,9 +165,10 @@
       "ECE10CBDFBE731EBEACD66145124888FD056F552E6A951F1C6FD7148FEFF724A",
       "D07CD4AAF6857BC3DDD9199B6AE590C8268C4F9CB36DA939525CF8F900F48721",
       "AA2CA4D6DF5A321BC1AC7D0F6AE4C4783F07194B7A0D7ACD6BDE2612AD7DFA4A",
-      "7EFB6CBD6B5EE69756C969736CF3F2D141789D2BA911CDEF571AC2DEC8348700"
+      "7EFB6CBD6B5EE69756C969736CF3F2D141789D2BA911CDEF571AC2DEC8348700",
+      "48EA2F91981CC1A4E01126A3E8C98648458150C16B495413C99DB614E718B5E4"
     ]
   },
-  "statusMessageEn": "2.2.145 / client 2.0.146: an independent Companion, a world-wide market, Metin droppers and hunting skips. Close the game, update the server and launcher, restart the launcher, then update the client.",
-  "publishedAt": "2026-11-07T20:37:16Z"
+  "statusMessageEn": "2.2.146 / client 2.0.147: Combo up to 30 points, herbalism guides in the Wiki, players first on the market and a new game file. Close the game, update the server and launcher, restart the launcher, then update the client.",
+  "publishedAt": "2026-11-08T19:17:22Z"
 }
