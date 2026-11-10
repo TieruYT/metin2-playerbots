@@ -1,6 +1,6 @@
 # ⚔️ Metin2 Playerbots
 
-[Polski (README.md)](README.md) | [English (README_EN.md)](README_EN.md) | [Deutsch (README_DE.md)](README_DE.md) | [Română (README_RO.md)](README_RO.md) | [Português (README_PT.md)](README_PT.md) | **Türkçe**
+[Polski](README.md) | [English](README_EN.md) | [Deutsch](README_DE.md) | [Français](README_FR.md) | [Español](README_ES.md) | [Italiano](README_IT.md) | [Português](README_PT.md) | [Română](README_RO.md) | **Türkçe** | [Magyar](README_HU.md) | [Čeština](README_CS.md) | [Nederlands](README_NL.md) | [Dansk](README_DA.md) | [Русский](README_RU.md) | [Ελληνικά](README_EL.md) | [العربية](README_AR.md) | [한국어](README_KO.md)
 
 [![Web Sitesi](https://img.shields.io/badge/Web_Sitesi-mt2sp.com-2EA44F?style=for-the-badge&logo=firefoxbrowser&logoColor=white)](https://mt2sp.com)
 [![Discord](https://img.shields.io/badge/Discord-Topluluğa_katıl-5865F2?style=for-the-badge&logo=discord&logoColor=white)](https://discord.gg/DyCxXdZtnV)
@@ -47,18 +47,29 @@ Testler, hata bildirimleri, fikirler ve bağışlar: her türlü destek giderek 
 
 ## 🌟 Botlar neler yapabiliyor
 
-- ⚔️ **Oyuncular gibi savaşırlar**: tüm sınıflar ve yollar (Savaşçı, Sura, Ninja, Şaman), kombolar, beceri rotasyonları, bufflar, oklarıyla okçular ve savaş atının üstünden kesilen Metin Taşları.
-- 🗺️ **Üç krallık ve tüm dünya**: kendi köyleriyle Shinsoo, Chunjo ve Jinno; Seungryong Vadisi (Ork Vadisi), Yongbi Çölü, Sohan Dağı, Hwang Tapınağı, Ateş Diyarı (Doyyumhwan), ormanlar ile Maymun ve Örümcek Zindanları. Botlar haritayı ve yeri seviyelerine göre seçer, rotalarını haritanın gerçek çarpışma ızgarası (collision grid) üzerinde hesaplar.
-- 🧠 **Kişilikler**: Iwakura'nın ruh hâllerini de içeren kişilik sistemi. Botlar Grinder (kasıcı), Fatih, Kumarbaz, Mükemmeliyetçi, Tüccar, yoldaş ya da paralı asker olabilir; arada bir de nadir bir kişilik çıkar.
+- ⚔️ **Oyuncular gibi savaşırlar**: tüm sınıflar ve yollar (Savaşçı, Sura, Ninja, Şaman), kombolar, beceri rotasyonları, bufflar, oklarıyla okçular ve savaş atının üstünden kesilen Metin Taşları. Botlar ayrıca kendi krallıklarının köylerinde birbirleriyle idman düellosu yapar.
+- 🗺️ **Üç krallık ve tüm dünya**: kendi köyleriyle Shinsoo, Chunjo ve Jinno; Seungryong Vadisi (Ork Vadisi), Yongbi Çölü, Sohan Dağı, Hwang Tapınağı, Ateş Diyarı (Doyyumhwan), ormanlar, Maymun ve Örümcek Zindanları ile Sürgün Mağaraları. Botlar haritayı ve yeri seviyelerine göre seçer, rotalarını haritanın gerçek çarpışma ızgarası (collision grid) üzerinde hesaplar.
+- 🧠 **Kişilikler**: Iwakura'nın ruh hâllerini de içeren kişilik sistemi. Botlar Grinder (kasıcı), Fatih, Kumarbaz, Mükemmeliyetçi, Tüccar, yoldaş, paralı asker ya da Metin Taşı dropçusu olabilir; arada bir de nadir bir kişilik çıkar.
 - 🛡️ **Loncalar, savaşlar ve baskınlar**: botlar güçlerine göre lonca kurar, lonca haritasında raunt usulü lonca savaşları yapar (oyuncuların loncalarına karşı da), tüm loncayla Şeytan Kulesi'ne çıkar, dünya bosslarını birlikte keser ve Azrail için Şeytan Katakombu'na iner.
-- 🎉 **Etkinlikler**: duyuruları ve ödülleriyle Korsan Tanaka ve Zuo'nun Metin yağmuru; botlar da bu etkinliklere kendiliğinden savaşmaya gider.
-- 🏪 **Bot pazarı**: köylerdeki tezgâhlarda gerçek çevrimdışı dükkânlar (offline shop), Iwakura'nın enflasyonlu ve talebe göre ayarlanan fiyat listesinden gelen fiyatlar ve botlar arası alışveriş. **Dom Towarowy** (Büyük Mağaza) tüm dükkânların tekliflerini tek pencerede gösterir ve bir eşyayı satışa koyarken botların fiyatını önerir („Auto cena” — otomatik fiyat seçeneğiyle). Oyunda ayrıca Metin taşlarından ve bosslardan düşen Ejderha Paraları ile alışveriş yapılan bir **ItemShop** da var.
-- 🔨 **Karakter gelişimi**: Demirci ve yükseltme kâğıtları, bonuslar, ruh taşları, beceri kitapları ve eşyalara takılan taşlar (Spirit Stones), Biyolog görevleri, savaş atına kadar at, balıkçılık, madencilik ve şifalı bitki toplama.
-- 💬 **Sohbetler**: botlar fısıltılara yanıt verir, sohbet üzerinden ticaret yapar („Kupię…” — alırım, „Sprzedam…” — satarım), Şaman bufflarının ne işe yaradığını söyler, çağırdığın bot yanına gelir. Botlar okuyucunun dilinde yazar: Lehçe, İngilizce, Almanca, Fransızca, Portekizce veya Rumence (Türkçe istemcide İngilizce).
-- 🤝 **Towarzysz (Yoldaş)**: gruptaki kalıcı yol arkadaşın. Yanında savaşır, seni bufflar, seninle ticaret yapar; ekipmanını ve becerilerini sen ayarlarsın. Bir arkadaşının lideri olduğu gruba da katılır („Grupa” — Grup) ve sen yokken kendi başına oynayabilir („Gra beze mnie” — Bensiz oyna).
-- 🎯 **Auto Łowy (Otomatik Av)**: oyuncu için otomatik avlanma. Dünya ayarlarından herkese açık mı olacağını, yoksa ItemShop'tan satın alınarak mı kullanılacağını seçersin.
-- 🎛️ **Paneller ve launcher**: canlı dünya haritası, sıralamalar, botların ekipmanı, yapay zekâ davranış kaydırıcıları ve zamanlı etkinlikler içeren iki web paneli; güncellemeler, dünya yedeği, zorluk seviyesi, ikinci kanal, COOP (arkadaşlarınla kendi dünyanda ücretsiz oyun) ve VPS'te sunucu sunan bir launcher.
+- 🎉 **Etkinlikler**: Korsan Tanaka, Zuo'nun Metin yağmuru, Metin Taşlarından düşen Altıgen Sandıklar ve „Soluk Ay Gecesi” Cadılar Bayramı etkinliği; hepsi panelden başlatılır. Botlar da bu etkinliklere kendiliğinden savaşmaya gider.
+- 🏰 **Zindanlar ve eklentiler**: Veba Zindanı (45-120. seviyeler) ve 50. seviye silahlarıyla Avcı Demirhanesi (ikisi de varsayılan olarak kapalıdır ve panelden açılır), Beran-Setaou ve saldırı atıyla birlikte Snakefield betası.
+- 🏪 **Bot pazarı**: köylerdeki tezgâhlarda gerçek çevrimdışı dükkânlar (offline shop), Iwakura'nın enflasyonlu ve talebe göre ayarlanan fiyat listesinden gelen fiyatlar ve tüm krallıkların tezgâhlarından alışveriş yapan botlar. **Dom Towarowy** (Büyük Mağaza) tüm dükkânların tekliflerini tek pencerede gösterir, bir eşyayı satışa koyarken fiyat önerir („Auto cena” — otomatik fiyat) ve aradığın eşyayı biri satışa koyduğunda sana haber veren bir istek listesi sunar. Metin taşlarından ve bosslardan düşen Ejderha Paralarıyla ödeme yapılan **ItemShop**'ta ayrıca Şans Çarkı ve flaş açık artırmalar da var.
+- 🔨 **Karakter gelişimi**: „+N'ye kadar yükselt” seçeneği ve koleksiyoncu deposundan alınan malzemelerle Demirci, yükseltme kâğıtları, bonuslar, ruh taşları, Ejderha Taşı Simyası, beceri kitapları, 30 puana kadar Kombo, eşyalara takılan taşlar (Spirit Stones), Biyolog görevleri, görevler (quest), savaş atına kadar at, balıkçılık, madencilik ve şifalı bitki toplama.
+- 💬 **Sohbetler**: botlar fısıltılara yanıt verir, sohbet üzerinden ticaret yapar („Kupię…” — alırım, „Sprzedam…” — satarım), Şaman bufflarının ne işe yaradığını söyler, çağırdığın bot yanına gelir. Botlar okuyucunun dilinde yazar: Lehçe, İngilizce, Almanca, Fransızca, Portekizce, Rumence veya Türkçe (diğer tüm istemcilerde İngilizce).
+- 🤝 **Towarzysz (Yoldaş)**: gruptaki kalıcı yol arkadaşın. Yanında savaşır, seni bufflar, seninle ticaret yapar; ekipmanını ve becerilerini sen ayarlarsın. Kendi deposu ve Simyası vardır, balık tutar, bir arkadaşının lideri olduğu gruba katılır („Grupa” — Grup) ve kendisi de grup liderliği yapabilir. Sen yokken kendi başına oynar („Gra beze mnie” — Bensiz oyna): kitap okur, pazardan alışveriş yapar, Demirci'de yükseltme yapar, Biyolog görevlerini ve diğer görevleri yapar, döndüğünde de sana neler yaptığını anlatır. Onu sıradan bir karakter gibi de oynayabilirsin.
+- 🎯 **Auto Łowy (Otomatik Av)**: oyuncu için otomatik avlanma; toplama filtresi ve balıkçılık modu da var. Dünya ayarlarından herkese açık mı olacağını, yoksa ItemShop'tan satın alınarak mı kullanılacağını seçersin.
+- 🖥️ **Oyun istemcisi**: dokuz dil (Lehçe, İngilizce, Almanca, Fransızca, İspanyolca, İtalyanca, Portekizce, Rumence ve Türkçe), dropları, sandıkları ve rehberleri içeren oyun içi Wiki, Topluluk penceresi, GF tarzı görev penceresi ve oyuncuların üstünde [AUTO]/[AFK] işaretleri.
+- 🎛️ **Paneller ve launcher**: canlı dünya haritası, sıralamalar, botların ekipmanı, yapay zekâ davranış kaydırıcıları, zamanlı etkinlikler, bossların yeniden doğma süreleri ve veritabanı düzenleyicisi içeren iki web paneli; güncellemeler, dünya yedeği, zorluk seviyesi, ek kanallar, COOP (arkadaşlarınla kendi dünyanda ücretsiz oyun) ve VPS'te sunucu sunan bir launcher.
 - 💾 **Kalıcı dünya**: her botun MariaDB veritabanında kendi hesabı ve karakteri vardır; bu yüzden seviye, eşyalar ve yang yeniden başlatmadan sonra da korunur.
+
+## 🆕 Son eklenenler (2.2.140–2.2.146 sürümleri)
+
+- **Towarzysz** sen yokken kendi kendine gelişir, grup liderliği yapabilir ve yemler ile avın özetiyle birlikte bambaşka bir şekilde balık tutar.
+- **Kombo** artık 30 puan ve üç kitabı canavarlardan düşüyor.
+- **Dom Towarowy**'nin bir istek listesi var; botların tezgâhlarına konan yeni kâğıtlar, yükseltme malzemeleri ve kitaplar önce oyuncuları bekler.
+- **Demirci** seçtiğin artıya kadar otomatik yükseltme yapar; Topluluk penceresi, görev penceresi ve Wiki'deki şifalı bitki rehberleri de yeni.
+- **Botlar** köylerde idman düellosu yapar, dropçu olarak Metin Taşı keser, nerede savaşacaklarını daha akıllıca seçer ve oyuncuların yanında daha adil davranır.
+- Değişikliklerin tam listesi [CHANGELOG.md](CHANGELOG.md) dosyasındadır.
 
 ## ⌨️ Oyun içi kısayollar
 
@@ -66,6 +77,8 @@ Testler, hata bildirimleri, fikirler ve bağışlar: her türlü destek giderek 
 |---|---|
 | `P` | Towarzysz (Yoldaş) penceresi |
 | `K` | Otomatik Av |
+| `H` | tuş ve komut listesini içeren yardım |
+| `X` | kanal penceresi (`X` + `1`–`4` seni doğrudan CH1–CH4'e geçirir) |
 | `` ` `` (tilde) | yakındaki tüm eşyaları topla |
 | `F5` | çevrimdışı dükkânlarda eşya arama |
 | `F9` | GM paneli (yalnızca GM karakterleri) |
@@ -123,13 +136,16 @@ Hak sahibiysen (Ymir Interactive, Webzen, Gameforge, bir sunucu dosyası paketin
 - **AzzlackSyndicate**: projenin üzerine kurulduğu orijinal Linux port tabanının, kurulum programlarının ve panelin yazarı (MIT lisansı, bkz. [NOTICE.md](NOTICE.md)).
 - **Iwakura**: botların kişilik sistemi, fiyat listesi, eşya kademeleri (tier), dükkân ve lonca adları, botların takma adları ve Community Patch'ler.
 - **seban latino**: kurulumdaki ikinci panel olan, canlı harita, profiller, sıralamalar ve ekonomi içeren Metin2 Singleplayer Panel.
-- **ĹŌŞƬĒĶ**: giriş ekranı ve Discord Rich Presence, dil paketi, fısıltı üzerinden botlarla sohbet ve botun üstündeki kişilik satırı.
-- **Colide**: Otomatik Av penceresi.
-- **OskarPWA**: bot depo penceresi, beceri simgeleri ve F9 GM paneli.
-- **Tyrion**: çevrimdışı dükkânlarda belirli bir eşyayı arama.
-- **Uxìĕ [DSO]**: Dom Towarowy ve tüm ekrandaki canavarları çeken Cesaret Pelerini.
+- **ĹŌŞƬĒĶ**: giriş ekranı ve Discord Rich Presence, dil paketi, fısıltı üzerinden botlarla sohbet, botun üstündeki kişilik satırı ve Şans Çarkı'nın diski.
+- **Colide**: Otomatik Av penceresi, Topluluk penceresi, yoldaşın deposu, çevrimdışı planı ve balıkçılığı ile [AUTO]/[AFK] işaretlerinin çizimleri.
+- **OskarPWA**: bot depo penceresi, beceri simgeleri ve F9 GM panelinin ilk sürümü.
+- **Tyrion**: çevrimdışı dükkânlarda belirli bir eşyayı arama, Cadılar Bayramı etkinliği ve Almanca, Fransızca, Portekizce ve Rumence çeviriler.
+- **Uxìĕ [DSO]**: Dom Towarowy, tüm ekrandaki canavarları çeken Cesaret Pelerini ve envanterin yan paneli.
 - **Gibon**: sandık içeriği ve canavar dropu önizlemesi.
-- **Kiciamol**: hedefin canının çubukta gösterilmesi (savaştaki oyuncular dahil).
+- **Kiciamol**: hedefin canının çubukta gösterilmesi (savaştaki oyuncular dahil), F9 GM paneli, rehberli oyun içi Wiki, Şans Çarkı, Altıgen Sandıklar, 30 puana kadar Kombo ve Snakefield betası.
+- **NerrVoVy**: Veba Zindanı, Avcı Demirhanesi, GF tarzı görev penceresi, ItemShop'un flaş açık artırmaları, hedefin bonus önizlemesi ve sohbetteki krallık bayrakları.
+- **Said (saido_0)**: Türkçe çeviri ve Bitkicinin Yolu.
+- **blasty**: bonus değiştirici.
 - **Piciu713**: Demirci penceresinde yükseltme şansı.
 - **Kenny, Pabloo, Mur4s**: grupta eşya toplama, oyuncunun grubundaki botların görevleri, ayı görevi ve Işınlama Yüzüğü düzeltmeleri.
 - [DadsMmoLab/dads-mmo-lab](https://github.com/DadsMmoLab/dads-mmo-lab): MMO oyunlarında otonom ajanlar üzerine araştırmalar için ilham kaynağı.

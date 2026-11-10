@@ -1,6 +1,6 @@
 # ⚔️ Metin2 Playerbots
 
-[Polski (README.md)](README.md) | [English (README_EN.md)](README_EN.md) | **Deutsch** | [Română (README_RO.md)](README_RO.md) | [Português (README_PT.md)](README_PT.md) | [Türkçe (README_TR.md)](README_TR.md)
+[Polski](README.md) | [English](README_EN.md) | **Deutsch** | [Français](README_FR.md) | [Español](README_ES.md) | [Italiano](README_IT.md) | [Português](README_PT.md) | [Română](README_RO.md) | [Türkçe](README_TR.md) | [Magyar](README_HU.md) | [Čeština](README_CS.md) | [Nederlands](README_NL.md) | [Dansk](README_DA.md) | [Русский](README_RU.md) | [Ελληνικά](README_EL.md) | [العربية](README_AR.md) | [한국어](README_KO.md)
 
 [![Webseite](https://img.shields.io/badge/Webseite-mt2sp.com-2EA44F?style=for-the-badge&logo=firefoxbrowser&logoColor=white)](https://mt2sp.com)
 [![Discord](https://img.shields.io/badge/Discord-Community_beitreten-5865F2?style=for-the-badge&logo=discord&logoColor=white)](https://discord.gg/DyCxXdZtnV)
@@ -49,18 +49,29 @@ Jede Form der Unterstützung hilft, eine immer lebendigere Metin2-Welt zu schaff
 
 ## 🌟 Was die Bots können
 
-- ⚔️ **Kampf wie Spieler**: alle Klassen und Wege (Krieger, Sura, Ninja, Schamane), Kombos, Fertigkeitsrotationen, Buffs, Bogenschützen mit Pfeilen und Metinsteine, die vom Schlachtross aus zerschlagen werden.
-- 🗺️ **Drei Reiche und die ganze Welt**: Shinsoo, Chunjo und Jinno mit ihren eigenen Dörfern, das Tal der Orks, die Yongbi-Wüste, der Berg Sohan, der Hwang-Tempel, das Land des Feuers (Doyyumhwaji), die Wälder sowie die Affen- und Spinnen-Dungeons. Die Bots wählen Karte und Ort nach ihrem Level und berechnen ihre Wege über das echte Kollisionsraster der Karte.
-- 🧠 **Persönlichkeiten**: Iwakuras Persönlichkeitssystem mit Stimmungen. Bots sind mal Grinder, Eroberer, Glücksspieler, Perfektionisten, Händler, Begleiter und Söldner, und manchmal taucht eine seltene Persönlichkeit auf.
+- ⚔️ **Kampf wie Spieler**: alle Klassen und Wege (Krieger, Sura, Ninja, Schamane), Kombos, Fertigkeitsrotationen, Buffs, Bogenschützen mit Pfeilen und Metinsteine, die vom Schlachtross aus zerschlagen werden. Die Bots liefern sich auch Übungskämpfe in den Dörfern ihres Reiches.
+- 🗺️ **Drei Reiche und die ganze Welt**: Shinsoo, Chunjo und Jinno mit ihren eigenen Dörfern, das Tal der Orks, die Yongbi-Wüste, der Berg Sohan, der Hwang-Tempel, das Land des Feuers (Doyyumhwaji), die Wälder, die Affen- und Spinnen-Dungeons sowie die Grotten der Verbannung. Die Bots wählen Karte und Ort nach ihrem Level und berechnen ihre Wege über das echte Kollisionsraster der Karte.
+- 🧠 **Persönlichkeiten**: Iwakuras Persönlichkeitssystem mit Stimmungen. Bots sind mal Grinder, Eroberer, Glücksspieler, Perfektionisten, Händler, Begleiter, Söldner oder Metinstein-Dropper, und manchmal taucht eine seltene Persönlichkeit auf.
 - 🛡️ **Gilden, Kriege und Raids**: Die Bots gründen Gilden nach ihrer Stärke, führen Gildenkriege in Runden auf der Gildenkarte (auch gegen Gilden von Spielern), ziehen als ganze Gilde in den Dämonenturm, besiegen gemeinsam die Bosse der Welt und steigen in die Teufelskatakombe hinab, um Azrael zu holen.
-- 🎉 **Events**: Pirat Tanaka und Zuos Metinregen mit Ankündigungen und Belohnungen, und die Bots ziehen von selbst dorthin in den Kampf.
-- 🏪 **Markt der Bots**: echte Offline-Shops an den Ständen in den Dörfern, Preise aus Iwakuras Preisliste mit Inflation, angepasst an die Nachfrage, und Käufe zwischen den Bots. Das **Dom Towarowy** (im deutschen Client „Flohmarkt“) zeigt in einem Fenster die Angebote aller Shops und schlägt beim Einstellen eines Gegenstands den Preis der Bots vor (mit der Option „Auto cena“ — automatischer Preis). Im Spiel gibt es außerdem einen **ItemShop** für Drachenmünzen, die von Metinsteinen und Bossen fallen.
-- 🔨 **Charakterentwicklung**: Schmied und Schriftrollen, Boni, Geiststeine, Fertigkeitsbücher und Seelensteine, die Missionen des Biologen, das Pferd bis zum Schlachtross, Angeln, Bergbau und Kräuterkunde.
-- 💬 **Gespräche**: Die Bots antworten auf Flüstern, handeln über den Chat („Kupię…“ — ich kaufe, „Sprzedam…“ — ich verkaufe), ein Schamane sagt dir, was seine Buffs bringen, und ein gerufener Bot kommt zu dir.
-- 🤝 **Towarzysz (Begleiter)**: dein fester Gefährte in der Gruppe. Er kämpft an deiner Seite, bufft dich und handelt mit dir, seine Ausrüstung und Fertigkeiten stellst du selbst ein. Er tritt auch einer Gruppe bei, die ein Freund führt („Grupa“ — Gruppe), und kann allein spielen, wenn du nicht da bist („Gra beze mnie“ — Spiel ohne mich).
-- 🎯 **Auto Łowy (Autojagd)**: automatisches Jagen für den Spieler. In den Welteinstellungen wählst du, ob es für jeden ist oder nach einem Kauf im ItemShop.
-- 🎛️ **Panels und Launcher**: zwei Web-Panels mit Live-Weltkarte, Ranglisten, der Ausrüstung der Bots, Reglern für das Verhalten der KI und zeitgesteuerten Events; ein Launcher mit Updates, Weltsicherung, Schwierigkeitsgrad, zweitem Kanal, COOP (mit Freunden in deiner Welt spielen, kostenlos) und Server auf einem VPS.
+- 🎉 **Events**: Pirat Tanaka, Zuos Metinregen, Sechseckige Truhen aus Metinsteinen und das Halloween-Event „Nacht des Bleichen Mondes“, alle aus dem Panel gestartet. Die Bots ziehen von selbst dorthin in den Kampf.
+- 🏰 **Dungeons und Erweiterungen**: der Seuchen-Dungeon (Level 45-120) und die Schmiede des Jägers mit Waffen für Level 50, beide standardmäßig ausgeschaltet und im Panel einschaltbar, Beran-Setaou und die Snakefield-Beta mit dem Angriffspferd.
+- 🏪 **Markt der Bots**: echte Offline-Shops an den Ständen in den Dörfern, Preise aus Iwakuras Preisliste mit Inflation, angepasst an die Nachfrage, und Bots, die an den Ständen aller Reiche einkaufen. Das **Dom Towarowy** (Kaufhaus, im deutschen Client „Flohmarkt“) zeigt in einem Fenster die Angebote aller Shops, schlägt beim Einstellen eines Gegenstands einen Preis vor („Auto cena“ — automatischer Preis) und hat eine Wunschliste, die dir Bescheid gibt, wenn jemand den gesuchten Gegenstand anbietet. Der **ItemShop**, in dem du mit Drachenmünzen bezahlst, die von Metinsteinen und Bossen fallen, hat außerdem das Glücksrad und Blitzauktionen.
+- 🔨 **Charakterentwicklung**: der Schmied mit „Verbessern bis +N“ und Materialien aus dem Sammlerlager, Schriftrollen, Boni, Geiststeine, Drachenstein-Alchemie, Fertigkeitsbücher, Combo bis 30 Punkte, Seelensteine, die Missionen des Biologen, Quests, das Pferd bis zum Schlachtross, Angeln, Bergbau und Kräuterkunde.
+- 💬 **Gespräche**: Die Bots antworten auf Flüstern, handeln über den Chat („Kupię…“ — ich kaufe, „Sprzedam…“ — ich verkaufe), ein Schamane sagt dir, was seine Buffs bringen, und ein gerufener Bot kommt zu dir. Die Bots schreiben in der Sprache des Lesers: Polnisch, Englisch, Deutsch, Französisch, Portugiesisch, Rumänisch oder Türkisch (Englisch für jeden anderen Client).
+- 🤝 **Towarzysz (Begleiter)**: dein fester Gefährte in der Gruppe. Er kämpft an deiner Seite, bufft dich und handelt mit dir, seine Ausrüstung und Fertigkeiten stellst du selbst ein. Er hat ein eigenes Lager und eine eigene Alchemie, angelt, tritt einer Gruppe bei, die ein Freund führt („Grupa“ — Gruppe), und kann selbst eine Gruppe führen. Wenn du nicht da bist, spielt er allein („Gra beze mnie“ — Spiel ohne mich): Er liest Bücher, kauft auf dem Markt ein, verbessert beim Schmied, erledigt die Aufgaben des Biologen und Quests und erstattet dir Bericht, wenn du zurückkommst. Du kannst ihn auch wie einen gewöhnlichen Charakter spielen.
+- 🎯 **Auto Łowy (Autojagd)**: automatisches Jagen für den Spieler, mit Aufhebefilter und Angelmodus. In den Welteinstellungen wählst du, ob es für jeden ist oder nach einem Kauf im ItemShop.
+- 🖥️ **Der Spiel-Client**: neun Sprachen (Polnisch, Englisch, Deutsch, Französisch, Spanisch, Italienisch, Portugiesisch, Rumänisch und Türkisch), ein Wiki im Spiel mit Drops, Truhen und Anleitungen, das Community-Fenster, ein Quest-Fenster im GF-Stil und [AUTO]/[AFK]-Markierungen über Spielern.
+- 🎛️ **Panels und Launcher**: zwei Web-Panels mit Live-Weltkarte, Ranglisten, der Ausrüstung der Bots, Reglern für das Verhalten der KI, zeitgesteuerten Events, Respawn-Zeiten der Bosse und einem Datenbank-Editor; ein Launcher mit Updates, Weltsicherung, Schwierigkeitsgrad, zusätzlichen Kanälen, COOP (mit Freunden in deiner Welt spielen, kostenlos) und Server auf einem VPS.
 - 💾 **Dauerhafte Welt**: Jeder Bot hat ein eigenes Konto und einen eigenen Charakter in der MariaDB-Datenbank, deshalb bleiben Level, Gegenstände und Yang nach einem Neustart erhalten.
+
+## 🆕 Neu hinzugekommen (Versionen 2.2.140–2.2.146)
+
+- Der **Towarzysz** entwickelt sich weiter, während du weg bist, kann eine Gruppe führen und angelt auf eine ganz neue Art, mit Ködern und einer Übersicht über den Fang.
+- **Combo** hat 30 Punkte, und seine drei Bücher fallen von Monstern.
+- Das **Dom Towarowy** hat eine Wunschliste, und neue Schriftrollen, Verbesserungsmaterialien und Bücher an den Ständen der Bots warten zuerst auf Spieler.
+- **Der Schmied** verbessert automatisch bis zum gewählten Plus; neu sind auch das Community-Fenster, das Quest-Fenster und die Kräuterkunde-Anleitungen im Wiki.
+- **Die Bots** liefern sich Übungskämpfe in den Dörfern, zerschlagen als Dropper Metinsteine, wählen vernünftiger aus, wo sie kämpfen, und verhalten sich neben Spielern fairer.
+- Die vollständige Liste der Änderungen steht in [CHANGELOG.md](CHANGELOG.md).
 
 ## ⌨️ Tastenkürzel im Spiel
 
@@ -68,6 +79,8 @@ Jede Form der Unterstützung hilft, eine immer lebendigere Metin2-Welt zu schaff
 |---|---|
 | `P` | Fenster des Towarzysz (Begleiter) |
 | `K` | Autojagd |
+| `H` | Hilfe mit der Liste der Tasten und Befehle |
+| `X` | Kanalfenster (`X` + `1`–`4` wechselt direkt zu CH1–CH4) |
 | `` ` `` (Tilde) | alle Gegenstände in der Nähe aufheben |
 | `F5` | Suche nach Gegenständen in den Offline-Shops |
 | `F9` | GM-Panel (nur GM-Charaktere) |
@@ -125,13 +138,16 @@ Wenn du Rechteinhaber bist (Ymir Interactive, Webzen, Gameforge, der Autor eines
 - **AzzlackSyndicate**: Autor der ursprünglichen Grundlage des Linux-Ports, der Installer und des Panels, auf denen das Projekt entstanden ist (MIT-Lizenz, siehe [NOTICE.md](NOTICE.md)).
 - **Iwakura**: das Persönlichkeitssystem der Bots, die Preisliste, die Stufen (Tiers) der Gegenstände, die Namen der Shops und Gilden, die Namen der Bots und die Community Patches.
 - **seban latino**: das Metin2 Singleplayer Panel, das zweite Panel der Installation, mit Live-Karte, Profilen, Ranglisten und Wirtschaft.
-- **ĹŌŞƬĒĶ**: der Anmeldebildschirm und Discord Rich Presence, das Sprachpaket, Gespräche mit den Bots per Flüstern und die Persönlichkeitszeile über dem Bot.
-- **Colide**: das Fenster der Autojagd.
-- **OskarPWA**: das Lagerfenster des Bots, die Fertigkeitssymbole und das GM-Panel unter F9.
-- **Tyrion**: die Suche nach einem bestimmten Gegenstand in den Offline-Shops.
-- **Uxìĕ [DSO]**: das Dom Towarowy und der Tapferkeitsumhang, der Monster vom ganzen Bildschirm anzieht.
+- **ĹŌŞƬĒĶ**: der Anmeldebildschirm und Discord Rich Presence, das Sprachpaket, Gespräche mit den Bots per Flüstern, die Persönlichkeitszeile über dem Bot und die Scheibe des Glücksrads.
+- **Colide**: das Fenster der Autojagd, das Community-Fenster, das Lager, der Offline-Plan und das Angeln des Begleiters sowie die Grafiken der [AUTO]/[AFK]-Markierungen.
+- **OskarPWA**: das Lagerfenster des Bots, die Fertigkeitssymbole und die erste Version des GM-Panels unter F9.
+- **Tyrion**: die Suche nach einem bestimmten Gegenstand in den Offline-Shops, das Halloween-Event sowie die deutsche, französische, portugiesische und rumänische Übersetzung.
+- **Uxìĕ [DSO]**: das Dom Towarowy, der Tapferkeitsumhang, der Monster vom ganzen Bildschirm anzieht, und das Seitenpanel des Inventars.
 - **Gibon**: die Vorschau auf den Inhalt von Truhen und den Drop von Monstern.
-- **Kiciamol**: das Leben des Ziels auf der Leiste, auch das eines Spielers im Kampf.
+- **Kiciamol**: das Leben des Ziels auf der Leiste (auch das eines Spielers im Kampf), das GM-Panel unter F9, das Wiki im Spiel mit Anleitungen, das Glücksrad, die Sechseckigen Truhen, Combo bis 30 Punkte und die Snakefield-Beta.
+- **NerrVoVy**: der Seuchen-Dungeon, die Schmiede des Jägers, das Quest-Fenster im GF-Stil, die Blitzauktionen im ItemShop, die Bonusvorschau des Ziels und die Reichsflaggen im Chat.
+- **Said (saido_0)**: die türkische Übersetzung und der Pfad des Kräuterkundigen.
+- **blasty**: der Bonus-Umschalter.
 - **Piciu713**: die Verbesserungschance im Fenster des Schmieds.
 - **Kenny, Pabloo, Mur4s**: Korrekturen beim Aufheben von Gegenständen in der Gruppe, bei den Aufgaben der Bots in der Gruppe eines Spielers, bei der Bären-Quest und beim Teleportationsring.
 - [DadsMmoLab/dads-mmo-lab](https://github.com/DadsMmoLab/dads-mmo-lab): Inspiration für die Forschung an autonomen Agenten in MMO-Spielen.

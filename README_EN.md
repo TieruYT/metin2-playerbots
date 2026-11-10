@@ -1,6 +1,6 @@
 # ⚔️ Metin2 Playerbots
 
-[Polski (README.md)](README.md) | **English** | [Deutsch (README_DE.md)](README_DE.md) | [Română (README_RO.md)](README_RO.md) | [Português (README_PT.md)](README_PT.md) | [Türkçe (README_TR.md)](README_TR.md)
+[Polski](README.md) | **English** | [Deutsch](README_DE.md) | [Français](README_FR.md) | [Español](README_ES.md) | [Italiano](README_IT.md) | [Português](README_PT.md) | [Română](README_RO.md) | [Türkçe](README_TR.md) | [Magyar](README_HU.md) | [Čeština](README_CS.md) | [Nederlands](README_NL.md) | [Dansk](README_DA.md) | [Русский](README_RU.md) | [Ελληνικά](README_EL.md) | [العربية](README_AR.md) | [한국어](README_KO.md)
 
 [![Website](https://img.shields.io/badge/Website-mt2sp.com-2EA44F?style=for-the-badge&logo=firefoxbrowser&logoColor=white)](https://mt2sp.com)
 [![Discord](https://img.shields.io/badge/Discord-Join_Community-5865F2?style=for-the-badge&logo=discord&logoColor=white)](https://discord.gg/DyCxXdZtnV)
@@ -45,18 +45,29 @@ Every kind of support helps build a livelier Metin2 world: testing, bug reports,
 
 ## 🌟 What the bots do
 
-- ⚔️ **They fight like players**: every class and path (Warrior, Sura, Ninja, Shaman), combos, skill rotations, buffs, archers with arrows, and Metin stones broken from a battle horse.
-- 🗺️ **Three kingdoms and the whole world**: Shinsoo, Chunjo and Jinno with their own villages, Orc Valley, the Yongbi Desert, Mount Sohan, the Hwang Temple, the Fire Land (Doyyumhwaji), the forests, and the Monkey and Spider Dungeons. Bots pick the map and the spot by their level and plan their routes over the map's real collision grid.
-- 🧠 **Personalities**: Iwakura's personality system with moods. A bot may be a Grinder, a Conqueror, a Gambler, a Perfectionist, a Trader, a companion or a mercenary, and now and then a rare personality turns up.
+- ⚔️ **They fight like players**: every class and path (Warrior, Sura, Ninja, Shaman), combos, skill rotations, buffs, archers with arrows, and Metin stones broken from a battle horse. Bots also spar with each other in the villages of their kingdom.
+- 🗺️ **Three kingdoms and the whole world**: Shinsoo, Chunjo and Jinno with their own villages, Orc Valley, the Yongbi Desert, Mount Sohan, the Hwang Temple, the Fire Land (Doyyumhwaji), the forests, the Monkey and Spider Dungeons and the Grottoes of Exile. Bots pick the map and the spot by their level and plan their routes over the map's real collision grid.
+- 🧠 **Personalities**: Iwakura's personality system with moods. A bot may be a Grinder, a Conqueror, a Gambler, a Perfectionist, a Trader, a companion, a mercenary or a Metin stone dropper, and now and then a rare personality turns up.
 - 🛡️ **Guilds, wars and raids**: bots found guilds by strength, fight guild wars in rounds on the guild map (players' guilds included), go to the Demon Tower as a guild, bring down the world's bosses together and go down into the Catacombs after Azrael.
-- 🎉 **Events**: Pirate Tanaka and Zuo's Metin rain with announcements and rewards, and the bots head there to fight by themselves.
-- 🏪 **A bot market**: real offline shops on the village stalls, prices from Iwakura's price list with inflation, adjusted by demand, and purchases between bots. The **Dom Towarowy** shows every shop's offers in one window and suggests the bots' price when you list an item (with an "Auto cena" option). The game also has an **ItemShop** for Dragon Coins, which drop from Metin stones and bosses.
-- 🔨 **Character progression**: the Blacksmith and refine scrolls, bonuses, soul stones, skill books and Spirit Stones, the Biologist's missions, the horse up to the battle horse, fishing, mining and herbalism.
-- 💬 **Conversations**: bots answer whispers and trade over the chat ("Kupię…", "Sprzedam…"), a Shaman will tell you what its buffs give, and a bot you call will come over. The bots answer in the reader's language: Polish, English, German, French, Portuguese or Romanian (English for every other client).
-- 🤝 **Towarzysz, your companion**: a permanent partner in your party. It fights beside you, buffs you and trades with you, and you set its equipment and skills yourself. It also joins a party a friend leads ("Grupa") and can play on its own while you are away ("Gra beze mnie").
-- 🎯 **Auto Hunt**: automatic hunting for the player. The world's settings decide whether it is for everyone or bought in the ItemShop.
-- 🎛️ **Panels and launcher**: two web panels with a live world map, rankings, the bots' equipment, AI behaviour sliders and timed events; a launcher with updates, world backups, the difficulty setting, a second channel, COOP (friends playing in your world, free) and a server on a VPS.
+- 🎉 **Events**: Pirate Tanaka, Zuo's Metin rain, Hexagonal Chests from Metin stones and the Halloween event "Night of the Pale Moon", all started from the panel. The bots head there to fight by themselves.
+- 🏰 **Dungeons and add-ons**: the Plague Dungeon (levels 45-120) and the Hunter's Forge with weapons for level 50, both off by default and switched on in the panel, Beran-Setaou, and the Snakefield beta with the assault horse.
+- 🏪 **A bot market**: real offline shops on the village stalls, prices from Iwakura's price list with inflation, adjusted by demand, and bots buying from the counters of every kingdom. The **Dom Towarowy** (department store) shows every shop's offers in one window, suggests a price when you list an item ("Auto cena") and has a wish list that tells you when someone lists the item you are looking for. The **ItemShop**, paid in Dragon Coins that drop from Metin stones and bosses, also has the Wheel of Fortune and flash auctions.
+- 🔨 **Character progression**: the Blacksmith with "Refine up to +N" and materials taken from the collector's warehouse, refine scrolls, bonuses, soul stones, Dragon Stone Alchemy, skill books, Combo up to 30 points, Spirit Stones, the Biologist's missions, quests, the horse up to the battle horse, fishing, mining and herbalism.
+- 💬 **Conversations**: bots answer whispers and trade over the chat ("Kupię…" — I buy, "Sprzedam…" — I sell), a Shaman will tell you what its buffs give, and a bot you call will come over. The bots write in the reader's language: Polish, English, German, French, Portuguese, Romanian or Turkish (English for every other client).
+- 🤝 **Towarzysz, your companion**: a permanent partner in your party. It fights beside you, buffs you and trades with you, and you set its equipment and skills yourself. It has its own storage and Alchemy, fishes, joins a party a friend leads ("Grupa") and can lead a party itself. While you are away it plays on its own ("Gra beze mnie"): it reads books, shops on the market, refines at the Blacksmith, does the Biologist and quests, and reports back when you return. You can also play it like an ordinary character.
+- 🎯 **Auto Hunt**: automatic hunting for the player, with a pick-up filter and a fishing mode. The world's settings decide whether it is for everyone or bought in the ItemShop.
+- 🖥️ **The game client**: nine languages (Polish, English, German, French, Spanish, Italian, Portuguese, Romanian and Turkish), an in-game Wiki with drops, chests and guides, the Community window, a GF-style quest window and [AUTO]/[AFK] markers over players.
+- 🎛️ **Panels and launcher**: two web panels with a live world map, rankings, the bots' equipment, AI behaviour sliders, timed events, boss respawn times and a database editor; a launcher with updates, world backups, the difficulty setting, extra channels, COOP (friends playing in your world, free) and a server on a VPS.
 - 💾 **A persistent world**: every bot has its own account and character in MariaDB, so levels, items and yang survive a restart.
+
+## 🆕 Recently added (versions 2.2.140–2.2.146)
+
+- **Towarzysz** develops on its own while you are away, can lead a party and fishes in a whole new way, with baits and a summary of the catch.
+- **Combo** has 30 points, and its three books drop from monsters.
+- **Dom Towarowy** has a wish list, and new scrolls, refine materials and books on the bots' counters wait for players first.
+- **The Blacksmith** refines automatically up to the plus you choose; the Community window, the quest window and the herbalism guides in the Wiki are new as well.
+- **Bots** spar in the villages, break Metin stones as droppers, choose more sensibly where to fight and behave more fairly next to players.
+- The full list of changes is in [CHANGELOG.md](CHANGELOG.md).
 
 ## ⌨️ In-game keys
 
@@ -64,6 +75,8 @@ Every kind of support helps build a livelier Metin2 world: testing, bug reports,
 |---|---|
 | `P` | the companion's window |
 | `K` | Auto Hunt |
+| `H` | help with the list of keys and commands |
+| `X` | the channel window (`X` + `1`–`4` moves you straight to CH1–CH4) |
 | `` ` `` (tilde) | pick up every item nearby |
 | `F5` | search the offline shops for an item |
 | `F9` | the GM panel (GM characters only) |
@@ -122,13 +135,16 @@ If you are a rights holder (Ymir Interactive, Webzen, Gameforge, the author of a
 - **AzzlackSyndicate**: author of the original Linux port foundation, installers and panel the project grew from (MIT, see [NOTICE.md](NOTICE.md)).
 - **Iwakura**: the bots' personality system, the price list, the item tiers, the shop and guild names, the bots' nicknames and the Community Patches.
 - **seban latino**: the Metin2 Singleplayer Panel, the second panel in the install, with its live map, profiles, rankings and economy.
-- **ĹŌŞƬĒĶ**: the login screen and Discord Rich Presence, the language pack, whispered conversations with the bots and the personality row over a bot.
-- **Colide**: the Auto Hunt window.
-- **OskarPWA**: the bot depot window, the skill icons and the F9 GM panel.
-- **Tyrion**: searching the offline shops for one particular item.
-- **Uxìĕ [DSO]**: the Dom Towarowy and the Cape of Courage pulling monsters from the whole screen.
+- **ĹŌŞƬĒĶ**: the login screen and Discord Rich Presence, the language pack, whispered conversations with the bots, the personality row over a bot and the Wheel of Fortune's disc.
+- **Colide**: the Auto Hunt window, the Community window, the companion's storage, offline plan and fishing, and the [AUTO]/[AFK] marker artwork.
+- **OskarPWA**: the bot depot window, the skill icons and the first version of the F9 GM panel.
+- **Tyrion**: searching the offline shops for one particular item, the Halloween event, and the German, French, Portuguese and Romanian translations.
+- **Uxìĕ [DSO]**: the Dom Towarowy, the Cape of Courage pulling monsters from the whole screen, and the inventory side panel.
 - **Gibon**: previews of what a chest holds and what a monster drops.
-- **Kiciamol**: the target's health on its bar, a player's in a fight too.
+- **Kiciamol**: the target's health on its bar (a player's in a fight too), the F9 GM panel, the in-game Wiki with guides, the Wheel of Fortune, the Hexagonal Chests, Combo up to 30 points and the Snakefield beta.
+- **NerrVoVy**: the Plague Dungeon, the Hunter's Forge, the GF-style quest window, the ItemShop's flash auctions, the target's bonus preview and the kingdom flags in the chat.
+- **Said (saido_0)**: the Turkish translation and the Herbalist's Path.
+- **blasty**: the bonus switcher.
 - **Piciu713**: the refine chance in the Blacksmith's window.
 - **Kenny, Pabloo, Mur4s**: fixes to party pickups, to bots' errands in a player's party, to the bear quest and to the Teleport Ring.
 - [DadsMmoLab/dads-mmo-lab](https://github.com/DadsMmoLab/dads-mmo-lab): research inspiration for autonomous agents in MMO games.

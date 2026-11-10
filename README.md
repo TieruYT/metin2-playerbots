@@ -1,6 +1,6 @@
 # ⚔️ Metin2 Playerbots
 
-**Polski** | [English (README_EN.md)](README_EN.md) | [Deutsch (README_DE.md)](README_DE.md) | [Română (README_RO.md)](README_RO.md) | [Português (README_PT.md)](README_PT.md) | [Türkçe (README_TR.md)](README_TR.md)
+**Polski** | [English](README_EN.md) | [Deutsch](README_DE.md) | [Français](README_FR.md) | [Español](README_ES.md) | [Italiano](README_IT.md) | [Português](README_PT.md) | [Română](README_RO.md) | [Türkçe](README_TR.md) | [Magyar](README_HU.md) | [Čeština](README_CS.md) | [Nederlands](README_NL.md) | [Dansk](README_DA.md) | [Русский](README_RU.md) | [Ελληνικά](README_EL.md) | [العربية](README_AR.md) | [한국어](README_KO.md)
 
 [![Strona](https://img.shields.io/badge/Strona-mt2sp.com-2EA44F?style=for-the-badge&logo=firefoxbrowser&logoColor=white)](https://mt2sp.com)
 [![Discord](https://img.shields.io/badge/Discord-Dołącz_do_społeczności-5865F2?style=for-the-badge&logo=discord&logoColor=white)](https://discord.gg/DyCxXdZtnV)
@@ -45,18 +45,29 @@ Każda forma wsparcia pomaga tworzyć coraz bardziej żywy świat Metin2: testy,
 
 ## 🌟 Co potrafią boty
 
-- ⚔️ **Walka jak gracze**: wszystkie klasy i ścieżki (Wojownik, Sura, Ninja, Szaman), kombosy, rotacje umiejętności, buffy, łucznicy ze strzałami i Metiny bite z konia bojowego.
-- 🗺️ **Trzy królestwa i cały świat**: Shinsoo, Chunjo i Jinno z własnymi wioskami, Dolina Orków, Pustynia Yongbi, Góra Sohan, Świątynia Hwang, Ziemia Ognia, lasy oraz Lochy Małp i Pająków. Boty dobierają mapę i miejsce do swojego poziomu, a trasy liczą po prawdziwej siatce kolizji mapy.
-- 🧠 **Osobowości**: system osobowości Iwakury z nastrojami. Boty bywają Grinderami, Zdobywcami, Hazardzistami, Perfekcjonistami, Handlarzami, towarzyszami i najemnikami, a czasem trafia się rzadka osobowość.
+- ⚔️ **Walka jak gracze**: wszystkie klasy i ścieżki (Wojownik, Sura, Ninja, Szaman), kombosy, rotacje umiejętności, buffy, łucznicy ze strzałami i Metiny bite z konia bojowego. Boty robią też sparingi w wioskach swojego królestwa.
+- 🗺️ **Trzy królestwa i cały świat**: Shinsoo, Chunjo i Jinno z własnymi wioskami, Dolina Orków, Pustynia Yongbi, Góra Sohan, Świątynia Hwang, Ziemia Ognia, lasy, Lochy Małp i Pająków oraz Groty Wygnańców. Boty dobierają mapę i miejsce do swojego poziomu, a trasy liczą po prawdziwej siatce kolizji mapy.
+- 🧠 **Osobowości**: system osobowości Iwakury z nastrojami. Boty bywają Grinderami, Zdobywcami, Hazardzistami, Perfekcjonistami, Handlarzami, towarzyszami, najemnikami i dropkami kamieni Metin, a czasem trafia się rzadka osobowość.
 - 🛡️ **Gildie, wojny i rajdy**: boty zakładają gildie według siły, toczą wojny gildii na rundy na mapie gildii (także z gildiami graczy), ruszają całą gildią na Wieżę Demonów, wspólnie biją bossów świata i schodzą do Katakumb po Azraela.
-- 🎉 **Wydarzenia**: pirat Tanaka i deszcz Metinów Zuo z ogłoszeniami i nagrodami, a boty same ruszają na nie do walki.
-- 🏪 **Rynek botów**: prawdziwe sklepy offline na straganach w wioskach, ceny z cennika Iwakury z inflacją, korygowane popytem, i zakupy między botami. **Dom Towarowy** pokazuje w jednym oknie oferty wszystkich sklepów, a przy wystawianiu przedmiotu podpowiada cenę botów (z opcją „Auto cena”). W grze jest też **ItemShop** za Smocze Monety, które wypadają z Metinów i bossów.
-- 🔨 **Rozwój postaci**: Kowal i zwoje, bonusy, kamienie duszy, księgi umiejętności i Kamienie Duchowe, misje Biologa, koń aż do bojowego, łowienie ryb, górnictwo i zielarstwo.
-- 💬 **Rozmowy**: boty odpowiadają na szepty, handlują przez czat („Kupię…”, „Sprzedam…”), Szaman powie, co dają jego buffy, a zawołany bot przyjdzie.
-- 🤝 **Towarzysz**: Twój stały kompan w drużynie. Walczy przy Tobie, buffuje, handluje z Tobą, a jego ekwipunek i umiejętności ustawiasz sam. Dołącza też do grupy prowadzonej przez znajomego („Grupa”) i może grać sam, gdy Ciebie nie ma („Gra beze mnie”).
-- 🎯 **Auto Łowy**: automatyczne polowanie dla gracza. W ustawieniach świata wybierasz, czy jest dla każdego, czy po zakupie w ItemShopie.
-- 🎛️ **Panele i launcher**: dwa panele WWW z mapą świata na żywo, rankingami, ekwipunkiem botów, suwakami zachowania AI i wydarzeniami czasowymi; launcher z aktualizacjami, kopią świata, poziomem trudności, drugim kanałem, COOP (gra ze znajomymi w Twoim świecie, za darmo) i serwerem na VPS.
+- 🎉 **Wydarzenia**: pirat Tanaka, deszcz Metinów Zuo, Heksagonalne Skrzynie z Metinów i event Halloween „Noc Bladego Księżyca”, uruchamiane z panelu. Boty same ruszają na nie do walki.
+- 🏰 **Lochy i dodatki**: Loch Zarazy (poziomy 45-120) i Kuźnia Łowcy z broniami na 50 poziom, domyślnie wyłączone i włączane w panelu, Beran-Setaou oraz beta Pola Węży z koniem szturmowym.
+- 🏪 **Rynek botów**: prawdziwe sklepy offline na straganach w wioskach, ceny z cennika Iwakury z inflacją, korygowane popytem, i zakupy między botami z lad wszystkich królestw. **Dom Towarowy** pokazuje w jednym oknie oferty wszystkich sklepów, podpowiada cenę przy wystawianiu („Auto cena”) i ma listę życzeń, która daje znać, gdy ktoś wystawi szukany przedmiot. W **ItemShopie** za Smocze Monety (wypadają z Metinów i bossów) są też Koło Fortuny i aukcje błyskawiczne.
+- 🔨 **Rozwój postaci**: Kowal z opcją „Ulepszaj do +N” i materiałami z magazynu kolekcjonera, zwoje, bonusy, kamienie duszy, Alchemia Smoczych Kamieni, księgi umiejętności, Sztuka Combo do 30 punktów, Kamienie Duchowe, misje Biologa, questy, koń aż do bojowego, łowienie ryb, górnictwo i zielarstwo.
+- 💬 **Rozmowy**: boty odpowiadają na szepty, handlują przez czat („Kupię…”, „Sprzedam…”), Szaman powie, co dają jego buffy, a zawołany bot przyjdzie. Boty piszą w języku czytającego: po polsku, angielsku, niemiecku, francusku, portugalsku, rumuńsku i turecku (w pozostałych klientach po angielsku).
+- 🤝 **Towarzysz**: Twój stały kompan w drużynie. Walczy przy Tobie, buffuje, handluje z Tobą, a jego ekwipunek i umiejętności ustawiasz sam. Ma własny magazyn i Alchemię, łowi ryby, dołącza do grupy prowadzonej przez znajomego („Grupa”) i sam może prowadzić grupę. Gdy Ciebie nie ma, gra sam („Gra beze mnie”): czyta księgi, kupuje na rynku, ulepsza u kowala, robi Biologa i questy, a po Twoim powrocie zdaje raport. Możesz też zagrać nim jak zwykłą postacią.
+- 🎯 **Auto Łowy**: automatyczne polowanie dla gracza, z filtrem podnoszenia przedmiotów i trybem łowienia ryb. W ustawieniach świata wybierasz, czy jest dla każdego, czy po zakupie w ItemShopie.
+- 🖥️ **Klient gry**: dziewięć języków (polski, angielski, niemiecki, francuski, hiszpański, włoski, portugalski, rumuński i turecki), Wiki w grze z dropem, skrzyniami i poradnikami, okno Społeczności, okno misji w stylu GF i znaczniki [AUTO]/[AFK] nad graczami.
+- 🎛️ **Panele i launcher**: dwa panele WWW z mapą świata na żywo, rankingami, ekwipunkiem botów, suwakami zachowania AI, wydarzeniami czasowymi, czasami odrodzeń bossów i edytorem bazy; launcher z aktualizacjami, kopią świata, poziomem trudności, kolejnymi kanałami, COOP (gra ze znajomymi w Twoim świecie, za darmo) i serwerem na VPS.
 - 💾 **Trwały świat**: każdy bot ma własne konto i postać w bazie MariaDB, więc poziom, przedmioty i yang zostają po restarcie.
+
+## 🆕 Ostatnio w grze (wersje 2.2.140–2.2.146)
+
+- **Towarzysz** rozwija się sam pod Twoją nieobecność, może prowadzić grupę i łowi ryby od nowa, z przynętami i podsumowaniem połowu.
+- **Sztuka Combo** ma 30 punktów, a jej trzy księgi wypadają z potworów.
+- **Dom Towarowy** ma listę życzeń, a nowe zwoje, ulepszacze i księgi na ladach botów czekają najpierw na graczy.
+- **Kowal** ulepsza automatycznie do wybranego plusa; nowe są też okno Społeczności, okno misji i poradniki zielarstwa w Wiki.
+- **Boty** robią sparingi w wioskach, rozbijają Metiny jako dropkowie, rozsądniej wybierają, gdzie walczyć, i uczciwiej zachowują się obok graczy.
+- Pełna lista zmian jest w [CHANGELOG.md](CHANGELOG.md).
 
 ## ⌨️ Skróty w grze
 
@@ -64,6 +75,8 @@ Każda forma wsparcia pomaga tworzyć coraz bardziej żywy świat Metin2: testy,
 |---|---|
 | `P` | okno Towarzysza |
 | `K` | Auto Łowy |
+| `H` | pomoc z listą skrótów i komend |
+| `X` | okno kanałów (`X` + `1`–`4` przenosi od razu na CH1–CH4) |
 | `` ` `` (tylda) | podnieś wszystkie przedmioty w pobliżu |
 | `F5` | wyszukiwarka przedmiotów w sklepach offline |
 | `F9` | panel GM (tylko postacie GM) |
@@ -121,13 +134,16 @@ Jeśli jesteś właścicielem praw (Ymir Interactive, Webzen, Gameforge, autor p
 - **AzzlackSyndicate**: autor pierwotnej bazy portu linuksowego, instalatorów i panelu, na których projekt powstał (licencja MIT, zob. [NOTICE.md](NOTICE.md)).
 - **Iwakura**: system osobowości botów, cennik, tiery przedmiotów, nazwy sklepów i gildii, nicki botów i Community Patche.
 - **seban latino**: Metin2 Singleplayer Panel, drugi panel w instalacji, z mapą na żywo, profilami, rankingami i gospodarką.
-- **ĹŌŞƬĒĶ**: ekran logowania i Discord Rich Presence, pakiet językowy, rozmowy z botami przez szepty i wiersz osobowości nad botem.
-- **Colide**: okno Auto Łowów.
-- **OskarPWA**: okno magazynu bota, ikony umiejętności i panel GM pod F9.
-- **Tyrion**: wyszukiwanie konkretnego przedmiotu w sklepach offline.
-- **Uxìĕ [DSO]**: Dom Towarowy i Peleryna Męstwa przyciągająca potwory z całego ekranu.
+- **ĹŌŞƬĒĶ**: ekran logowania i Discord Rich Presence, pakiet językowy, rozmowy z botami przez szepty, wiersz osobowości nad botem i tarcza Koła Fortuny.
+- **Colide**: okno Auto Łowów, okno Społeczności, magazyn, plan offline i łowienie Towarzysza oraz grafika znaczników [AUTO]/[AFK].
+- **OskarPWA**: okno magazynu bota, ikony umiejętności i pierwsza wersja panelu GM pod F9.
+- **Tyrion**: wyszukiwanie konkretnego przedmiotu w sklepach offline, event Halloween i tłumaczenia na niemiecki, francuski, portugalski i rumuński.
+- **Uxìĕ [DSO]**: Dom Towarowy, Peleryna Męstwa przyciągająca potwory z całego ekranu i panel boczny ekwipunku.
 - **Gibon**: podgląd zawartości skrzyń i dropu potworów.
-- **Kiciamol**: życie celu na pasku, także gracza w walce.
+- **Kiciamol**: życie celu na pasku (także gracza w walce), panel GM pod F9, Wiki w grze z poradnikami, Koło Fortuny, Heksagonalne Skrzynie, Sztuka Combo do 30 punktów i beta Pola Węży.
+- **NerrVoVy**: Loch Zarazy, Kuźnia Łowcy, okno misji w stylu GF, aukcje błyskawiczne w ItemShopie, podgląd bonusów celu i flagi królestw na czacie.
+- **Said (saido_0)**: tłumaczenie na turecki i Ścieżka Zielarza.
+- **blasty**: przełącznik bonusów.
 - **Piciu713**: szansa ulepszenia w oknie Kowala.
 - **Kenny, Pabloo, Mur4s**: poprawki podnoszenia przedmiotów w drużynie, zadań botów w drużynie gracza, questu niedźwiedzi i Pierścienia Teleportacji.
 - [DadsMmoLab/dads-mmo-lab](https://github.com/DadsMmoLab/dads-mmo-lab): inspiracja do badań nad autonomicznymi agentami w grach MMO.

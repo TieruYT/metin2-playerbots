@@ -1,6 +1,6 @@
 # ⚔️ Metin2 Playerbots
 
-[Polski (README.md)](README.md) | [English (README_EN.md)](README_EN.md) | [Deutsch (README_DE.md)](README_DE.md) | **Română** | [Português (README_PT.md)](README_PT.md) | [Türkçe (README_TR.md)](README_TR.md)
+[Polski](README.md) | [English](README_EN.md) | [Deutsch](README_DE.md) | [Français](README_FR.md) | [Español](README_ES.md) | [Italiano](README_IT.md) | [Português](README_PT.md) | **Română** | [Türkçe](README_TR.md) | [Magyar](README_HU.md) | [Čeština](README_CS.md) | [Nederlands](README_NL.md) | [Dansk](README_DA.md) | [Русский](README_RU.md) | [Ελληνικά](README_EL.md) | [العربية](README_AR.md) | [한국어](README_KO.md)
 
 [![Site](https://img.shields.io/badge/Site-mt2sp.com-2EA44F?style=for-the-badge&logo=firefoxbrowser&logoColor=white)](https://mt2sp.com)
 [![Discord](https://img.shields.io/badge/Discord-Intră_în_comunitate-5865F2?style=for-the-badge&logo=discord&logoColor=white)](https://discord.gg/DyCxXdZtnV)
@@ -49,18 +49,29 @@ Orice formă de sprijin ajută la crearea unei lumi Metin2 tot mai vii: teste, r
 
 ## 🌟 Ce pot face boții
 
-- ⚔️ **Luptă ca jucătorii**: toate clasele și căile (Războinic, Sura, Ninja, Șaman), combo-uri, rotații de abilități, buffuri, arcași cu săgeți și pietre Metin sparte de pe calul de luptă.
-- 🗺️ **Trei regate și întreaga lume**: Shinsoo, Chunjo și Jinno cu satele lor, Valea Orcilor, Deșertul Yongbi, Muntele Sohan, Templul Hwang, Ținutul Focului (Doyyumhwan), pădurile, precum și Temnițele Maimuțelor și ale Păianjenilor. Boții își aleg harta și locul după nivel, iar traseele le calculează pe grila reală de coliziuni a hărții.
-- 🧠 **Personalități**: sistemul de personalități al lui Iwakura, cu stări de spirit. Boții sunt uneori Grinderi, Cuceritori, Jucători de noroc, Perfecționiști, Negustori, însoțitori și mercenari, iar câteodată apare o personalitate rară.
+- ⚔️ **Luptă ca jucătorii**: toate clasele și căile (Războinic, Sura, Ninja, Șaman), combo-uri, rotații de abilități, buffuri, arcași cu săgeți și pietre Metin sparte de pe calul de luptă. Boții se și antrenează în dueluri între ei în satele regatului lor.
+- 🗺️ **Trei regate și întreaga lume**: Shinsoo, Chunjo și Jinno cu satele lor, Valea Orcilor, Deșertul Yongbi, Muntele Sohan, Templul Hwang, Ținutul Focului (Doyyumhwan), pădurile, Temnițele Maimuțelor și ale Păianjenilor, precum și Grotele Exilului. Boții își aleg harta și locul după nivel, iar traseele le calculează pe grila reală de coliziuni a hărții.
+- 🧠 **Personalități**: sistemul de personalități al lui Iwakura, cu stări de spirit. Boții sunt uneori Grinderi, Cuceritori, Jucători de noroc, Perfecționiști, Negustori, însoțitori, mercenari sau dropperi de pietre Metin, iar câteodată apare o personalitate rară.
 - 🛡️ **Bresle, războaie și raiduri**: boții întemeiază bresle după putere, poartă războaie de breaslă pe runde pe harta breslei (și cu breslele jucătorilor), pornesc cu toată breasla spre Turnul Demonilor, înving împreună boșii lumii și coboară în Catacomba Diavolului după Azrael.
-- 🎉 **Evenimente**: Piratul Tanaka și ploaia de Metine a lui Zuo, cu anunțuri și recompense, iar boții pornesc singuri la luptă.
-- 🏪 **Piața boților**: magazine offline adevărate la tarabele din sate, prețuri din lista de prețuri a lui Iwakura, cu inflație, corectate după cerere, și cumpărături între boți. **Dom Towarowy** (în clientul românesc „Talcioc”) arată într-o singură fereastră ofertele tuturor magazinelor, iar când pui un obiect la vânzare îți sugerează prețul boților (cu opțiunea „Auto cena” — preț automat). În joc există și un **ItemShop** pentru Monede Dragon, care cad din pietrele Metin și din boși.
-- 🔨 **Dezvoltarea personajului**: Fierarul și pergamentele, bonusuri, pietre spirituale, cărți de abilitate și Pietre de suflet, misiunile Biologului, calul până la calul de luptă, pescuitul, mineritul și culesul plantelor.
-- 💬 **Conversații**: boții răspund la șoapte, fac comerț prin chat („Kupię…” — cumpăr, „Sprzedam…” — vând), Șamanul îți spune ce dau buffurile lui, iar un bot chemat vine la tine.
-- 🤝 **Towarzysz (Tovarăș)**: partenerul tău permanent din grup. Luptă lângă tine, îți dă buffuri, face comerț cu tine, iar echipamentul și abilitățile lui le setezi singur. Se alătură și unui grup condus de un prieten („Grupa” — Grup) și poate juca singur când nu ești acolo („Gra beze mnie” — Joacă fără mine).
-- 🎯 **Auto Łowy (Vânătoare automată)**: vânătoare automată pentru jucător. În setările lumii alegi dacă este pentru oricine sau după cumpărare în ItemShop.
-- 🎛️ **Panouri și launcher**: două panouri web cu harta lumii în timp real, clasamente, echipamentul boților, glisoare pentru comportamentul AI și evenimente programate; launcher cu actualizări, copie de siguranță a lumii, nivel de dificultate, al doilea canal, COOP (joc cu prietenii în lumea ta, gratuit) și server pe VPS.
+- 🎉 **Evenimente**: Piratul Tanaka, ploaia de Metine a lui Zuo, Cuferele Hexagonale din pietrele Metin și evenimentul de Halloween „Noaptea Lunii Palide”, toate pornite din panou. Boții pornesc singuri acolo la luptă.
+- 🏰 **Temnițe și suplimente**: Temnița Ciumei (nivelurile 45-120) și Forja Vânătorului cu arme pentru nivelul 50, ambele dezactivate implicit și pornite din panou, Beran-Setaou și beta Snakefield cu calul de asalt.
+- 🏪 **Piața boților**: magazine offline adevărate la tarabele din sate, prețuri din lista de prețuri a lui Iwakura, cu inflație, corectate după cerere, și boți care cumpără de la tarabele tuturor regatelor. **Dom Towarowy** (magazin universal, în clientul românesc „Talcioc”) arată într-o singură fereastră ofertele tuturor magazinelor, îți sugerează un preț când pui un obiect la vânzare („Auto cena” — preț automat) și are o listă de dorințe care te anunță când cineva pune la vânzare obiectul pe care îl cauți. **ItemShop**-ul, în care plătești cu Monede Dragon ce cad din pietrele Metin și din boși, are și Roata Norocului și licitații fulger.
+- 🔨 **Dezvoltarea personajului**: Fierarul cu „Îmbunătățește până la +N” și materiale luate din depozitul colecționarului, pergamentele, bonusuri, pietre spirituale, Alchimia Pietrelor Dragonului, cărți de abilitate, Combo până la 30 de puncte, Pietre de suflet, misiunile Biologului, questuri, calul până la calul de luptă, pescuitul, mineritul și culesul plantelor.
+- 💬 **Conversații**: boții răspund la șoapte, fac comerț prin chat („Kupię…” — cumpăr, „Sprzedam…” — vând), Șamanul îți spune ce dau buffurile lui, iar un bot chemat vine la tine. Boții scriu în limba cititorului: poloneză, engleză, germană, franceză, portugheză, română sau turcă (engleză pentru orice alt client).
+- 🤝 **Towarzysz (Tovarăș)**: partenerul tău permanent din grup. Luptă lângă tine, îți dă buffuri, face comerț cu tine, iar echipamentul și abilitățile lui le setezi singur. Are propriul depozit și propria Alchimie, pescuiește, se alătură unui grup condus de un prieten („Grupa” — Grup) și poate conduce el însuși un grup. Când nu ești acolo, joacă singur („Gra beze mnie” — Joacă fără mine): citește cărți, cumpără din piață, îmbunătățește la Fierar, face misiunile Biologului și questuri, iar când te întorci îți povestește ce a făcut. Îl poți juca și ca pe un personaj obișnuit.
+- 🎯 **Auto Łowy (Vânătoare automată)**: vânătoare automată pentru jucător, cu filtru de ridicare a obiectelor și mod de pescuit. În setările lumii alegi dacă este pentru oricine sau după cumpărare în ItemShop.
+- 🖥️ **Clientul jocului**: nouă limbi (poloneză, engleză, germană, franceză, spaniolă, italiană, portugheză, română și turcă), un Wiki în joc cu drop-uri, cufere și ghiduri, fereastra Comunitate, o fereastră de questuri în stil GF și marcaje [AUTO]/[AFK] deasupra jucătorilor.
+- 🎛️ **Panouri și launcher**: două panouri web cu harta lumii în timp real, clasamente, echipamentul boților, glisoare pentru comportamentul AI, evenimente programate, timpii de respawn ai boșilor și un editor al bazei de date; launcher cu actualizări, copie de siguranță a lumii, nivel de dificultate, canale suplimentare, COOP (joc cu prietenii în lumea ta, gratuit) și server pe VPS.
 - 💾 **Lume persistentă**: fiecare bot are propriul cont și propriul personaj în baza de date MariaDB, așa că nivelul, obiectele și yang-ul rămân după o repornire.
+
+## 🆕 Adăugate recent (versiunile 2.2.140–2.2.146)
+
+- **Towarzysz** se dezvoltă singur cât timp ești plecat, poate conduce un grup și pescuiește într-un mod cu totul nou, cu momeli și un rezumat al capturii.
+- **Combo** are 30 de puncte, iar cele trei cărți ale lui cad din monștri.
+- **Dom Towarowy** are o listă de dorințe, iar pergamentele, materialele de îmbunătățire și cărțile noi de pe tarabele boților așteaptă mai întâi jucătorii.
+- **Fierarul** îmbunătățește automat până la plusul ales de tine; noi sunt și fereastra Comunitate, fereastra de questuri și ghidurile de cules plante din Wiki.
+- **Boții** se antrenează în dueluri în sate, sparg pietre Metin ca dropperi, aleg mai cu cap unde să lupte și se poartă mai corect lângă jucători.
+- Lista completă a modificărilor se află în [CHANGELOG.md](CHANGELOG.md).
 
 ## ⌨️ Scurtături în joc
 
@@ -68,6 +79,8 @@ Orice formă de sprijin ajută la crearea unei lumi Metin2 tot mai vii: teste, r
 |---|---|
 | `P` | fereastra Towarzysz (Tovarăș) |
 | `K` | Vânătoare automată |
+| `H` | ajutor cu lista tastelor și a comenzilor |
+| `X` | fereastra canalelor (`X` + `1`–`4` te mută direct pe CH1–CH4) |
 | `` ` `` (tildă) | ridică toate obiectele din apropiere |
 | `F5` | căutarea obiectelor în magazinele offline |
 | `F9` | panoul GM (doar personajele GM) |
@@ -125,13 +138,16 @@ Dacă ești deținătorul unor drepturi (Ymir Interactive, Webzen, Gameforge, au
 - **AzzlackSyndicate**: autorul bazei originale a portului pentru Linux, al instalatoarelor și al panoului pe care s-a construit proiectul (licența MIT, vezi [NOTICE.md](NOTICE.md)).
 - **Iwakura**: sistemul de personalități al boților, lista de prețuri, nivelurile (tier-urile) obiectelor, numele magazinelor și ale breslelor, numele boților și Community Patch-urile.
 - **seban latino**: Metin2 Singleplayer Panel, al doilea panou din instalare, cu hartă în timp real, profiluri, clasamente și economie.
-- **ĹŌŞƬĒĶ**: ecranul de autentificare și Discord Rich Presence, pachetul de limbă, conversațiile cu boții prin șoapte și rândul cu personalitatea de deasupra botului.
-- **Colide**: fereastra Vânătorii automate.
-- **OskarPWA**: fereastra depozitului botului, iconițele abilităților și panoul GM de sub F9.
-- **Tyrion**: căutarea unui anumit obiect în magazinele offline.
-- **Uxìĕ [DSO]**: Dom Towarowy și Mantia Curajului, care atrage monștrii de pe tot ecranul.
+- **ĹŌŞƬĒĶ**: ecranul de autentificare și Discord Rich Presence, pachetul de limbă, conversațiile cu boții prin șoapte, rândul cu personalitatea de deasupra botului și discul Roții Norocului.
+- **Colide**: fereastra Vânătorii automate, fereastra Comunitate, depozitul, planul offline și pescuitul tovarășului, precum și grafica marcajelor [AUTO]/[AFK].
+- **OskarPWA**: fereastra depozitului botului, iconițele abilităților și prima versiune a panoului GM de sub F9.
+- **Tyrion**: căutarea unui anumit obiect în magazinele offline, evenimentul de Halloween și traducerile în germană, franceză, portugheză și română.
+- **Uxìĕ [DSO]**: Dom Towarowy, Mantia Curajului, care atrage monștrii de pe tot ecranul, și panoul lateral al inventarului.
 - **Gibon**: previzualizarea conținutului cuferelor și a drop-ului monștrilor.
-- **Kiciamol**: viața țintei pe bară, inclusiv a unui jucător în luptă.
+- **Kiciamol**: viața țintei pe bară (inclusiv a unui jucător în luptă), panoul GM de sub F9, Wiki-ul din joc cu ghiduri, Roata Norocului, Cuferele Hexagonale, Combo până la 30 de puncte și beta Snakefield.
+- **NerrVoVy**: Temnița Ciumei, Forja Vânătorului, fereastra de questuri în stil GF, licitațiile fulger din ItemShop, previzualizarea bonusurilor țintei și steagurile regatelor în chat.
+- **Said (saido_0)**: traducerea în turcă și Calea Herboristului.
+- **blasty**: comutatorul de bonusuri.
 - **Piciu713**: șansa de îmbunătățire în fereastra Fierarului.
 - **Kenny, Pabloo, Mur4s**: corecturi la ridicarea obiectelor în grup, la sarcinile boților din grupul unui jucător, la questul urșilor și la Inelul Teleportare.
 - [DadsMmoLab/dads-mmo-lab](https://github.com/DadsMmoLab/dads-mmo-lab): inspirație pentru cercetarea agenților autonomi în jocurile MMO.

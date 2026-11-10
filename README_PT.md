@@ -1,6 +1,6 @@
 # ⚔️ Metin2 Playerbots
 
-[Polski (README.md)](README.md) | [English (README_EN.md)](README_EN.md) | [Deutsch (README_DE.md)](README_DE.md) | [Română (README_RO.md)](README_RO.md) | **Português** | [Türkçe (README_TR.md)](README_TR.md)
+[Polski](README.md) | [English](README_EN.md) | [Deutsch](README_DE.md) | [Français](README_FR.md) | [Español](README_ES.md) | [Italiano](README_IT.md) | **Português** | [Română](README_RO.md) | [Türkçe](README_TR.md) | [Magyar](README_HU.md) | [Čeština](README_CS.md) | [Nederlands](README_NL.md) | [Dansk](README_DA.md) | [Русский](README_RU.md) | [Ελληνικά](README_EL.md) | [العربية](README_AR.md) | [한국어](README_KO.md)
 
 [![Site](https://img.shields.io/badge/Site-mt2sp.com-2EA44F?style=for-the-badge&logo=firefoxbrowser&logoColor=white)](https://mt2sp.com)
 [![Discord](https://img.shields.io/badge/Discord-Entra_na_comunidade-5865F2?style=for-the-badge&logo=discord&logoColor=white)](https://discord.gg/DyCxXdZtnV)
@@ -49,18 +49,29 @@ Qualquer forma de apoio ajuda a criar um mundo de Metin2 cada vez mais vivo: tes
 
 ## 🌟 O que os bots sabem fazer
 
-- ⚔️ **Combate como os jogadores**: todas as classes e caminhos (Guerreiro, Sura, Ninja, Xamã), combos, rotações de habilidades, buffs, arqueiros com flechas e pedras Metin partidas do cavalo de batalha.
-- 🗺️ **Três reinos e o mundo inteiro**: Shinsoo, Chunjo e Jinno com as suas próprias aldeias, o Vale dos Orcs, o Deserto de Yongbi, o Monte Sohan, o Templo de Hwang, a Terra do Fogo (Doyyumhwan), as florestas e as Masmorras dos Macacos e das Aranhas. Os bots escolhem o mapa e o local de acordo com o seu nível e calculam as rotas sobre a verdadeira grelha de colisões do mapa.
-- 🧠 **Personalidades**: o sistema de personalidades de Iwakura, com estados de espírito. Os bots podem ser Grinders, Conquistadores, Apostadores, Perfeccionistas, Comerciantes, companheiros e mercenários, e de vez em quando aparece uma personalidade rara.
+- ⚔️ **Combate como os jogadores**: todas as classes e caminhos (Guerreiro, Sura, Ninja, Xamã), combos, rotações de habilidades, buffs, arqueiros com flechas e pedras Metin partidas do cavalo de batalha. Os bots também fazem combates de treino entre si nas aldeias do seu reino.
+- 🗺️ **Três reinos e o mundo inteiro**: Shinsoo, Chunjo e Jinno com as suas próprias aldeias, o Vale dos Orcs, o Deserto de Yongbi, o Monte Sohan, o Templo de Hwang, a Terra do Fogo (Doyyumhwan), as florestas, as Masmorras dos Macacos e das Aranhas e as Grutas do Exílio. Os bots escolhem o mapa e o local de acordo com o seu nível e calculam as rotas sobre a verdadeira grelha de colisões do mapa.
+- 🧠 **Personalidades**: o sistema de personalidades de Iwakura, com estados de espírito. Os bots podem ser Grinders, Conquistadores, Apostadores, Perfeccionistas, Comerciantes, companheiros, mercenários ou droppers de pedras Metin, e de vez em quando aparece uma personalidade rara.
 - 🛡️ **Guildas, guerras e raids**: os bots fundam guildas de acordo com a sua força, travam guerras de guilda por rondas no mapa da guilda (também contra guildas de jogadores), partem com a guilda inteira para a Torre dos Demónios, derrotam juntos os bosses do mundo e descem às Catacumbas do Diabo atrás de Azrael.
-- 🎉 **Eventos**: o Pirata Tanaka e a chuva de Metins de Zuo, com anúncios e recompensas, e os bots vão sozinhos para lá combater.
-- 🏪 **Mercado dos bots**: verdadeiras lojas offline nas bancas das aldeias, preços da tabela de preços de Iwakura com inflação, ajustados pela procura, e compras entre bots. O **Dom Towarowy** (no cliente português “Feira da ladra”) mostra numa só janela as ofertas de todas as lojas e, quando pões um item à venda, sugere o preço dos bots (com a opção “Auto cena” — preço automático). No jogo há também uma **ItemShop** para Moedas do Dragão, que caem das pedras Metin e dos bosses.
-- 🔨 **Desenvolvimento da personagem**: o Ferreiro e os pergaminhos, bónus, pedras espirituais, livros de habilidade e Pedras de alma, as missões do Biólogo, o cavalo até ao cavalo de batalha, a pesca, a mineração e a herborística.
-- 💬 **Conversas**: os bots respondem a sussurros, negoceiam pelo chat (“Kupię…” — compro, “Sprzedam…” — vendo), o Xamã diz-te o que dão os seus buffs, e um bot chamado vem ter contigo.
-- 🤝 **Towarzysz (Companheiro)**: o teu parceiro permanente no grupo. Luta ao teu lado, dá-te buffs, negoceia contigo, e és tu quem define o seu equipamento e as suas habilidades. Também entra num grupo liderado por um amigo (“Grupa” — Grupo) e pode jogar sozinho quando não estás (“Gra beze mnie” — Joga sem mim).
-- 🎯 **Auto Łowy (Caça auto)**: caça automática para o jogador. Nas definições do mundo escolhes se é para todos ou se é comprada na ItemShop.
-- 🎛️ **Painéis e launcher**: dois painéis web com o mapa do mundo em tempo real, classificações, o equipamento dos bots, controlos deslizantes do comportamento da IA e eventos programados; um launcher com atualizações, cópia de segurança do mundo, nível de dificuldade, segundo canal, COOP (jogar com amigos no teu mundo, de graça) e servidor num VPS.
+- 🎉 **Eventos**: o Pirata Tanaka, a chuva de Metins de Zuo, os Baús Hexagonais das pedras Metin e o evento de Halloween “Noite da Lua Pálida”, todos iniciados a partir do painel. Os bots vão sozinhos para lá combater.
+- 🏰 **Masmorras e extras**: a Masmorra da Peste (níveis 45-120) e a Forja do Caçador com armas para o nível 50, ambas desligadas por predefinição e ativadas no painel, Beran-Setaou e a beta do Snakefield com o cavalo de assalto.
+- 🏪 **Mercado dos bots**: verdadeiras lojas offline nas bancas das aldeias, preços da tabela de preços de Iwakura com inflação, ajustados pela procura, e bots que compram nas bancas de todos os reinos. O **Dom Towarowy** (grandes armazéns; no cliente português “Feira da ladra”) mostra numa só janela as ofertas de todas as lojas, sugere um preço quando pões um item à venda (“Auto cena” — preço automático) e tem uma lista de desejos que te avisa quando alguém põe à venda o item que procuras. A **ItemShop**, paga com Moedas do Dragão que caem das pedras Metin e dos bosses, tem também a Roda da Sorte e leilões relâmpago.
+- 🔨 **Desenvolvimento da personagem**: o Ferreiro com “Melhorar até +N” e materiais tirados do armazém do colecionador, os pergaminhos, bónus, pedras espirituais, a Alquimia das Pedras do Dragão, livros de habilidade, o Combo até 30 pontos, Pedras de alma, as missões do Biólogo, quests, o cavalo até ao cavalo de batalha, a pesca, a mineração e a herborística.
+- 💬 **Conversas**: os bots respondem a sussurros, negoceiam pelo chat (“Kupię…” — compro, “Sprzedam…” — vendo), o Xamã diz-te o que dão os seus buffs, e um bot chamado vem ter contigo. Os bots escrevem na língua de quem lê: polaco, inglês, alemão, francês, português, romeno ou turco (inglês para qualquer outro cliente).
+- 🤝 **Towarzysz (Companheiro)**: o teu parceiro permanente no grupo. Luta ao teu lado, dá-te buffs, negoceia contigo, e és tu quem define o seu equipamento e as suas habilidades. Tem o seu próprio armazém e a sua própria Alquimia, pesca, entra num grupo liderado por um amigo (“Grupa” — Grupo) e pode ele próprio liderar um grupo. Quando não estás, joga sozinho (“Gra beze mnie” — Joga sem mim): lê livros, faz compras no mercado, melhora itens no Ferreiro, faz as missões do Biólogo e quests, e conta-te tudo quando voltas. Também o podes jogar como uma personagem normal.
+- 🎯 **Auto Łowy (Caça auto)**: caça automática para o jogador, com filtro de recolha e modo de pesca. Nas definições do mundo escolhes se é para todos ou se é comprada na ItemShop.
+- 🖥️ **O cliente do jogo**: nove idiomas (polaco, inglês, alemão, francês, espanhol, italiano, português, romeno e turco), uma Wiki no jogo com drops, baús e guias, a janela Comunidade, uma janela de missões ao estilo GF e marcadores [AUTO]/[AFK] por cima dos jogadores.
+- 🎛️ **Painéis e launcher**: dois painéis web com o mapa do mundo em tempo real, classificações, o equipamento dos bots, controlos deslizantes do comportamento da IA, eventos programados, tempos de respawn dos bosses e um editor da base de dados; um launcher com atualizações, cópia de segurança do mundo, nível de dificuldade, canais extra, COOP (jogar com amigos no teu mundo, de graça) e servidor num VPS.
 - 💾 **Mundo persistente**: cada bot tem a sua própria conta e personagem na base de dados MariaDB, por isso o nível, os itens e o yang mantêm-se depois de um reinício.
+
+## 🆕 Novidades recentes (versões 2.2.140–2.2.146)
+
+- O **Towarzysz** evolui sozinho enquanto não estás, pode liderar um grupo e pesca de uma forma totalmente nova, com iscos e um resumo da pescaria.
+- O **Combo** tem 30 pontos, e os seus três livros caem dos monstros.
+- O **Dom Towarowy** tem uma lista de desejos, e os novos pergaminhos, materiais de melhoria e livros nas bancas dos bots esperam primeiro pelos jogadores.
+- **O Ferreiro** melhora automaticamente até ao + que escolheres; a janela Comunidade, a janela de missões e os guias de herborística na Wiki também são novos.
+- **Os bots** fazem combates de treino nas aldeias, partem pedras Metin como droppers, escolhem com mais critério onde combater e comportam-se de forma mais justa ao lado dos jogadores.
+- A lista completa de alterações está em [CHANGELOG.md](CHANGELOG.md).
 
 ## ⌨️ Atalhos no jogo
 
@@ -68,6 +79,8 @@ Qualquer forma de apoio ajuda a criar um mundo de Metin2 cada vez mais vivo: tes
 |---|---|
 | `P` | janela do Towarzysz (Companheiro) |
 | `K` | Caça auto |
+| `H` | ajuda com a lista de teclas e comandos |
+| `X` | janela dos canais (`X` + `1`–`4` leva-te diretamente para CH1–CH4) |
 | `` ` `` (til) | apanhar todos os itens por perto |
 | `F5` | pesquisa de itens nas lojas offline |
 | `F9` | painel de GM (apenas personagens GM) |
@@ -125,13 +138,16 @@ Se és titular de direitos (Ymir Interactive, Webzen, Gameforge, o autor de um p
 - **AzzlackSyndicate**: autor da base original do port para Linux, dos instaladores e do painel sobre os quais o projeto nasceu (licença MIT, ver [NOTICE.md](NOTICE.md)).
 - **Iwakura**: o sistema de personalidades dos bots, a tabela de preços, os níveis (tiers) dos itens, os nomes das lojas e das guildas, os nomes dos bots e os Community Patches.
 - **seban latino**: o Metin2 Singleplayer Panel, o segundo painel da instalação, com mapa em tempo real, perfis, classificações e economia.
-- **ĹŌŞƬĒĶ**: o ecrã de início de sessão e o Discord Rich Presence, o pacote de idioma, as conversas com os bots por sussurros e a linha da personalidade por cima do bot.
-- **Colide**: a janela da Caça auto.
-- **OskarPWA**: a janela do armazém do bot, os ícones das habilidades e o painel de GM no F9.
-- **Tyrion**: a pesquisa de um item concreto nas lojas offline.
-- **Uxìĕ [DSO]**: o Dom Towarowy e a Capa da bravura, que atrai os monstros de todo o ecrã.
+- **ĹŌŞƬĒĶ**: o ecrã de início de sessão e o Discord Rich Presence, o pacote de idioma, as conversas com os bots por sussurros, a linha da personalidade por cima do bot e o disco da Roda da Sorte.
+- **Colide**: a janela da Caça auto, a janela Comunidade, o armazém, o plano offline e a pesca do companheiro, e os gráficos dos marcadores [AUTO]/[AFK].
+- **OskarPWA**: a janela do armazém do bot, os ícones das habilidades e a primeira versão do painel de GM no F9.
+- **Tyrion**: a pesquisa de um item concreto nas lojas offline, o evento de Halloween e as traduções para alemão, francês, português e romeno.
+- **Uxìĕ [DSO]**: o Dom Towarowy, a Capa da bravura, que atrai os monstros de todo o ecrã, e o painel lateral do inventário.
 - **Gibon**: a pré-visualização do conteúdo dos baús e do drop dos monstros.
-- **Kiciamol**: a vida do alvo na barra, também a de um jogador em combate.
+- **Kiciamol**: a vida do alvo na barra (também a de um jogador em combate), o painel de GM no F9, a Wiki no jogo com guias, a Roda da Sorte, os Baús Hexagonais, o Combo até 30 pontos e a beta do Snakefield.
+- **NerrVoVy**: a Masmorra da Peste, a Forja do Caçador, a janela de missões ao estilo GF, os leilões relâmpago da ItemShop, a pré-visualização dos bónus do alvo e as bandeiras dos reinos no chat.
+- **Said (saido_0)**: a tradução turca e o Caminho do Herbalista.
+- **blasty**: o alternador de bónus.
 - **Piciu713**: a probabilidade de melhoria na janela do Ferreiro.
 - **Kenny, Pabloo, Mur4s**: correções na recolha de itens em grupo, nas tarefas dos bots no grupo de um jogador, na missão dos ursos e no Anel de teletransporte.
 - [DadsMmoLab/dads-mmo-lab](https://github.com/DadsMmoLab/dads-mmo-lab): inspiração para a investigação sobre agentes autónomos em jogos MMO.
