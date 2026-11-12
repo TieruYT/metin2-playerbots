@@ -17,6 +17,19 @@ every version here.
 
 ---
 
+## 2.2.147 (2026-11-12)
+
+Auto Łowy z regeneracją HP i lepszym omijaniem przeszkód, poprawki ze zgłoszeń i nowy plik gry.
+
+- **Auto Łowy:** przerwa na regenerację HP z własnymi progami i opcjonalną ucieczką, odejście od miejsca wskrzeszenia, pewniejsze dojście do potwora, łupu i punktu powrotu; przejścia nie zabierają już postaci na inną mapę w trakcie łowów (Colide).
+- **Gra:** efekty i przedmioty czasowe trwają tyle, ile powinny, także na obciążonym serwerze; premium z ItemShopu i z vouchera działa od razu; Zwój Boga Smoków wytwarza się z trzech Zwojów Błogosławieństwa, bez Magicznego Metalu (Kiciamol); poprawiona Wymiana Alchemika w gildii; wojna dwóch gildii graczy toczy się na CH1.
+- **Nowe, domyślnie wyłączone:** wymiana nadmiarowych przedmiotów na Pelerynę Męstwa u Handlarki oraz Ranking 24h (NerrVoVy); włącza się je w panelu.
+- **Boty:** nie krążą już między Pustynią a Doliną Orków, mówią, co je trzyma w pierwszej wiosce, robią zadanie Biologa na 85 poziomie, a Zwój Boga Smoków na ich ladach nie jest tańszy od Zwoju Błogosławieństwa (blipu, Liqu).
+- **Klient:** nazwa mapy znajomego w oknie Społeczności, podpowiedź Kombinacji z tym, co dają punkty, filtr Szamana w Wiki (Lam), przyciski skali interfejsu poza trybem okna, podgląd celu z przycisku (NerrVoVy); nowy plik gry (EXE).
+- **Języki:** tłumaczenia społeczności dla niemieckiego, francuskiego, portugalskiego, rumuńskiego, tureckiego, hiszpańskiego i włoskiego: klient, rozmowy botów i panel klasyczny; klient po hiszpańsku i włosku jest teraz w większości przetłumaczony (lastrevolution0410, CHRISproR3D, iahgod, gizmo7489-sudo).
+- **Panel:** suwak celu wyposażenia botów (Liqu), jaśniejsza karta Kuźni Łowcy (keiibo), teksty panelu klasycznego w paczce tłumacza; panel wystawiony poza własny komputer zawsze wymaga hasła (dziękujemy Onurcanowi za zgłoszenie).
+- **Launcher:** nieudane pobieranie aktualizacji jest ponawiane i opisane jako problem z pobieraniem, a paczka logów z VPS zawiera wpisy rynku.
+
 ## 2.2.146 (2026-11-08)
 
 Combo do 30 punktów, przewodniki zielarstwa w Wiki, pierwszeństwo graczy na rynku i nowy plik gry.

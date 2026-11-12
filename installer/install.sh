@@ -2175,9 +2175,7 @@ setup_tls() {
         warn "The panel is still reachable -- see the summary."
         DOMAIN=""
         # Re-publish the panel, since nothing will be proxying to it.
-        env_set "$INSTALL_DIR/.env" M2_PANEL_PUBLIC_PORT "$PANEL_PORT"
-        env_set "$INSTALL_DIR/.env" M2_PANEL_BIND_ADDRESS "0.0.0.0"
-        PANEL_BIND="0.0.0.0"
+        _panel_without_proxy
         dc up -d panel >/dev/null 2>&1 || true
         return 0
     fi
@@ -2289,13 +2287,25 @@ NGX
     good "https://$DOMAIN is serving the admin panel."
 }
 
+# The panel published on the machine's own address, with nothing in front of
+# it. Both halves, always together: the address, and the word that a proxy is
+# to be believed. write_env sets M2_TRUST_PROXY for the domain it was given,
+# and left alone it told the panel to take X-Forwarded-For from every visitor
+# of a port that is now open to all of them - which resets every per-address
+# limit the panel has, the passphrase lockout first (Onurcan's report,
+# 11 November).
+_panel_without_proxy() {
+    PANEL_BIND="0.0.0.0"
+    env_set "$INSTALL_DIR/.env" M2_PANEL_PUBLIC_PORT "$PANEL_PORT"
+    env_set "$INSTALL_DIR/.env" M2_PANEL_BIND_ADDRESS "0.0.0.0"
+    env_set "$INSTALL_DIR/.env" M2_TRUST_PROXY "0"
+}
+
 # Called whenever HTTPS could not be set up. The panel must stay reachable
 # somehow, so it goes back to being published on the machine's own address.
 _tls_fallback() {
     DOMAIN=""
-    PANEL_BIND="0.0.0.0"
-    env_set "$INSTALL_DIR/.env" M2_PANEL_PUBLIC_PORT "$PANEL_PORT"
-    env_set "$INSTALL_DIR/.env" M2_PANEL_BIND_ADDRESS "0.0.0.0"
+    _panel_without_proxy
     dc up -d panel >/dev/null 2>&1 || true
     # The firewall was opened for 80 and 443 on the assumption that nginx would
     # be answering on them. It is not, and the panel is now on its own port
