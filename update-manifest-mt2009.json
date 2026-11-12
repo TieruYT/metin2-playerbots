@@ -1,18 +1,18 @@
 {
   "schema": 1,
   "channel": "stable",
-  "statusMessage": "2.2.146 / klient 2.0.147: Combo do 30 punktów, przewodniki zielarstwa w Wiki, pierwszeństwo graczy na rynku i nowy plik gry. Zamknij grę, zaktualizuj serwer i launcher, uruchom launcher ponownie, następnie zaktualizuj klienta.",
+  "statusMessage": "2.2.147 / klient 2.0.148: Auto Łowy z regeneracją HP i lepszym omijaniem przeszkód, poprawki ze zgłoszeń i nowy plik gry. Zamknij grę, zaktualizuj serwer i launcher, uruchom launcher ponownie, następnie zaktualizuj klienta.",
   "server": {
-    "version": "2.2.146",
-    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.146/metin2-server-protected-migration-2.2.146.zip",
-    "sha256": "AC84255DA4BCB4A74179C02441CD66227B5BE04F45634FE40C7CE6A3FA2AA0E5",
-    "size": 173404401
+    "version": "2.2.147",
+    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.147/metin2-server-protected-migration-2.2.147.zip",
+    "sha256": "CE751FB90DF40343F1EF532814F4FCC160432DD2DF7C24B4CB49F6552A427A8D",
+    "size": 176607964
   },
   "serverProtected": {
-    "version": "2.2.146",
-    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.146/metin2-server-protected-update-2.2.146.zip",
-    "sha256": "CBD3202AEEBB75B19CAF19DAC22829B16DB68094BE61ABE2FE1AFA3FC9D7CC79",
-    "size": 163447921
+    "version": "2.2.147",
+    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.147/metin2-server-protected-update-2.2.147.zip",
+    "sha256": "DF68B08C2847F4657985C6F487E8FBA2921F9140CE0866249362BB3FE1EA0563",
+    "size": 166651484
   },
   "protectedFrom": "2.2.39",
   "support": {
@@ -21,10 +21,10 @@
     "reportUrl": "https://script.google.com/macros/s/AKfycbweM8tWcvm59Va8BJxnS1z0o9L2GgtL0NXj6Yu_olAvJ7sPjnpckyGY6JB5fXH3lJYisA/exec?k=m2-7f3k9q"
   },
   "client": {
-    "version": "2.0.147",
-    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.146/metin2-client-update-2.0.147.zip",
-    "sha256": "50B39880B53602B8225C5303BC260FD84D9CA150DBB96ED2AF07FC0B6929E2AA",
-    "size": 167475459,
+    "version": "2.0.148",
+    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.147/metin2-client-update-2.0.148.zip",
+    "sha256": "10AB5AA346653B08D3B3BA7EDD8F369B1E09074F8542AAAAB68EA6826EC1D25F",
+    "size": 168641891,
     "requiresClientExe": true,
     "architecture": "x64",
     "nativeRuntime": [
@@ -110,7 +110,7 @@
       }
     ],
     "supplement": {
-      "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.146/metin2-client-update-2.0.147-supplement.zip",
+      "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.147/metin2-client-update-2.0.148-supplement.zip",
       "sha256": "325F053D8BECF30070E4D1BEBD161408A7770E7B1E11D1CFBE008F315CB13D51",
       "size": 4060,
       "files": [
@@ -121,9 +121,9 @@
     }
   },
   "clientExe": {
-    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.146/metin2client.exe",
-    "sha256": "C72FE67FF37A524859C3960FC848DA9ED29EF0F6FB3358E9485FCD58685DEE26",
-    "size": 10896384,
+    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.147/metin2client.exe",
+    "sha256": "81479B8949AFE0F81DD1BA08472B9F68D77997F6872D15EF568704254DC2BDDE",
+    "size": 11024896,
     "replaces": [
       "8263F81BFACDFA4A664C1F2A8CE846AEE14F19E584DB40A43F3184FEF1A59531",
       "752623560AB54E2F3F84FF9ADB8961D73E2E289634075118D3FBEA984CFCEFB1",
@@ -166,9 +166,10 @@
       "D07CD4AAF6857BC3DDD9199B6AE590C8268C4F9CB36DA939525CF8F900F48721",
       "AA2CA4D6DF5A321BC1AC7D0F6AE4C4783F07194B7A0D7ACD6BDE2612AD7DFA4A",
       "7EFB6CBD6B5EE69756C969736CF3F2D141789D2BA911CDEF571AC2DEC8348700",
-      "48EA2F91981CC1A4E01126A3E8C98648458150C16B495413C99DB614E718B5E4"
+      "48EA2F91981CC1A4E01126A3E8C98648458150C16B495413C99DB614E718B5E4",
+      "C72FE67FF37A524859C3960FC848DA9ED29EF0F6FB3358E9485FCD58685DEE26"
     ]
   },
-  "statusMessageEn": "2.2.146 / client 2.0.147: Combo up to 30 points, herbalism guides in the Wiki, players first on the market and a new game file. Close the game, update the server and launcher, restart the launcher, then update the client.",
-  "publishedAt": "2026-11-08T19:17:22Z"
+  "statusMessageEn": "2.2.147 / client 2.0.148: Auto Hunt with HP recovery and better obstacle avoidance, fixes from your reports and a new game file. Close the game, update the server and launcher, restart the launcher, then update the client.",
+  "publishedAt": "2026-11-12T22:22:39Z"
 }
