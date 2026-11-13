@@ -17,6 +17,17 @@ every version here.
 
 ---
 
+## 2.2.148 (2026-11-13)
+
+Co wypada z łowienia, ustawiasz teraz sam w panelu; do tego przepis Kowala na Magiczny Metal i boty, które znajdują zioła Biologa.
+
+- **Łowienie:** nowa strona w panelu klasycznym (karta na stronie Stawek) pokazuje wszystko, co może wypaść podczas łowienia, z szansami dla wybranej wędki. Każdą pozycję można wyłączyć kliknięciem w ikonę albo zmienić jej szansę; zmiana działa od razu, bez restartu, a „Przywróć domyślne” cofa wszystko. Ustawienia obowiązują także boty i Towarzysza. Dopóki niczego nie zmienisz, łowienie działa jak dotąd (blipu).
+- **Wiki:** przy przedmiotach, które daje łowienie, Wiki w grze podaje łowienie jako źródło razem z potrzebną wędką (blipu).
+- **Kowal:** Magiczny Metal można teraz wytworzyć u Kowala z dwóch Zwojów Boga Smoków za 500 000 yang.
+- **Boty:** boty i samodzielni Towarzysze szukają ziół Biologa (Grzyb Tue, Bez) tam, gdzie naprawdę pojawiają się potwory, z których one wypadają, zamiast krążyć po pierwszej wiosce (gregoszky).
+- **Panel:** przycisk Rankingu 24h na stronie Stawek.
+- **Poprawka:** zapis danych postaci po zakończonej wojnie gildii.
+
 ## 2.2.147 (2026-11-12)
 
 Auto Łowy z regeneracją HP i lepszym omijaniem przeszkód, poprawki ze zgłoszeń i nowy plik gry.
