@@ -17,6 +17,17 @@ every version here.
 
 ---
 
+## 2.2.149 (2026-11-13)
+
+Poprawki po 2.2.148: cena Magicznego Metalu u botów, zioła w Domu Towarowym, podgląd dropu bossów i naprawy ze zgłoszeń.
+
+- **Boty:** Magiczny Metal wyceniają teraz na 3 000 000 yang i nie sprzedają go poniżej 2 500 000, także po przecenach.
+- **Dom Towarowy:** zioła zielarza są w zakładce „Inne”, więc „Ulepszacze” znów pokazują ulepszacze (prodnathin).
+- **Podgląd dropu bossów:** pokazuje także drugą formę bossa, pomija pozycje z szansą 0% i oznacza nieznany przedmiot znakiem „?”; uzupełnione brakujące przedmioty w dropie jednego z bossów.
+- **Wstrzymanie botów:** opcja „Wstrzymaj boty po starcie” działa także po wyzerowaniu świata, który miał już boty wpuszczone z panelu.
+- **Języki:** opis Magicznego Metalu z przepisem Kowala także po niemiecku, hiszpańsku, francusku, włosku, portugalsku, rumuńsku i turecku; karty na stronie zabawy w panelu są w języku czytelnika; linie botów nie pokazują się już podwójnie w kliencie włoskim; hiszpańskie linie czatu botów wracają do słów tłumacza.
+- **Budowa serwera:** nie zatrzymuje się już na własnych plikach zadań operatora, tylko ostrzega i idzie dalej (NerrVoVy).
+
 ## 2.2.148 (2026-11-13)
 
 Co wypada z łowienia, ustawiasz teraz sam w panelu; do tego przepis Kowala na Magiczny Metal i boty, które znajdują zioła Biologa.
