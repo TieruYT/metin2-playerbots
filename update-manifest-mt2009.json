@@ -1,18 +1,18 @@
 {
   "schema": 1,
   "channel": "stable",
-  "statusMessage": "2.2.148 / klient 2.0.149: pula łowienia ustawiana w panelu, łowienie jako źródło w Wiki, Magiczny Metal u Kowala i boty, które znajdują zioła Biologa. Zamknij grę, zaktualizuj serwer i launcher, uruchom launcher ponownie, następnie zaktualizuj klienta.",
+  "statusMessage": "2.2.149 / klient 2.0.150: poprawki po 2.2.148 - cena Magicznego Metalu u botów, zioła w Domu Towarowym, podgląd dropu bossów i naprawy ze zgłoszeń. Zamknij grę, zaktualizuj serwer i launcher, uruchom launcher ponownie, następnie zaktualizuj klienta.",
   "server": {
-    "version": "2.2.148",
-    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.148/metin2-server-protected-migration-2.2.148.zip",
-    "sha256": "57EC82E6906E5D48684E36F6EBF51E7D958ED084559DD559DF9512E3DBEB9467",
-    "size": 176635230
+    "version": "2.2.149",
+    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.149/metin2-server-protected-migration-2.2.149.zip",
+    "sha256": "5F6DFC4D844A3145EF80E8A125FFF85A7DE8E15C598CC35BE5666D016E1EA989",
+    "size": 176639814
   },
   "serverProtected": {
-    "version": "2.2.148",
-    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.148/metin2-server-protected-update-2.2.148.zip",
-    "sha256": "AF9CAA97905C488D3DF6CA3981856E11C1C34657BB49580BA8CA557499762402",
-    "size": 166678750
+    "version": "2.2.149",
+    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.149/metin2-server-protected-update-2.2.149.zip",
+    "sha256": "BFF43FEDC142E951512C76111D3D169E09E8796B66A48BCB1D090A2BDE3B05AB",
+    "size": 166683334
   },
   "protectedFrom": "2.2.39",
   "support": {
@@ -21,10 +21,10 @@
     "reportUrl": "https://script.google.com/macros/s/AKfycbweM8tWcvm59Va8BJxnS1z0o9L2GgtL0NXj6Yu_olAvJ7sPjnpckyGY6JB5fXH3lJYisA/exec?k=m2-7f3k9q"
   },
   "client": {
-    "version": "2.0.149",
-    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.148/metin2-client-update-2.0.149.zip",
-    "sha256": "5DCCF12F0C391DA3E9A3D8FB344C0E7A61CF4DA424784740F34918B0B77A127C",
-    "size": 168645754,
+    "version": "2.0.150",
+    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.149/metin2-client-update-2.0.150.zip",
+    "sha256": "FB01CB62585F3BE57A8AED43323E80594ECF350E5A317B04359CDF34FD58455F",
+    "size": 168648278,
     "requiresClientExe": true,
     "architecture": "x64",
     "nativeRuntime": [
@@ -110,7 +110,7 @@
       }
     ],
     "supplement": {
-      "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.148/metin2-client-update-2.0.149-supplement.zip",
+      "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.149/metin2-client-update-2.0.150-supplement.zip",
       "sha256": "325F053D8BECF30070E4D1BEBD161408A7770E7B1E11D1CFBE008F315CB13D51",
       "size": 4060,
       "files": [
@@ -170,6 +170,6 @@
       "C72FE67FF37A524859C3960FC848DA9ED29EF0F6FB3358E9485FCD58685DEE26"
     ]
   },
-  "statusMessageEn": "2.2.148 / client 2.0.149: the fishing pool set in the panel, fishing as a source in the Wiki, Magic Iron Ore at the Blacksmith and bots that find the Biologist's herbs. Close the game, update the server and launcher, restart the launcher, then update the client.",
-  "publishedAt": "2026-11-13T17:37:01Z"
+  "statusMessageEn": "2.2.149 / client 2.0.150: fixes after 2.2.148 - the bots' price of Magic Iron Ore, herbs in the Flea Market, the boss drop preview and repairs from your reports. Close the game, update the server and launcher, restart the launcher, then update the client.",
+  "publishedAt": "2026-11-13T21:33:30Z"
 }
