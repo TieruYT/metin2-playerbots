@@ -1,18 +1,18 @@
 {
   "schema": 1,
   "channel": "stable",
-  "statusMessage": "2.2.149 / klient 2.0.150: poprawki po 2.2.148 - cena Magicznego Metalu u botów, zioła w Domu Towarowym, podgląd dropu bossów i naprawy ze zgłoszeń. Zamknij grę, zaktualizuj serwer i launcher, uruchom launcher ponownie, następnie zaktualizuj klienta.",
+  "statusMessage": "2.2.150 / klient 2.0.151: płynniejszy serwer przy dużym rynku, opcja „Kantor botów” w launcherze i panelu, boty docierają do bossów jak gracz. Zamknij grę, zaktualizuj serwer i launcher, uruchom launcher ponownie, następnie zaktualizuj klienta.",
   "server": {
-    "version": "2.2.149",
-    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.149/metin2-server-protected-migration-2.2.149.zip",
-    "sha256": "5F6DFC4D844A3145EF80E8A125FFF85A7DE8E15C598CC35BE5666D016E1EA989",
-    "size": 176639814
+    "version": "2.2.150",
+    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.150/metin2-server-protected-migration-2.2.150.zip",
+    "sha256": "584BBB8BCC22356D77D01CD904CC3264053D5F84878D8F3F48839362EC19B32D",
+    "size": 176690827
   },
   "serverProtected": {
-    "version": "2.2.149",
-    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.149/metin2-server-protected-update-2.2.149.zip",
-    "sha256": "BFF43FEDC142E951512C76111D3D169E09E8796B66A48BCB1D090A2BDE3B05AB",
-    "size": 166683334
+    "version": "2.2.150",
+    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.150/metin2-server-protected-update-2.2.150.zip",
+    "sha256": "FAAF1E32248C7E4E77285B4471136CA424B34CE7855C606607EEC6C24A40FECD",
+    "size": 166734347
   },
   "protectedFrom": "2.2.39",
   "support": {
@@ -21,10 +21,10 @@
     "reportUrl": "https://script.google.com/macros/s/AKfycbweM8tWcvm59Va8BJxnS1z0o9L2GgtL0NXj6Yu_olAvJ7sPjnpckyGY6JB5fXH3lJYisA/exec?k=m2-7f3k9q"
   },
   "client": {
-    "version": "2.0.150",
-    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.149/metin2-client-update-2.0.150.zip",
-    "sha256": "FB01CB62585F3BE57A8AED43323E80594ECF350E5A317B04359CDF34FD58455F",
-    "size": 168648278,
+    "version": "2.0.151",
+    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.150/metin2-client-update-2.0.151.zip",
+    "sha256": "45C3AA035C86ADD77FA3B6531C4FB64E99569D4F0B031246404EF56552E642EB",
+    "size": 168648888,
     "requiresClientExe": true,
     "architecture": "x64",
     "nativeRuntime": [
@@ -110,7 +110,7 @@
       }
     ],
     "supplement": {
-      "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.149/metin2-client-update-2.0.150-supplement.zip",
+      "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.150/metin2-client-update-2.0.151-supplement.zip",
       "sha256": "325F053D8BECF30070E4D1BEBD161408A7770E7B1E11D1CFBE008F315CB13D51",
       "size": 4060,
       "files": [
@@ -170,6 +170,6 @@
       "C72FE67FF37A524859C3960FC848DA9ED29EF0F6FB3358E9485FCD58685DEE26"
     ]
   },
-  "statusMessageEn": "2.2.149 / client 2.0.150: fixes after 2.2.148 - the bots' price of Magic Iron Ore, herbs in the Flea Market, the boss drop preview and repairs from your reports. Close the game, update the server and launcher, restart the launcher, then update the client.",
-  "publishedAt": "2026-11-13T21:33:30Z"
+  "statusMessageEn": "2.2.150 / client 2.0.151: a smoother server with a big market, a \"Kantor of the bots\" option in the launcher and the panel, bots reach bosses like a player. Close the game, update the server and launcher, restart the launcher, then update the client.",
+  "publishedAt": "2026-11-14T00:51:35Z"
 }
