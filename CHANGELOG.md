@@ -17,6 +17,22 @@ every version here.
 
 ---
 
+## 2.2.151 (2026-11-14)
+
+Czaszka bossa na minimapie, napełnianie pustego eliksiru, obrączka ślubna, sprzątanie dysku przez launcher, teksty serwera w kolejnych językach i nowy plik gry.
+
+- **Minimapa:** boss i król są na minimapie małą czaszką zamiast jednej z czerwonych kropek; można to wyłączyć w opcjach systemu (archonek, Lam, Liqu).
+- **Klient:** stroje i modele, które rysowały się na biało, mają znów swoje tekstury; nowy plik gry (EXE), który launcher podmieni sam.
+- **Auto Łowy:** po polimorfii postać atakuje w tłumie bez zacinania się i lepiej ocenia zasięg, a bez celu odpowiada temu, kto ją atakuje (Colide).
+- **Eliksiry automatyczne:** pusty Eliksir Słońca lub Księżyca otwiera okno napełniania; wkłada się do niego zwykłe mikstury (czerwone do Słońca, niebieskie do Księżyca), a okno pokazuje, ile dodadzą.
+- **Obrączka ślubna:** po ślubie przenosi do małżonka, także na innym kanale, bez wylogowania; gdy nie może, mówi dlaczego (Szymon).
+- **Dom Towarowy:** filtr bonusów ma wszystkie bonusy, jakie może mieć przedmiot, w tym odbicie strzał, także na liście bonusów w F9 (Musk); trafienie z listy życzeń przychodzi jako prywatna wiadomość, tak jak sprzedaż z własnego sklepu (Wolfek).
+- **Języki:** zadania z paczki, linie serwera, nazwy przedmiotów i potworów oraz ogłoszenia są po niemiecku, francusku, portugalsku, rumuńsku, hiszpańsku i włosku; opisy umiejętności w każdym języku zgadzają się z wartościami tego świata, a tłumaczenia społeczności nie giną przy kolejnych aktualizacjach.
+- **Boty:** znów zbierają się na bossów Lochów Małp tak jak przed 2.2.150.
+- **Loch Zarazy:** operator może wyłączyć sprzedaż przepustek u Strażnika, a edytor dropu w panelu znajduje potwory i skrzynię lochu (blipu).
+- **Towarzysz:** postać grana jako Towarzysz nie może założyć własnego Towarzysza; w torbie Towarzysza jeden przycisk zdejmuje status prezentu ze wszystkich przedmiotów naraz, a nowa opcja „Oznaczaj prezenty” decyduje, czy to, co mu dajesz, przychodzi jako prezent (Brzydal).
+- **Launcher:** po zatrzymaniu serwera i po aktualizacji sam usuwa stare kopie zapasowe, logi i obrazy tej instalacji (zostają najnowsze i te z ostatniego tygodnia, kopii zrobionych ręcznie nie rusza); nowy przycisk „Miejsce na dysku” pokazuje, co zajmuje miejsce (Edi).
+
 ## 2.2.150 (2026-11-14)
 
 Płynniejszy serwer przy dużym rynku, nowa opcja świata „Kantor botów” i boty, które docierają do bossów jak gracz.
