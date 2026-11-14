@@ -17,6 +17,16 @@ every version here.
 
 ---
 
+## 2.2.150 (2026-11-14)
+
+Płynniejszy serwer przy dużym rynku, nowa opcja świata „Kantor botów” i boty, które docierają do bossów jak gracz.
+
+- **Wydajność:** praca rynku botów (spis podaży, księga rynku i przegląd lad przez kupujące boty) jest rozłożona na krótkie kawałki zamiast jednego długiego kroku, więc serwer z dużym rynkiem i wieloma sklepami graczy powinien działać płynniej.
+- **Kantor botów:** nowa opcja świata w oknie botów launchera (z opisem pod „?”) i na stronie AI panelu klasycznego. Kantor to wymiana tylko dla botów: nadwyżka ulepszaczy na kamienie bonusów, smażone ryby na Zwój Błogosławieństwa. Po wyłączeniu boty zdobywają je tak jak gracz: z dropu, ze skrzyń, z rynku i z ItemShopu. Domyślnie włączony, czyli bez zmian; przełączenie działa bez restartu.
+- **Boty i bossowie:** boty nie są już przenoszone pod bossa. Dowiadują się o nim z widzenia i z wieści na czacie, a na miejsce idą jak gracz: pieszo, bramami i Teleporterem za opłatą. To próba zbliżenia botów do gracza; część bossów może być ubijana rzadziej. Operator może wrócić do dawnego zachowania przełącznikiem na stronie Stawek w panelu klasycznym (blipu).
+- **Podgląd dropu i Wiki:** przy bossie z drugą formą podgląd mówi wprost, że pokazuje drop drugiej formy, a Wiki w grze podaje drugą formę jako źródło przedmiotów.
+- **Budowa serwera:** kolejny krok budowy ostrzega zamiast zatrzymywać ją na zmienionym pliku operatora.
+
 ## 2.2.149 (2026-11-13)
 
 Poprawki po 2.2.148: cena Magicznego Metalu u botów, zioła w Domu Towarowym, podgląd dropu bossów i naprawy ze zgłoszeń.
