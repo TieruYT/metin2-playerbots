@@ -1,18 +1,18 @@
 {
   "schema": 1,
   "channel": "stable",
-  "statusMessage": "2.2.150 / klient 2.0.151: płynniejszy serwer przy dużym rynku, opcja „Kantor botów” w launcherze i panelu, boty docierają do bossów jak gracz. Zamknij grę, zaktualizuj serwer i launcher, uruchom launcher ponownie, następnie zaktualizuj klienta.",
+  "statusMessage": "2.2.151 / klient 2.0.152: czaszka bossa na minimapie, napełnianie pustego eliksiru, obrączka ślubna, sprzątanie dysku przez launcher i nowy plik gry. Zamknij grę, zaktualizuj serwer i launcher, uruchom launcher ponownie, następnie zaktualizuj klienta.",
   "server": {
-    "version": "2.2.150",
-    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.150/metin2-server-protected-migration-2.2.150.zip",
-    "sha256": "584BBB8BCC22356D77D01CD904CC3264053D5F84878D8F3F48839362EC19B32D",
-    "size": 176690827
+    "version": "2.2.151",
+    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.151/metin2-server-protected-migration-2.2.151.zip",
+    "sha256": "FEA3F78F77971D3EEC3F8B34DFDED2D273F72EFD4CBA59E105B2FB686081E1F4",
+    "size": 177614882
   },
   "serverProtected": {
-    "version": "2.2.150",
-    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.150/metin2-server-protected-update-2.2.150.zip",
-    "sha256": "FAAF1E32248C7E4E77285B4471136CA424B34CE7855C606607EEC6C24A40FECD",
-    "size": 166734347
+    "version": "2.2.151",
+    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.151/metin2-server-protected-update-2.2.151.zip",
+    "sha256": "F48C227C8081B43D438F2F088C5B27B2BC1E7982BEF7CE9F5792685EDD344F1C",
+    "size": 167658402
   },
   "protectedFrom": "2.2.39",
   "support": {
@@ -21,10 +21,10 @@
     "reportUrl": "https://script.google.com/macros/s/AKfycbweM8tWcvm59Va8BJxnS1z0o9L2GgtL0NXj6Yu_olAvJ7sPjnpckyGY6JB5fXH3lJYisA/exec?k=m2-7f3k9q"
   },
   "client": {
-    "version": "2.0.151",
-    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.150/metin2-client-update-2.0.151.zip",
-    "sha256": "45C3AA035C86ADD77FA3B6531C4FB64E99569D4F0B031246404EF56552E642EB",
-    "size": 168648888,
+    "version": "2.0.152",
+    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.151/metin2-client-update-2.0.152.zip",
+    "sha256": "836AA8EAAFBCCF629CB07EB887A0590EA64F9694CC1076D3F4EDA6A7AE83817F",
+    "size": 168653487,
     "requiresClientExe": true,
     "architecture": "x64",
     "nativeRuntime": [
@@ -110,7 +110,7 @@
       }
     ],
     "supplement": {
-      "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.150/metin2-client-update-2.0.151-supplement.zip",
+      "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.151/metin2-client-update-2.0.152-supplement.zip",
       "sha256": "325F053D8BECF30070E4D1BEBD161408A7770E7B1E11D1CFBE008F315CB13D51",
       "size": 4060,
       "files": [
@@ -121,9 +121,9 @@
     }
   },
   "clientExe": {
-    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.147/metin2client.exe",
-    "sha256": "81479B8949AFE0F81DD1BA08472B9F68D77997F6872D15EF568704254DC2BDDE",
-    "size": 11024896,
+    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.151/metin2client.exe",
+    "sha256": "60B2364E7D948DCA345F80A2DE7266A16B189107B277F4DF25957CFA986785F7",
+    "size": 11030016,
     "replaces": [
       "8263F81BFACDFA4A664C1F2A8CE846AEE14F19E584DB40A43F3184FEF1A59531",
       "752623560AB54E2F3F84FF9ADB8961D73E2E289634075118D3FBEA984CFCEFB1",
@@ -167,9 +167,10 @@
       "AA2CA4D6DF5A321BC1AC7D0F6AE4C4783F07194B7A0D7ACD6BDE2612AD7DFA4A",
       "7EFB6CBD6B5EE69756C969736CF3F2D141789D2BA911CDEF571AC2DEC8348700",
       "48EA2F91981CC1A4E01126A3E8C98648458150C16B495413C99DB614E718B5E4",
-      "C72FE67FF37A524859C3960FC848DA9ED29EF0F6FB3358E9485FCD58685DEE26"
+      "C72FE67FF37A524859C3960FC848DA9ED29EF0F6FB3358E9485FCD58685DEE26",
+      "81479B8949AFE0F81DD1BA08472B9F68D77997F6872D15EF568704254DC2BDDE"
     ]
   },
-  "statusMessageEn": "2.2.150 / client 2.0.151: a smoother server with a big market, a \"Kantor of the bots\" option in the launcher and the panel, bots reach bosses like a player. Close the game, update the server and launcher, restart the launcher, then update the client.",
-  "publishedAt": "2026-11-14T00:51:35Z"
+  "statusMessageEn": "2.2.151 / client 2.0.152: a boss skull on the minimap, refilling an empty elixir, the wedding ring, the launcher cleaning its disk and a new game file. Close the game, update the server and launcher, restart the launcher, then update the client.",
+  "publishedAt": "2026-11-14T22:03:00Z"
 }
