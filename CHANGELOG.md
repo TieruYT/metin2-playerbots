@@ -17,6 +17,16 @@ every version here.
 
 ---
 
+## 2.2.153 (2026-11-16)
+
+Boty otwierają swoje skrzynie i noszą sprzęt swojego poziomu, pojedynki botów nie trwają w nieskończoność, a pierwsza Skrzynia Ucznia znów daje Rękawicę Złodzieja.
+
+- **Skrzynie botów:** każdy bot otwiera każdą skrzynię, którą może otworzyć, zamiast trzymać ją w ekwipunku albo sprzedawać.
+- **Sprzęt botów:** bot, który ma yang, kupuje u handlarzy broń i zbroję swojego poziomu i ulepsza je co najmniej do +4; bez yang najpierw zarabia na polowaniu.
+- **Pojedynki i PvP botów:** boty każdej klasy od początku walki biją zwykłymi atakami i wplatają w nie umiejętności - koniec niekończących się walk na samych umiejętnościach; pojedynek, którego nikt nie może wygrać, kończy się sam, a ta sama para nie walczy znowu od razu.
+- **Skrzynia Ucznia:** pierwsza Skrzynia Ucznia nowej postaci daje 7 dni efektu Rękawicy Złodzieja (LowkeyLoki).
+- **Launcher:** błędny zapisany adres aktualizacji albo nieistniejący folder klienta nie blokuje już aktualizacji - launcher wraca do domyślnych, a w konfiguracji nie przyjmuje samej liczby (nocturn).
+
 ## 2.2.152 (2026-11-15)
 
 Reset botów bez utraty Twoich postaci, wspólne wyprawy botów do trudniejszych Lochów Małp, grupy botów, które trzymają się razem, i narzędzie „Kto bije postać”.
