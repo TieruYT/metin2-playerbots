@@ -1,18 +1,18 @@
 {
   "schema": 1,
   "channel": "stable",
-  "statusMessage": "2.2.151 / klient 2.0.152: czaszka bossa na minimapie, napełnianie pustego eliksiru, obrączka ślubna, sprzątanie dysku przez launcher i nowy plik gry. Zamknij grę, zaktualizuj serwer i launcher, uruchom launcher ponownie, następnie zaktualizuj klienta.",
+  "statusMessage": "2.2.152 / klient 2.0.153: reset botów bez utraty Twoich postaci, wyprawy botów do trudniejszych Lochów Małp, trwalsze grupy botów i narzędzie „Kto bije postać”. Zamknij grę, zaktualizuj serwer i launcher, uruchom launcher ponownie, następnie zaktualizuj klienta.",
   "server": {
-    "version": "2.2.151",
-    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.151/metin2-server-protected-migration-2.2.151.zip",
-    "sha256": "FEA3F78F77971D3EEC3F8B34DFDED2D273F72EFD4CBA59E105B2FB686081E1F4",
-    "size": 177614882
+    "version": "2.2.152",
+    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.152/metin2-server-protected-migration-2.2.152.zip",
+    "sha256": "BFB6EB9FE99803CDCC8251B923D39B867A232EA3C66CDF8D80CCE7F7CBD4A4D8",
+    "size": 177695561
   },
   "serverProtected": {
-    "version": "2.2.151",
-    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.151/metin2-server-protected-update-2.2.151.zip",
-    "sha256": "F48C227C8081B43D438F2F088C5B27B2BC1E7982BEF7CE9F5792685EDD344F1C",
-    "size": 167658402
+    "version": "2.2.152",
+    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.152/metin2-server-protected-update-2.2.152.zip",
+    "sha256": "4499555A461644397AACB97345EC73C7657424D84D1AB5C42C3E6534D7A96D6A",
+    "size": 167739081
   },
   "protectedFrom": "2.2.39",
   "support": {
@@ -21,10 +21,10 @@
     "reportUrl": "https://script.google.com/macros/s/AKfycbweM8tWcvm59Va8BJxnS1z0o9L2GgtL0NXj6Yu_olAvJ7sPjnpckyGY6JB5fXH3lJYisA/exec?k=m2-7f3k9q"
   },
   "client": {
-    "version": "2.0.152",
-    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.151/metin2-client-update-2.0.152.zip",
-    "sha256": "836AA8EAAFBCCF629CB07EB887A0590EA64F9694CC1076D3F4EDA6A7AE83817F",
-    "size": 168653487,
+    "version": "2.0.153",
+    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.152/metin2-client-update-2.0.153.zip",
+    "sha256": "53D8C90C3E809E9DE28611D94A763970E1EA7F34DF8A8921A93E2202A4A03432",
+    "size": 168653419,
     "requiresClientExe": true,
     "architecture": "x64",
     "nativeRuntime": [
@@ -110,7 +110,7 @@
       }
     ],
     "supplement": {
-      "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.151/metin2-client-update-2.0.152-supplement.zip",
+      "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.152/metin2-client-update-2.0.153-supplement.zip",
       "sha256": "325F053D8BECF30070E4D1BEBD161408A7770E7B1E11D1CFBE008F315CB13D51",
       "size": 4060,
       "files": [
@@ -171,6 +171,6 @@
       "81479B8949AFE0F81DD1BA08472B9F68D77997F6872D15EF568704254DC2BDDE"
     ]
   },
-  "statusMessageEn": "2.2.151 / client 2.0.152: a boss skull on the minimap, refilling an empty elixir, the wedding ring, the launcher cleaning its disk and a new game file. Close the game, update the server and launcher, restart the launcher, then update the client.",
-  "publishedAt": "2026-11-14T22:03:00Z"
+  "statusMessageEn": "2.2.152 / client 2.0.153: a bot reset that keeps your characters, bot party expeditions to the harder Monkey Dungeons, bot parties that stay together and the \"who hits my character\" tool. Close the game, update the server and launcher, restart the launcher, then update the client.",
+  "publishedAt": "2026-11-15T15:50:19Z"
 }
