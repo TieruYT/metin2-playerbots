@@ -17,6 +17,20 @@ every version here.
 
 ---
 
+## 2.2.152 (2026-11-15)
+
+Reset botów bez utraty Twoich postaci, wspólne wyprawy botów do trudniejszych Lochów Małp, grupy botów, które trzymają się razem, i narzędzie „Kto bije postać”.
+
+- **Reset botów:** w launcherze (KOPIA / NOWY ŚWIAT) i w panelu klasycznym można zacząć wszystkie boty od zera, a Twoje postacie, konta i przedmioty zostają; przed resetem zawsze robiona jest kopia bazy (pomysł: Lam).
+- **Grupy botów:** zwykła grupa botów trzyma się razem i poluje w jednym miejscu, zamiast rozpadać się po kilku minutach, a do średniego i trudnego Lochu Małp boty chodzą w drużynach do ośmiu.
+- **Lochy Małp:** bot, który zginął w Lochu Małp, nie wraca do niego w kółko (gregoszky); boty zbierające medale chodzą tylko do łatwego Lochu Małp swojego królestwa.
+- **Kto bije postać:** nowa karta w panelu (/rates) i komenda `/ktomnie` pokazują, co uderza Twoją postać i czy gra ją widziała, co pomaga wyjaśnić „niewidzialne potwory”; potwór, który podchodzi do stojącej postaci, pojawia się teraz w jej widoku (archonek), a potwory, które wydawały się niewidzialne, pokazują się tam, gdzie naprawdę są (archonek, Musk).
+- **Towarzysz:** można grać Towarzyszem, także gdy ma otwarte stoisko; „Czekaj tutaj” nie zaczyna już walki z potworami, które go nie atakują (zhask9431).
+- **Launcher:** otwiera strony, foldery i pliki także na komputerze bez ustawionej domyślnej przeglądarki, a gdy się nie da, kopiuje adres do schowka (NoResponse).
+- **Bezpieczeństwo:** bezpieczniejsze zakupy w sklepie internetowym i panele bezpieczniejsze za serwerem pośredniczącym (reverse proxy).
+- **Wędka i kilof:** można je ulepszyć tylko z pełnymi punktami, także przy „Ulepszaj dalej” (Musk).
+- **Klient:** brak obrazka w szufladzie ekwipunku nie zatrzymuje już wejścia do gry.
+
 ## 2.2.151 (2026-11-14)
 
 Czaszka bossa na minimapie, napełnianie pustego eliksiru, obrączka ślubna, sprzątanie dysku przez launcher, teksty serwera w kolejnych językach i nowy plik gry.
