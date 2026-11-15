@@ -1,18 +1,18 @@
 {
   "schema": 1,
   "channel": "stable",
-  "statusMessage": "2.2.152 / klient 2.0.153: reset botów bez utraty Twoich postaci, wyprawy botów do trudniejszych Lochów Małp, trwalsze grupy botów i narzędzie „Kto bije postać”. Zamknij grę, zaktualizuj serwer i launcher, uruchom launcher ponownie, następnie zaktualizuj klienta.",
+  "statusMessage": "2.2.153 / klient 2.0.154: boty otwierają skrzynie i noszą sprzęt swojego poziomu, nierozstrzygnięte pojedynki botów się kończą, pierwsza Skrzynia Ucznia daje Rękawicę Złodzieja, launcher naprawia błędne ustawienia. Zamknij grę, zaktualizuj serwer i launcher, uruchom launcher ponownie, następnie zaktualizuj klienta.",
   "server": {
-    "version": "2.2.152",
-    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.152/metin2-server-protected-migration-2.2.152.zip",
-    "sha256": "BFB6EB9FE99803CDCC8251B923D39B867A232EA3C66CDF8D80CCE7F7CBD4A4D8",
-    "size": 177695561
+    "version": "2.2.153",
+    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.153/metin2-server-protected-migration-2.2.153.zip",
+    "sha256": "6C4212E5FAC36B4E2588B592CCFC78AD5199C83D0E24C68CECFFDDA9DD37D11F",
+    "size": 177711993
   },
   "serverProtected": {
-    "version": "2.2.152",
-    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.152/metin2-server-protected-update-2.2.152.zip",
-    "sha256": "4499555A461644397AACB97345EC73C7657424D84D1AB5C42C3E6534D7A96D6A",
-    "size": 167739081
+    "version": "2.2.153",
+    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.153/metin2-server-protected-update-2.2.153.zip",
+    "sha256": "0D23549451DE002E1D4A017E01D97D63B0188DC150D5B13D7F4A83717DB9F0C8",
+    "size": 167755513
   },
   "protectedFrom": "2.2.39",
   "support": {
@@ -21,10 +21,10 @@
     "reportUrl": "https://script.google.com/macros/s/AKfycbweM8tWcvm59Va8BJxnS1z0o9L2GgtL0NXj6Yu_olAvJ7sPjnpckyGY6JB5fXH3lJYisA/exec?k=m2-7f3k9q"
   },
   "client": {
-    "version": "2.0.153",
-    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.152/metin2-client-update-2.0.153.zip",
-    "sha256": "53D8C90C3E809E9DE28611D94A763970E1EA7F34DF8A8921A93E2202A4A03432",
-    "size": 168653419,
+    "version": "2.0.154",
+    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.153/metin2-client-update-2.0.154.zip",
+    "sha256": "32E2C342113E5C88A55D47AB2E2E9D0453545DD1CB50724132A384C3F03D2DA5",
+    "size": 168653416,
     "requiresClientExe": true,
     "architecture": "x64",
     "nativeRuntime": [
@@ -110,7 +110,7 @@
       }
     ],
     "supplement": {
-      "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.152/metin2-client-update-2.0.153-supplement.zip",
+      "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.153/metin2-client-update-2.0.154-supplement.zip",
       "sha256": "325F053D8BECF30070E4D1BEBD161408A7770E7B1E11D1CFBE008F315CB13D51",
       "size": 4060,
       "files": [
@@ -171,6 +171,6 @@
       "81479B8949AFE0F81DD1BA08472B9F68D77997F6872D15EF568704254DC2BDDE"
     ]
   },
-  "statusMessageEn": "2.2.152 / client 2.0.153: a bot reset that keeps your characters, bot party expeditions to the harder Monkey Dungeons, bot parties that stay together and the \"who hits my character\" tool. Close the game, update the server and launcher, restart the launcher, then update the client.",
-  "publishedAt": "2026-11-15T15:50:19Z"
+  "statusMessageEn": "2.2.153 / client 2.0.154: bots open their chests and wear gear of their level, endless bot duels now end, the first Apprentice Chest gives the Thief’s Glove, the launcher repairs broken settings. Close the game, update the server and launcher, restart the launcher, then update the client.",
+  "publishedAt": "2026-11-15T23:10:06Z"
 }
