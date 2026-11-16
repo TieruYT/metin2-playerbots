@@ -17,6 +17,17 @@ every version here.
 
 ---
 
+## 2.2.154 (2026-11-16)
+
+Lady botów mniej przepełnione, księgi wystawione przez graczy znajdują kupców, Stajenny znów ma sklep, wygodniejszy panel klasyczny i poprawka błędnego „konto zablokowane” przy logowaniu.
+
+- **Lady botów:** boty wystawiają w wiosce mniej więcej tyle, ile sprzedaje się tam przez dwa dni. Czego nikt nie kupi, tanieje do 70%, a potem leży kilka dni w magazynie bota, zanim wróci na ladę; gdy magazyn jest pełny, bot wyrzuca taki przedmiot na ziemię i każdy może go podnieść.
+- **Księgi umiejętności:** księgi wystawione przez graczy po cenie sugerowanej teraz się sprzedają, a cena sugerowana odpowiada prawdziwym cenom na rynku botów.
+- **Stajenny:** w menu rozmowy Stajennego jest opcja sklepu z jedzeniem dla konia (Kosovoy).
+- **Logowanie:** nowe konto na niektórych komputerach dostawało komunikat o blokadzie - serwer odczytuje teraz identyfikator sprzętu, który klient przyciął (SkypzHk).
+- **Panel klasyczny:** ustawienia z wyszukiwarką i kafelkami, prostszy edytor dropu potworów z procentami i ikonami, Koło Fortuny edytowane w procentach, uruchamianie, zatrzymywanie i restart rdzeni gry z panelu (Colide); jeden przedmiot do dropu wszystkich Metinów naraz, z podglądem i cofnięciem (pomysł: Rinsyi).
+- **Społeczność:** imię małżonka w oknie Społeczności wyrównane z listą znajomych (Colide).
+
 ## 2.2.153 (2026-11-16)
 
 Boty otwierają swoje skrzynie i noszą sprzęt swojego poziomu, pojedynki botów nie trwają w nieskończoność, a pierwsza Skrzynia Ucznia znów daje Rękawicę Złodzieja.
