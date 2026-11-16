@@ -1,18 +1,18 @@
 {
   "schema": 1,
   "channel": "stable",
-  "statusMessage": "2.2.153 / klient 2.0.154: boty otwierają skrzynie i noszą sprzęt swojego poziomu, nierozstrzygnięte pojedynki botów się kończą, pierwsza Skrzynia Ucznia daje Rękawicę Złodzieja, launcher naprawia błędne ustawienia. Zamknij grę, zaktualizuj serwer i launcher, uruchom launcher ponownie, następnie zaktualizuj klienta.",
+  "statusMessage": "2.2.154 / klient 2.0.155: mniej przepełnione lady botów, księgi wystawione przez graczy po cenie sugerowanej się sprzedają, Stajenny ma sklep, wygodniejszy panel klasyczny i poprawka błędnego „konto zablokowane”. Zamknij grę, zaktualizuj serwer i launcher, uruchom launcher ponownie, następnie zaktualizuj klienta.",
   "server": {
-    "version": "2.2.153",
-    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.153/metin2-server-protected-migration-2.2.153.zip",
-    "sha256": "6C4212E5FAC36B4E2588B592CCFC78AD5199C83D0E24C68CECFFDDA9DD37D11F",
-    "size": 177711993
+    "version": "2.2.154",
+    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.154/metin2-server-protected-migration-2.2.154.zip",
+    "sha256": "D030FF58F0724436E4BFAC950EFA4840A74D86894A61E523C1B7A8BFF13ABDCF",
+    "size": 177803625
   },
   "serverProtected": {
-    "version": "2.2.153",
-    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.153/metin2-server-protected-update-2.2.153.zip",
-    "sha256": "0D23549451DE002E1D4A017E01D97D63B0188DC150D5B13D7F4A83717DB9F0C8",
-    "size": 167755513
+    "version": "2.2.154",
+    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.154/metin2-server-protected-update-2.2.154.zip",
+    "sha256": "FC68EF43FADDF0CB70132ECEAF657345D87771FC54DB8D6D516AE6069C82D5C1",
+    "size": 167847145
   },
   "protectedFrom": "2.2.39",
   "support": {
@@ -21,10 +21,10 @@
     "reportUrl": "https://script.google.com/macros/s/AKfycbweM8tWcvm59Va8BJxnS1z0o9L2GgtL0NXj6Yu_olAvJ7sPjnpckyGY6JB5fXH3lJYisA/exec?k=m2-7f3k9q"
   },
   "client": {
-    "version": "2.0.154",
-    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.153/metin2-client-update-2.0.154.zip",
-    "sha256": "32E2C342113E5C88A55D47AB2E2E9D0453545DD1CB50724132A384C3F03D2DA5",
-    "size": 168653416,
+    "version": "2.0.155",
+    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.154/metin2-client-update-2.0.155.zip",
+    "sha256": "5A1163142718727EEB0EE4C3CF6CBEF0AC542E46BFB0338F4A0B93CE25AB398E",
+    "size": 168653378,
     "requiresClientExe": true,
     "architecture": "x64",
     "nativeRuntime": [
@@ -110,7 +110,7 @@
       }
     ],
     "supplement": {
-      "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.153/metin2-client-update-2.0.154-supplement.zip",
+      "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.154/metin2-client-update-2.0.155-supplement.zip",
       "sha256": "325F053D8BECF30070E4D1BEBD161408A7770E7B1E11D1CFBE008F315CB13D51",
       "size": 4060,
       "files": [
@@ -171,6 +171,6 @@
       "81479B8949AFE0F81DD1BA08472B9F68D77997F6872D15EF568704254DC2BDDE"
     ]
   },
-  "statusMessageEn": "2.2.153 / client 2.0.154: bots open their chests and wear gear of their level, endless bot duels now end, the first Apprentice Chest gives the Thief’s Glove, the launcher repairs broken settings. Close the game, update the server and launcher, restart the launcher, then update the client.",
-  "publishedAt": "2026-11-15T23:10:06Z"
+  "statusMessageEn": "2.2.154 / client 2.0.155: less crowded bot counters, skill books players list at the suggested price now sell, the Stable Boy has his shop, an easier classic panel and a wrong “account banned” at login fixed. Close the game, update the server and launcher, restart the launcher, then update the client.",
+  "publishedAt": "2026-11-16T20:29:00Z"
 }
