@@ -1,18 +1,18 @@
 {
   "schema": 1,
   "channel": "stable",
-  "statusMessage": "2.2.154 / klient 2.0.155: mniej przepełnione lady botów, księgi wystawione przez graczy po cenie sugerowanej się sprzedają, Stajenny ma sklep, wygodniejszy panel klasyczny i poprawka błędnego „konto zablokowane”. Zamknij grę, zaktualizuj serwer i launcher, uruchom launcher ponownie, następnie zaktualizuj klienta.",
+  "statusMessage": "2.2.155 / klient 2.0.156: nowy plik gry - łucznik strzela z konia w biegu, poprawki Szybkiego Ataku, odepchnięcia i polimorfii; czeski, węgierski, niderlandzki i duński; przełączniki Towarzysza, wejście do Katakumb. Zamknij grę, zaktualizuj serwer i launcher, uruchom launcher ponownie, następnie zaktualizuj klienta.",
   "server": {
-    "version": "2.2.154",
-    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.154/metin2-server-protected-migration-2.2.154.zip",
-    "sha256": "D030FF58F0724436E4BFAC950EFA4840A74D86894A61E523C1B7A8BFF13ABDCF",
-    "size": 177803625
+    "version": "2.2.155",
+    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.155/metin2-server-protected-migration-2.2.155.zip",
+    "sha256": "7969FACBFBC951F93F4362470B3EC775DB38B98813D959A3BF93DC43B1375001",
+    "size": 181252852
   },
   "serverProtected": {
-    "version": "2.2.154",
-    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.154/metin2-server-protected-update-2.2.154.zip",
-    "sha256": "FC68EF43FADDF0CB70132ECEAF657345D87771FC54DB8D6D516AE6069C82D5C1",
-    "size": 167847145
+    "version": "2.2.155",
+    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.155/metin2-server-protected-update-2.2.155.zip",
+    "sha256": "EC87DAA513C59E9ED91ECB56ED3F2704EADAFEE36FA7B7980847E8F852AF394D",
+    "size": 171296372
   },
   "protectedFrom": "2.2.39",
   "support": {
@@ -21,10 +21,10 @@
     "reportUrl": "https://script.google.com/macros/s/AKfycbweM8tWcvm59Va8BJxnS1z0o9L2GgtL0NXj6Yu_olAvJ7sPjnpckyGY6JB5fXH3lJYisA/exec?k=m2-7f3k9q"
   },
   "client": {
-    "version": "2.0.155",
-    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.154/metin2-client-update-2.0.155.zip",
-    "sha256": "5A1163142718727EEB0EE4C3CF6CBEF0AC542E46BFB0338F4A0B93CE25AB398E",
-    "size": 168653378,
+    "version": "2.0.156",
+    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.155/metin2-client-update-2.0.156.zip",
+    "sha256": "382DCB94E7F2A1BE1D02C545B8ABA5A7AE163F5EB9E51C2E10C3943D42F745BD",
+    "size": 170170853,
     "requiresClientExe": true,
     "architecture": "x64",
     "nativeRuntime": [
@@ -110,7 +110,7 @@
       }
     ],
     "supplement": {
-      "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.154/metin2-client-update-2.0.155-supplement.zip",
+      "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.155/metin2-client-update-2.0.156-supplement.zip",
       "sha256": "325F053D8BECF30070E4D1BEBD161408A7770E7B1E11D1CFBE008F315CB13D51",
       "size": 4060,
       "files": [
@@ -121,9 +121,9 @@
     }
   },
   "clientExe": {
-    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.151/metin2client.exe",
-    "sha256": "60B2364E7D948DCA345F80A2DE7266A16B189107B277F4DF25957CFA986785F7",
-    "size": 11030016,
+    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.155/metin2client.exe",
+    "sha256": "1049E973CB19CCA5BAD92489ECF2F9068EEBEE84BC96F7F43958A5D43B506959",
+    "size": 11036160,
     "replaces": [
       "8263F81BFACDFA4A664C1F2A8CE846AEE14F19E584DB40A43F3184FEF1A59531",
       "752623560AB54E2F3F84FF9ADB8961D73E2E289634075118D3FBEA984CFCEFB1",
@@ -168,9 +168,10 @@
       "7EFB6CBD6B5EE69756C969736CF3F2D141789D2BA911CDEF571AC2DEC8348700",
       "48EA2F91981CC1A4E01126A3E8C98648458150C16B495413C99DB614E718B5E4",
       "C72FE67FF37A524859C3960FC848DA9ED29EF0F6FB3358E9485FCD58685DEE26",
-      "81479B8949AFE0F81DD1BA08472B9F68D77997F6872D15EF568704254DC2BDDE"
+      "81479B8949AFE0F81DD1BA08472B9F68D77997F6872D15EF568704254DC2BDDE",
+      "60B2364E7D948DCA345F80A2DE7266A16B189107B277F4DF25957CFA986785F7"
     ]
   },
-  "statusMessageEn": "2.2.154 / client 2.0.155: less crowded bot counters, skill books players list at the suggested price now sell, the Stable Boy has his shop, an easier classic panel and a wrong “account banned” at login fixed. Close the game, update the server and launcher, restart the launcher, then update the client.",
-  "publishedAt": "2026-11-16T20:29:00Z"
+  "statusMessageEn": "2.2.155 / client 2.0.156: a new game file - the mounted archer shoots on the move, Fast Attack, knockback and polymorph fixes; Czech, Hungarian, Dutch and Danish; companion switches, the Catacomb entrance. Close the game, update the server and launcher, restart the launcher, then update the client.",
+  "publishedAt": "2026-11-17T19:09:24Z"
 }
