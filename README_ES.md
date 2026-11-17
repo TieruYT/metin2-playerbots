@@ -5,6 +5,7 @@
 [![Sitio web](https://img.shields.io/badge/Sitio_web-mt2sp.com-2EA44F?style=for-the-badge&logo=firefoxbrowser&logoColor=white)](https://mt2sp.com)
 [![Discord](https://img.shields.io/badge/Discord-%C3%9Anete_a_la_comunidad-5865F2?style=for-the-badge&logo=discord&logoColor=white)](https://discord.gg/DyCxXdZtnV)
 [![BuyCoffee](https://img.shields.io/badge/BuyCoffee-Apoya_el_proyecto-FF813F?style=for-the-badge&logo=coffeescript&logoColor=white)](https://buycoffee.to/metin2-playerbots)
+[![PayPal](https://img.shields.io/badge/PayPal-Donar-00457C?style=for-the-badge&logo=paypal&logoColor=white)](https://paypal.me/tieruyt)
 [![Licencia](https://img.shields.io/badge/Licencia-CC_BY--NC--ND_4.0-EF9421?style=for-the-badge&logo=creativecommons&logoColor=white)](https://creativecommons.org/licenses/by-nc-nd/4.0/deed.es)
 
 Un mundo de Metin2 para un solo jugador en local, en el que personajes autónomos (Playerbots) recorren los mapas y juegan de verdad: suben de nivel, luchan solos y en grupo, comercian entre ellos, mejoran su equipo, cazan piedras Metin y jefes, fundan gremios y guardan su progreso en la base de datos del servidor.
@@ -36,6 +37,7 @@ Los requisitos, una guía paso a paso y las respuestas a las preguntas frecuente
 - **[Web del proyecto — mt2sp.com](https://mt2sp.com)**: qué es el proyecto, la guía de instalación y las preguntas frecuentes, en polaco, inglés, alemán y turco.
 - **[Servidor de Discord](https://discord.gg/DyCxXdZtnV)**: el paquete completo, ayuda, informes de errores, ideas y novedades sobre las nuevas versiones.
 - **[Apoyo en buycoffee.to](https://buycoffee.to/metin2-playerbots)**: las donaciones voluntarias ayudan a cubrir las herramientas, el servidor de pruebas y los modelos de IA que se usan para desarrollar el proyecto.
+- **[Apoyo por PayPal](https://paypal.me/tieruyt)**: una segunda forma de donar que también funciona fuera de Polonia.
 
 <a href="https://buycoffee.to/metin2-playerbots" target="_blank"><img src="https://buycoffee.to/btn/buycoffeeto-btn-primary.svg" style="height: 42px;" alt="Apoya en buycoffee.to"></a>
 

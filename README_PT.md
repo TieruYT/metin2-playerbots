@@ -5,6 +5,7 @@
 [![Site](https://img.shields.io/badge/Site-mt2sp.com-2EA44F?style=for-the-badge&logo=firefoxbrowser&logoColor=white)](https://mt2sp.com)
 [![Discord](https://img.shields.io/badge/Discord-Entra_na_comunidade-5865F2?style=for-the-badge&logo=discord&logoColor=white)](https://discord.gg/DyCxXdZtnV)
 [![BuyCoffee](https://img.shields.io/badge/BuyCoffee-Oferece_um_café-FF813F?style=for-the-badge&logo=coffeescript&logoColor=white)](https://buycoffee.to/metin2-playerbots)
+[![PayPal](https://img.shields.io/badge/PayPal-Faz_um_donativo-00457C?style=for-the-badge&logo=paypal&logoColor=white)](https://paypal.me/tieruyt)
 [![Licença](https://img.shields.io/badge/Licença-CC_BY--NC--ND_4.0-EF9421?style=for-the-badge&logo=creativecommons&logoColor=white)](https://creativecommons.org/licenses/by-nc-nd/4.0/deed.pt)
 
 > Este ficheiro é uma tradução de [README.md](README.md). Em caso de diferenças, prevalece a versão polaca.
@@ -40,6 +41,7 @@ Os requisitos, as instruções passo a passo e as respostas às perguntas freque
 - **[Site do projeto — mt2sp.com](https://mt2sp.com)**: descrição do projeto, instruções de instalação e FAQ, em polaco, inglês, alemão e turco.
 - **[Servidor de Discord](https://discord.gg/DyCxXdZtnV)**: o pacote completo para descarregar, ajuda, comunicação de erros, ideias e informações sobre novas versões.
 - **[Apoio no buycoffee.to](https://buycoffee.to/metin2-playerbots)**: os donativos voluntários ajudam a cobrir os custos das ferramentas, do servidor de testes e dos modelos de IA usados no desenvolvimento do projeto.
+- **[Apoio por PayPal](https://paypal.me/tieruyt)**: uma segunda forma de fazer um donativo, que também funciona fora da Polónia.
 
 <a href="https://buycoffee.to/metin2-playerbots" target="_blank"><img src="https://buycoffee.to/btn/buycoffeeto-btn-primary.svg" style="height: 42px;" alt="Oferece um café no buycoffee.to"></a>
 

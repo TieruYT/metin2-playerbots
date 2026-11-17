@@ -5,6 +5,7 @@
 [![Website](https://img.shields.io/badge/Website-mt2sp.com-2EA44F?style=for-the-badge&logo=firefoxbrowser&logoColor=white)](https://mt2sp.com)
 [![Discord](https://img.shields.io/badge/Discord-Join_Community-5865F2?style=for-the-badge&logo=discord&logoColor=white)](https://discord.gg/DyCxXdZtnV)
 [![BuyCoffee](https://img.shields.io/badge/BuyCoffee-Support_the_Project-FF813F?style=for-the-badge&logo=coffeescript&logoColor=white)](https://buycoffee.to/metin2-playerbots)
+[![PayPal](https://img.shields.io/badge/PayPal-Donate-00457C?style=for-the-badge&logo=paypal&logoColor=white)](https://paypal.me/tieruyt)
 [![Licence](https://img.shields.io/badge/Licence-CC_BY--NC--ND_4.0-EF9421?style=for-the-badge&logo=creativecommons&logoColor=white)](https://creativecommons.org/licenses/by-nc-nd/4.0/deed.en)
 
 A local Metin2 singleplayer world in which autonomous characters (Playerbots) run across the maps and genuinely play: they level up, fight solo and in parties, trade with each other, refine their gear, hunt Metin stones and bosses, found guilds and keep their progress in the server's database.
@@ -36,6 +37,7 @@ Requirements, a step-by-step guide and answers to common questions are on [mt2sp
 - **[Project website — mt2sp.com](https://mt2sp.com)**: what the project is, the install guide and the FAQ, in Polish, English, German and Turkish.
 - **[Discord server](https://discord.gg/DyCxXdZtnV)**: the full package, help, bug reports, ideas and news about new versions.
 - **[Support on buycoffee.to](https://buycoffee.to/metin2-playerbots)**: voluntary donations help cover the tools, the test server and the AI models used to develop the project.
+- **[Support via PayPal](https://paypal.me/tieruyt)**: a second way to donate that also works from outside Poland.
 
 <a href="https://buycoffee.to/metin2-playerbots" target="_blank"><img src="https://buycoffee.to/btn/buycoffeeto-btn-primary.svg" style="height: 42px;" alt="Support on buycoffee.to"></a>
 

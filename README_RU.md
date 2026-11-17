@@ -5,6 +5,7 @@
 [![Сайт](https://img.shields.io/badge/%D0%A1%D0%B0%D0%B9%D1%82-mt2sp.com-2EA44F?style=for-the-badge&logo=firefoxbrowser&logoColor=white)](https://mt2sp.com)
 [![Discord](https://img.shields.io/badge/Discord-%D0%9F%D1%80%D0%B8%D1%81%D0%BE%D0%B5%D0%B4%D0%B8%D0%BD%D0%B8%D1%82%D1%8C%D1%81%D1%8F_%D0%BA_%D1%81%D0%BE%D0%BE%D0%B1%D1%89%D0%B5%D1%81%D1%82%D0%B2%D1%83-5865F2?style=for-the-badge&logo=discord&logoColor=white)](https://discord.gg/DyCxXdZtnV)
 [![BuyCoffee](https://img.shields.io/badge/BuyCoffee-%D0%9F%D0%BE%D0%B4%D0%B4%D0%B5%D1%80%D0%B6%D0%B0%D1%82%D1%8C_%D0%BF%D1%80%D0%BE%D0%B5%D0%BA%D1%82-FF813F?style=for-the-badge&logo=coffeescript&logoColor=white)](https://buycoffee.to/metin2-playerbots)
+[![PayPal](https://img.shields.io/badge/PayPal-%D0%9F%D0%BE%D0%B6%D0%B5%D1%80%D1%82%D0%B2%D0%BE%D0%B2%D0%B0%D1%82%D1%8C-00457C?style=for-the-badge&logo=paypal&logoColor=white)](https://paypal.me/tieruyt)
 [![Лицензия](https://img.shields.io/badge/%D0%9B%D0%B8%D1%86%D0%B5%D0%BD%D0%B7%D0%B8%D1%8F-CC_BY--NC--ND_4.0-EF9421?style=for-the-badge&logo=creativecommons&logoColor=white)](https://creativecommons.org/licenses/by-nc-nd/4.0/deed.ru)
 
 Локальный одиночный мир Metin2, по картам которого бегают самостоятельные персонажи (Playerbots) и по-настоящему играют: качаются, сражаются в одиночку и в группах, торгуют друг с другом, улучшают снаряжение, охотятся на камни Метина и боссов, основывают гильдии и сохраняют свой прогресс в базе данных сервера.
@@ -38,6 +39,7 @@
 - **[Сайт проекта — mt2sp.com](https://mt2sp.com)**: что такое проект, руководство по установке и FAQ — на польском, английском, немецком и турецком языках.
 - **[Discord-сервер](https://discord.gg/DyCxXdZtnV)**: полный пакет, помощь, сообщения об ошибках, идеи и новости о новых версиях.
 - **[Поддержка на buycoffee.to](https://buycoffee.to/metin2-playerbots)**: добровольные пожертвования помогают покрывать расходы на инструменты, тестовый сервер и ИИ-модели, используемые в разработке проекта.
+- **[Поддержка через PayPal](https://paypal.me/tieruyt)**: второй способ пожертвования, который работает и за пределами Польши.
 
 <a href="https://buycoffee.to/metin2-playerbots" target="_blank"><img src="https://buycoffee.to/btn/buycoffeeto-btn-primary.svg" style="height: 42px;" alt="Поддержать на buycoffee.to"></a>
 

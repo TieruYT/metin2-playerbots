@@ -5,6 +5,7 @@
 [![Website](https://img.shields.io/badge/Hjemmeside-mt2sp.com-2EA44F?style=for-the-badge&logo=firefoxbrowser&logoColor=white)](https://mt2sp.com)
 [![Discord](https://img.shields.io/badge/Discord-Bliv_en_del_af_f%C3%A6llesskabet-5865F2?style=for-the-badge&logo=discord&logoColor=white)](https://discord.gg/DyCxXdZtnV)
 [![BuyCoffee](https://img.shields.io/badge/BuyCoffee-St%C3%B8t_projektet-FF813F?style=for-the-badge&logo=coffeescript&logoColor=white)](https://buycoffee.to/metin2-playerbots)
+[![PayPal](https://img.shields.io/badge/PayPal-Don%C3%A9r-00457C?style=for-the-badge&logo=paypal&logoColor=white)](https://paypal.me/tieruyt)
 [![Licence](https://img.shields.io/badge/Licens-CC_BY--NC--ND_4.0-EF9421?style=for-the-badge&logo=creativecommons&logoColor=white)](https://creativecommons.org/licenses/by-nc-nd/4.0/deed.da)
 
 En lokal Metin2-singleplayerverden, hvor selvstændige karakterer (Playerbots) drager rundt på kortene og spiller for alvor: de stiger i level, kæmper alene og i grupper, handler med hinanden, opgraderer deres udstyr, jager Metin-sten og bosser, stifter guilds og gemmer deres fremskridt i serverens database.
@@ -38,6 +39,7 @@ Systemkrav, en trin-for-trin-guide og svar på almindelige spørgsmål finder du
 - **[Projektets hjemmeside — mt2sp.com](https://mt2sp.com)**: hvad projektet er, installationsguiden og FAQ, på polsk, engelsk, tysk og tyrkisk.
 - **[Discord-server](https://discord.gg/DyCxXdZtnV)**: den fulde pakke, hjælp, fejlrapporter, idéer og nyheder om nye versioner.
 - **[Støt på buycoffee.to](https://buycoffee.to/metin2-playerbots)**: frivillige donationer hjælper med at dække værktøjerne, testserveren og de AI-modeller, der bruges til at udvikle projektet.
+- **[Støt via PayPal](https://paypal.me/tieruyt)**: en ekstra måde at donere på, som også virker uden for Polen.
 
 <a href="https://buycoffee.to/metin2-playerbots" target="_blank"><img src="https://buycoffee.to/btn/buycoffeeto-btn-primary.svg" style="height: 42px;" alt="Støt på buycoffee.to"></a>
 

@@ -5,6 +5,7 @@
 [![Website](https://img.shields.io/badge/Weboldal-mt2sp.com-2EA44F?style=for-the-badge&logo=firefoxbrowser&logoColor=white)](https://mt2sp.com)
 [![Discord](https://img.shields.io/badge/Discord-Csatlakozz_a_k%C3%B6z%C3%B6ss%C3%A9ghez-5865F2?style=for-the-badge&logo=discord&logoColor=white)](https://discord.gg/DyCxXdZtnV)
 [![BuyCoffee](https://img.shields.io/badge/BuyCoffee-T%C3%A1mogasd_a_projektet-FF813F?style=for-the-badge&logo=coffeescript&logoColor=white)](https://buycoffee.to/metin2-playerbots)
+[![PayPal](https://img.shields.io/badge/PayPal-Adom%C3%A1nyozz-00457C?style=for-the-badge&logo=paypal&logoColor=white)](https://paypal.me/tieruyt)
 [![Licence](https://img.shields.io/badge/Licenc-CC_BY--NC--ND_4.0-EF9421?style=for-the-badge&logo=creativecommons&logoColor=white)](https://creativecommons.org/licenses/by-nc-nd/4.0/deed.hu)
 
 Egy helyi, egyjátékos Metin2-világ, amelyben önálló karakterek (Playerbotok) járják a térképeket, és tényleg játszanak: szintet lépnek, egyedül és csapatban harcolnak, kereskednek egymással, fejlesztik a felszerelésüket, Metin-köveket és bossokat vadásznak, céheket alapítanak, és az előrehaladásukat a szerver adatbázisában őrzik.
@@ -38,6 +39,7 @@ A követelményeket, egy lépésről lépésre haladó útmutatót és a gyakori
 - **[A projekt weboldala — mt2sp.com](https://mt2sp.com)**: mi ez a projekt, telepítési útmutató és GYIK, lengyel, angol, német és török nyelven.
 - **[Discord-szerver](https://discord.gg/DyCxXdZtnV)**: a teljes csomag, segítség, hibajelentések, ötletek és hírek az új verziókról.
 - **[Támogatás a buycoffee.to oldalon](https://buycoffee.to/metin2-playerbots)**: az önkéntes adományok segítenek fedezni az eszközöket, a tesztszervert és a projekt fejlesztéséhez használt MI-modelleket.
+- **[Támogatás PayPalon keresztül](https://paypal.me/tieruyt)**: egy második adományozási lehetőség, amely Lengyelországon kívülről is működik.
 
 <a href="https://buycoffee.to/metin2-playerbots" target="_blank"><img src="https://buycoffee.to/btn/buycoffeeto-btn-primary.svg" style="height: 42px;" alt="Támogatás a buycoffee.to oldalon"></a>
 

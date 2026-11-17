@@ -5,6 +5,7 @@
 [![Website](https://img.shields.io/badge/Web-mt2sp.com-2EA44F?style=for-the-badge&logo=firefoxbrowser&logoColor=white)](https://mt2sp.com)
 [![Discord](https://img.shields.io/badge/Discord-P%C5%99ipoj_se_ke_komunit%C4%9B-5865F2?style=for-the-badge&logo=discord&logoColor=white)](https://discord.gg/DyCxXdZtnV)
 [![BuyCoffee](https://img.shields.io/badge/BuyCoffee-Podpo%C5%99_projekt-FF813F?style=for-the-badge&logo=coffeescript&logoColor=white)](https://buycoffee.to/metin2-playerbots)
+[![PayPal](https://img.shields.io/badge/PayPal-P%C5%99isp%C4%9Bj-00457C?style=for-the-badge&logo=paypal&logoColor=white)](https://paypal.me/tieruyt)
 [![Licence](https://img.shields.io/badge/Licence-CC_BY--NC--ND_4.0-EF9421?style=for-the-badge&logo=creativecommons&logoColor=white)](https://creativecommons.org/licenses/by-nc-nd/4.0/deed.cs)
 
 Lokální singleplayerový svět Metin2, ve kterém po mapách běhají samostatné postavy (Playerboti) a opravdu hrají: získávají úrovně, bojují samy i ve skupinách, obchodují mezi sebou, vylepšují si vybavení, loví kameny Metin a bossy, zakládají cechy a svůj postup ukládají do databáze serveru.
@@ -38,6 +39,7 @@ Požadavky, návod krok za krokem a odpovědi na časté otázky najdeš na [mt2
 - **[Web projektu — mt2sp.com](https://mt2sp.com)**: co je to za projekt, instalační návod a FAQ, v polštině, angličtině, němčině a turečtině.
 - **[Discord server](https://discord.gg/DyCxXdZtnV)**: plný balíček, pomoc, hlášení chyb, nápady a novinky o nových verzích.
 - **[Podpora na buycoffee.to](https://buycoffee.to/metin2-playerbots)**: dobrovolné dary pomáhají pokrýt nástroje, testovací server a AI modely, které se používají při vývoji projektu.
+- **[Podpora přes PayPal](https://paypal.me/tieruyt)**: druhá možnost, jak přispět, která funguje i mimo Polsko.
 
 <a href="https://buycoffee.to/metin2-playerbots" target="_blank"><img src="https://buycoffee.to/btn/buycoffeeto-btn-primary.svg" style="height: 42px;" alt="Podpora na buycoffee.to"></a>
 

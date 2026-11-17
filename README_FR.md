@@ -5,6 +5,7 @@
 [![Site web](https://img.shields.io/badge/Site_web-mt2sp.com-2EA44F?style=for-the-badge&logo=firefoxbrowser&logoColor=white)](https://mt2sp.com)
 [![Discord](https://img.shields.io/badge/Discord-Rejoindre_la_communaut%C3%A9-5865F2?style=for-the-badge&logo=discord&logoColor=white)](https://discord.gg/DyCxXdZtnV)
 [![BuyCoffee](https://img.shields.io/badge/BuyCoffee-Soutenir_le_projet-FF813F?style=for-the-badge&logo=coffeescript&logoColor=white)](https://buycoffee.to/metin2-playerbots)
+[![PayPal](https://img.shields.io/badge/PayPal-Faire_un_don-00457C?style=for-the-badge&logo=paypal&logoColor=white)](https://paypal.me/tieruyt)
 [![Licence](https://img.shields.io/badge/Licence-CC_BY--NC--ND_4.0-EF9421?style=for-the-badge&logo=creativecommons&logoColor=white)](https://creativecommons.org/licenses/by-nc-nd/4.0/deed.fr)
 
 Un monde Metin2 solo en local, dans lequel des personnages autonomes (Playerbots) parcourent les cartes et jouent vraiment : ils montent de niveau, combattent seuls et en groupe, font du commerce entre eux, améliorent leur équipement, chassent les pierres Metin et les boss, fondent des guildes et conservent leur progression dans la base de données du serveur.
@@ -36,6 +37,7 @@ La configuration requise, un guide pas à pas et les réponses aux questions fr�
 - **[Site du projet — mt2sp.com](https://mt2sp.com)** : ce qu'est le projet, le guide d'installation et la FAQ, en polonais, anglais, allemand et turc.
 - **[Serveur Discord](https://discord.gg/DyCxXdZtnV)** : le paquet complet, l'aide, les rapports de bugs, les idées et les nouvelles des nouvelles versions.
 - **[Soutien sur buycoffee.to](https://buycoffee.to/metin2-playerbots)** : les dons volontaires aident à couvrir les outils, le serveur de test et les modèles d'IA utilisés pour développer le projet.
+- **[Soutien via PayPal](https://paypal.me/tieruyt)** : un second moyen de faire un don, qui fonctionne aussi hors de Pologne.
 
 <a href="https://buycoffee.to/metin2-playerbots" target="_blank"><img src="https://buycoffee.to/btn/buycoffeeto-btn-primary.svg" style="height: 42px;" alt="Soutenir sur buycoffee.to"></a>
 

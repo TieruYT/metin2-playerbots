@@ -5,6 +5,7 @@
 [![Ιστότοπος](https://img.shields.io/badge/%CE%99%CF%83%CF%84%CF%8C%CF%84%CE%BF%CF%80%CE%BF%CF%82-mt2sp.com-2EA44F?style=for-the-badge&logo=firefoxbrowser&logoColor=white)](https://mt2sp.com)
 [![Discord](https://img.shields.io/badge/Discord-%CE%93%CE%AF%CE%BD%CE%B5_%CE%BC%CE%AD%CE%BB%CE%BF%CF%82_%CF%84%CE%B7%CF%82_%CE%BA%CE%BF%CE%B9%CE%BD%CF%8C%CF%84%CE%B7%CF%84%CE%B1%CF%82-5865F2?style=for-the-badge&logo=discord&logoColor=white)](https://discord.gg/DyCxXdZtnV)
 [![BuyCoffee](https://img.shields.io/badge/BuyCoffee-%CE%A3%CF%84%CE%AE%CF%81%CE%B9%CE%BE%CE%B5_%CF%84%CE%BF_%CE%AD%CF%81%CE%B3%CE%BF-FF813F?style=for-the-badge&logo=coffeescript&logoColor=white)](https://buycoffee.to/metin2-playerbots)
+[![PayPal](https://img.shields.io/badge/PayPal-%CE%9A%CE%AC%CE%BD%CE%B5_%CE%B4%CF%89%CF%81%CE%B5%CE%AC-00457C?style=for-the-badge&logo=paypal&logoColor=white)](https://paypal.me/tieruyt)
 [![Άδεια](https://img.shields.io/badge/%CE%86%CE%B4%CE%B5%CE%B9%CE%B1-CC_BY--NC--ND_4.0-EF9421?style=for-the-badge&logo=creativecommons&logoColor=white)](https://creativecommons.org/licenses/by-nc-nd/4.0/deed.el)
 
 Ένας τοπικός singleplayer κόσμος του Metin2, στους χάρτες του οποίου τρέχουν αυτόνομοι χαρακτήρες (Playerbots) και παίζουν πραγματικά: ανεβαίνουν επίπεδα, πολεμούν μόνοι και σε ομάδες, κάνουν εμπόριο μεταξύ τους, αναβαθμίζουν τον εξοπλισμό τους, κυνηγούν πέτρες Metin και bosses, ιδρύουν συντεχνίες και κρατούν την πρόοδό τους στη βάση δεδομένων του server.
@@ -38,6 +39,7 @@
 - **[Ιστότοπος του project — mt2sp.com](https://mt2sp.com)**: τι είναι το project, ο οδηγός εγκατάστασης και οι συχνές ερωτήσεις, στα πολωνικά, αγγλικά, γερμανικά και τουρκικά.
 - **[Discord server](https://discord.gg/DyCxXdZtnV)**: το πλήρες πακέτο, βοήθεια, αναφορές σφαλμάτων, ιδέες και νέα για καινούριες εκδόσεις.
 - **[Υποστήριξη στο buycoffee.to](https://buycoffee.to/metin2-playerbots)**: οι εθελοντικές δωρεές βοηθούν να καλυφθούν τα εργαλεία, ο δοκιμαστικός server και τα μοντέλα τεχνητής νοημοσύνης που χρησιμοποιούνται για την ανάπτυξη του project.
+- **[Υποστήριξη μέσω PayPal](https://paypal.me/tieruyt)**: ένας δεύτερος τρόπος δωρεάς, που λειτουργεί και εκτός Πολωνίας.
 
 <a href="https://buycoffee.to/metin2-playerbots" target="_blank"><img src="https://buycoffee.to/btn/buycoffeeto-btn-primary.svg" style="height: 42px;" alt="Υποστήριξη στο buycoffee.to"></a>
 

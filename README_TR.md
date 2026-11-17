@@ -5,6 +5,7 @@
 [![Web Sitesi](https://img.shields.io/badge/Web_Sitesi-mt2sp.com-2EA44F?style=for-the-badge&logo=firefoxbrowser&logoColor=white)](https://mt2sp.com)
 [![Discord](https://img.shields.io/badge/Discord-Topluluğa_katıl-5865F2?style=for-the-badge&logo=discord&logoColor=white)](https://discord.gg/DyCxXdZtnV)
 [![BuyCoffee](https://img.shields.io/badge/BuyCoffee-Bir_kahve_ısmarla-FF813F?style=for-the-badge&logo=coffeescript&logoColor=white)](https://buycoffee.to/metin2-playerbots)
+[![PayPal](https://img.shields.io/badge/PayPal-Ba%C4%9F%C4%B1%C5%9F_yap-00457C?style=for-the-badge&logo=paypal&logoColor=white)](https://paypal.me/tieruyt)
 [![Lisans](https://img.shields.io/badge/Lisans-CC_BY--NC--ND_4.0-EF9421?style=for-the-badge&logo=creativecommons&logoColor=white)](https://creativecommons.org/licenses/by-nc-nd/4.0/deed.tr)
 
 > Bu dosya [README.md](README.md) dosyasının Türkçe çevirisidir. Aralarında bir fark olursa Lehçe sürüm geçerlidir. Launcher düğmeleri, launcher'ın Türkçe arayüzündeki adlarıyla yazılmıştır; ilk geçtikleri yerde Lehçe arayüzdeki adları da parantez içinde verilmiştir.
@@ -38,6 +39,7 @@ Sistem gereksinimleri, adım adım kurulum rehberi ve sık sorulan soruların ya
 - **[Proje sitesi — mt2sp.com](https://mt2sp.com)**: projenin tanıtımı, kurulum rehberi ve SSS; Lehçe, İngilizce, Almanca ve Türkçe.
 - **[Discord sunucusu](https://discord.gg/DyCxXdZtnV)**: indirilebilir tam paket, yardım, hata bildirimleri, fikirler ve yeni sürüm duyuruları.
 - **[buycoffee.to üzerinden destek](https://buycoffee.to/metin2-playerbots)**: gönüllü bağışlar; araçların, test sunucusunun ve projenin geliştirilmesinde kullanılan yapay zekâ modellerinin masraflarını karşılamaya yardımcı olur.
+- **[PayPal üzerinden destek](https://paypal.me/tieruyt)**: Polonya dışından da çalışan ikinci bir bağış yolu.
 
 <a href="https://buycoffee.to/metin2-playerbots" target="_blank"><img src="https://buycoffee.to/btn/buycoffeeto-btn-primary.svg" style="height: 42px;" alt="buycoffee.to üzerinden bir kahve ısmarla"></a>
 

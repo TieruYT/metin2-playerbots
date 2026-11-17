@@ -5,6 +5,7 @@
 [![الموقع](https://img.shields.io/badge/%D8%A7%D9%84%D9%85%D9%88%D9%82%D8%B9-mt2sp.com-2EA44F?style=for-the-badge&logo=firefoxbrowser&logoColor=white)](https://mt2sp.com)
 [![Discord](https://img.shields.io/badge/Discord-%D8%A7%D9%86%D8%B6%D9%85_%D8%A5%D9%84%D9%89_%D8%A7%D9%84%D9%85%D8%AC%D8%AA%D9%85%D8%B9-5865F2?style=for-the-badge&logo=discord&logoColor=white)](https://discord.gg/DyCxXdZtnV)
 [![BuyCoffee](https://img.shields.io/badge/BuyCoffee-%D8%A7%D8%AF%D8%B9%D9%85_%D8%A7%D9%84%D9%85%D8%B4%D8%B1%D9%88%D8%B9-FF813F?style=for-the-badge&logo=coffeescript&logoColor=white)](https://buycoffee.to/metin2-playerbots)
+[![PayPal](https://img.shields.io/badge/PayPal-%D8%AA%D8%A8%D8%B1%D8%B9_%D9%84%D9%84%D9%85%D8%B4%D8%B1%D9%88%D8%B9-00457C?style=for-the-badge&logo=paypal&logoColor=white)](https://paypal.me/tieruyt)
 [![الترخيص](https://img.shields.io/badge/%D8%A7%D9%84%D8%AA%D8%B1%D8%AE%D9%8A%D8%B5-CC_BY--NC--ND_4.0-EF9421?style=for-the-badge&logo=creativecommons&logoColor=white)](https://creativecommons.org/licenses/by-nc-nd/4.0/deed.ar)
 
 عالم Metin2 محلي للعب الفردي، تجوب خرائطه شخصيات مستقلة (Playerbots) وتلعب فعلًا: ترفع مستواها، وتقاتل منفردة وفي مجموعات، وتتاجر فيما بينها، وتطوّر عتادها، وتصطاد أحجار الميتين والزعماء، وتؤسس النقابات، وتحفظ تقدّمها في قاعدة بيانات الخادم.
@@ -38,6 +39,7 @@
 - **[موقع المشروع — mt2sp.com](https://mt2sp.com)**: ما هو المشروع، ودليل التثبيت، والأسئلة الشائعة، باللغات البولندية والإنجليزية والألمانية والتركية.
 - **[خادم Discord](https://discord.gg/DyCxXdZtnV)**: الحزمة الكاملة، والمساعدة، وبلاغات الأخطاء، والأفكار، وأخبار الإصدارات الجديدة.
 - **[الدعم عبر buycoffee.to](https://buycoffee.to/metin2-playerbots)**: التبرعات الطوعية تساعد في تغطية تكاليف الأدوات وخادم الاختبار ونماذج الذكاء الاصطناعي المستخدمة في تطوير المشروع.
+- **[الدعم عبر PayPal](https://paypal.me/tieruyt)**: طريقة ثانية للتبرع تعمل أيضًا من خارج بولندا.
 
 <a href="https://buycoffee.to/metin2-playerbots" target="_blank"><img src="https://buycoffee.to/btn/buycoffeeto-btn-primary.svg" style="height: 42px;" alt="ادعم عبر buycoffee.to"></a>
 

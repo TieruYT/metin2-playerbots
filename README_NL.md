@@ -5,6 +5,7 @@
 [![Website](https://img.shields.io/badge/Website-mt2sp.com-2EA44F?style=for-the-badge&logo=firefoxbrowser&logoColor=white)](https://mt2sp.com)
 [![Discord](https://img.shields.io/badge/Discord-Word_lid_van_de_community-5865F2?style=for-the-badge&logo=discord&logoColor=white)](https://discord.gg/DyCxXdZtnV)
 [![BuyCoffee](https://img.shields.io/badge/BuyCoffee-Steun_het_project-FF813F?style=for-the-badge&logo=coffeescript&logoColor=white)](https://buycoffee.to/metin2-playerbots)
+[![PayPal](https://img.shields.io/badge/PayPal-Doneer-00457C?style=for-the-badge&logo=paypal&logoColor=white)](https://paypal.me/tieruyt)
 [![Licence](https://img.shields.io/badge/Licentie-CC_BY--NC--ND_4.0-EF9421?style=for-the-badge&logo=creativecommons&logoColor=white)](https://creativecommons.org/licenses/by-nc-nd/4.0/deed.nl)
 
 Een lokale Metin2-singleplayerwereld waarin zelfstandige personages (Playerbots) over de kaarten trekken en echt spelen: ze levelen, vechten solo en in groepen, handelen met elkaar, upgraden hun uitrusting, jagen op Metin-stenen en bosses, richten gildes op en bewaren hun voortgang in de database van de server.
@@ -38,6 +39,7 @@ Systeemvereisten, een stapsgewijze handleiding en antwoorden op veelgestelde vra
 - **[Website van het project — mt2sp.com](https://mt2sp.com)**: wat het project is, de installatiehandleiding en de FAQ, in het Pools, Engels, Duits en Turks.
 - **[Discord-server](https://discord.gg/DyCxXdZtnV)**: het volledige pakket, hulp, bugmeldingen, ideeën en nieuws over nieuwe versies.
 - **[Steun via buycoffee.to](https://buycoffee.to/metin2-playerbots)**: vrijwillige donaties helpen de kosten te dekken van de tools, de testserver en de AI-modellen die bij de ontwikkeling van het project worden gebruikt.
+- **[Steun via PayPal](https://paypal.me/tieruyt)**: een tweede manier om te doneren, die ook buiten Polen werkt.
 
 <a href="https://buycoffee.to/metin2-playerbots" target="_blank"><img src="https://buycoffee.to/btn/buycoffeeto-btn-primary.svg" style="height: 42px;" alt="Steun via buycoffee.to"></a>
 

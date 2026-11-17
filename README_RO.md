@@ -5,6 +5,7 @@
 [![Site](https://img.shields.io/badge/Site-mt2sp.com-2EA44F?style=for-the-badge&logo=firefoxbrowser&logoColor=white)](https://mt2sp.com)
 [![Discord](https://img.shields.io/badge/Discord-Intră_în_comunitate-5865F2?style=for-the-badge&logo=discord&logoColor=white)](https://discord.gg/DyCxXdZtnV)
 [![BuyCoffee](https://img.shields.io/badge/BuyCoffee-Oferă_o_cafea-FF813F?style=for-the-badge&logo=coffeescript&logoColor=white)](https://buycoffee.to/metin2-playerbots)
+[![PayPal](https://img.shields.io/badge/PayPal-Doneaz%C4%83-00457C?style=for-the-badge&logo=paypal&logoColor=white)](https://paypal.me/tieruyt)
 [![Licență](https://img.shields.io/badge/Licență-CC_BY--NC--ND_4.0-EF9421?style=for-the-badge&logo=creativecommons&logoColor=white)](https://creativecommons.org/licenses/by-nc-nd/4.0/deed.ro)
 
 > Acest fișier este o traducere a [README.md](README.md). Dacă între ele există diferențe, este valabilă versiunea poloneză.
@@ -40,6 +41,7 @@ Cerințele, instrucțiunile pas cu pas și răspunsurile la întrebările frecve
 - **[Site-ul proiectului — mt2sp.com](https://mt2sp.com)**: descrierea proiectului, instrucțiunile de instalare și FAQ, în poloneză, engleză, germană și turcă.
 - **[Serverul de Discord](https://discord.gg/DyCxXdZtnV)**: pachetul complet de descărcat, ajutor, raportarea erorilor, idei și informații despre versiunile noi.
 - **[Sprijin pe buycoffee.to](https://buycoffee.to/metin2-playerbots)**: donațiile voluntare ajută la acoperirea costurilor uneltelor, ale serverului de test și ale modelelor AI folosite la dezvoltarea proiectului.
+- **[Sprijin prin PayPal](https://paypal.me/tieruyt)**: o a doua modalitate de a dona, care funcționează și din afara Poloniei.
 
 <a href="https://buycoffee.to/metin2-playerbots" target="_blank"><img src="https://buycoffee.to/btn/buycoffeeto-btn-primary.svg" style="height: 42px;" alt="Oferă o cafea pe buycoffee.to"></a>
 

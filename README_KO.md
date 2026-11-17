@@ -5,6 +5,7 @@
 [![웹사이트](https://img.shields.io/badge/%EC%9B%B9%EC%82%AC%EC%9D%B4%ED%8A%B8-mt2sp.com-2EA44F?style=for-the-badge&logo=firefoxbrowser&logoColor=white)](https://mt2sp.com)
 [![Discord](https://img.shields.io/badge/Discord-%EC%BB%A4%EB%AE%A4%EB%8B%88%ED%8B%B0_%EC%B0%B8%EC%97%AC-5865F2?style=for-the-badge&logo=discord&logoColor=white)](https://discord.gg/DyCxXdZtnV)
 [![BuyCoffee](https://img.shields.io/badge/BuyCoffee-%ED%94%84%EB%A1%9C%EC%A0%9D%ED%8A%B8_%ED%9B%84%EC%9B%90-FF813F?style=for-the-badge&logo=coffeescript&logoColor=white)](https://buycoffee.to/metin2-playerbots)
+[![PayPal](https://img.shields.io/badge/PayPal-%ED%9B%84%EC%9B%90%ED%95%98%EA%B8%B0-00457C?style=for-the-badge&logo=paypal&logoColor=white)](https://paypal.me/tieruyt)
 [![라이선스](https://img.shields.io/badge/%EB%9D%BC%EC%9D%B4%EC%84%A0%EC%8A%A4-CC_BY--NC--ND_4.0-EF9421?style=for-the-badge&logo=creativecommons&logoColor=white)](https://creativecommons.org/licenses/by-nc-nd/4.0/deed.ko)
 
 자율적으로 움직이는 캐릭터(Playerbots)가 맵을 누비며 진짜로 게임을 하는 로컬 싱글플레이 Metin2 월드입니다. 봇들은 레벨을 올리고, 혼자서 또는 파티로 싸우고, 서로 거래하고, 장비를 강화하고, 메틴석과 보스를 사냥하고, 길드를 창설하며, 진행 상황을 서버 데이터베이스에 저장합니다.
@@ -38,6 +39,7 @@
 - **[프로젝트 웹사이트 — mt2sp.com](https://mt2sp.com)**: 프로젝트 소개, 설치 가이드, FAQ를 폴란드어, 영어, 독일어, 터키어로 제공합니다.
 - **[Discord 서버](https://discord.gg/DyCxXdZtnV)**: 전체 패키지, 도움말, 버그 신고, 아이디어, 새 버전 소식.
 - **[buycoffee.to에서 후원하기](https://buycoffee.to/metin2-playerbots)**: 자발적인 후원은 프로젝트 개발에 쓰이는 도구, 테스트 서버, AI 모델 비용을 충당하는 데 도움이 됩니다.
+- **[PayPal로 후원하기](https://paypal.me/tieruyt)**: 폴란드 밖에서도 사용할 수 있는 두 번째 후원 방법입니다.
 
 <a href="https://buycoffee.to/metin2-playerbots" target="_blank"><img src="https://buycoffee.to/btn/buycoffeeto-btn-primary.svg" style="height: 42px;" alt="buycoffee.to에서 후원하기"></a>
 

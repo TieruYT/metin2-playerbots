@@ -5,6 +5,7 @@
 [![Sito web](https://img.shields.io/badge/Sito_web-mt2sp.com-2EA44F?style=for-the-badge&logo=firefoxbrowser&logoColor=white)](https://mt2sp.com)
 [![Discord](https://img.shields.io/badge/Discord-Unisciti_alla_community-5865F2?style=for-the-badge&logo=discord&logoColor=white)](https://discord.gg/DyCxXdZtnV)
 [![BuyCoffee](https://img.shields.io/badge/BuyCoffee-Sostieni_il_progetto-FF813F?style=for-the-badge&logo=coffeescript&logoColor=white)](https://buycoffee.to/metin2-playerbots)
+[![PayPal](https://img.shields.io/badge/PayPal-Fai_una_donazione-00457C?style=for-the-badge&logo=paypal&logoColor=white)](https://paypal.me/tieruyt)
 [![Licenza](https://img.shields.io/badge/Licenza-CC_BY--NC--ND_4.0-EF9421?style=for-the-badge&logo=creativecommons&logoColor=white)](https://creativecommons.org/licenses/by-nc-nd/4.0/deed.it)
 
 Un mondo di Metin2 in singleplayer, in locale, in cui personaggi autonomi (Playerbots) girano per le mappe e giocano davvero: salgono di livello, combattono da soli e in gruppo, commerciano tra loro, potenziano l'equipaggiamento, cacciano pietre Metin e boss, fondano gilde e salvano i propri progressi nel database del server.
@@ -36,6 +37,7 @@ Requisiti, una guida passo passo e le risposte alle domande frequenti si trovano
 - **[Sito del progetto — mt2sp.com](https://mt2sp.com)**: che cos'è il progetto, la guida all'installazione e le FAQ, in polacco, inglese, tedesco e turco.
 - **[Server Discord](https://discord.gg/DyCxXdZtnV)**: il pacchetto completo, aiuto, segnalazioni di bug, idee e novità sulle nuove versioni.
 - **[Supporto su buycoffee.to](https://buycoffee.to/metin2-playerbots)**: le donazioni volontarie aiutano a coprire gli strumenti, il server di test e i modelli di IA usati per sviluppare il progetto.
+- **[Supporto tramite PayPal](https://paypal.me/tieruyt)**: un secondo modo per donare che funziona anche fuori dalla Polonia.
 
 <a href="https://buycoffee.to/metin2-playerbots" target="_blank"><img src="https://buycoffee.to/btn/buycoffeeto-btn-primary.svg" style="height: 42px;" alt="Sostieni su buycoffee.to"></a>
 
