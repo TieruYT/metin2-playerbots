@@ -25,6 +25,7 @@ docs/patches/*.patch -whitespace
 *.ico binary
 *.zip binary
 *.gz  binary
+*.tga binary
 
 # Wiki pack inputs preserve the donor's bytes, including .sub descriptor EOLs.
 /linux-port-mt2009/client-patch-wiki/** -text

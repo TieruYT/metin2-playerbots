@@ -17,6 +17,23 @@ every version here.
 
 ---
 
+## 2.2.155 (2026-11-17)
+
+Nowy plik gry: łucznik strzela w biegu z konia, Szybki Atak nie ląduje w skałach, odepchnięta postać stoi tam, gdzie widzi ją serwer, a polimorfia trafia z właściwej odległości. Do tego cztery nowe języki gry, przełączniki Towarzysza, herby gildii botów, panel Lochu Zarazy i więcej Metinów 90.
+
+- **Łucznik na koniu:** Ninja z łukiem jadący na koniu strzela do celu w zasięgu łuku bez zatrzymywania się i dalej skręca; dalszy cel ostrzeliwuje jak dotąd, z miejsca (pomysł: TheDupcioPL).
+- **Szybki Atak:** zabójca ląduje na wolnym kawałku ziemi przed celem, a nie w kolumnie, w skałach czy pod zboczem; cel tuż obok atakuje z miejsca (Kary).
+- **Odepchnięcie:** postać stojąca w miejscu, którą cios potwora odepchnął, podaje serwerowi swoje nowe miejsce, więc potwory biją tam, gdzie naprawdę stoi (zgłoszenie: Drip).
+- **Polimorfia:** postać w przemianie podchodzi do potwora na zasięg ataku swojej formy, więc np. Ezoteryczny Fanatyk wreszcie trafia (Charlie).
+- **Auto Łowy:** mikstury smoczego boga można wybrać do podnoszenia (Colide).
+- **Języki:** czeski, węgierski, niderlandzki i duński jako języki gry - w kliencie, na serwerze i w panelu klasycznym (rihovak10-max, lastrevolution0410); poprawki tureckiego (Said).
+- **Towarzysz:** nowe przełączniki w oknie trudności launchera i w panelu klasycznym - gra bez właściciela, łowienie i zbieranie, handel, alchemia i kowal, każde osobno (pomysł: blipu). Domyślnie wszystko włączone. Magazyn Towarzysza po teleporcie nie zgłasza już „magazyn się zmienił” (Pisi).
+- **Gildie botów:** przywódcy gildii botów wybierają herb gildii z zestawu Drip (Drip).
+- **Loch Zarazy:** w panelu klasycznym czas wyprawy, przerwa między wejściami, limit wejść i zawartość Skrzyni Zarazy (blipu); drużyna graczy wchodzi do lochu w komplecie, nie tylko lider (NerrVoVy).
+- **Katakumby Diabła:** w Świątyni Hwang znów stoi brama wejścia do Katakumb, z dopasowanym terenem i minimapą; Strażnik i miejsce zbiórki stoją przy niej (NerrVoVy).
+- **Metiny 90:** w Czerwonym Lesie stoją cztery Metiny Jeon-Un zamiast dwóch i odradzają się co 20-25 minut; postać o wiele silniejsza od potwora zachowuje domyślnie co najmniej 60% szansy na drop (LowkeyLoki).
+- **Boty:** łowiący boty nie stoją już bezczynnie bez wędki (prodnathin); boty pilnują minimalnego ulepszenia w każdym miejscu ekwipunku, także butów i naszyjnika.
+
 ## 2.2.154 (2026-11-16)
 
 Lady botów mniej przepełnione, księgi wystawione przez graczy znajdują kupców, Stajenny znów ma sklep, wygodniejszy panel klasyczny i poprawka błędnego „konto zablokowane” przy logowaniu.
