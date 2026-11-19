@@ -25,6 +25,7 @@ docs/patches/*.patch -whitespace
 *.ico binary
 *.zip binary
 *.gz  binary
+/linux-port-mt2009/client-patch-legacy-textures/** binary
 *.tga binary
 
 # Wiki pack inputs preserve the donor's bytes, including .sub descriptor EOLs.
@@ -63,6 +64,8 @@ docs/patches/*.patch -whitespace
 # tabs included, so the renderer's replay over the published root stays exact
 # (uiquest.py for Kiciamol's quest curtain, #59).
 /linux-port-mt2009/client-root/uiquest.py -whitespace
+# Generated stock-root scripts keep the game's CRLF and legacy encoding.
+/linux-port-mt2009/client-root/uitooltip.py -whitespace
 
 # The published client's gamedata pack the panel builds the client's item and
 # monster tables over (files/client_protos.py): its bytes are compared by SHA-256.
@@ -94,3 +97,6 @@ docs/patches/*.patch -whitespace
 # NerrVoVy's Christmas event: the server's groups, drops and motions are the
 # addon's bytes, CRLF and all (port/christmas_content.py).
 /linux-port-mt2009/docker/game/christmas/** -text -whitespace
+
+# Original boss/model source bytes are verified by client-bosses-assets.json.
+/linux-port-mt2009/client-patch-bosses/** -text -whitespace binary

@@ -17,6 +17,29 @@ every version here.
 
 ---
 
+## 2.2.156 (2026-11-19)
+
+Nowy plik gry: łucznik na koniu trafia pięć potworów naraz, odpycha je i strzela w tempie pieszego. Do tego oryginalne modele bossów, ostrzejsze tekstury starszych map, handlowalny Pierścień Teleportacji, Rękawica Złodzieja, własne przedmioty z panelu, misje codzienne we właściwej zakładce, Kupony SM na ladach botów i nowe ustawienia w panelu klasycznym.
+
+- **Łucznik na koniu:** Ninja z łukiem na koniu trafia każdą zwykłą strzałą pięć potworów, każda strzała z siodła odpycha trafione potwory (nigdy bossa ani Metina), a strzela w tempie pieszego, nie wolniej. Do strzału znów się zatrzymuje, jak przed 2.2.155, a dodatkowe cele szuka każda strzała z siodła, nie co druga (Kary, Drip).
+- **Modele bossów:** oryginalne modele Razadora, Nemere, Jotuna Thryma, ich potworów ognia i lodu, Bagjanamu, potworów lasu i rodzin potworów Smoczej Wyspy, z ruchami i efektami (NerrVoVy).
+- **Starsze mapy:** mapy sprzed kontynentu 95+ mają ostrzejsze, oryginalne tekstury 512x512 (NerrVoVy). Paczka klienta jest przez to większa o ok. 40 MB.
+- **Pierścień Teleportacji:** Król Pająków upuszcza teraz handlowalny Pierścień Teleportacji, a pierścień z Item Shopu i skrzyń ma 50 użyć, zgodnie z opisem - także pierścienie, które gracze już mają, liczone od pierwszego użycia po aktualizacji (pomysł: blipu, autor: NerrVoVy).
+- **Okno misji:** misja Seon-Hae oraz cztery misje reputacji Pustyni Yongbi i Doliny Orków są w zakładce „Codzienna misja”, w każdym języku (Drip).
+- **Magiczny Metal:** opis mówi, że przeciąga się go na przedmiot jak Zwój Błogosławieństwa (ta sama szansa, materiały i Yang z przepisu, przedmiot nie ginie ani nie traci plusa), a podpowiedź nie pokazuje już limitów zwoju bonusowego - we wszystkich językach (zgłoszenie: Drip).
+- **Wiki:** lista dropu w Wiki w grze pokazuje to, co gra naprawdę upuszcza, tak jak „?” celu - także Kupony SM, księgi umiejętności, Zwoje Błogosławieństwa i kamienie duchowe z Metinów (LowkeyLoki).
+- **Rękawica Złodzieja:** rzadko w skrzyniach bossów i w sklepie wydarzeń; pierwsza Skrzynia Ucznia daje też Rękawicę na 7 dni (czasu gry) - do wyłączenia w ustawieniach trudności (LowkeyLoki).
+- **Własne przedmioty:** w panelu narzędzie do importu własnych przedmiotów i wierzchowców (z pieczęcią) oraz warsztat kowala do ich ulepszania (Colide).
+- **Bonusy:** odporność na pioruny znów losuje się jako zwykły bonus na zbroi, hełmie i bransolecie (hr).
+- **Rynek:** godzina pierwszeństwa dla graczy trwa 60 minut zamiast 45 i obejmuje wszystkie boty, także z własnego królestwa lady; poza zwojami, materiałami i księgami dotyczy też towarów z list życzeń graczy i rzadkich (Kary).
+- **Kupony SM:** boty wystawiają swoje Kupony SM na ladach (blipu), a kupony u botów nie tanieją poniżej ceny bazowej, gdy ceny na rynku spadają - uczciwa cena minimalna.
+- **Auto Łowy:** nowy przełącznik łowienia ryb w Auto Łowach - w oknie trudności launchera i w panelu klasycznym. Wyłączony nie pozwala łowić automatycznie; łowienie ręczne wędką działa jak zawsze. Domyślnie włączony (pomysł: blipu). Postać w Auto Łowach nie staje już bez ruchu poza kołem zasięgu, gdy Szybki Atak albo odrzut wyrzuci ją przy kolumnie czy skale - sama wraca do koła (Kary).
+- **Loch Zarazy:** w panelu klasycznym zakres poziomów wejścia, najmniejsza liczba graczy wyprawy i wymagane klasy; domyślnie bez zmian (pomysł: Drip).
+- **Panel klasyczny:** odblokowanie albo przywrócenie blokady expa wielu botów naraz na liście botów (Pierun); strona „Drop specjalny” do szansy specjalnego dropu potworów (Lam).
+- **Boty a gracze:** nowy przełącznik w panelu klasycznym - boty nie atakują graczy i walczą tylko między sobą (poza wojnami i przypadkowymi trafieniami we wspólnym miejscu); domyślnie wyłączony (Kosovoy).
+- **Łowienie botów:** boty nie zbierają już bez końca farb do włosów, wybielaczy oraz Rękawicy i Symbolu Króla Przepowiedni z łowienia - w każdym królestwie jeden rybak wystawia je po kilka sztuk na ladzie, a liczbę rybaków ustawia się w panelu klasycznym. Towarzysz w opcji „Usuwanie połowów” usuwa teraz wszystkie rodzaje farb i wybielaczy.
+- **Boty:** bot, któremu zamknięto front, wraca na niego po dwóch godzinach, gdy próg sprzętu jest wyłączony.
+
 ## 2.2.155 (2026-11-17)
 
 Nowy plik gry: łucznik strzela w biegu z konia, Szybki Atak nie ląduje w skałach, odepchnięta postać stoi tam, gdzie widzi ją serwer, a polimorfia trafia z właściwej odległości. Do tego cztery nowe języki gry, przełączniki Towarzysza, herby gildii botów, panel Lochu Zarazy i więcej Metinów 90.
