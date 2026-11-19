@@ -1,18 +1,18 @@
 {
   "schema": 1,
   "channel": "stable",
-  "statusMessage": "2.2.155 / klient 2.0.156: nowy plik gry - łucznik strzela z konia w biegu, poprawki Szybkiego Ataku, odepchnięcia i polimorfii; czeski, węgierski, niderlandzki i duński; przełączniki Towarzysza, wejście do Katakumb. Zamknij grę, zaktualizuj serwer i launcher, uruchom launcher ponownie, następnie zaktualizuj klienta.",
+  "statusMessage": "2.2.156 / klient 2.0.157: nowy plik gry - łucznik na koniu trafia pięć potworów, odpycha je i strzela w tempie pieszego; oryginalne modele bossów, ostrzejsze tekstury starszych map, handlowalny Pierścień Teleportacji, misje codzienne we właściwej zakładce, Kupony SM na ladach botów. Zamknij grę, zaktualizuj serwer i launcher, uruchom launcher ponownie, następnie zaktualizuj klienta.",
   "server": {
-    "version": "2.2.155",
-    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.155/metin2-server-protected-migration-2.2.155.zip",
-    "sha256": "7969FACBFBC951F93F4362470B3EC775DB38B98813D959A3BF93DC43B1375001",
-    "size": 181252852
+    "version": "2.2.156",
+    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.156/metin2-server-protected-migration-2.2.156.zip",
+    "sha256": "E25570BB15B179052B18619181B84674A89DE4CDC8C04D1F81FD8F432E52D1D0",
+    "size": 182464943
   },
   "serverProtected": {
-    "version": "2.2.155",
-    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.155/metin2-server-protected-update-2.2.155.zip",
-    "sha256": "EC87DAA513C59E9ED91ECB56ED3F2704EADAFEE36FA7B7980847E8F852AF394D",
-    "size": 171296372
+    "version": "2.2.156",
+    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.156/metin2-server-protected-update-2.2.156.zip",
+    "sha256": "D313611FFD4AAC972376D87AA9B2A03AC3AEA8D2F96F3E5639B6402A9D1ED051",
+    "size": 172508463
   },
   "protectedFrom": "2.2.39",
   "support": {
@@ -21,10 +21,10 @@
     "reportUrl": "https://script.google.com/macros/s/AKfycbweM8tWcvm59Va8BJxnS1z0o9L2GgtL0NXj6Yu_olAvJ7sPjnpckyGY6JB5fXH3lJYisA/exec?k=m2-7f3k9q"
   },
   "client": {
-    "version": "2.0.156",
-    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.155/metin2-client-update-2.0.156.zip",
-    "sha256": "382DCB94E7F2A1BE1D02C545B8ABA5A7AE163F5EB9E51C2E10C3943D42F745BD",
-    "size": 170170853,
+    "version": "2.0.157",
+    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.156/metin2-client-update-2.0.157.zip",
+    "sha256": "8DA069C2BEACF3D94F18345FC9814ED39DD614707ED5817EA9119036D27E90FF",
+    "size": 286863498,
     "requiresClientExe": true,
     "architecture": "x64",
     "nativeRuntime": [
@@ -110,7 +110,7 @@
       }
     ],
     "supplement": {
-      "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.155/metin2-client-update-2.0.156-supplement.zip",
+      "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.156/metin2-client-update-2.0.157-supplement.zip",
       "sha256": "325F053D8BECF30070E4D1BEBD161408A7770E7B1E11D1CFBE008F315CB13D51",
       "size": 4060,
       "files": [
@@ -121,9 +121,9 @@
     }
   },
   "clientExe": {
-    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.155/metin2client.exe",
-    "sha256": "1049E973CB19CCA5BAD92489ECF2F9068EEBEE84BC96F7F43958A5D43B506959",
-    "size": 11036160,
+    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.156/metin2client.exe",
+    "sha256": "AB131A67D67C8F868C159748982A760A4556ECDEF0D499C46689B82CAC0E933B",
+    "size": 11037184,
     "replaces": [
       "8263F81BFACDFA4A664C1F2A8CE846AEE14F19E584DB40A43F3184FEF1A59531",
       "752623560AB54E2F3F84FF9ADB8961D73E2E289634075118D3FBEA984CFCEFB1",
@@ -169,9 +169,10 @@
       "48EA2F91981CC1A4E01126A3E8C98648458150C16B495413C99DB614E718B5E4",
       "C72FE67FF37A524859C3960FC848DA9ED29EF0F6FB3358E9485FCD58685DEE26",
       "81479B8949AFE0F81DD1BA08472B9F68D77997F6872D15EF568704254DC2BDDE",
-      "60B2364E7D948DCA345F80A2DE7266A16B189107B277F4DF25957CFA986785F7"
+      "60B2364E7D948DCA345F80A2DE7266A16B189107B277F4DF25957CFA986785F7",
+      "1049E973CB19CCA5BAD92489ECF2F9068EEBEE84BC96F7F43958A5D43B506959"
     ]
   },
-  "statusMessageEn": "2.2.155 / client 2.0.156: a new game file - the mounted archer shoots on the move, Fast Attack, knockback and polymorph fixes; Czech, Hungarian, Dutch and Danish; companion switches, the Catacomb entrance. Close the game, update the server and launcher, restart the launcher, then update the client.",
-  "publishedAt": "2026-11-17T19:09:24Z"
+  "statusMessageEn": "2.2.156 / client 2.0.157: a new game file - the mounted archer strikes five monsters, pushes them back and shoots at the walker's pace; original boss models, sharper textures on older maps, a tradeable Teleportation Ring, daily missions in the right tab, SM coupons on bot counters. Close the game, update the server and launcher, restart the launcher, then update the client.",
+  "publishedAt": "2026-11-19T19:53:10Z"
 }
