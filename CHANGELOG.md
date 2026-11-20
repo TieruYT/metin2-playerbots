@@ -17,6 +17,27 @@ every version here.
 
 ---
 
+## 2.2.157 (2026-11-21)
+
+Nowy plik gry: łucznik na koniu strzela w 95% tempa pieszego. Do tego lepszy rynek botów, Towarzysz, który sprzedaje oznaczone przedmioty i oddaje misje, agresorzy i własne boty w panelu klasycznym, Sztuka Combo według ankiety, działające Wsparcie Boga Smoków i wiele poprawek.
+
+- **Łucznik na koniu:** strzał z siodła w 95% tempa pieszego, więc z dużą zieloną miksturą nie jest już za szybki; dodatkowe cele są szukane wokół celu, tak jak pieszo, a odepchnięcie sięga tylko potworów bliżej łucznika (Drip, Kary).
+- **Rynek botów:** boty lepiej widzą, co naprawdę sprzedaje się w każdej wiosce, i według tego układają towar i ceny na ladach; sprzęt bez wyceny zostaje w torbie zamiast trafiać na ladę za bezcen (audyt z inspiracji Lostka).
+- **Towarzysz:** sprzedaje u handlarza przedmioty, które właściciel oznaczy w jego torbie, a z pełną torbą sam idzie do handlarza (gregoszky); oddaje przedmioty swoich misji u NPC, przy którym stoi właściciel (LowkeyLoki); wyrzuca niepotrzebne połowy, jak farby i wybielacze, a najpierw mówi, gdzie to wyłączyć (Brzydal); za śmieci dostaje u handlarza tyle, co gracz.
+- **Agresorzy:** nowa strona w panelu klasycznym - wybrane boty na wspólnej mapie napadają postacie innych królestw, przez ustalony czas albo codziennie w wybranych godzinach; domyślnie wyłączone (gregoszky).
+- **Własne boty:** w panelu klasycznym własny bot z wybranym nickiem, klasą, królestwem i ścieżką, który od następnego startu żyje jak każdy inny bot (Mortalis1128).
+- **Sztuka Combo:** według ankiety (wariant A) punkty Combo dodają stałe obrażenia zwykłym ciosom i strzałom w potwory i Metiny - strzale, gdy trafia co najmniej cztery cele - zamiast procentu ataku; nie działają na graczy ani na umiejętności (Drip). Księgi Combo czekają trzy razy krócej niż zwykłe księgi (Ignis, Lam).
+- **Księgi botów:** boty na linii 2.x znów kupują swoje księgi umiejętności po wizycie w mieście (Lam).
+- **Wsparcie Boga Smoków:** daje +15 do siły, witalności, zręczności i inteligencji na 30 minut, z ikoną i czasem na pasku efektów, a „Scal i uporządkuj” kładzie je obok mikstur Boga Smoków (Kary, blipu, Drip).
+- **Beran-Setaou:** smok ma 75% pierwotnej siły zamiast połowy (NerrVoVy, BaronMunchhausen).
+- **Yang z bossów:** kupki yang bossa sumują się do tego, co płaci zwykły potwór z tym samym wierszem - mniej więcej pięć razy więcej niż dotąd (Drip).
+- **Medal Konny:** nowy przełącznik świata - medal oddany Stajennemu podnosi poziom konia 1-9 bez jazdy treningowej; domyślnie wyłączony (Soulless_47).
+- **Bonusy:** odporność na pioruny znów nie losuje się jako bonus (zespół balansu: blipu, Kary, Drip).
+- **Tłumaczenia:** nazwy potworów w misjach i tytuły NPC w języku gracza, a w panelu Sebana nazwy umiejętności i ksiąg po angielsku (Ramadas, RapLow).
+- **Misje i przedmioty:** „Poszukiwania materiałów” wskazuje Uriela, gdy przesyłka jest w torbie (RahimKebab); Drewniany Klucz nie znika już na nic - wszystkie miejsca sklepu są otwarte, a klucz można sprzedać; opis pieczęci wierzchowca pokazuje jej bonusy; Peleryna Męstwa i inne przedmioty dają się dodać do listy życzeń w Domu Towarowym (Gabernik).
+- **Launcher:** na komputerze bez Dockera mówi, co zrobić (zainstalować Docker Desktop), i nie zaczyna aktualizacji serwera, która nie mogłaby się udać.
+- **Panel Sebana:** strona nazw botów pokazuje nicki nadane przez serwer i odsyła do własnych botów w panelu klasycznym (Mortalis1128).
+
 ## 2.2.156 (2026-11-19)
 
 Nowy plik gry: łucznik na koniu trafia pięć potworów naraz, odpycha je i strzela w tempie pieszego. Do tego oryginalne modele bossów, ostrzejsze tekstury starszych map, handlowalny Pierścień Teleportacji, Rękawica Złodzieja, własne przedmioty z panelu, misje codzienne we właściwej zakładce, Kupony SM na ladach botów i nowe ustawienia w panelu klasycznym.
