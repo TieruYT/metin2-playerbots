@@ -1,18 +1,18 @@
 {
   "schema": 1,
   "channel": "stable",
-  "statusMessage": "2.2.157 / klient 2.0.158: nowy plik gry - łucznik na koniu strzela w 95% tempa pieszego; lepszy rynek botów, Towarzysz sprzedaje oznaczone przedmioty, agresorzy i własne boty w panelu klasycznym, Sztuka Combo według ankiety, działające Wsparcie Boga Smoków. Zamknij grę, zaktualizuj serwer i launcher, uruchom launcher ponownie, następnie zaktualizuj klienta.",
+  "statusMessage": "2.2.158 / klient 2.0.159: boty kończą questy, trzymają wątek po zmianie kanału, lepiej gospodarują sprzętem i handlem; nowy plik gry - Auto Łowy biją potwora blokującego powrót do koła; Sztuka Combo na ciosach serii, strzały z siodła nie odpychają minibossów, poprawki paneli, launchera i klasycznych tekstur. Zamknij grę, zaktualizuj serwer i launcher, uruchom launcher ponownie, następnie zaktualizuj klienta.",
   "server": {
-    "version": "2.2.157",
-    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.157/metin2-server-protected-migration-2.2.157.zip",
-    "sha256": "EC19F4B8308BA358D807D30B7C5111D15DC56DA4CF6ADBC6C6A74143A572E393",
-    "size": 182629059
+    "version": "2.2.158",
+    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.158/metin2-server-protected-migration-2.2.158.zip",
+    "sha256": "2EEC1CF446CA5963E60183051B18AD690B52F63FA3E44043FBC0C9CF6B7B9D25",
+    "size": 182731951
   },
   "serverProtected": {
-    "version": "2.2.157",
-    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.157/metin2-server-protected-update-2.2.157.zip",
-    "sha256": "3D34341BA1918E82FFAF6B73D572258F31B71CA3DC7BAC0C58876DB5AD9F4E1A",
-    "size": 172672579
+    "version": "2.2.158",
+    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.158/metin2-server-protected-update-2.2.158.zip",
+    "sha256": "815923F04BFD0F056C77986107DD3824A61D4A668DBEE87081CBE980EF727ADE",
+    "size": 172775471
   },
   "protectedFrom": "2.2.39",
   "support": {
@@ -21,10 +21,10 @@
     "reportUrl": "https://script.google.com/macros/s/AKfycbweM8tWcvm59Va8BJxnS1z0o9L2GgtL0NXj6Yu_olAvJ7sPjnpckyGY6JB5fXH3lJYisA/exec?k=m2-7f3k9q"
   },
   "client": {
-    "version": "2.0.158",
-    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.157/metin2-client-update-2.0.158.zip",
-    "sha256": "4EB91014C36EBE1DD78FF930D4CD1ABE275618933103C48A262605F3DD9D0AA8",
-    "size": 286872327,
+    "version": "2.0.159",
+    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.158/metin2-client-update-2.0.159.zip",
+    "sha256": "3684BCA11CF6A684BD1C6ACBE2B6F36E49D66C65BC704BBB615A6BEC1483338D",
+    "size": 287842986,
     "requiresClientExe": true,
     "architecture": "x64",
     "nativeRuntime": [
@@ -110,7 +110,7 @@
       }
     ],
     "supplement": {
-      "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.157/metin2-client-update-2.0.158-supplement.zip",
+      "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.158/metin2-client-update-2.0.159-supplement.zip",
       "sha256": "325F053D8BECF30070E4D1BEBD161408A7770E7B1E11D1CFBE008F315CB13D51",
       "size": 4060,
       "files": [
@@ -121,9 +121,9 @@
     }
   },
   "clientExe": {
-    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.157/metin2client.exe",
-    "sha256": "554A0335B6577B68E673BA4A4E27D9E478BACC936036B84153ABE05D23C7C161",
-    "size": 11037184,
+    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.158/metin2client.exe",
+    "sha256": "77C0061C9346A994D5677E7A6F143F474B1ABC315522220CC763E3FBA0C4DC59",
+    "size": 11040768,
     "replaces": [
       "8263F81BFACDFA4A664C1F2A8CE846AEE14F19E584DB40A43F3184FEF1A59531",
       "752623560AB54E2F3F84FF9ADB8961D73E2E289634075118D3FBEA984CFCEFB1",
@@ -171,9 +171,10 @@
       "81479B8949AFE0F81DD1BA08472B9F68D77997F6872D15EF568704254DC2BDDE",
       "60B2364E7D948DCA345F80A2DE7266A16B189107B277F4DF25957CFA986785F7",
       "1049E973CB19CCA5BAD92489ECF2F9068EEBEE84BC96F7F43958A5D43B506959",
-      "AB131A67D67C8F868C159748982A760A4556ECDEF0D499C46689B82CAC0E933B"
+      "AB131A67D67C8F868C159748982A760A4556ECDEF0D499C46689B82CAC0E933B",
+      "554A0335B6577B68E673BA4A4E27D9E478BACC936036B84153ABE05D23C7C161"
     ]
   },
-  "statusMessageEn": "2.2.157 / client 2.0.158: a new game file - the mounted archer shoots at 95% of the walker's pace; a better bot market, the Companion sells marked items, aggressors and custom bots in the classic panel, Combo Art as the poll chose, a working Dragon God Support. Close the game, update the server and launcher, restart the launcher, then update the client.",
-  "publishedAt": "2026-11-20T23:29:27Z"
+  "statusMessageEn": "2.2.158 / client 2.0.159: bots finish quests, keep their errand over a channel move and manage gear and trade better; a new game file - Auto Hunt fights the monster that blocks the way back to the circle; Combo Art on the chain's combo blows, arrows from the saddle no longer push mini-bosses, fixes to the panels, the launcher and classic textures. Close the game, update the server and launcher, restart the launcher, then update the client.",
+  "publishedAt": "2026-11-22T00:54:54Z"
 }
