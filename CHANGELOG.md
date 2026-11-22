@@ -17,6 +17,26 @@ every version here.
 
 ---
 
+## 2.2.158 (2026-11-22)
+
+Boty zaczęły kończyć questy, nie gubią wątku po przelogowaniu i zmianie kanału, rozsądniej gospodarują chęcią do gry, zapasowym sprzętem i towarem na ladach. Nowy plik gry: Auto Łowy biją potwora, który blokuje powrót do koła. Do tego Sztuka Combo na ciosach serii, minibossy nieodpychane strzałami z siodła, poprawki paneli, launchera i klasycznych tekstur.
+
+- **Boty kończą questy:** oddają przedmioty właściwym NPC, także gdy quest prosi o kilka rzeczy naraz; questa, którego nie da się teraz zrobić, odkładają na później zamiast porzucać go na zawsze, a przedmioty questa, z którego wyrosły, oddają albo wyrzucają; nauczyły się questów z zegarem, siana i rud, od 30. poziomu idą dalej z fabułą, do Mu-Ranga ustawiają się w kolejce, a brakujące towary questa kupują z lad (Tieru).
+- **Boty trzymają wątek:** wyprawa po quest albo po materiał trwa dalej po przelogowaniu i zmianie kanału, grupa botów na wyprawie zostaje na swoim kanale, a farmer Zęba Orka nie traci swojej wizyty po zmianie kanału.
+- **Chęć gry botów:** śmierć w Lochach Małp nie liczy się do serii trzech zgonów, kara za śmierć „z ręki gracza” dotyczy tylko prawdziwego gracza, a nie innego bota czy Towarzysza, a chęć gry wraca do normy o dziesiątą część dziennie - boty rzadziej znikają na długi odpoczynek. Towarzysze nie zajmują już miejsc w przedziałach poziomów, więc w grze jest więcej zwykłych botów na wyższych poziomach.
+- **Zapasowy sprzęt botów:** po wymianie sztuki ekwipunku bot nie trzyma już starej i zapasowej w torbie na zawsze - puszcza je, gdy nowa osiągnie swój cel, a zaległości oddaje stopniowo, żeby nie zalać rynku.
+- **Drop z Metinów:** bot przed rozbiciem kamienia robi miejsce w plecaku, więc drop nie zostaje na ziemi (blipu); zapasowe księgi czekają w magazynie, niskie Kamienie Duszy i zwykły nadmiarowy sprzęt, którego nie bierze żadna lada, idą do handlarza, a lepsze sztuki do magazynu; u Kowala bot ulepsza na sprzedaż tylko to, na co jest miejsce na ladzie.
+- **Handel botów:** boty nie przepłacają za pieczone ryby, a sprzedaże samego sprzedawcy nie podbijają ceny (Kary); nadpodaż sprzętu jest liczona osobno dla +0 do +6 i dla +7 do +9, więc sztuka +7 nie tanieje przez słabsze sztuki tej samej rodziny; górnicy wystawiają na ladach diamenty i bursztyn.
+- **Auto Łowy (nowy plik gry):** gdy potwór blokuje drogę powrotną do koła, postać walczy z nim zamiast stać w miejscu (Kary; kontroler Auto Łowów: Colide).
+- **Sztuka Combo:** stałe obrażenia dostają ciosy combo z serii, a z konia co któryś cios - zgodnie z opisem umiejętności, poprawionym w trzynastu językach (Drip, Kary, blipu).
+- **Łucznik na koniu:** strzały z siodła nie odpychają już minibossów (Drip, Kary, blipu).
+- **Towarzysz:** gdy prowadzi grupę, po własnych zakupach zakłada ją od nowa zamiast winić właściciela i czekać pięć minut (Brzydal).
+- **Własne boty:** powstają pewnie, także po restarcie na VPS-ie, a panel mówi, dlaczego bot nie powstał (Rinsyi, Mortalis1128).
+- **Alchemia:** uzupełnione koszty Smoczego Płomienia, a zmiana bonusów kamienia ma swoje okno (NerrVoVy).
+- **Panele:** boty w Wieży Demonów widać na mapie na żywo w obu panelach (NerrVoVy), a panel Sebana oznacza też bota, który utknął w lochu; wyszukiwarka ustawień panelu klasycznego znajduje Loch Zarazy, kody voucherów i stronę każdej karty (Drip).
+- **Launcher:** sam naprawia panel zatrzymany na starej wersji przez dawny dodatek „Loch Zarazy” i przebudowuje panel, którego wersja nie zgadza się z instalacją (Drip).
+- **Klasyczne tekstury:** przy ustawieniu „Klasyczne tekstury” Świątynia Hwang i Loch Zarazy znów mają podłoże, a choinka w stolicach jest widoczna (LowkeyLoki).
+
 ## 2.2.157 (2026-11-21)
 
 Nowy plik gry: łucznik na koniu strzela w 95% tempa pieszego. Do tego lepszy rynek botów, Towarzysz, który sprzedaje oznaczone przedmioty i oddaje misje, agresorzy i własne boty w panelu klasycznym, Sztuka Combo według ankiety, działające Wsparcie Boga Smoków i wiele poprawek.
