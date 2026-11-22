@@ -17,6 +17,26 @@ every version here.
 
 ---
 
+## 2.2.159 (2026-11-23)
+
+Boty dobiegają tam, gdzie wcześniej przeskakiwały, stawiają stoiska na wolnych miejscach rynku i rozsądniej wyceniają sprzęt, ryby i ulepszenia. Towarzysz korzysta z Kowala w Wieży Demonów i dba o sprzęt od właściciela. Nowe: teleport do członka grupy, handlowalny Magiczny Kamień, konfigurator dropu potworów w panelu. Nowy plik gry: niedźwiedź w Auto Łowach bije duże potwory. Wierzchowce z pieczęci i klątwa Świątyni Hwang wracają jako funkcje do włączenia w panelu, domyślnie wyłączone.
+
+- **Boty dobiegają:** do swojego stoiska, na wyprawę grupy i z Lochu Małp przez drzwi wyjściowe idą pieszo, zamiast przenosić się z miejsca; do bossa są wołane tylko te, które zdążą dobiec (Lam).
+- **Stoiska na rynku:** Towarzysz i boty stawiają stoisko na wolnym miejscu, Towarzysz obok właściciela, i mówią, gdy plac jest pełny (Brzydal).
+- **Wycena i handel botów:** odporność na dzwony i wachlarze nie podnosi już ceny, pęknięty Kamień Duszy lekko ją obniża, słaba broń i zbroja od NPC nie kosztują więcej niż u handlarki, a ulepszona sztuka nie idzie poniżej kosztu u Kowala; szamani celują w kolczyki z inteligencją (Kary). Przygotowana jest też wycena sprzętu według przydatności bonusów dla klasy - na razie wyłączona (Kary).
+- **Ryby:** żywa ryba kosztuje tyle, ile warte jest to, co z niej wychodzi, a martwe ryby nie trafiają na lady botów (blipu).
+- **Towar na ladach:** boty wystawiają zapasową broń +7 do +9 z 30. poziomu i wolną broń przed odpoczynkiem (Tieru), handlowalne Kamienie Zmiany i Dodania (Lam, Frelik) oraz zapasową Sztukę Wojny Sun Zi, a księgi dowodzenia zostawiają graczom (LowkeyLoki). Na mapach gildii znów polują boty, które dostarczają na lady sprzęt z 30. poziomu (Tieru).
+- **Mikstury i dopalacze:** bot pije miksturę prędkości i używa dopalacza tylko wtedy, gdy jego efekt już nie działa (Wolfek).
+- **Towarzysz:** korzysta z Kowala w Wieży Demonów, a właściciel może sam wskazać przedmiot do ulepszenia (blipu); sprzęt od właściciela jest chroniony przed sprzedażą i wyrzuceniem, ale Towarzysz może nosić lepszy (Tieru); w planie offline otwiera, piecze i odkłada złowione ryby zgodnie z opcjami łowienia; mówi, dlaczego nie mógł zarzucić wędki, i nie jest wysyłany na ryby tam, gdzie gra nie pozwala łowić (LowkeyLoki).
+- **Teleport do członka grupy (klient):** z Dowodzeniem na P można przenieść się do członka grupy z Dowodzeniem od G1, raz na pięć minut (Drip).
+- **Magiczny Kamień i Magiczny Metal:** nowy, handlowalny Magiczny Kamień robi Kowal z dwóch handlowalnych Zwojów Boga Smoków (Tieru), a Magiczny Metal znów służy do wyrobu Zwoju Boga Smoków (Drip).
+- **Wierzchowce z pieczęci:** wymiana certyfikatów i pieczęcie wierzchowców działają, a Stajenny znów szkoli wierzchowca od młodego do dzielnego (Rinsyi) - funkcja do włączenia w panelu, domyślnie wyłączona (Kary, Drip).
+- **Świątynia Hwang:** klątwa świątyni i Maska Sabaha jak w plikach Mt2009 - do włączenia w panelu, domyślnie wyłączone (Szymon, Drip).
+- **Loch Zarazy:** okno Strażnika jest krótkie i czytelne także przy wielu włączonych zasadach (Drip).
+- **Dom Towarowy (klient):** podpowiada każdy przedmiot gry, także w liście życzeń i w wyborze przedmiotu (Brzydal).
+- **Auto Łowy (nowy plik gry):** niedźwiedź w przemianie bije duże potwory (Charlie).
+- **Panel:** konfigurator dropu każdego potwora z osobna i wszystkich Metinów naraz (Colide); podpowiedź przedmiotu u Mistrza Gry pokazuje jego własny numer (Drip).
+
 ## 2.2.158 (2026-11-22)
 
 Boty zaczęły kończyć questy, nie gubią wątku po przelogowaniu i zmianie kanału, rozsądniej gospodarują chęcią do gry, zapasowym sprzętem i towarem na ladach. Nowy plik gry: Auto Łowy biją potwora, który blokuje powrót do koła. Do tego Sztuka Combo na ciosach serii, minibossy nieodpychane strzałami z siodła, poprawki paneli, launchera i klasycznych tekstur.
