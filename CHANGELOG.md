@@ -17,6 +17,24 @@ every version here.
 
 ---
 
+## 2.2.160 (2026-11-24)
+
+Boty nie krążą już przez bramę między pierwszą a drugą wioską, a z Pierścieniem Teleportacji podróżują nim jak gracz. Lepszy handel botów: materiały gildii i zapasowy sprzęt na ladach, rozsądniejsze kowadło, przedmioty od graczy kupowane od razu. Boty nakładają bufy przed walką z graczem i nie zabierają mu potworów, a Ninja walczy sztyletami. Nowe: doładowanie eliksiru za yang u Alchemika. Nowy plik gry: przemiana trafia potwory stojące tuż przy niej.
+
+- **Ruch botów między mapami:** boty nie zawracają już przez bramę, którą właśnie przeszły, i nie krążą między pierwszą a drugą wioską (Sieru, Marcol, Lam); bot z Pierścieniem Teleportacji przenosi się nim tam, dokąd prowadzi pierścień gracza, także do lochów, i płaci jak gracz, a bot bez pierścienia biegnie do właściwej bramy (Tieru). Do domu boty jadą pierścieniem albo idą pieszo, zamiast przenosić się z miejsca.
+- **Towar na ladach:** boty wystawiają materiały na budowę gildii, zamiast sprzedawać je kupcowi (LowkeyLoki), oraz gotowy zapasowy sprzęt +7 do +9 każdego rodzaju, gdy noszą równie dobry (Tieru).
+- **Kowadło botów:** przedmioty ulepszane na sprzedaż nie trafiają już do kupca poniżej +6, a ponad +7 boty ulepszają tylko wtedy, gdy to się opłaca (Musk).
+- **Przedmioty od graczy:** to, co gracz albo jego Towarzysz wystawi na ladzie, boty mogą kupić od razu, bez godzinnego czekania (Wolfek).
+- **Potwory gracza:** boty nie biją potworów, które goni albo niedawno uderzył gracz - także całej grupy zebranej Peleryną Męstwa przy Auto Łowach - i nie zahaczają ich skillami obszarowymi, bez względu na królestwo (RX).
+- **PvP botów:** boty nakładają bufy przed pojedynkiem, rundą wojny gildii i walką z graczem, a nie dopiero w trakcie (Musk).
+- **Ninja:** Ninja ze sztyletami nosi, kupuje i ulepsza sztylety zamiast miecza i zadaje kombo sztyletem tyle ciosów co gracz (Musk).
+- **Alchemik:** doładowuje Eliksir Słońca i Księżyca za yang, w cenie mikstur ze sklepu (Drip).
+- **Katakumby Diabła:** po przeniesieniu Upiornego Totemu na Bazaltowy Obelisk postać trafia na piętro z Charonem i nie wraca już na puste piętro z Tartarem (Batuzz).
+- **Edytor bazy (panel):** na stronie sklepu mówi, czy kliknięcie w NPC go otworzy, a jeśli nie - co przeszkadza (lucasmouraxd).
+- **Ogniste Duchy (klient):** na Ognistej Ziemi nie jaśnieją już z każdą sekundą i nie powodują lagów (LowkeyLoki).
+- **Okno postaci (klient):** nowe zakładki w polskim kliencie (Piciu713).
+- **Przemiana (nowy plik gry):** cios przemienionej postaci trafia potwory stojące tuż przy niej, np. tygrys Wojowników Setaou (Charlie).
+
 ## 2.2.159 (2026-11-23)
 
 Boty dobiegają tam, gdzie wcześniej przeskakiwały, stawiają stoiska na wolnych miejscach rynku i rozsądniej wyceniają sprzęt, ryby i ulepszenia. Towarzysz korzysta z Kowala w Wieży Demonów i dba o sprzęt od właściciela. Nowe: teleport do członka grupy, handlowalny Magiczny Kamień, konfigurator dropu potworów w panelu. Nowy plik gry: niedźwiedź w Auto Łowach bije duże potwory. Wierzchowce z pieczęci i klątwa Świątyni Hwang wracają jako funkcje do włączenia w panelu, domyślnie wyłączone.
