@@ -1,18 +1,18 @@
 {
   "schema": 1,
   "channel": "stable",
-  "statusMessage": "2.2.159 / klient 2.0.160: boty dobiegają zamiast przeskakiwać, stawiają stoiska na wolnych miejscach i lepiej wyceniają sprzęt i ryby; Towarzysz korzysta z Kowala w Wieży Demonów; teleport do członka grupy, handlowalny Magiczny Kamień, konfigurator dropu w panelu; nowy plik gry - niedźwiedź w Auto Łowach bije duże potwory. Zamknij grę, zaktualizuj serwer i launcher, uruchom launcher ponownie, następnie zaktualizuj klienta.",
+  "statusMessage": "2.2.160 / klient 2.0.161: boty nie krążą przez bramę między wioskami i podróżują Pierścieniem Teleportacji; lepszy handel botów, bufy przed walką z graczem, Ninja ze sztyletami; doładowanie eliksiru za yang u Alchemika, Ogniste Duchy bez lagów; nowy plik gry - przemiana trafia potwory tuż przy niej. Zamknij grę, zaktualizuj serwer i launcher, uruchom launcher ponownie, następnie zaktualizuj klienta.",
   "server": {
-    "version": "2.2.159",
-    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.159/metin2-server-protected-migration-2.2.159.zip",
-    "sha256": "97C387E3913F24F31C373AFBD33CDF02E240BDE6E29C310E29805037F92F478F",
-    "size": 183056198
+    "version": "2.2.160",
+    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.160/metin2-server-protected-migration-2.2.160.zip",
+    "sha256": "77915CF29033497649E1789407C5EA08BE918A25BA3AABB41116E470F23D7BED",
+    "size": 183102349
   },
   "serverProtected": {
-    "version": "2.2.159",
-    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.159/metin2-server-protected-update-2.2.159.zip",
-    "sha256": "DA633CF20B256438A7C86687798EAE818AEEBF3F7A18F5A84814745A00A71EBE",
-    "size": 173099718
+    "version": "2.2.160",
+    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.160/metin2-server-protected-update-2.2.160.zip",
+    "sha256": "71BDF0CCFC2E368470B6F1926FA20B00FC42AC12D4BAE9393C8B3C9C286CE580",
+    "size": 173145869
   },
   "protectedFrom": "2.2.39",
   "support": {
@@ -21,10 +21,10 @@
     "reportUrl": "https://script.google.com/macros/s/AKfycbweM8tWcvm59Va8BJxnS1z0o9L2GgtL0NXj6Yu_olAvJ7sPjnpckyGY6JB5fXH3lJYisA/exec?k=m2-7f3k9q"
   },
   "client": {
-    "version": "2.0.160",
-    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.159/metin2-client-update-2.0.160.zip",
-    "sha256": "6B3719B63002B498F5E730A0AE9F9E8B72E10BF82DECAE9CD7F72A48EEC8C759",
-    "size": 287846665,
+    "version": "2.0.161",
+    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.160/metin2-client-update-2.0.161.zip",
+    "sha256": "69242D4622A1AB2E4157C65685F7053B9604F6FE145465AC4C4D9B776C7CD514",
+    "size": 287841100,
     "requiresClientExe": true,
     "architecture": "x64",
     "nativeRuntime": [
@@ -110,7 +110,7 @@
       }
     ],
     "supplement": {
-      "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.159/metin2-client-update-2.0.160-supplement.zip",
+      "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.160/metin2-client-update-2.0.161-supplement.zip",
       "sha256": "325F053D8BECF30070E4D1BEBD161408A7770E7B1E11D1CFBE008F315CB13D51",
       "size": 4060,
       "files": [
@@ -121,9 +121,9 @@
     }
   },
   "clientExe": {
-    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.159/metin2client.exe",
-    "sha256": "7D8D4AF4135F5418441A82882351DECCE800896B767FF38C03214AD85DDF800A",
-    "size": 11040768,
+    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.160/metin2client.exe",
+    "sha256": "A60750B11C1C69FBEF92048FC2E6275972BD152FBA071EA8930200B40821CCFF",
+    "size": 11041280,
     "replaces": [
       "8263F81BFACDFA4A664C1F2A8CE846AEE14F19E584DB40A43F3184FEF1A59531",
       "752623560AB54E2F3F84FF9ADB8961D73E2E289634075118D3FBEA984CFCEFB1",
@@ -173,9 +173,10 @@
       "1049E973CB19CCA5BAD92489ECF2F9068EEBEE84BC96F7F43958A5D43B506959",
       "AB131A67D67C8F868C159748982A760A4556ECDEF0D499C46689B82CAC0E933B",
       "554A0335B6577B68E673BA4A4E27D9E478BACC936036B84153ABE05D23C7C161",
-      "77C0061C9346A994D5677E7A6F143F474B1ABC315522220CC763E3FBA0C4DC59"
+      "77C0061C9346A994D5677E7A6F143F474B1ABC315522220CC763E3FBA0C4DC59",
+      "7D8D4AF4135F5418441A82882351DECCE800896B767FF38C03214AD85DDF800A"
     ]
   },
-  "statusMessageEn": "2.2.159 / client 2.0.160: bots walk instead of jumping, put their stands on free spots and price gear and fish better; the companion uses the Demon Tower's smith; teleport to a party member, a tradeable Magic Stone, a drop configurator in the panel; a new game file - a bear under Auto Hunt hits big monsters. Close the game, update the server and launcher, restart the launcher, then update the client.",
-  "publishedAt": "2026-11-22T22:45:39Z"
+  "statusMessageEn": "2.2.160 / client 2.0.161: bots no longer loop through the gate between the villages and travel with the Teleport Ring; better bot trading, buffs before a fight with a player, Ninjas on daggers; an elixir refill for yang at the Alchemist, Flame Ghosts without lag; a new game file - a polymorph hits monsters right beside it. Close the game, update the server and launcher, restart the launcher, then update the client.",
+  "publishedAt": "2026-11-24T01:11:46Z"
 }
