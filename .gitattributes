@@ -66,6 +66,11 @@ docs/patches/*.patch -whitespace
 /linux-port-mt2009/client-root/uiquest.py -whitespace
 # Generated stock-root scripts keep the game's CRLF and legacy encoding.
 /linux-port-mt2009/client-root/uitooltip.py -whitespace
+# Stock shop/reputation modules retain their renderer's original CRLF bytes.
+/linux-port-mt2009/client-root/uispecialshop.py -whitespace
+/linux-port-mt2009/client-root/uireputation.py whitespace=cr-at-eol
+/linux-port-mt2009/client-root/game.py whitespace=cr-at-eol
+/linux-port-mt2009/client-root/uiinventory.py whitespace=cr-at-eol
 
 # The published client's gamedata pack the panel builds the client's item and
 # monster tables over (files/client_protos.py): its bytes are compared by SHA-256.

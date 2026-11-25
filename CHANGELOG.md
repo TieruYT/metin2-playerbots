@@ -17,6 +17,26 @@ every version here.
 
 ---
 
+## 2.2.161 (2026-11-24)
+
+Nowe: dokończone Wężowe Pole z dwiema frakcjami i Kraina Serpentessy z jej bossem. Boty znowu wyruszają z pierwszych wiosek do Doliny Orków i na pustynię, polują w grupach i zużywają mniej procesora. Okno doładowania eliksiru za yang u Alchemika, lepszy Towarzysz, rozsądniejsze ceny i ulepszanie u botów. Nowy plik gry: Auto Łowy nie stają przy kolumnie.
+
+- **Wężowe Pole i Kraina Serpentessy (nowe):** dokończona kampania Zielonych Kłów, dwie nowe frakcje z codziennymi patrolami, rozwój konia i Kraina Serpentessy z jej bossem, na którą wyprawiają się też grupy botów (Kiciamol). Gra nie wpuszcza do Krainy Serpentessy klienta bez jej mapy, zamiast go zamykać.
+- **Boty na froncie:** boty z pierwszych wiosek znowu ruszają do Doliny Orków, na pustynię i dalej, zamiast tłoczyć się na placu przy Teleporterze i bramie; boty ze stoiskami polują dalej, aż przyjdzie ich kolej na obsługę stoiska (dave).
+- **Grupy botów:** boty polujące w jednym miejscu łączą się w grupy po 4-8 i polują razem, od 20. poziomu (Lam).
+- **Kanały CH3 i CH4:** na serwerach z tymi kanałami boty mają na nich osobny cel liczby, a boty tych kanałów nie są wymieniane na nowe postacie (LowkeyLoki).
+- **Wydajność:** serwer z wieloma botami zużywa mniej procesora; boty chodzą po Lochach Małp zamiast jeździć konno i odsyłają konia, gdy z niego zejdą.
+- **Alchemik (klient):** „Ładowanie Eliksiru za Yang” otwiera okno ładowania - wkładasz Eliksir Słońca albo Księżyca, widzisz, ile mu brakuje i ile kosztuje doładowanie, i płacisz jednym przyciskiem (Drip).
+- **Towarzysz:** ustawiony „Z tyłu” zbiera łup, gdy walka ucichnie (blipu); mówi właścicielowi, czego mu brakuje, a po „Idź na zakupy” - czego nie kupił; kupuje zwykłą broń, gdy właściciel zabierze mu jego; z odznaczonym „Biolog, questy” nie robi Biologa w żadnym trybie (LowkeyLoki).
+- **Handel botów:** boty kupują z lady część dużego stosu, tak jak gracz w Domu Towarowym (LowkeyLoki).
+- **Biżuteria i buty botów:** boty nie ulepszają już biżuterii i butów pierwszego poziomu do +4, najpierw dbają o broń, zbroję, hełm i tarczę, a potem idą ścieżkami przedmiotów swojej klasy (Kary, blipu, Drip, Musk).
+- **Ceny botów:** perły, ości, ryby dające bonus, złom od poziomu 45, Magiczny Metal i Zwój Boga Smoków mają nowe ceny na ladach botów (Kary, blipu).
+- **Wycena przedmiotów po bonusach** (opcja w panelu, domyślnie wyłączona) uwzględnia uwagi graczy o klasach, bonusach i ich mnożnikach (Kary, blipu, Drip).
+- **Szepty botów:** bot nie wypomina już szeptem zabranego potwora graczowi, który poluje obok, np. w Auto Łowach z Peleryną Męstwa (RX).
+- **Mapa na żywo (panel):** pokazuje 0 botów, gdy liczba botów jest ustawiona na 0 albo serwer jest zatrzymany, zamiast wszystkich zapisanych postaci (Drip).
+- **Auto Łowy (nowy plik gry):** postać nie stoi już przy kolumnie wewnątrz okręgu, aż gracz zsiądzie z konia albo się poruszy (DAXO).
+- **Discord (nowy plik gry):** przycisk pod statusem gry w Discordzie prowadzi na stronę projektu mt2sp.com.
+
 ## 2.2.160 (2026-11-24)
 
 Boty nie krążą już przez bramę między pierwszą a drugą wioską, a z Pierścieniem Teleportacji podróżują nim jak gracz. Lepszy handel botów: materiały gildii i zapasowy sprzęt na ladach, rozsądniejsze kowadło, przedmioty od graczy kupowane od razu. Boty nakładają bufy przed walką z graczem i nie zabierają mu potworów, a Ninja walczy sztyletami. Nowe: doładowanie eliksiru za yang u Alchemika. Nowy plik gry: przemiana trafia potwory stojące tuż przy niej.
