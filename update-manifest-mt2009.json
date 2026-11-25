@@ -1,18 +1,18 @@
 {
   "schema": 1,
   "channel": "stable",
-  "statusMessage": "2.2.160 / klient 2.0.161: boty nie krążą przez bramę między wioskami i podróżują Pierścieniem Teleportacji; lepszy handel botów, bufy przed walką z graczem, Ninja ze sztyletami; doładowanie eliksiru za yang u Alchemika, Ogniste Duchy bez lagów; nowy plik gry - przemiana trafia potwory tuż przy niej. Zamknij grę, zaktualizuj serwer i launcher, uruchom launcher ponownie, następnie zaktualizuj klienta.",
+  "statusMessage": "2.2.161 / klient 2.0.162: Wężowe Pole i Kraina Serpentessy; boty wracają na front, polują w grupach i zużywają mniej procesora; okno doładowania eliksiru za yang u Alchemika, lepszy Towarzysz; nowy plik gry - Auto Łowy nie stają przy kolumnie. Zamknij grę, zaktualizuj serwer i launcher, uruchom launcher ponownie, następnie zaktualizuj klienta.",
   "server": {
-    "version": "2.2.160",
-    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.160/metin2-server-protected-migration-2.2.160.zip",
-    "sha256": "77915CF29033497649E1789407C5EA08BE918A25BA3AABB41116E470F23D7BED",
-    "size": 183102349
+    "version": "2.2.161",
+    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.161/metin2-server-protected-migration-2.2.161.zip",
+    "sha256": "D3DA6B60FA57FAAE9E8A5C1600225723B11602DE5EEF2BB71E89DFD1BFBFEC87",
+    "size": 183283167
   },
   "serverProtected": {
-    "version": "2.2.160",
-    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.160/metin2-server-protected-update-2.2.160.zip",
-    "sha256": "71BDF0CCFC2E368470B6F1926FA20B00FC42AC12D4BAE9393C8B3C9C286CE580",
-    "size": 173145869
+    "version": "2.2.161",
+    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.161/metin2-server-protected-update-2.2.161.zip",
+    "sha256": "4AEE573DE25F7941F8A1EB58A429095D52A79A434FDBC1E0CD5F01D8A767D922",
+    "size": 173326687
   },
   "protectedFrom": "2.2.39",
   "support": {
@@ -21,10 +21,10 @@
     "reportUrl": "https://script.google.com/macros/s/AKfycbweM8tWcvm59Va8BJxnS1z0o9L2GgtL0NXj6Yu_olAvJ7sPjnpckyGY6JB5fXH3lJYisA/exec?k=m2-7f3k9q"
   },
   "client": {
-    "version": "2.0.161",
-    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.160/metin2-client-update-2.0.161.zip",
-    "sha256": "69242D4622A1AB2E4157C65685F7053B9604F6FE145465AC4C4D9B776C7CD514",
-    "size": 287841100,
+    "version": "2.0.162",
+    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.161/metin2-client-update-2.0.162.zip",
+    "sha256": "DC5A37C6B0AA01A749149D338FEFE322066D1361DD627C9CEA5C7812BFD5B63A",
+    "size": 305649077,
     "requiresClientExe": true,
     "architecture": "x64",
     "nativeRuntime": [
@@ -110,7 +110,7 @@
       }
     ],
     "supplement": {
-      "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.160/metin2-client-update-2.0.161-supplement.zip",
+      "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.161/metin2-client-update-2.0.162-supplement.zip",
       "sha256": "325F053D8BECF30070E4D1BEBD161408A7770E7B1E11D1CFBE008F315CB13D51",
       "size": 4060,
       "files": [
@@ -121,9 +121,9 @@
     }
   },
   "clientExe": {
-    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.160/metin2client.exe",
-    "sha256": "A60750B11C1C69FBEF92048FC2E6275972BD152FBA071EA8930200B40821CCFF",
-    "size": 11041280,
+    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.161/metin2client.exe",
+    "sha256": "B98D0E1C1345464B81BFEFFB53EEDAA6B8DFE5FD6345F2FD8D988FD7469F405B",
+    "size": 11041792,
     "replaces": [
       "8263F81BFACDFA4A664C1F2A8CE846AEE14F19E584DB40A43F3184FEF1A59531",
       "752623560AB54E2F3F84FF9ADB8961D73E2E289634075118D3FBEA984CFCEFB1",
@@ -174,9 +174,10 @@
       "AB131A67D67C8F868C159748982A760A4556ECDEF0D499C46689B82CAC0E933B",
       "554A0335B6577B68E673BA4A4E27D9E478BACC936036B84153ABE05D23C7C161",
       "77C0061C9346A994D5677E7A6F143F474B1ABC315522220CC763E3FBA0C4DC59",
-      "7D8D4AF4135F5418441A82882351DECCE800896B767FF38C03214AD85DDF800A"
+      "7D8D4AF4135F5418441A82882351DECCE800896B767FF38C03214AD85DDF800A",
+      "A60750B11C1C69FBEF92048FC2E6275972BD152FBA071EA8930200B40821CCFF"
     ]
   },
-  "statusMessageEn": "2.2.160 / client 2.0.161: bots no longer loop through the gate between the villages and travel with the Teleport Ring; better bot trading, buffs before a fight with a player, Ninjas on daggers; an elixir refill for yang at the Alchemist, Flame Ghosts without lag; a new game file - a polymorph hits monsters right beside it. Close the game, update the server and launcher, restart the launcher, then update the client.",
-  "publishedAt": "2026-11-24T01:11:46Z"
+  "statusMessageEn": "2.2.161 / client 2.0.162: Snakefield and Serpentessa's Realm; bots head for the frontier again, hunt in parties and use less CPU; an elixir refill window for yang at the Alchemist, a better companion; a new game file - Auto Hunt no longer stands by a column. Close the game, update the server and launcher, restart the launcher, then update the client.",
+  "publishedAt": "2026-11-25T06:33:41Z"
 }
