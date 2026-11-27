@@ -17,6 +17,17 @@ every version here.
 
 ---
 
+## 2.2.163 (2026-11-27)
+
+Poprawki po 2.2.162: po zalogowaniu i teleporcie nie wyskakują już puste okna z „OK”, Towarzysz znowu ulepsza u Kowala w Wieży Demonów, a przedmiot przeciągniesz na Kowala prosto z jego okna, eskorta Meijina ma prawdziwe zasadzki, Serpentor ma straż i nie wciska już w ściany, bramy noszą nazwę „Wężowe Pole”, a teksty questów są przetłumaczone. Nowy plik gry: Szkarłatny Żądłak jest jeszcze większy.
+
+- **Puste okna po zalogowaniu:** po zalogowaniu i po każdej zmianie mapy nie wyskakuje już kilka pustych okien z samym „OK” (Musk, Lam).
+- **Towarzysz u Kowala w Wieży Demonów:** ustawiony „Z tyłu” znowu ulepsza u Kowala na szóstym piętrze, rusza od razu, gdy oznaczysz przedmiot, i mówi, co robi; przedmiot z okna Towarzysza - z torby albo z tego, co nosi - przeciągniesz prosto na Kowala (blipu).
+- **Eskorta Meijina:** zasadzki na Bezpiecznym Przejściu atakują naprawdę Meijina, jak w mt2009 - zostawiony sam pada w około pół minuty; przed portalem czeka trzecia zasadzka, a okienko pod minimapą pokazuje jego prawdziwe zdrowie (Drip).
+- **Serpentor:** pilnują go dwie Wężowe Kapłanki, Wężowy Tropiciel i dwóch Wężowych Niszczycieli, a jego odrzut nie wciska już postaci w ścianę ani w urwisko (Drip).
+- **Wężowe Pole:** obie bramy między obozem a pustynią mają nad sobą napis „Wężowe Pole”; Szkarłatny Żądłak jest wielkim skorpionem, 2,5 raza większym (nowy plik gry); okno rozmowy nie zamyka się już samo chwilę po otwarciu; Wężowe Kapłanki znów są kapłankami w Wiki i w questach (Drip).
+- **Tłumaczenia:** teksty questów z 2.2.162 i nowe komunikaty serwera we wszystkich językach gry, a Mapa Wężowego Pola nazywa się mapą także po niemiecku, hiszpańsku, włosku i turecku.
+
 ## 2.2.162 (2026-11-27)
 
 Nowe: Wężowe Pole przebudowane według mt2009 - mapa z murami i bramami, nowy grunt obozu, fabuła i rangi Zielonych Kłów, trzy misje dzienne z eskortą Meijina, nowe potwory pustyni, bossowie, drop i sklepy, a boty grają tam razem z graczami. Boty mogą wytwarzać u NPC pergamin, materiały rzemieślnicze i pył (opcja w panelu), Loch Zarazy daje więcej czasu na odbiór nagrody, a panel ma konfigurator ulepszeń całego ekwipunku, szanse małży, progi Teleportera i poziomy wejścia na mapy. Nowy plik gry: Auto Łowy idą do łuczników, zamiast stać pod ich strzałami, a Szkarłatny Żądłak i nowe potwory pustyni są większe.
