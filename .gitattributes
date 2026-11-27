@@ -96,6 +96,11 @@ docs/patches/*.patch -whitespace
 /linux-port-mt2009/client-plague-property/** -text -whitespace binary
 /linux-port-mt2009/docker/game/plague/** -text -whitespace
 /linux-port-mt2009/docker/game/plague/map/server_attr binary
+# Snakefield with Drip's walls (tools/build_snakefield_walls.py, 25 November 2026).
+/linux-port-mt2009/docker/game/snakefield-beta/share/locale/poland/map/metin2_map_WL_01/server_attr binary
+# The Silent Pass as the published client draws it, its north-east camp and
+# the gate to Snakefield included (27 November 2026).
+/linux-port-mt2009/docker/game/snakefield-beta/share/locale/poland/map/metin2_map_wl_pass/server_attr binary
 # NerrVoVy's Christmas event: the client's assets are hash-checked
 # (client-christmas-assets.json), msm/msa/mse text and CRLF included.
 /linux-port-mt2009/client-patch-christmas/** -text -whitespace binary
