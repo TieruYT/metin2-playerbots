@@ -1,18 +1,18 @@
 {
   "schema": 1,
   "channel": "stable",
-  "statusMessage": "2.2.162 / klient 2.0.163: Wężowe Pole przebudowane według mt2009 - fabuła, misje dzienne i eskorta Meijina, boty grają tam z graczami; wytwarzanie u NPC, Loch Zarazy, lepszy Towarzysz; nowy plik gry - Auto Łowy idą do łuczników. Zamknij grę, zaktualizuj serwer i launcher, uruchom launcher ponownie, następnie zaktualizuj klienta.",
+  "statusMessage": "2.2.163 / klient 2.0.164: poprawki po 2.2.162 - bez pustych okien po zalogowaniu, Towarzysz u Kowala w Wieży Demonów, eskorta Meijina i Serpentor; nowy plik gry. Zamknij grę, zaktualizuj serwer i launcher, uruchom launcher ponownie, następnie zaktualizuj klienta.",
   "server": {
-    "version": "2.2.162",
-    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.162/metin2-server-protected-migration-2.2.162.zip",
-    "sha256": "649E824B437463F5C001CC3D5F56BC301979E2E5AA6757A989C36571299311BF",
-    "size": 183788245
+    "version": "2.2.163",
+    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.163/metin2-server-protected-migration-2.2.163.zip",
+    "sha256": "2A8789B3756F64B786D277BA8FF0851AA3DDB97330C66CE5C4F21C9CE7BE4E18",
+    "size": 183869528
   },
   "serverProtected": {
-    "version": "2.2.162",
-    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.162/metin2-server-protected-update-2.2.162.zip",
-    "sha256": "65F64E24A55D470F1EF25C2AA3512FDED0235843E267F3D94466276E6C19888C",
-    "size": 173831765
+    "version": "2.2.163",
+    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.163/metin2-server-protected-update-2.2.163.zip",
+    "sha256": "871F758D339256309FB0E8C2EBBF1B7A04C915F7A9DD9917FD2F5BBF942E8BF3",
+    "size": 173913048
   },
   "protectedFrom": "2.2.39",
   "support": {
@@ -21,10 +21,10 @@
     "reportUrl": "https://script.google.com/macros/s/AKfycbweM8tWcvm59Va8BJxnS1z0o9L2GgtL0NXj6Yu_olAvJ7sPjnpckyGY6JB5fXH3lJYisA/exec?k=m2-7f3k9q"
   },
   "client": {
-    "version": "2.0.163",
-    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.162/metin2-client-update-2.0.163.zip",
-    "sha256": "43E6B4C757F59A82E86B345E24053A4C27BB8C2069F2498E63F6E421BA3BDE23",
-    "size": 313657106,
+    "version": "2.0.164",
+    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.163/metin2-client-update-2.0.164.zip",
+    "sha256": "E75CD674CD6DF52994F96C302C4C991AE777EA06189AC046CA91C88D667F0B9B",
+    "size": 313658170,
     "requiresClientExe": true,
     "architecture": "x64",
     "nativeRuntime": [
@@ -110,7 +110,7 @@
       }
     ],
     "supplement": {
-      "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.162/metin2-client-update-2.0.163-supplement.zip",
+      "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.163/metin2-client-update-2.0.164-supplement.zip",
       "sha256": "325F053D8BECF30070E4D1BEBD161408A7770E7B1E11D1CFBE008F315CB13D51",
       "size": 4060,
       "files": [
@@ -121,8 +121,8 @@
     }
   },
   "clientExe": {
-    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.162/metin2client.exe",
-    "sha256": "90A9D90302366168313A4F3F0408D77BB5640607E99F6B8D8798310787CF306E",
+    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.163/metin2client.exe",
+    "sha256": "25B87DE1BEB5D11B509BA371CD2B6A5D8770A57E095EDD15CB4CB8F761536492",
     "size": 11049984,
     "replaces": [
       "8263F81BFACDFA4A664C1F2A8CE846AEE14F19E584DB40A43F3184FEF1A59531",
@@ -176,9 +176,10 @@
       "77C0061C9346A994D5677E7A6F143F474B1ABC315522220CC763E3FBA0C4DC59",
       "7D8D4AF4135F5418441A82882351DECCE800896B767FF38C03214AD85DDF800A",
       "A60750B11C1C69FBEF92048FC2E6275972BD152FBA071EA8930200B40821CCFF",
-      "B98D0E1C1345464B81BFEFFB53EEDAA6B8DFE5FD6345F2FD8D988FD7469F405B"
+      "B98D0E1C1345464B81BFEFFB53EEDAA6B8DFE5FD6345F2FD8D988FD7469F405B",
+      "90A9D90302366168313A4F3F0408D77BB5640607E99F6B8D8798310787CF306E"
     ]
   },
-  "statusMessageEn": "2.2.162 / client 2.0.163: Snakefield rebuilt as on mt2009 - the story, daily missions and Meijin's escort, and the bots play there with you; crafting at NPCs, the Plague Dungeon, a better companion; a new game file - Auto Hunt goes after archers. Close the game, update the server and launcher, restart the launcher, then update the client.",
-  "publishedAt": "2026-11-27T19:19:55Z"
+  "statusMessageEn": "2.2.163 / client 2.0.164: fixes after 2.2.162 - no empty windows after logging in, the companion at the Demon Tower's smith, Meijin's escort and Serpentor; a new game file. Close the game, update the server and launcher, restart the launcher, then update the client.",
+  "publishedAt": "2026-11-27T21:40:31Z"
 }
