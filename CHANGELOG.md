@@ -17,6 +17,19 @@ every version here.
 
 ---
 
+## 2.2.164 (2026-11-28)
+
+Poprawki po 2.2.163: boty Jinno nie stoją już w kółko przy Kapitanie, Teleporter pobiera opłatę za podróż na Wężowe Pole, portal z Głuchej Przełęczy ma nazwę, misje Wężowego Pola mają strzałki nad NPC, druga zasadzka eskorty Meijina jest łagodniejsza, a nagrody są wypisane na czerwono. Nowy plik gry: filtr podnoszenia Auto Łowów zapisuje się także wtedy, gdy gra leży głęboko w folderach.
+
+- **Boty przy Kapitanie:** boty Jinno na 50 poziomie nie stoją już w kółko przy Kapitanie w Pyungmoo - rozmawiają z nim z otwartego terenu obok jego domu, a bot, który nie może dojść do NPC na Wężowym Polu, odkłada tę rozmowę na później (Feda, Virgo).
+- **Teleporter:** podróż na Wężowe Pole nie jest już darmowa - kosztuje tyle co do Wieży Demonów, a Pieczęć Węża zostaje przy tobie (Drip).
+- **Bramy Wężowego Pola:** portal z Głuchej Przełęczy na Wężowe Pole ma nad sobą nazwę i znacznik na minimapie, a brama na pustyni nie wraca już do starej nazwy „Obóz” (NerrVoVy, blipu, Drip).
+- **Misje Wężowego Pola:** nad NPC, który ma misję dzienną do wzięcia, stoi strzałka, rozmowa otwiera się od razu po oddaniu zadania, a po misji dziennej zrobionej dziś NPC odpowiada, żeby wrócić jutro (blipu).
+- **Eskorta Meijina:** druga zasadzka to znowu jedna grupa węży, a nagrody za eskortę, obronę Haneula, zapasy Ji Jina i „Korzenie Wężowego Pola” są wypisane na czerwono, jak każda nagroda (Drip).
+- **Metin Zwątpienia:** rzadko wypada z niego Pozwolenie na Wzmocnienie Przedmiotu - z taką samą szansą jak z Metinu Morderstwa na Ognistej Ziemi (blipu, Drip).
+- **Auto Łowy (nowy plik gry):** filtr podnoszenia i jego profile znowu się zapisują, także gdy folder gry leży głęboko w innych folderach (CptOdin).
+- **Sklep i panele:** poprawki stabilności sklepu i paneli.
+
 ## 2.2.163 (2026-11-27)
 
 Poprawki po 2.2.162: po zalogowaniu i teleporcie nie wyskakują już puste okna z „OK”, Towarzysz znowu ulepsza u Kowala w Wieży Demonów, a przedmiot przeciągniesz na Kowala prosto z jego okna, eskorta Meijina ma prawdziwe zasadzki, Serpentor ma straż i nie wciska już w ściany, bramy noszą nazwę „Wężowe Pole”, a teksty questów są przetłumaczone. Nowy plik gry: Szkarłatny Żądłak jest jeszcze większy.
