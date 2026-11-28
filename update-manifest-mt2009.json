@@ -1,18 +1,18 @@
 {
   "schema": 1,
   "channel": "stable",
-  "statusMessage": "2.2.163 / klient 2.0.164: poprawki po 2.2.162 - bez pustych okien po zalogowaniu, Towarzysz u Kowala w Wieży Demonów, eskorta Meijina i Serpentor; nowy plik gry. Zamknij grę, zaktualizuj serwer i launcher, uruchom launcher ponownie, następnie zaktualizuj klienta.",
+  "statusMessage": "2.2.164 / klient 2.0.165: poprawki po 2.2.163 - boty przy Kapitanie, Teleporter i portal Wężowego Pola, misje i eskorta Meijina; nowy plik gry (filtr Auto Łowów). Zamknij grę, zaktualizuj serwer i launcher, uruchom launcher ponownie, następnie zaktualizuj klienta.",
   "server": {
-    "version": "2.2.163",
-    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.163/metin2-server-protected-migration-2.2.163.zip",
-    "sha256": "2A8789B3756F64B786D277BA8FF0851AA3DDB97330C66CE5C4F21C9CE7BE4E18",
-    "size": 183869528
+    "version": "2.2.164",
+    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.164/metin2-server-protected-migration-2.2.164.zip",
+    "sha256": "1E2DAEEF0D18630392A3F0AEF333482BE82BE726B3D98F4B4850422E7943EAF1",
+    "size": 183882746
   },
   "serverProtected": {
-    "version": "2.2.163",
-    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.163/metin2-server-protected-update-2.2.163.zip",
-    "sha256": "871F758D339256309FB0E8C2EBBF1B7A04C915F7A9DD9917FD2F5BBF942E8BF3",
-    "size": 173913048
+    "version": "2.2.164",
+    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.164/metin2-server-protected-update-2.2.164.zip",
+    "sha256": "0412F0CF4BFF9EA91BD0ECDC95E3A9A4559D503EE18F9BE3D52E162A1BC232BC",
+    "size": 173926266
   },
   "protectedFrom": "2.2.39",
   "support": {
@@ -21,10 +21,10 @@
     "reportUrl": "https://script.google.com/macros/s/AKfycbweM8tWcvm59Va8BJxnS1z0o9L2GgtL0NXj6Yu_olAvJ7sPjnpckyGY6JB5fXH3lJYisA/exec?k=m2-7f3k9q"
   },
   "client": {
-    "version": "2.0.164",
-    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.163/metin2-client-update-2.0.164.zip",
-    "sha256": "E75CD674CD6DF52994F96C302C4C991AE777EA06189AC046CA91C88D667F0B9B",
-    "size": 313658170,
+    "version": "2.0.165",
+    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.164/metin2-client-update-2.0.165.zip",
+    "sha256": "4E6D5E8810AE21859F42E2EF8626F39CF1789C49CCB8BE6D0E8E2995F0E7764E",
+    "size": 313658292,
     "requiresClientExe": true,
     "architecture": "x64",
     "nativeRuntime": [
@@ -110,7 +110,7 @@
       }
     ],
     "supplement": {
-      "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.163/metin2-client-update-2.0.164-supplement.zip",
+      "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.164/metin2-client-update-2.0.165-supplement.zip",
       "sha256": "325F053D8BECF30070E4D1BEBD161408A7770E7B1E11D1CFBE008F315CB13D51",
       "size": 4060,
       "files": [
@@ -121,9 +121,9 @@
     }
   },
   "clientExe": {
-    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.163/metin2client.exe",
-    "sha256": "25B87DE1BEB5D11B509BA371CD2B6A5D8770A57E095EDD15CB4CB8F761536492",
-    "size": 11049984,
+    "url": "https://github.com/TieruYT/metin2-playerbots/releases/download/v2.2.164/metin2client.exe",
+    "sha256": "28871DAC97A23EBD622BDD63C04C1D3040B2AFD38103A61F79D558FC63F6E284",
+    "size": 11051520,
     "replaces": [
       "8263F81BFACDFA4A664C1F2A8CE846AEE14F19E584DB40A43F3184FEF1A59531",
       "752623560AB54E2F3F84FF9ADB8961D73E2E289634075118D3FBEA984CFCEFB1",
@@ -177,9 +177,10 @@
       "7D8D4AF4135F5418441A82882351DECCE800896B767FF38C03214AD85DDF800A",
       "A60750B11C1C69FBEF92048FC2E6275972BD152FBA071EA8930200B40821CCFF",
       "B98D0E1C1345464B81BFEFFB53EEDAA6B8DFE5FD6345F2FD8D988FD7469F405B",
-      "90A9D90302366168313A4F3F0408D77BB5640607E99F6B8D8798310787CF306E"
+      "90A9D90302366168313A4F3F0408D77BB5640607E99F6B8D8798310787CF306E",
+      "25B87DE1BEB5D11B509BA371CD2B6A5D8770A57E095EDD15CB4CB8F761536492"
     ]
   },
-  "statusMessageEn": "2.2.163 / client 2.0.164: fixes after 2.2.162 - no empty windows after logging in, the companion at the Demon Tower's smith, Meijin's escort and Serpentor; a new game file. Close the game, update the server and launcher, restart the launcher, then update the client.",
-  "publishedAt": "2026-11-27T21:40:31Z"
+  "statusMessageEn": "2.2.164 / client 2.0.165: fixes after 2.2.163 - bots at the Captain, the Teleporter and Snakefield's portal, the missions and Meijin's escort; a new game file (Auto Hunt's filter). Close the game, update the server and launcher, restart the launcher, then update the client.",
+  "publishedAt": "2026-11-28T01:12:01Z"
 }
